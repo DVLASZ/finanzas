@@ -1,13 +1,21 @@
 {
-  "plantilla": "personal",
+  "plantilla": "familia",
   "worker": "finanzas-ejemplo",
   "base": "finanzas-ejemplo",
-  "nombreApp": "Mis finanzas",
+  "nombreApp": "Finanzas de la casa",
   "nombreCorto": "Finanzas",
   "color": "#9a3f18",
+  "piel": "tierra",
+  "letra": "grande",
   "personas": [
-    { "nombre": "Ana", "grupo": "casa" },
-    { "nombre": "Carlos", "grupo": "trabajadores" }
+    {
+      "nombre": "Ana",
+      "grupo": "casa"
+    },
+    {
+      "nombre": "Carlos",
+      "grupo": "trabajadores"
+    }
   ],
   "aprendido": {},
   "config": {}

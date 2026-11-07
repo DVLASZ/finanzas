@@ -1,20 +1,21 @@
-# Variante: App personal (rama `main`)
+# Variante: App familiar (rama `app-2`)
 
-Las finanzas de una persona. Es la variante base: de aquí salen las otras dos (ver [docs/RAMAS.md](docs/RAMAS.md)).
+Los gastos de una casa con campo y trabajadores. Es la misma app que `main` con la plantilla `familia` (ver [docs/RAMAS.md](docs/RAMAS.md)).
 
 ## Qué trae
 
-- Plantilla `personal`: cuentas de efectivo, monedas, dos medios de pago por transferencia y una cuenta en dólares aparte.
-- Categorías de gasto de todos los días (mecato, comida, transporte, recargas, juegos, suscripciones, salidas, universidad, compras, regalos, salud, reparaciones, otros).
-- Grupos de personas: amigos, familia y otros.
-- Un atajo de ejemplo (`pasaje`) que se puede cambiar.
+- Plantilla `familia`: efectivo, monedas, dos bancos y una alcancía de monedas que se ve aparte.
+- Categorías de una casa: arriendo, servicios, mercado y aseo, comida, transporte, gasolina, salud, reparaciones, jornales, finca, insumos, hijos, regalos, aportes y rifas, mascotas, estudio, contador e impuestos, costos del banco.
+- Grupos de personas: los de la casa, familia directa, familiares, compañeros de trabajo, empresa, amigos y trabajadores.
+- Letra grande y colores cálidos por defecto en el ejemplo de instalación.
 
 ## Qué funciones usa
 
-- Gastos, ingresos, préstamos, deudas, pagos y gastos compartidos.
-- Cambio de moneda con la tasa de cada cambio, sin convertir nada solo.
-- Topes mensuales con aviso, metas de ahorro, gastos que se repiten cada mes.
-- Dictado por voz, avisos al celular, resumen semanal y mensual, Excel y respaldo cifrado.
+- Alcancía: `metí 5 monedas de 500 y 3 de mil a la alcancía` pasa las monedas de la billetera a la alcancía.
+- Pagos a trabajadores: `jornal 50000 felipe`, `jornales` (por semana o por mes) y la pantalla Pagos a trabajadores.
+- Plata de otros: lo que un familiar te manda para pagar algo suyo no cuenta como deuda ni como ingreso (`plata de mamá para la cooperativa 150000 nequi`).
+- Gastos que se repiten cada mes (arriendo, internet) con aviso, cierre del día para contar la billetera, avisos al celular, dictado por voz y respaldo cifrado.
+- Buzón entre apps: una persona avisa un giro y a la otra le aparece para anotarlo.
 
 ## Cómo arrancar
 
@@ -24,4 +25,4 @@ npm run check
 cp scripts/instalacion-ejemplo.json instalaciones/mi-app.json
 ```
 
-Edita `instalaciones/mi-app.json` y sigue [docs/INICIO.md](docs/INICIO.md).
+Edita `instalaciones/mi-app.json` (nombre del Worker, de la base y las personas) y sigue [docs/INICIO.md](docs/INICIO.md).
