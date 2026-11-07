@@ -3,7 +3,7 @@
 //   npm run e2e:celular   (lo mismo, pero en el Chrome de tu celular conectado por USB; ver docs/CELULAR.md)
 // Usa el Chrome que ya tienes (CHROME_PATH si está en otro lado). No usa internet ni toca ninguna base.
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
@@ -123,6 +123,15 @@ try {
     await pag.click('[data-tipo=gastos]'); await espera(300);
     if ((await pag.evaluate(() => document.querySelectorAll('#lista li[data-id]').length)) < 1) throw new Error('no salen gastos');
     await pag.click('#limpiar'); await espera(300);
+  });
+  if (!celular) await prueba('foto del recibo: se puede subir una imagen desde un archivo y aparece en el movimiento', async () => {
+    await irA('Movimientos'); await espera(500);
+    await pag.evaluate(() => document.querySelector('#lista li[data-id]')?.click()); await espera(600);
+    const png = join(raiz, 'node_modules', '.cache-e2e.png');
+    writeFileSync(png, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64'));
+    await (await pag.$('#fotoArchivo')).uploadFile(png); await espera(1200);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#recibo img'))), true, 'la imagen aparece');
+    await pag.evaluate(() => document.querySelector('#cerrar')?.click()); await espera(300);
   });
   await prueba('resumen: categorías, informe y comparación', async () => {
     await irA('Resumen'); const t = await pag.evaluate(() => document.body.innerText);

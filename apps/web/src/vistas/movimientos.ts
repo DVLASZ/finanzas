@@ -198,7 +198,8 @@ export async function vistaMovimientos(cont: HTMLElement): Promise<void> {
       <ul class="asientos">${m.asientos.map(a => `<li><span>${esc(nombre(a.cuentaId))}</span><span>${formatear(a.monto, a.moneda)}</span></li>`).join('')}</ul>
       <div id="recibo" class="recibo"></div>
       <div class="acciones">
-        <label class="secundario archivo">Foto del recibo<input type="file" id="fotoRecibo" accept="image/*" capture="environment" hidden /></label>
+        <label class="secundario archivo">Tomar foto<input type="file" id="fotoCamara" accept="image/*" capture="environment" hidden /></label>
+        <label class="secundario archivo">Subir imagen<input type="file" id="fotoArchivo" accept="image/*" hidden /></label>
         ${m.estado === 'ok' ? '<button class="peligro" id="anular">Anular</button>' : ''}
         <button class="secundario" id="cerrar">Cerrar</button>
       </div>`;
@@ -225,16 +226,21 @@ export async function vistaMovimientos(cont: HTMLElement): Promise<void> {
       });
     };
     void verRecibo();
-    $<HTMLInputElement>(dlg, '#fotoRecibo').addEventListener('change', async ev => {
-      const archivo = (ev.target as HTMLInputElement).files?.[0];
-      if (!archivo) return;
-      try {
-        const reducida = await reducirFoto(archivo);
-        await escribir(clave, reducida);
-        await escribir(claveSubida, undefined); // verRecibo la sube si hay internet
-        await verRecibo();
-      } catch { alert('No pude leer esa foto.'); }
-    });
+    // la cámara y el archivo (una captura de pantalla, una foto de la galería) hacen lo mismo
+    for (const id of ['#fotoCamara', '#fotoArchivo']) {
+      $<HTMLInputElement>(dlg, id).addEventListener('change', async ev => {
+        const entrada = ev.target as HTMLInputElement;
+        const archivo = entrada.files?.[0];
+        entrada.value = ''; // para poder elegir la misma imagen otra vez
+        if (!archivo) return;
+        try {
+          const reducida = await reducirFoto(archivo);
+          await escribir(clave, reducida);
+          await escribir(claveSubida, undefined); // verRecibo la sube si hay internet
+          await verRecibo();
+        } catch { alert('No pude leer esa imagen.'); }
+      });
+    }
     $<HTMLElement>(dlg, '#cerrar').addEventListener('click', () => dlg.close());
     $<HTMLElement>(dlg, '#anular')?.addEventListener('click', async () => {
       if (!confirm(`¿Anular «${m.descripcion}»? No se borra: queda marcado como anulado.`)) return;
