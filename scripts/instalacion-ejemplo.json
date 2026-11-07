@@ -1,13 +1,22 @@
 {
-  "plantilla": "personal",
-  "worker": "finanzas-ejemplo",
-  "base": "finanzas-ejemplo",
-  "nombreApp": "Mis finanzas",
-  "nombreCorto": "Finanzas",
-  "color": "#9a3f18",
+  "plantilla": "empresa",
+  "worker": "finanzas-negocio-ejemplo",
+  "base": "finanzas-negocio-ejemplo",
+  "nombreApp": "Finanzas del negocio",
+  "nombreCorto": "Negocio",
+  "color": "#0f766e",
+  "piel": "tierra",
+  "matiz": "azulado",
+  "letra": "normal",
   "personas": [
-    { "nombre": "Ana", "grupo": "casa" },
-    { "nombre": "Carlos", "grupo": "trabajadores" }
+    {
+      "nombre": "Marta",
+      "grupo": "socios"
+    },
+    {
+      "nombre": "Tomas",
+      "grupo": "clientes"
+    }
   ],
   "aprendido": {},
   "config": {}
