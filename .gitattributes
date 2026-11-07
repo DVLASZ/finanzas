@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.png binary
+
+# Lo propio de cada variante no se mezcla al pasar los cambios de main a las otras ramas
+# (hace falta: git config merge.ours.driver true). Ver docs/RAMAS.md.
+VARIANTE.md merge=ours
+variante.json merge=ours
+scripts/instalacion-ejemplo.json merge=ours

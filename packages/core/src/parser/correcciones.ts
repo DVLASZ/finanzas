@@ -1,0 +1,183 @@
+// Responder una pregunta de la tarjeta o corregirla con una frase corta.
+import { error, type Faltante, type Propuesta } from './tipos.ts';
+import { listaCategorias, tramosDe } from './comun.ts';
+import { leerPago } from './pago.ts';
+import { gasto, ingreso, transferencia } from './movimientos.ts';
+import { NO_ES_PERSONA, ROLES, aplicarRol, faltanteGrupo } from './personas.ts';
+import { hallarMontos, aMinor } from '../dinero.ts';
+import { borrarTramos, categoriaPorNombre, gruposDe, hallarCuentas } from '../entidades.ts';
+import { hallarFecha } from '../fechas.ts';
+import { capitalizar, limpiar, titulo } from '../texto.ts';
+import { type Contexto, type Cuenta, type Grupo, type Moneda } from '../tipos.ts';
+
+// ---------------------------------------------------------------------------------------
+// Correcciones: responder una pregunta o editar una tarjeta
+// ---------------------------------------------------------------------------------------
+
+/**
+ * Responde a lo que falta (categoría, lugar, persona). Devuelve la propuesta actualizada,
+ * la palabra aprendida (para que la próxima vez no pregunte) o un mensaje de error.
+ */
+export function resolverFaltante(
+  p: Propuesta, texto: string, ctx: Contexto,
+): { propuesta: Propuesta } & { aprende?: { palabra: string; categoriaId: string } } | { error: string } {
+  const f = p.faltantes[0];
+  if (!f) return { error: 'No hay nada pendiente por responder.' };
+  const t = limpiar(texto);
+  const sig: Propuesta = { ...p, faltantes: p.faltantes.slice(1) };
+
+  if (f.campo === 'categoria') {
+    const cat = categoriaPorNombre(t, ctx) ?? ctx.cuentas.find(c => c.tipo === 'categoria' && c.clave === t);
+    if (!cat) return { error: `No reconozco esa categoría. Responde con una: ${listaCategorias(ctx).join(', ')}.` };
+    sig.categoriaId = cat.id;
+    // para transporte hay que seguir preguntando el recorrido
+    if (cat.id === 'cat:transporte' && !sig.hasta) {
+      sig.faltantes.unshift({ campo: 'hasta', pregunta: '¿A dónde fue? Responde con el lugar de llegada (p. ej. «Casa»).' });
+    }
+    const palabra = (f.dato ?? '').split(' ').filter(Boolean).pop();
+    return { propuesta: sig, aprende: palabra ? { palabra, categoriaId: cat.id } : undefined };
+  }
+  if (f.campo === 'desde' || f.campo === 'hasta') {
+    const lugar = titulo(texto.trim().replace(/^(de|desde|a|hasta|la|el)\s+/i, ''));
+    if (!lugar) return { error: 'Escribe el nombre del lugar.' };
+    sig[f.campo] = lugar;
+    if (f.campo === 'hasta' && !sig.desde) {
+      sig.faltantes.unshift({ campo: 'desde', pregunta: `¿Desde dónde saliste hacia ${lugar}? Responde con el lugar (p. ej. «Terminal»).` });
+    }
+    return { propuesta: sig };
+  }
+  if (f.campo === 'grupo') {
+    if (t === limpiar(NO_ES_PERSONA) || /^no es (una )?persona$/.test(t)) {
+      // era una palabra del concepto, no una persona: sigue como gasto normal
+      sig.persona = undefined; sig.pedirGrupo = undefined;
+      sig.faltantes = sig.faltantes.filter(x => x.campo !== 'rol' && x.campo !== 'cobro');
+      return { propuesta: sig };
+    }
+    const g = gruposDe(ctx).find(x => limpiar(x.nombre) === t);
+    if (!g) return { error: `Elige una opción: ${(f.opciones ?? []).join(' · ')}.` };
+    sig.grupoPersona = g.id;
+    return { propuesta: sig };
+  }
+  if (f.campo === 'cobro') {
+    if (t === 'se lo fie' || t === 'fiado' || t === 'fie') sig.fiado = true;
+    else if (t === 'pago ahora' || t === 'pago' || t === 'contado') sig.fiado = false;
+    else return { error: `Elige una opción: ${(f.opciones ?? []).join(' · ')}.` };
+    return { propuesta: sig };
+  }
+  if (f.campo === 'rol') {
+    const rol = ROLES.find(r => limpiar(r.nombre) === t || (r.alias as readonly string[]).includes(t));
+    if (!rol) return { error: `Elige una opción: ${(f.opciones ?? []).join(' · ')}.` };
+    return { propuesta: aplicarRol(sig, rol.id, ctx) };
+  }
+  // persona
+  const dato = f.dato ?? '';
+  const nuevo = /\bnuevo\b/.test(t);
+  const elegida = (f.opciones ?? []).find(o => limpiar(o) === t || limpiar(o.replace(/ \(nuevo\)$/, '')) === t.replace(/ nuevo$/, ''));
+  const nombreFinal = nuevo || !elegida ? titulo(dato) : elegida;
+  if (!nuevo && !elegida) return { error: `Elige una opción: ${(f.opciones ?? []).join(' · ')}.` };
+  const reemplazar = (n: string) => (limpiar(n) === limpiar(dato) || limpiar(n) === limpiar(titulo(dato)) ? nombreFinal : n);
+  if (sig.persona) sig.persona = reemplazar(sig.persona);
+  if (sig.personas) sig.personas = sig.personas.map(x => ({ ...x, nombre: reemplazar(x.nombre) }));
+  sig.concepto = sig.concepto.replace(titulo(dato), nombreFinal);
+  // una persona nueva que apareció sin verbo claro: falta saber de qué grupo es
+  if (nuevo && sig.pedirGrupo) sig.faltantes.unshift(faltanteGrupo(nombreFinal, ctx));
+  return { propuesta: sig };
+}
+
+/**
+ * Aplica una corrección a una tarjeta que aún no se confirmó. Solo se acepta si TODO el texto
+ * es una corrección reconocible (así un gasto nuevo como «mecato 5000» nunca se confunde con una):
+ *
+ *   «vuelto 5k y 500 monedas» · «sin vuelto» · «con billete de 10k» · «monto 6000» · «6000»
+ *   «nequi» · «categoría comida» · «comida» · «ayer» · «#cumple-daniel» · «de terminal a casa»
+ *   «concepto empanadas»
+ *
+ * Devuelve la propuesta corregida, o null si el texto no parece una corrección.
+ */
+export function aplicarCambio(p: Propuesta, texto: string, ctx: Contexto): Propuesta | null {
+  let t = limpiar(texto);
+  if (!t) return null;
+  const sig: Propuesta = { ...p, avisos: [] };
+  const consumir = (re: RegExp): RegExpMatchArray | null => {
+    const m = t.match(re);
+    if (m) t = (t.slice(0, m.index) + ' ' + t.slice((m.index ?? 0) + m[0].length)).replace(/\s+/g, ' ').trim();
+    return m;
+  };
+
+  // Evento
+  const et = consumir(/(?:^|\s)#([a-z0-9-]+)/) ?? consumir(/^etiqueta ([a-z0-9-]+)/);
+  if (et) sig.etiqueta = et[1];
+
+  // Cómo se pagó: «con 10k», «con 2k y 800 en monedas», «vuelto 5k y 500 monedas», «justo», «sin vuelto»
+  if (/^(sin vuelto|justo|exacto|pague justo)$/.test(t)) {
+    // «justo»: pagó exacto, sin billete ni vuelto que corregir
+    sig.formaPago = 'justo';
+    sig.billeteMayor = undefined;
+    sig.pagoCon = undefined; sig.pagoMonedas = undefined; sig.restoEnMonedas = undefined;
+    sig.vuelto = { billetes: 0, monedas: 0 };
+    t = '';
+  } else if (/^(?:pague )?con\b|^(?:con )?(?:vuelto|me dieron|de vuelto)\b/.test(t)) {
+    const pg = leerPago(t, hallarMontos(t));
+    if (pg.hayCon) {
+      sig.pagoCon = pg.pagoCon; sig.pagoMonedas = pg.pagoMonedas; sig.restoEnMonedas = pg.restoEnMonedas;
+      sig.formaPago = undefined; sig.billeteMayor = undefined;
+      if (!pg.vueltoDicho) sig.vuelto = null; // al cambiar con qué pagó se recalcula el vuelto
+    }
+    if (pg.vueltoDicho && pg.vuelto) sig.vuelto = pg.vuelto;
+    if (pg.hayCon || pg.vueltoDicho) t = '';
+  }
+
+  // Concepto
+  const mcon = consumir(/^concepto (.+)$/);
+  if (mcon) sig.concepto = capitalizar(mcon[1]);
+
+  // Categoría: «categoría comida» o solo el nombre
+  const mcat = consumir(/^(?:categoria|cat) (.+)$/);
+  const nombreCat = mcat ? mcat[1] : t;
+  const cat = categoriaPorNombre(nombreCat, ctx);
+  if (cat && (mcat || cat.clave === t)) {
+    sig.categoriaId = cat.id;
+    sig.faltantes = sig.faltantes.filter(x => x.campo !== 'categoria');
+    t = '';
+  }
+
+  // Recorrido de transporte
+  const mlug = consumir(/^(?:de|desde) (.+?) (?:a|hasta|hacia) (.+)$/);
+  if (mlug && sig.categoriaId === 'cat:transporte') {
+    sig.desde = titulo(mlug[1]);
+    sig.hasta = titulo(mlug[2]);
+    sig.faltantes = sig.faltantes.filter(x => x.campo !== 'desde' && x.campo !== 'hasta');
+  } else if (mlug) {
+    return null;
+  }
+
+  // Fecha (solo si es lo único que queda)
+  const f = hallarFecha(t, ctx.ahora);
+  if (f.explicita && f.resto === '') {
+    sig.ocurridoEn = f.fecha;
+    t = '';
+  }
+
+  // Monto: «monto 6000», «valor 6000» o solo «6000»
+  const mm = t.match(/^(?:monto|valor|fue|son)? ?(.+)$/);
+  if (mm && (p.tipo === 'gasto' || p.tipo === 'compartido' || p.tipo === 'ingreso')) {
+    const ms = hallarMontos(mm[1]).filter(m => m.explicito);
+    if (ms.length === 1 && borrarTramos(mm[1], tramosDe(ms)).trim() === '') {
+      sig.monto = aMinor(ms[0].valor, sig.moneda);
+      t = '';
+    }
+  }
+
+  // Cuenta: una sola palabra («nequi»)
+  const cuentas = hallarCuentas(t, ctx);
+  if (cuentas.length === 1 && t.split(' ').length === 1 && p.tipo !== 'transferencia') {
+    sig.cuentaId = cuentas[0].id;
+    t = '';
+  }
+
+  if (t !== '') return null; // quedó algo sin entender: no es una corrección
+
+  // Los avisos del pago (no cuadra, falta plata...) los calcula la tarjeta con los datos nuevos.
+  return sig;
+}
+

@@ -1,0 +1,9 @@
+{
+  "_comentario": "Decisiones manuales sobre filas del Excel. 'gasto' fuerza a importar una fila que las reglas excluirían como préstamo.",
+  "filas": {
+    "FEB!F44": {
+      "accion": "gasto",
+      "motivo": "Ejemplo: una fila que las reglas excluirían como préstamo pero que sí fue un gasto."
+    }
+  }
+}

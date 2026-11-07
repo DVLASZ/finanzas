@@ -1,0 +1,34 @@
+import { prellenarChat } from './chat.ts';
+import { $ } from './dom.ts';
+import { deudasPorPersona, gruposDe, describirDia, formatear } from '../../../../packages/core/src/index.ts';
+import { leerTodo } from '../app.ts';
+import { esc } from '../carta.ts';
+
+
+export async function vistaDeudas(cont: HTMLElement, irAlChat: () => void): Promise<void> {
+  const { datos, ctx } = await leerTodo();
+  const nombreGrupo = (g: string | null | undefined): string => (g ? gruposDe(ctx).find(x => x.id === g)?.nombre ?? g : '');
+  const lista = deudasPorPersona(datos.movimientos, datos.cuentas, datos.compromisos, datos.config.fecha_apertura ?? '2000-01-01 00:00:00');
+  const fila = (d: (typeof lista)[number]) => {
+    const limite = d.compromisos.map(c => c.fechaLimite).filter(Boolean).sort()[0];
+    const motivo = d.compromisos[0]?.motivo;
+    const debes = d.saldo < 0;
+    const monto = formatear(Math.abs(d.saldo) - (debes ? d.deOtros : 0), d.moneda);
+    const accion = debes ? `pagué ${monto.replace('US$', '').replace('$', '')}${d.moneda === 'USD' ? ' usd' : ''} a ${d.persona.nombre} ` : `${d.persona.nombre} me pagó `;
+    return `<li class="fila"><div><div class="titulo">${esc(d.persona.nombre)} <span class="etiq">${esc(nombreGrupo(d.persona.grupo))}</span></div>
+      <div class="sub">${motivo ? esc(motivo) : ''}${limite ? ` · antes del ${esc(describirDia(limite))}` : ''}</div></div>
+      <div><div class="monto ${debes ? 'mal' : 'bien'}">${monto}</div><button class="chip" data-accion="${esc(accion)}">${debes ? 'Registrar pago' : 'Registrar cobro'}</button></div></li>`;
+  };
+  const debes = lista.filter(d => d.saldo < 0 && -d.saldo - d.deOtros > 0);
+  const teDeben = lista.filter(d => d.saldo > 0);
+  const deOtros = lista.filter(d => d.deOtros > 0);
+  const filaOtros = (d: (typeof lista)[number]) => `<li class="fila"><div><div class="titulo">${esc(d.persona.nombre)} <span class="etiq">${esc(nombreGrupo(d.persona.grupo))}</span></div>
+      <div class="sub">${d.compromisos[0]?.motivo ? esc(d.compromisos[0].motivo) + ' · ' : ''}al gastarla escribe «... con plata de ${esc(d.persona.nombre.toLowerCase())}»</div></div>
+      <div><div class="monto">${formatear(d.deOtros, d.moneda)}</div><button class="chip" data-accion="${esc('pagué ' + d.deOtros + ' a ' + d.persona.nombre)}">Devolver</button></div></li>`;
+  cont.innerHTML = `
+    ${deOtros.length ? `<h2>Plata de otros</h2><ul class="lista">${deOtros.map(filaOtros).join('')}</ul><p class="sub">Es plata que te mandaron para gastarla por ellos. No es tuya ni cuenta como deuda.</p>` : ''}
+    <h2>Debes</h2><ul class="lista">${debes.map(fila).join('') || '<li class="vacio">No debes nada 🎉</li>'}</ul>
+    <h2>Te deben</h2><ul class="lista">${teDeben.map(fila).join('') || '<li class="vacio">Nadie te debe.</li>'}</ul>
+    <p class="sub">Para anotar una deuda o un préstamo, escríbelo en el chat: «le debo 54000 a Pedro por la bici» · «presté 40000 a Ana».</p>`;
+  cont.querySelectorAll<HTMLElement>('[data-accion]').forEach(b => b.addEventListener('click', () => { prellenarChat(b.dataset.accion ?? ''); irAlChat(); }));
+}

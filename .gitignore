@@ -1,0 +1,34 @@
+# Dependencias y compilados
+node_modules/
+apps/web/dist/
+apps/worker/.wrangler/
+.wrangler/
+
+# SECRETOS: nunca se suben (los de producción se guardan con `wrangler secret put`)
+.env
+.env.*
+.dev.vars
+apps/worker/.dev.vars
+
+# Instalaciones: cada una lleva sus datos propios (personas, precios), tokens y PIN
+instalaciones/
+
+# DATOS PERSONALES: salen del Excel o de respaldos. Este repositorio es solo código.
+importacion/
+db/importacion.sql
+*.xlsx
+*.xls
+respaldo-*.json
+
+# Herramientas locales
+.DS_Store
+Thumbs.db
+*.log
+
+# Planes, notas y especificaciones con nombres reales: solo en el equipo del dueño
+docs-privado/
+
+# Importadores de los Excel de cada persona: llevan datos y formatos propios, se quedan en el equipo
+scripts/importar-*.mjs
+scripts/lib-excel.mjs
+docs/IMPORTACION.md

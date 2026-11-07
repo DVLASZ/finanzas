@@ -1,0 +1,14 @@
+{
+  "plantilla": "personal",
+  "worker": "finanzas-ejemplo",
+  "base": "finanzas-ejemplo",
+  "nombreApp": "Mis finanzas",
+  "nombreCorto": "Finanzas",
+  "color": "#9a3f18",
+  "personas": [
+    { "nombre": "Ana", "grupo": "casa" },
+    { "nombre": "Carlos", "grupo": "trabajadores" }
+  ],
+  "aprendido": {},
+  "config": {}
+}

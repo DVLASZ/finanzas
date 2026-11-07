@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es" data-plantilla="personal" data-piel-defecto="libro" data-tema-defecto="oscuro" data-letra-defecto="normal" data-piel="libro" data-tema="oscuro" data-letra="normal">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#181a1a" />
+  <meta name="description" content="Mis finanzas: registra gastos con un mensaje, funciona sin conexión." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>Mis finanzas</title>
+  <!-- Aplica piel, tema y letra ANTES de pintar, para que no parpadee de claro a oscuro al abrir. -->
+  <script>
+    (function () {
+      var h = document.documentElement, d = h.dataset, e = {};
+      try { e = JSON.parse(localStorage.getItem('apariencia') || '{}'); } catch (x) { /* sin almacenamiento */ }
+      var t = e.tema || d.temaDefecto || 'auto';
+      d.temaElegido = t;
+      d.tema = t === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro') : t;
+      d.piel = e.piel || d.pielDefecto || 'libro';
+      d.letra = e.letra || d.letraDefecto || 'normal';
+    })();
+  </script>
+</head>
+<body>
+  <header class="cabecera">
+    <h1>Mis finanzas</h1>
+    <div class="acciones-cab">
+      <span id="estado" class="estado local">Modo local</span>
+      <button id="cambiar-tema" class="boton-icono" aria-label="Cambiar entre tema claro y oscuro" title="Claro u oscuro"></button>
+    </div>
+  </header>
+  <main id="contenido" class="contenido" aria-live="polite"></main>
+  <nav id="nav" class="nav" aria-label="Secciones"></nav>
+  <noscript>Esta app necesita JavaScript.</noscript>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "_comentario": "Palabras clave -> categoría. Se evalúan EN ORDEN: gana la primera categoría que coincida. Lo comparten el importador y (más adelante) el bot.",
+  "categorias": [
+    { "id": "cat:regalos",       "palabras": ["regalo"] },
+    { "id": "cat:recargas",      "palabras": ["recarga"] },
+    { "id": "cat:banco",         "palabras": ["gravamen", "gmf", "manejo", "comision", "comisiones", "sobregiro"] },
+    { "id": "cat:suscripciones", "palabras": ["netflix", "spotify", "youtube premium"] },
+    { "id": "cat:juegos",        "palabras": ["steam", "playpoint", "juego"] },
+    { "id": "cat:transporte",    "palabras": ["moto", "taxi", "carro", "bus", "pasaje", "cicla", "bicicleta"] },
+    { "id": "cat:mecato",        "palabras": ["mecato", "galleta", "dulce", "donas", "postre", "helado", "mango", "crispetas", "lecherita", "quesillo", "gatorade", "trident", "chicle", "paquete", "coca"] },
+    { "id": "cat:comida",        "palabras": ["arepa", "empanada", "pizza", "almuerzo", "comida", "sandwich", "salchipapa", "hawaiano", "leche", "chorizo", "arroz", "salsa de tomate", "fresas", "perro", "desayuno", "cena"] },
+    { "id": "cat:universidad",   "palabras": ["unilingua", "materiales", "lapiz", "cuaderno", "fotocopia", "impresion"] },
+    { "id": "cat:salidas",       "palabras": ["cine", "entrada", "pisoje", "airsoft", "gokarts", "cuatrimoto", "salida", "casilleros", "triple entente", "rifa"] },
+    { "id": "cat:personal",      "palabras": ["peluque","zapatos", "costura", "jeans", "ropa", "barberia"] },
+    { "id": "cat:reparaciones", "palabras": ["reparacion", "reparar", "arreglo", "arreglar", "repuesto", "repuestos", "llanta", "mecanico", "taller"] },
+    { "id": "cat:salud",         "palabras": ["medicina", "droguer", "farmacia", "doctor", "cita medica"] },
+    { "id": "cat:compras",       "palabras": ["audifonos", "adaptador", "rocola", "peluche", "sombrilla", "compra"] }
+  ],
+  "prestamos_inicio": ["prestamo", "regreso", "le di a", "retorno", "le preste"]
+}

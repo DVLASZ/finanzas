@@ -1,0 +1,36 @@
+# Configuración del Worker de Cloudflare. Ver docs/DESPLIEGUE.md para vincularlo a tu cuenta.
+#
+# Pasos (una sola vez, cuando tengas la cuenta de Cloudflare):
+#   1) npx wrangler login
+#   2) npx wrangler d1 create finanzas        -> copia el database_id que imprime abajo
+#   3) npm run migracion && npx wrangler d1 migrations apply finanzas --remote
+#   4) npm run web:build && npx wrangler deploy
+#   5) npx wrangler secret put <NOMBRE> para cada secreto (ver docs/DESPLIEGUE.md)
+
+name = "finanzas"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# La app web (PWA) se sirve desde el mismo Worker: mismo dominio, sin CORS.
+[assets]
+directory = "../web/dist"
+binding = "ASSETS"
+# Estas rutas pasan siempre por el Worker; el resto lo sirven los archivos estáticos.
+run_worker_first = ["/api/*"]
+
+# Avisos diarios al celular (8 de la mañana en Colombia)
+[triggers]
+crons = ["0 13,23 * * *"]
+
+# Workers AI (gratis): ayuda a entender frases que las reglas no entienden
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "finanzas"
+# Id de la base D1 "finanzas" en la cuenta (no es un secreto: solo identifica la base). Cambia este valor por el de tu propia base..
+database_id = "PEGA-AQUI-EL-ID-DE-TU-BASE"
+migrations_dir = "../../db/migrations"
+
+# Los secretos (API_TOKEN y PIN_BORRADO) NO van aquí: se guardan con `wrangler secret put`.

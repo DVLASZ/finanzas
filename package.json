@@ -1,0 +1,37 @@
+{
+  "name": "finanzas",
+  "version": "0.1.0",
+  "description": "Finanzas personales: chat que entiende mensajes + app sin conexión (PWA) sobre Cloudflare. Gratis, una instalación por persona o negocio.",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "check": "npm run typecheck && npm test && npm run verificar && npm run contraste && npm run privacidad",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "node --test \"packages/core/test/*.test.ts\" \"apps/worker/test/*.test.ts\"",
+    "salud": "node scripts/salud.mjs",
+    "abrir-respaldo": "node scripts/abrir-respaldo.mjs",
+    "guia": "node scripts/generar-guia.mjs",
+    "e2e": "node scripts/e2e.mjs",
+    "verificar": "node scripts/verificar-db.mjs",
+    "web:build": "node scripts/build-web.mjs",
+    "web:dev": "npm run web:build && node scripts/servir-web.mjs",
+    "instalar": "node scripts/instalar.mjs",
+    "contraste": "node scripts/contraste.mjs",
+    "restaurar": "node scripts/restaurar.mjs",
+    "e2e:celular": "node scripts/celular.mjs",
+    "privacidad": "node scripts/privacidad.mjs"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "esbuild": "^0.28.2",
+    "puppeteer-core": "^25.16.0",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.151.2"
+  }
+}
