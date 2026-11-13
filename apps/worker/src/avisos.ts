@@ -100,3 +100,19 @@ export async function avisarMetas(repo: D1Repo, datos: Datos, ops: Op[]): Promis
   if (!llegaron.length) return;
   await mandarAviso(repo, { titulo: 'Meta lograda', cuerpo: llegaron.slice(0, 2).map(m => `Llegaste a la meta ${m.nombre}: ${formatear(m.apartado)} de ${formatear(m.meta)}.`).join(' ') });
 }
+
+/** Cuánto ocupan las fotos de recibos antes de avisar: 3 GB de los 5 GB que da la base gratis. */
+export const LIMITE_FOTOS_BYTES = 3_000_000_000;
+
+/** Avisa (como mucho una vez por semana) si las fotos de recibos se acercan al límite gratis de la base. */
+export async function avisarFotos(repo: D1Repo, ahora = new Date(), limite = LIMITE_FOTOS_BYTES): Promise<boolean> {
+  const bytes = await repo.bytesDeFotos();
+  if (bytes < limite) return false;
+  const hoy = aLocal(ahora).slice(0, 10);
+  const ultimo = await repo.leerSecreto<string>('avisos_fotos');
+  if (ultimo && Date.parse(hoy) - Date.parse(ultimo) < 7 * 86400000) return false;
+  await repo.guardarSecreto('avisos_fotos', hoy);
+  const mb = Math.round(bytes / 1_000_000);
+  await mandarAviso(repo, { titulo: 'Las fotos ocupan mucho', cuerpo: `Las fotos de recibos ya ocupan ${mb} MB de los 5.000 MB que da la base gratis. Quita las que no necesites desde el detalle de cada movimiento.` });
+  return true;
+}

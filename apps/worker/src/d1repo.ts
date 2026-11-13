@@ -194,6 +194,12 @@ export class D1Repo implements Repo {
     await this.subirGeneracion();
   }
 
+  /** Lo que ocupan las fotos de recibos, en bytes (el texto base64 es lo que pesa en la base). */
+  async bytesDeFotos(): Promise<number> {
+    const r = await this.db.prepare('SELECT COALESCE(SUM(LENGTH(datos)), 0) AS b FROM fotos').first<{ b: number }>();
+    return Number(r?.b ?? 0);
+  }
+
   /** Avisa a las apps que algo se borró de verdad: la próxima sincronización trae todo en vez de solo los cambios. */
   private async subirGeneracion(): Promise<void> {
     const r = await this.db.prepare("SELECT valor FROM config WHERE clave = 'generacion'").first<{ valor: string }>();

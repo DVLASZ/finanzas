@@ -1,6 +1,6 @@
 import { actualizarEstado } from './estado.ts';
 import { $ } from './dom.ts';
-import { atajosFrecuentes, calcularAlertas, interpretar, normalizarDictado, procesar, type Boton } from '../../../../packages/core/src/index.ts';
+import { atajosFrecuentes, calcularAlertas, hayTrabajadores, interpretar, vendeProductos, normalizarDictado, procesar, type Boton } from '../../../../packages/core/src/index.ts';
 import { icono } from '../iconos.ts';
 import { botonHtml, cartaHtml, esc } from '../carta.ts';
 import { app, atenderColaIA, leerTodo, encolarFraseIA, hayServidor, pedirAyudaIA, sincronizar } from '../app.ts';
@@ -50,10 +50,14 @@ export async function vistaChat(cont: HTMLElement): Promise<void> {
   const { datos, ctx } = await leerTodo();
   const avisos = calcularAlertas(datos, ctx.ahora).filter(a => a.acciones?.length && (a.id === 'cierre-dia' || a.id === 'saldo-negativo'));
   const frecuentes = atajosFrecuentes(datos.movimientos, ctx.ahora);
+  // atajos fijos según lo que hace esta app: la que vende, ventas; la que paga trabajadores, jornales
+  const fijos: [string, string][] = [...ATAJOS];
+  if (vendeProductos(ctx)) fijos.push(['ventas', 'Ventas']);
+  if (hayTrabajadores(datos.cuentas, datos.movimientos)) fijos.push(['jornales', 'Jornales']);
   cont.innerHTML = `
     ${avisos.map((a, i) => `<div class="alerta ${a.nivel}">${esc(a.texto)}<div class="botones">${a.acciones!.map((x, j) => `<button class="chip" data-aviso="${i}.${j}">${esc(x.titulo)}</button>`).join('')}</div></div>`).join('')}
     <div class="chat" id="chat"></div>
-    <div class="atajos">${ATAJOS.map(([orden, etiqueta]) => `<button class="chip" data-atajo="${orden}">${etiqueta}</button>`).join('')}${frecuentes.map(f => `<button class="chip" data-atajo="${esc(f)}">${esc(f)}</button>`).join('')}</div>
+    <div class="atajos">${fijos.map(([orden, etiqueta]) => `<button class="chip" data-atajo="${orden}">${etiqueta}</button>`).join('')}${frecuentes.map(f => `<button class="chip" data-atajo="${esc(f)}">${esc(f)}</button>`).join('')}</div>
     <form class="entrada" id="form">
       <input id="texto" type="text" autocomplete="off" autocapitalize="sentences" placeholder="Ej.: almuerzo 12000" aria-label="Escribe lo que pasó" />
       ${Reconocedor ? `<button type="button" id="mic" class="secundario mic" aria-label="Hablar" aria-pressed="false">${icono('mic')}</button>` : ''}
