@@ -8,6 +8,7 @@ import { test } from 'node:test';
 import { construirMovimiento, contextoDe, CUENTAS_INICIALES, interpretar, procesar, type Op } from '../../../packages/core/src/index.ts';
 import { D1Repo } from '../src/d1repo.ts';
 import worker, { avisarAlCelular, type Env } from '../src/index.ts';
+import { avisarFotos } from '../src/avisos.ts';
 import { aBase64Url, cabeceraVapid, cifrarAviso, crearLlavesVapid, deBase64Url, suscripcionValida, type Suscripcion } from '../src/push.ts';
 import { AHORA } from '../../../tests/ayudas.ts';
 import { crearD1 } from '../../../tests/d1-shim.ts';
@@ -337,5 +338,23 @@ test('push al momento: una meta de ahorro que llega a su valor avisa una vez', a
     assert.equal(textos.length, 1, 'ya se avisó');
     await poner(50000); await poner(100000);
     assert.equal(textos.length, 2, 'bajó y volvió a llegar');
+  });
+});
+
+test('push: las fotos que se acercan al límite avisan, como mucho una vez por semana', async () => {
+  const env = entorno();
+  const c = celular();
+  await llamar(env, '/api/push/suscribir', { suscripcion: c.suscripcion });
+  const repo = new D1Repo(env.DB);
+  const db = (env.DB as unknown as { db: { exec(s: string): void } }).db;
+  db.exec("INSERT INTO fotos (movimiento_id, datos) VALUES ('m1', '" + 'A'.repeat(5000) + "')");
+  await conAvisos(c, async textos => {
+    assert.equal(await avisarFotos(repo, AHORA, 1_000_000), false, 'poco peso: no avisa');
+    assert.equal(textos.length, 0);
+    assert.equal(await avisarFotos(repo, AHORA, 1000), true);
+    assert.match(textos[0], /Las fotos de recibos ya ocupan/);
+    assert.equal(await avisarFotos(repo, new Date(AHORA.getTime() + 3 * 86400000), 1000), false, 'a los 3 días no repite');
+    assert.equal(await avisarFotos(repo, new Date(AHORA.getTime() + 8 * 86400000), 1000), true, 'a los 8 días sí');
+    assert.equal(textos.length, 2);
   });
 });
