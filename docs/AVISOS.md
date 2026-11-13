@@ -23,6 +23,8 @@ La app puede avisarte en el celular, aunque esté cerrada, cuando hay algo que m
 - una meta de ahorro que llega a su valor («Llegaste a la meta Moto»), una vez; si baja y vuelve a llegar, otra vez
 - un giro que llega por el buzón de otra app (`Aviso de Mamá: $150.000`)
 
+**Una vez por semana, si hace falta:** las fotos de recibos ocupan 3 GB o más de los 5 GB que da la base gratis.
+
 **Los domingos:** si la copia de seguridad en la nube falla, con el motivo.
 
 Si no hay nada, no manda nada. El aviso de «falta decir cuánta plata tienes» no se manda por aquí, solo sale dentro de la app.

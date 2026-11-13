@@ -20,7 +20,7 @@ import { agregarAviso, destinosDe, enviarAlBuzon, leerAviso, type EnvBuzon } fro
 import { respaldarEnGitHub, type EnvRespaldo } from './respaldo.ts';
 import { calcularAlertas } from '../../../packages/core/src/index.ts';
 import { suscripcionValida, enviarAviso, type Suscripcion } from './push.ts';
-import { avisarAlCelular as avisarDeVerdad, avisarMetas, avisarTopes, llavesVapid, mandarAviso } from './avisos.ts';
+import { avisarAlCelular as avisarDeVerdad, avisarFotos, avisarMetas, avisarTopes, llavesVapid, mandarAviso } from './avisos.ts';
 
 export interface Env extends EnvRespaldo, EnvBuzon {
   DB: D1Like;
@@ -74,6 +74,7 @@ export default {
       return;
     }
     await avisarDeVerdad(repo, new Date(), 'manana');
+    try { await avisarFotos(repo); } catch (e) { console.error('avisos:', (e as Error).message); }
     // los domingos, la copia de seguridad en la nube (si está activada); si falla, se avisa al celular
     const hoy = new Date();
     if (hoy.getUTCDay() === 0) {

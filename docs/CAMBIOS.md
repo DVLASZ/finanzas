@@ -2,6 +2,11 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-13
+
+- Aviso al celular, una vez por semana, cuando las fotos de recibos ocupan 3 GB o más de la base.
+- Atajos fijos del chat según la app: Ventas donde se vende y Jornales donde hay trabajadores.
+
 ## 2026-11-08
 
 - El repositorio se ordena en tres ramas, una por variante de la app: `main` (personal), `app-2` (familia) y `empresa`. Ver [RAMAS.md](RAMAS.md). Las plantillas se llaman ahora `personal`, `familia` y `empresa`.

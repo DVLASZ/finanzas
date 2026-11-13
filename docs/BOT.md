@@ -136,7 +136,7 @@ revisar
 
 Después de las 6 de la tarde, si hubo movimientos en la billetera y nadie la ha contado, la app pregunta: «según la app tienes X en efectivo y Y en monedas, ¿es lo que hay?». El botón «Sí, cuadra» manda el arqueo con esas cifras (queda una tarjeta por confirmar) y «No cuadra» deja escrito `arqueo efectivo ` para que pongas lo real. Aparece arriba del chat y en Saldos, no como aviso al celular.
 
-Los botones de abajo del chat incluyen, además de Ayuda, los mensajes que repetiste dos veces o más en los últimos 90 días (por ejemplo `mecato 2000`). Tocar uno lo manda al chat y hay que confirmarlo como siempre.
+Los botones de abajo del chat traen Ayuda, y según la app, Ventas (donde se vende) y Jornales (donde hay trabajadores). Además incluyen los mensajes que repetiste dos veces o más en los últimos 90 días (por ejemplo `mecato 2000`). Tocar uno lo manda al chat y hay que confirmarlo como siempre.
 
 ### Transporte
 
