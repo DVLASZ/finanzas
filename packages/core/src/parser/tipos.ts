@@ -7,7 +7,7 @@ import { type Grupo, type Moneda, type TipoMovimiento } from '../tipos.ts';
 // ---------------------------------------------------------------------------------------
 
 export type Comando =
-  | 'ventas'
+  | 'ventas' | 'existencias' | 'existencias_fijar' | 'existencias_sumar'
   | 'saldo' | 'semana' | 'mes' | 'anio' | 'deudas' | 'deshacer' | 'ayuda'
   | 'editar_ultimo' | 'ultimos' | 'categoria' | 'evento' | 'lista' | 'lista_agregar' | 'lista_quitar'
   | 'recurrente_agregar' | 'recurrente_quitar' | 'recurrentes'

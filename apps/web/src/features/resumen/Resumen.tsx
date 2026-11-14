@@ -3,11 +3,11 @@
  * comparativas contra el periodo anterior, topes con color según el avance y el informe para imprimir.
  */
 import { signal } from '@preact/signals';
-import { Receipt, ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Minus, PiggyBank, Scale, TrendingDown, TrendingUp } from 'lucide-preact';
+import { Receipt, ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, FileText, Minus, Share2, PiggyBank, Scale, TrendingDown, TrendingUp } from 'lucide-preact';
 import { useState } from 'preact/hooks';
 import {
   agruparCategorias, aLocal, describirDia, estadoPresupuesto, formatear, gastoPorCategoria, ingresosPorFuente, leerMetas,
-  nombreMes, rangoPeriodo, totalApartado, totalIngresos,
+  filtrarMovimientos, movimientosACsv, nombreMes, rangoPeriodo, resumenEnTexto, totalApartado, totalIngresos,
 } from '../../../../../packages/core/src/index.ts';
 import { esc } from '../../lib/carta.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
@@ -52,10 +52,10 @@ function Dona({ trozos, total }: { trozos: Trozo[]; total: number }) {
           return el;
         })}
         <g class="rotate-90" style={{ transformOrigin: '70px 70px' }} pointer-events="none">
-          <text x="70" y={s ? 58 : 66} text-anchor="middle" class="fill-tx2" style={{ fontSize: '8px' }}>{s ? s.nombre.slice(0, 16) : 'Gastos'}</text>
-          <text x="70" y={s ? 74 : 82} text-anchor="middle" class="fill-tx tabular-nums" style={{ fontSize: '12px', fontWeight: 700 }}>{formatear(s ? s.valor : total)}</text>
-          {s && <text x="70" y="86" text-anchor="middle" class="fill-tx2" style={{ fontSize: '8px' }}>{Math.round((s.valor / total) * 100)} % del total</text>}
-          {s && <text x="70" y="97" text-anchor="middle" class={s.previo > 0 && s.valor > s.previo ? 'fill-neg' : 'fill-pos'} style={{ fontSize: '7px', fontWeight: 600 }}>{variacion(s.valor, s.previo)}</text>}
+          <text x="70" y={s ? 58 : 66} text-anchor="middle" class="fill-tx2" style={{ fontSize: '9.5px' }}>{s ? s.nombre.slice(0, 16) : 'Gastos'}</text>
+          <text x="70" y={s ? 74 : 82} text-anchor="middle" class="fill-tx tabular-nums" style={{ fontSize: '13px', fontWeight: 700 }}>{formatear(s ? s.valor : total)}</text>
+          {s && <text x="70" y="87" text-anchor="middle" class="fill-tx2" style={{ fontSize: '9px' }}>{Math.round((s.valor / total) * 100)} % del total</text>}
+          {s && <text x="70" y="99" text-anchor="middle" class={s.previo > 0 && s.valor > s.previo ? 'fill-neg' : 'fill-pos'} style={{ fontSize: '8.5px', fontWeight: 600 }}>{variacion(s.valor, s.previo)}</text>}
         </g>
       </svg>
       <ul class="m-0 grid w-full list-none gap-1.5 p-0">
@@ -152,6 +152,23 @@ export function Resumen() {
   const pctRitmo = esperado > 0 ? Math.round((Math.abs(llevo - esperado) / esperado) * 100) : null;
 
   const cambiar = (nuevo: Periodo) => { periodo.value = nuevo; atras.value = 0; };
+
+  const nombreArchivo = (ext: string) => `resumen-${desde.slice(0, 7)}.${ext}`;
+  const bajar = (nombre: string, contenido: string, tipo: string) => {
+    const url = URL.createObjectURL(new Blob(['\ufeff' + contenido], { type: `${tipo};charset=utf-8` }));
+    Object.assign(document.createElement('a'), { href: url, download: nombre }).click();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  };
+  /** Los movimientos del periodo que se ve, en CSV. */
+  const descargarCsv = () => bajar(nombreArchivo('csv'), movimientosACsv(filtrarMovimientos(datos, { desde: desde.slice(0, 10), hasta: hasta.slice(0, 10) }), datos.cuentas), 'text/csv');
+  /** El resumen en texto: se comparte con el menú del celular (WhatsApp, correo...) o, si no hay, se descarga. */
+  const compartirResumen = async () => {
+    const texto = resumenEnTexto(datos, titulo(p, desde), desde, hasta);
+    try {
+      if (navigator.share) { await navigator.share({ title: `Resumen de ${titulo(p, desde)}`, text: texto }); return; }
+    } catch (e) { if ((e as Error).name === 'AbortError') return; }
+    bajar(nombreArchivo('txt'), texto, 'text/plain');
+  };
 
   /** Una hoja limpia con lo mismo que se ve aquí, para imprimir o guardar como PDF desde el navegador. */
   const abrirInforme = () => {
@@ -257,7 +274,11 @@ export function Resumen() {
         </div>
       </section>
 
-      <div class="acciones"><button class="secundario" id="informe" onClick={abrirInforme}><FileText size={18} />Informe para imprimir o guardar en PDF</button></div>
+      <div class="acciones">
+        <button class="secundario" id="informe" onClick={abrirInforme}><FileText size={18} />Informe para imprimir o guardar en PDF</button>
+        <button class="secundario" id="compartir-resumen" onClick={() => void compartirResumen()}><Share2 size={18} />Compartir el resumen</button>
+        <button class="secundario" id="resumen-csv" onClick={descargarCsv}><Download size={18} />Bajar los movimientos (CSV)</button>
+      </div>
     </div>
   );
 }

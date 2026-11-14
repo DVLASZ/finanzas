@@ -25,7 +25,18 @@ import { contextoDe, type Datos, type Pendiente, type Repo } from './repo.ts';
 import { dividirLinea } from './lineas.ts';
 import { descendientes, leerSubcategorias, MAX_NIVELES, puedeIrDentro } from './subcategorias.ts';
 import { leerMetas, textoAvance, textoMetas, type Meta } from './metas.ts';
-import { leerRecurrentes, type Recurrente } from './recurrentes.ts';
+import { describirFrecuencia, leerRecurrentes, type Frecuencia, type Recurrente } from './recurrentes.ts';
+import { avisoDeExistencias, conConteo, existencias, existenciasDe, productoPorNombre } from './existencias.ts';
+import { leerCatalogo } from './ventas.ts';
+
+const PREFIJO_EXISTENCIAS = '📦 ';
+
+const EJEMPLOS_RECURRENTES: Record<Frecuencia, string> = {
+  mensual: 'Ejemplo: «cada mes el 5 internet 60000».',
+  quincenal: 'Ejemplo: «cada quincena el 5 almuerzo 40000» (cae el 5 y el 20).',
+  semanal: 'Ejemplo: «cada lunes almuerzo 12000».',
+  anual: 'Ejemplo: «cada año el 15 de marzo seguro 300000».',
+};
 import { limpiar, titulo } from './texto.ts';
 import type { Contexto, Movimiento } from './tipos.ts';
 
@@ -61,10 +72,20 @@ function separarCosas(texto: string): string[] {
   return texto.split(/\s*(?:,|\by\b)\s*/i).map(x => x.trim()).filter(Boolean).map(x => x.slice(0, 60)).slice(0, 20);
 }
 
+function textoExistencias(config: Record<string, string>, movs: Movimiento[]): string {
+  const lista = existencias(config, movs);
+  if (!lista.length) return '📦 Ningún producto lleva cuenta de existencias. Para empezar: «inventario galletas 200».';
+  return [
+    '📦 Existencias:',
+    ...lista.map(x => `• ${x.producto.nombre}: ${x.quedan} ${x.quedan === 1 ? 'unidad' : 'unidades'}${x.quedan < 0 ? ' (revisa el conteo)' : ''}`),
+    '', 'Cuando llegue más: «llegaron 50 galletas». Para volver a contar: «inventario galletas 120».',
+  ].join('\n');
+}
+
 function textoRecurrentes(lista: Recurrente[]): string {
   return lista.length
-    ? ['🔁 Gastos que se repiten cada mes:', ...[...lista].sort((a, b) => a.dia - b.dia).map(r => `• ${r.concepto} ${formatear(r.monto)} (el ${r.dia})`), '', 'Para quitar uno: «quitar recurrente internet».'].join('\n')
-    : '🔁 No hay gastos que se repitan. Agrega uno así: «cada mes el 5 internet 60000».';
+    ? ['🔁 Gastos que se repiten:', ...[...lista].sort((a, b) => a.dia - b.dia).map(r => `• ${r.concepto} ${formatear(r.monto)} (${describirFrecuencia(r)})`), '', 'Para quitar uno: «quitar recurrente internet».'].join('\n')
+    : '🔁 No hay gastos que se repitan. Agrega uno así: «cada mes el 5 internet 60000», «cada quincena el 5 almuerzo 40000», «cada lunes almuerzo 12000» o «cada año el 15 de marzo seguro 300000».';
 }
 
 function textoLista(lista: string[]): string {
@@ -270,6 +291,7 @@ class Motor {
     const saldos = this.saldosPara(p);
     const faltas = this.avisarFaltaPlata(p, saldos);
     const pierde = this.avisarSegundoSaldoInicial(p);
+    this.avisarExistencias(p);
     await this.repo.guardarPendiente(p);
     const texto = tarjeta(p.propuesta, this.ctx, saldos);
     const prefijo = p.reemplazaId ? '✏️ Editando un movimiento guardado (si cancelas queda el original).\n' : '';
@@ -294,6 +316,15 @@ class Motor {
       return [{ texto: prefijo + texto, botones }];
     }
     return [{ texto: prefijo + texto, botones: [...BOTONES_TARJETA, ...this.atajosDePago(p.propuesta)] }];
+  }
+
+  /** Una venta de un producto que lleva cuenta de existencias avisa si no alcanzan o si quedan pocas. */
+  private avisarExistencias(p: Pendiente): void {
+    const venta = p.propuesta.venta;
+    if (!venta) return;
+    p.propuesta.avisos = p.propuesta.avisos.filter(a => !a.startsWith(PREFIJO_EXISTENCIAS));
+    const aviso = avisoDeExistencias(this.datos.config, this.datos.movimientos, venta);
+    if (aviso) p.propuesta.avisos.push(`${PREFIJO_EXISTENCIAS}${aviso}`);
   }
 
   /** Un segundo saldo inicial hace que lo anterior deje de contar: se avisa fuerte y se ofrece el arqueo. */
@@ -511,6 +542,9 @@ class Motor {
     const { movimientos, compromisos } = this.datos;
     switch (c) {
       case 'saldo': return [{ texto: textoSaldo(movimientos, this.ctx) }];
+      case 'existencias': return [{ texto: textoExistencias(this.datos.config, movimientos) }];
+      case 'existencias_fijar': return this.fijarExistencias(arg ?? '', false);
+      case 'existencias_sumar': return this.fijarExistencias(arg ?? '', true);
       case 'ventas': return [{ texto: textoVentas(arg === 'semana' || arg === 'anio' ? arg : 'mes', movimientos, this.ctx) }];
       case 'semana': return [{ texto: textoResumen('semana', movimientos, this.ctx) }];
       case 'mes': return [{ texto: textoResumen('mes', movimientos, this.ctx) }];
@@ -675,20 +709,39 @@ class Motor {
 
   // ---------------------------------------------------------------- gastos que se repiten
 
-  /** «5|internet 60000»: el día y lo que se escribiría para registrarlo. */
+  /** «mensual|5||internet 60000»: la frecuencia, el día, el mes (solo anual) y lo que se escribiría para registrarlo. */
   private async agregarRecurrente(arg: string): Promise<Salida[]> {
-    const [diaTexto, frase] = [arg.split('|')[0], arg.split('|').slice(1).join('|').trim()];
-    const ejemplo = 'Ejemplo: «cada mes el 5 internet 60000».';
-    if (!diaTexto || !frase) return [{ texto: `Falta el día y el gasto. ${ejemplo}` }];
+    const [frecuencia, diaTexto, mesTexto, ...resto] = arg.split('|');
+    const frase = resto.join('|').trim();
+    const ejemplo = EJEMPLOS_RECURRENTES[frecuencia as Frecuencia] ?? EJEMPLOS_RECURRENTES.mensual;
+    if (!diaTexto || !frase) return [{ texto: frecuencia === 'semanal' ? `Falta el día de la semana y el gasto. ${ejemplo}` : `Falta el día y el gasto. ${ejemplo}` }];
     const dia = Number(diaTexto);
-    if (!(dia >= 1 && dia <= 28)) return [{ texto: `El día tiene que ir de 1 a 28 (así sirve para todos los meses). ${ejemplo}` }];
+    const tope = frecuencia === 'quincenal' ? 13 : frecuencia === 'semanal' ? 7 : 28;
+    if (!(dia >= 1 && dia <= tope)) return [{ texto: frecuencia === 'quincenal' ? `El día de la primera quincena va de 1 a 13 (la segunda cae 15 días después). ${ejemplo}` : `El día tiene que ir de 1 a 28 (así sirve para todos los meses). ${ejemplo}` }];
+    const mes = Number(mesTexto);
+    if (frecuencia === 'anual' && !(mes >= 1 && mes <= 12)) return [{ texto: `Falta el mes. ${ejemplo}` }];
     const res = interpretar(frase, this.ctx);
     if (res.clase !== 'movimiento' || res.propuesta.tipo !== 'gasto') return [{ texto: `No entendí ese gasto. ${ejemplo}` }];
     const monto = res.propuesta.monto;
-    const nuevo: Recurrente = { dia, frase, concepto: res.propuesta.concepto, monto };
+    const nuevo: Recurrente = { dia, frase, concepto: res.propuesta.concepto, monto, ...(frecuencia === 'mensual' ? {} : { frecuencia: frecuencia as Frecuencia }), ...(frecuencia === 'anual' ? { mes } : {}) };
     const otros = leerRecurrentes(this.datos.config).filter(r => limpiar(r.concepto) !== limpiar(nuevo.concepto));
     await this.repo.setConfig('recurrentes', JSON.stringify([...otros, nuevo].slice(0, 30)));
-    return [{ texto: `🔁 Cada mes, el ${dia}: ${nuevo.concepto} ${formatear(monto)}. Te aviso dos días antes y hasta que lo anotes. Para anotarlo escribe «${frase}».` }];
+    return [{ texto: `🔁 ${describirFrecuencia(nuevo).replace(/^./, c => c.toUpperCase())}: ${nuevo.concepto} ${formatear(monto)}. Te aviso dos días antes y hasta que lo anotes. Para anotarlo escribe «${frase}».` }];
+  }
+
+  /** «galletas|200»: dice cuántas hay (o, con `sumar`, cuántas llegaron). Desde ese momento se les restan las ventas. */
+  private async fijarExistencias(arg: string, sumar: boolean): Promise<Salida[]> {
+    const [nombre, n] = arg.split('|');
+    const cantidad = Number(n);
+    const catalogo = leerCatalogo({ config: this.datos.config });
+    const producto = productoPorNombre(catalogo, nombre);
+    if (!catalogo || !producto) return [{ texto: `No encuentro «${nombre}» en tu catálogo. Escribe «existencias» para ver los que llevan cuenta.` }];
+    if (!Number.isInteger(cantidad) || cantidad < 0 || cantidad > 1_000_000) return [{ texto: 'La cantidad no es válida.' }];
+    const quedan = existenciasDe(producto, this.datos.movimientos) ?? 0;
+    const total = sumar ? quedan + cantidad : cantidad;
+    await this.repo.setConfig('catalogo', JSON.stringify(conConteo(catalogo, producto, total, aLocal(this.ctx.ahora))));
+    const unidades = total === 1 ? 'unidad' : 'unidades';
+    return [{ texto: sumar ? `📦 Sumé ${cantidad}: ahora hay ${total} ${unidades} de ${producto.nombre}.` : `📦 Quedó anotado: ${total} ${unidades} de ${producto.nombre}. Cada venta las va restando.` }];
   }
 
   private async quitarRecurrente(texto: string): Promise<Salida[]> {

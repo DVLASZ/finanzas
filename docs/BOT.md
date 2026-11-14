@@ -279,6 +279,16 @@ vendí 2 paquetes de 10 a 7 mil
 
 Con un cliente conocido pregunta si pagó o se lo fiaste. Fiado deja la deuda del cliente y no entra plata a la caja. El precio dicho (`a 7 mil`) gana sobre el del catálogo. El catálogo se edita en Más, Productos y precios.
 
+Para llevar la cuenta de las unidades de un producto:
+
+```
+existencias
+inventario galletas 200
+llegaron 50 galletas
+```
+
+Con `inventario galletas 200` dices cuántas hay. Desde ese momento cada venta las resta (un «paquete de 10» resta 10) y, si una venta no alcanza o deja pocas, la tarjeta lo avisa. Cuando llega mercancía, `llegaron 50 galletas` la suma. Si anulas una venta, las unidades vuelven solas. Es opcional: un producto sin conteo no avisa nada. También se maneja desde Más, Productos y precios.
+
 Para ver lo vendido por producto: `ventas` (del mes), `ventas semana` o `ventas del año`. Muestra el total y cuánto aportó cada producto; en el año, también, lo vendido mes por mes.
 
 ## Gastos que se repiten
@@ -287,10 +297,15 @@ Para lo que pagas todos los meses (arriendo, internet, Cooperativa). No lo regis
 
 ```
 cada mes el 5 internet 60000
+cada quincena el 5 mecato 20000
+cada lunes mecato 12000
+cada año el 15 de marzo salud 300000
 recurrentes
 ```
 
-El día va de 1 a 28. Desde dos días antes del día, y hasta que escribas ese gasto en el mes, la app te muestra el aviso y el celular te avisa por la mañana. Cuando lo anotas (`internet 60000`), el aviso se va hasta el mes siguiente. Para quitar uno: `quitar recurrente internet`.
+Hay cuatro frecuencias. En «cada mes» el día va de 1 a 28. En «cada quincena» va de 1 a 13 y cae ese día y 15 días después (el 5 y el 20). «Cada lunes» (o martes, y así) es semanal, y «cada año el 15 de marzo» es anual.
+
+Desde dos días antes de la fecha, y hasta que escribas ese gasto, la app te muestra el aviso y el celular te avisa por la mañana. Cuando lo anotas (`mecato 12000`), el aviso se va hasta la próxima vez. Un pago anual sigue avisando hasta un mes después de la fecha. Para quitar uno: `quitar recurrente mecato`.
 
 ## Metas de ahorro
 
@@ -355,6 +370,7 @@ Solo en la empresa. Es la plata del negocio que está en cuentas personales de l
 | `semana`, `mes`, `año` | Gastos por categoría, ingresos y balance, y topes |
 | `deudas` | Lo que debes y lo que te deben |
 | `ventas`, `ventas semana`, `ventas del año` | Lo vendido por producto (apps con catálogo) |
+| `existencias` | Cuántas unidades quedan de cada producto que lleva cuenta (apps con catálogo) |
 | `últimos` | Los últimos movimientos |
 | `cuánto llevo en mecato` | Lo de la semana y el mes en esa categoría |
 | `tope mecato 60000` | Fija un tope mensual. El bot avisa al 80 % y al 100 % |

@@ -22,7 +22,8 @@ function curva(pts: [number, number][]): string {
 }
 
 /** La evolución de un valor: línea con área degradada. `claro` la pinta en blanco para ir sobre la tarjeta de color. */
-export function Sparkline({ valores, claro = false, alto = 64 }: { valores: number[]; claro?: boolean; alto?: number }) {
+export function Sparkline({ valores, etiquetas, claro = false, alto = 64 }: { valores: number[]; etiquetas?: string[]; claro?: boolean; alto?: number }) {
+  const [sel, setSel] = useState<number | null>(null);
   const W = 300, H = alto, m = 6;
   const min = Math.min(...valores), max = Math.max(...valores);
   const rango = max - min || 1;
@@ -31,8 +32,21 @@ export function Sparkline({ valores, claro = false, alto = 64 }: { valores: numb
   const ult = pts[pts.length - 1];
   const color = claro ? '#ffffff' : 'var(--marca)';
   const idRelleno = `spk-${useId()}`;
+  const alTocar = (e: PointerEvent) => {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const i = Math.round(((e.clientX - r.left) / r.width) * (valores.length - 1));
+    setSel(Math.min(Math.max(0, i), valores.length - 1));
+  };
+  const punto = sel === null ? null : pts[sel];
+  const izquierda = punto ? (punto[0] / W) * 100 : 0;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} class="block w-full" style={{ height: `${H}px` }} role="img" aria-label="Evolución del saldo" preserveAspectRatio="none">
+    <div class="relative touch-pan-y" onPointerMove={alTocar} onPointerDown={alTocar} onPointerLeave={() => setSel(null)} onPointerUp={() => setSel(null)}>
+    {punto && sel !== null && (
+      <div class="pointer-events-none absolute -top-9 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-black/75 px-2.5 py-1 text-xs font-semibold text-white shadow-lg ring-1 ring-white/20" style={{ left: `${Math.min(88, Math.max(12, izquierda))}%` }}>
+        {etiquetas?.[sel] ? <span class="mr-1.5 font-normal opacity-80">{etiquetas[sel]}</span> : null}<span class="tabular-nums">{formatear(valores[sel])}</span>
+      </div>
+    )}
+    <svg viewBox={`0 0 ${W} ${H}`} class="block w-full" style={{ height: `${H}px` }} role="img" aria-label="Evolución del saldo: toca para ver cada día" preserveAspectRatio="none">
       <defs>
         <linearGradient id={idRelleno} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0" stop-color={color} stop-opacity={claro ? 0.38 : 0.3} />
@@ -41,8 +55,10 @@ export function Sparkline({ valores, claro = false, alto = 64 }: { valores: numb
       </defs>
       <path d={`${linea} L${ult[0]},${H} L${pts[0][0]},${H} Z`} fill={`url(#${idRelleno})`} class="aparece" />
       <path d={linea} pathLength={1} fill="none" stroke={color} stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" class="trazo" />
-      <circle cx={ult[0]} cy={ult[1]} r="3.6" fill={color} class="aparece" vector-effect="non-scaling-stroke" />
+      {punto && <line x1={punto[0]} x2={punto[0]} y1={0} y2={H} stroke={color} stroke-width="1" stroke-dasharray="3 3" opacity=".7" vector-effect="non-scaling-stroke" />}
+      <circle cx={(punto ?? ult)[0]} cy={(punto ?? ult)[1]} r={punto ? 5 : 3.6} fill={color} class="aparece" vector-effect="non-scaling-stroke" />
     </svg>
+    </div>
   );
 }
 
@@ -88,6 +104,12 @@ export function Ritmo({ ahora, antes, hastaDia }: { ahora: number[]; antes: numb
   const hoy = ahora[sel] ?? 0, previo = antes[Math.min(sel, antes.length - 1)] ?? 0;
   return (
     <div>
+      <div class="relative">
+      {dia !== null && ahora[sel] !== undefined && (
+        <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-black/75 px-2.5 py-1 text-xs font-semibold text-white shadow-lg ring-1 ring-white/20" style={{ left: `${Math.min(88, Math.max(12, (x(sel) / W) * 100))}%`, top: `${Math.max(0, (y(hoy) / H) * 100 - 22)}%` }}>
+          Día {sel + 1} · <span class="tabular-nums">{formatear(hoy)}</span>
+        </div>
+      )}
       <svg viewBox={`0 0 ${W} ${H}`} class="block w-full touch-pan-y" role="img" aria-label="Gasto acumulado del mes contra el mes anterior" onPointerMove={alTocar} onPointerDown={alTocar} onPointerLeave={() => setDia(null)}>
         <defs>
           <linearGradient id="rit" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--marca)" stop-opacity=".28" /><stop offset="1" stop-color="var(--marca)" stop-opacity="0" /></linearGradient>
@@ -100,9 +122,10 @@ export function Ritmo({ ahora, antes, hastaDia }: { ahora: number[]; antes: numb
         </>}
         <line x1={x(sel)} x2={x(sel)} y1={mt} y2={H - mb} stroke="var(--tx2)" stroke-width="1" stroke-dasharray="2 3" opacity=".6" />
         {ahora[sel] !== undefined && <circle cx={x(sel)} cy={y(hoy)} r="4" fill="var(--marca)" stroke="var(--sup)" stroke-width="2" />}
-        <text x={mx} y={H - 4} class="fill-tx2" style={{ fontSize: '9px' }}>día 1</text>
-        <text x={W - mx} y={H - 4} text-anchor="end" class="fill-tx2" style={{ fontSize: '9px' }}>día {n}</text>
+        <text x={mx} y={H - 4} class="fill-tx2" style={{ fontSize: '10.5px' }}>día 1</text>
+        <text x={W - mx} y={H - 4} text-anchor="end" class="fill-tx2" style={{ fontSize: '10.5px' }}>día {n}</text>
       </svg>
+      </div>
       <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-tx2">
         <span class="inline-flex items-center gap-1.5"><span class="h-0.5 w-4 rounded bg-marca" />Este periodo <b class="tabular-nums text-tx">{formatear(hoy)}</b></span>
         <span class="inline-flex items-center gap-1.5"><span class="w-4 border-t-2 border-dashed border-tx2" />Anterior <b class="tabular-nums text-tx">{formatear(previo)}</b></span>

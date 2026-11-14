@@ -7,6 +7,16 @@ import { calcularSaldos, estadoPresupuesto, gastoPorCategoria } from './consulta
 import { formatear } from './dinero.ts';
 import { aLocal, describirDia, rangoPeriodo } from './fechas.ts';
 import type { Datos } from './repo.ts';
+import type { Movimiento } from './tipos.ts';
+
+/** Un arqueo es un movimiento de tipo «ajuste»: dice cuánto había de verdad en cada cuenta. */
+export const esArqueo = (m: Movimiento): boolean => m.tipo === 'ajuste';
+
+/**
+ * Un arqueo anulado no deja rastro: no sale en los listados (ni con «anulados») ni cuenta entre los movimientos anulados
+ * del mes. Sigue guardado como anulado, no se borra, pero a quien lo anuló no le estorba.
+ */
+export const esArqueoAnulado = (m: Movimiento): boolean => esArqueo(m) && m.estado === 'anulado';
 
 export type TipoPunto = 'saldo-inicial' | 'saldo-negativo' | 'deuda' | 'arqueo' | 'descuadre' | 'otros' | 'cobro' | 'anulados' | 'tope';
 
@@ -91,7 +101,7 @@ export function revisarMes(d: Datos, ahora: Date): PuntoRevision[] {
   }
 
   // lo anulado este mes: unos pocos es normal; muchos, señal de que algo se está anotando mal
-  const anulados = d.movimientos.filter(m => m.estado === 'anulado' && m.ocurridoEn >= desde && m.ocurridoEn < hasta).length;
+  const anulados = d.movimientos.filter(m => m.estado === 'anulado' && !esArqueoAnulado(m) && m.ocurridoEn >= desde && m.ocurridoEn < hasta).length;
   if (anulados >= 8) res.push({ nivel: 'info', tipo: 'anulados', titulo: 'Muchos movimientos anulados', texto: `Este mes anulaste ${anulados} movimientos. Si algo no se está entendiendo bien, cuéntamelo para ajustarlo.` });
 
   return res;

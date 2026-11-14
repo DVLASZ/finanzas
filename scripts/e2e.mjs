@@ -179,6 +179,52 @@ try {
     igual(await pag.evaluate(() => document.querySelector('#fotoEscanear').getAttribute('capture')), 'environment', 'la cámara usa capture');
     igual(await pag.evaluate(() => document.querySelector('#archivoEscanear').hasAttribute('capture')), false, 'la galería no usa capture');
   });
+  await prueba('Más: deudas, lista de compras, pagos fijos y ajustes (hechos con componentes) funcionan', async () => {
+    const texto = () => pag.evaluate(() => document.body.innerText);
+    await abrirDeMas('Deudas y préstamos'); contiene((await texto()).toLowerCase(), 'por cobrar', 'deudas');
+    await irA('Chat'); await escribir('falta arroz y sal');
+    await abrirDeMas('Lista de compras'); contiene(await texto(), 'Ya lo compré', 'la lista trae lo anotado en el chat');
+    await pag.type('input[aria-label="Agregar a la lista"]', 'panela'); await pag.keyboard.press('Enter'); await espera(600);
+    contiene(await texto(), 'panela', 'agregar desde la pantalla');
+    await pag.evaluate(() => [...document.querySelectorAll('button')].find(b => b.innerText.includes('Ya lo compré'))?.click()); await espera(600);
+    contiene((await texto()).toLowerCase(), 'avance de la compra','la barra de avance aparece al comprar');
+    await abrirDeMas('Pagos fijos'); contiene(await texto(), 'Cada mes', 'el formulario de pagos fijos ofrece frecuencias');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('button[aria-label^="Cada cuánto"]'))), true, 'selector de frecuencia');
+    await abrirDeMas('Ajustes');
+    contiene(await texto(), 'Zona de peligro', 'ajustes');
+    const antes = await pag.evaluate(() => document.querySelectorAll('.tema-card[aria-pressed="true"]').length);
+    await pag.evaluate(() => [...document.querySelectorAll('.tema-card')].find(b => b.getAttribute('aria-pressed') !== 'true')?.click()); await espera(400);
+    igual(await pag.evaluate(() => document.querySelectorAll('.tema-card[aria-pressed="true"]').length), antes, 'un solo tema elegido a la vez');
+    await pag.evaluate(() => [...document.querySelectorAll('.tema-card')].find(b => b.innerText.includes('Midnight'))?.click()); await espera(300);
+  });
+  await prueba('Movimientos: etiquetas, rango de fechas y exportar CSV o JSON', async () => {
+    await irA('Chat'); await escribir('pizza 12000 #cumple'); await pulsar('Confirmar');
+    await irA('Movimientos'); await espera(500);
+    igual(await pag.evaluate(() => [...document.querySelectorAll('[aria-label="Etiquetas"] button')].map(b => b.innerText.trim().split(/\s/)[0]).join(',')), '#cumple', 'chip de la etiqueta');
+    const filas = () => pag.evaluate(() => document.querySelectorAll('#lista .fila').length);
+    const todas = await filas();
+    await pag.evaluate(() => document.querySelector('[aria-label="Etiquetas"] button').click()); await espera(400);
+    igual(await filas(), 1, 'solo lo de la etiqueta');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#exportar-csv') && document.querySelector('#exportar-json'))), true, 'botones de exportar');
+    await pag.evaluate(() => document.querySelector('[aria-label="Etiquetas"] button').click()); await espera(400);
+    igual(await filas(), todas, 'quitar la etiqueta devuelve todo');
+    await pag.evaluate(() => document.querySelector('[data-periodo="rango"]').click()); await espera(400);
+    igual(await pag.evaluate(() => document.querySelectorAll('#rango input[type=date]').length), 2, 'dos fechas');
+    await pag.evaluate(() => document.querySelector('[data-periodo="mes"]').click()); await espera(300);
+  });
+  await prueba('gráficos: tocar la curva de saldo muestra el día y el valor', async () => {
+    await irA('Saldos'); await espera(700);
+    const caja = await pag.evaluate(() => { const r = document.querySelector('svg[aria-label^="Evolución del saldo"]')?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; });
+    if (!caja) throw new Error('no hay curva de saldo');
+    await pag.mouse.move(caja.x, caja.y); await pag.mouse.down(); await espera(250);
+    contiene(await pag.evaluate(() => document.body.innerText), '$', 'la burbuja muestra un monto');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('.pointer-events-none.absolute.z-10'))), true, 'burbuja visible');
+    await pag.mouse.up();
+  });
+  await prueba('Resumen: se puede compartir el resumen y bajar el CSV', async () => {
+    await irA('Resumen'); await espera(500);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#compartir-resumen') && document.querySelector('#resumen-csv'))), true, 'botones');
+  });
   await prueba('ninguna pantalla se sale del ancho del celular', async () => {
     for (const n of ['Chat', 'Saldos', 'Movimientos', 'Resumen', 'Más']) { await irA(n); if (!(await sinDesborde())) throw new Error(`«${n}» se sale de 390 px`); }
   });

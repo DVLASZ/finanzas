@@ -8,7 +8,8 @@
 import type { Contexto } from './tipos.ts';
 
 export interface Presentacion { id: string; nombre: string; alias?: string[]; precio: number }
-export interface Producto { id: string; nombre: string; alias?: string[]; presentaciones: Presentacion[] }
+/** `conteo` es opcional: solo los productos que llevan cuenta de existencias lo tienen (ver `existencias.ts`). */
+export interface Producto { id: string; nombre: string; alias?: string[]; presentaciones: Presentacion[]; conteo?: { cantidad: number; desde: string } }
 export interface Catalogo { productos: Producto[] }
 
 export function leerCatalogo(ctx: Pick<Contexto, 'config'>): Catalogo | null {

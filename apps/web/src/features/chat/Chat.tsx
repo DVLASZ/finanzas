@@ -9,7 +9,9 @@ import {
   aLocal, atajosFrecuentes, calcularAlertas, formatear, fraseDeOCR, limpiar, hayTrabajadores, interpretar, normalizarDictado, procesar, vendeProductos, type Boton,
 } from '../../../../../packages/core/src/index.ts';
 import { leerComprobante } from '../../services/ocr.ts';
-import { app, atenderColaIA, encolarFraseIA, hayServidor, pedirAyudaIA, sincronizar } from '../../services/app.ts';
+import { app, hayServidor } from '../../services/estado.ts';
+import { atenderColaIA, encolarFraseIA, pedirAyudaIA } from '../../services/ia.ts';
+import { sincronizar } from '../../services/sincronizacion.ts';
 import { escribir, leer } from '../../services/almacen.ts';
 import { parsearCarta, quitarEmojis } from '../../lib/carta.ts';
 import { celebrar, entrar } from '../../lib/efectos.ts';
