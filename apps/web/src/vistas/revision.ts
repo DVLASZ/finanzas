@@ -1,5 +1,5 @@
 import { revisarMes } from '../../../../packages/core/src/index.ts';
-import { prellenarChat } from './chat.ts';
+import { prellenarChat } from '../estado/nav.ts';
 import { leerTodo } from '../app.ts';
 import { esc } from '../carta.ts';
 

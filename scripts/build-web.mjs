@@ -1,7 +1,7 @@
 // Compila la app web a apps/web/dist (lo que sirve el Worker o cualquier hosting estático).
 //
-//   - Empaqueta apps/web/src/main.ts (y el núcleo) en un solo app.js con esbuild.
-//   - Compila Tailwind (CLI) y lo une a styles.css; copia index.html y manifest.
+//   - Empaqueta apps/web/src/main.tsx (y el núcleo) en un solo app.js con esbuild.
+//   - Compila Tailwind (CLI) a styles.css; copia index.html y manifest.
 //   - Escribe sw.js con una versión nueva (así los dispositivos se actualizan solos).
 //   - Genera los íconos (SVG y PNG) sin depender de ninguna imagen externa.
 //
@@ -11,7 +11,7 @@
 
 import { build } from 'esbuild';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
@@ -47,18 +47,17 @@ await build({
   logLevel: 'info',
 });
 
-// Estilos: los de siempre (styles.css) más las utilidades de Tailwind que usan los componentes. Tailwind se corre
-// con su CLI (viene en node_modules, sin red) y solo escribe las clases que encuentra en apps/web/src.
+// Estilos: todo sale de Tailwind (apps/web/estilos). Se corre con su CLI (viene en node_modules, sin red) y solo
+// escribe las clases que encuentra en apps/web/src.
 const tailwind = join(raiz, 'node_modules', '@tailwindcss', 'cli', 'dist', 'index.mjs');
 const salidaTailwind = join(dist, 'tailwind.css');
 const rt = spawnSync(process.execPath, [tailwind, '-i', join(web, 'estilos', 'tailwind.css'), '-o', salidaTailwind, '--minify'], { cwd: raiz, encoding: 'utf8' });
 if (rt.status !== 0) { console.error(rt.stdout + rt.stderr); process.exit(1); }
-writeFileSync(join(dist, 'styles.css'), readFileSync(join(web, 'styles.css'), 'utf8') + '\n' + readFileSync(salidaTailwind, 'utf8'));
-rmSync(salidaTailwind);
+renameSync(salidaTailwind, join(dist, 'styles.css'));
 // El nombre y el color de la app cambian por instalación (así se distinguen en el celular).
 writeFileSync(join(dist, 'index.html'), readFileSync(join(web, 'index.html'), 'utf8')
   .replace('data-plantilla="personal"', `data-plantilla="${plantillaApp}"`)
-  .replace('<title>Mis finanzas</title>', `<title>${nombreApp}</title>`).replace('<h1>Mis finanzas</h1>', `<h1>${nombreApp}</h1>`)
+  .replace('<title>Mis finanzas</title>', `<title>${nombreApp}</title>`)
   // lo de fábrica de esta instalación (la persona puede cambiarlo dentro de la app)
   .replace('data-piel-defecto="libro" data-tema-defecto="oscuro" data-letra-defecto="normal" data-piel="libro" data-tema="oscuro" data-letra="normal"', `data-piel-defecto="${pielApp}" data-tema-defecto="${temaApp}" data-letra-defecto="${letraApp}" data-piel="${pielApp}" data-tema="${temaApp === 'auto' ? 'claro' : temaApp}" data-letra="${letraApp}"${matizApp ? ` data-matiz="${matizApp}"` : ''}`));
 writeFileSync(join(dist, 'manifest.webmanifest'), JSON.stringify({ ...JSON.parse(readFileSync(join(web, 'manifest.webmanifest'), 'utf8')), name: nombreApp, short_name: nombreCorto, theme_color: colorApp }, null, 2));

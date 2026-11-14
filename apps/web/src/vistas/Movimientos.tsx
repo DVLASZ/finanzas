@@ -1,0 +1,287 @@
+/**
+ * Movimientos: filtros como pastillas, lista agrupada por día y un cajón que sube desde abajo con el detalle,
+ * la foto del recibo y el botón de anular. Los filtros se recuerdan entre visitas.
+ */
+import { signal } from '@preact/signals';
+import { Ban, Camera, ChevronLeft, ChevronRight, ImagePlus, Search, SlidersHorizontal, Trash2, X } from 'lucide-preact';
+import { createPortal } from 'preact/compat';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import {
+  conSubcategorias, describirDia, describirFecha, formatear, leerSubcategorias, limpiar, nombreMes, rangoPeriodo,
+  type Cuenta, type Movimiento,
+} from '../../../../packages/core/src/index.ts';
+import { escribir, leer } from '../almacen.ts';
+import { app, bajarFoto, borrarFotoEnServidor, sincronizar, subirFoto } from '../app.ts';
+import { subirDesdeAbajo } from '../efectos.ts';
+import { ctx as contexto, datos as datosSignal, refrescar } from '../estado/store.ts';
+import { fechaAtras } from '../periodos.ts';
+import { tintaDe } from '../ui/piezas.tsx';
+
+/** Baja la foto a 1000 px de lado largo y la guarda como JPEG: un recibo no necesita más y así pesa poco (unos 100 KB). */
+async function reducirFoto(archivo: File): Promise<Blob> {
+  const bmp = await createImageBitmap(archivo);
+  const escala = Math.min(1, 1000 / Math.max(bmp.width, bmp.height));
+  const lienzo = document.createElement('canvas');
+  lienzo.width = Math.round(bmp.width * escala);
+  lienzo.height = Math.round(bmp.height * escala);
+  lienzo.getContext('2d')!.drawImage(bmp, 0, 0, lienzo.width, lienzo.height);
+  return new Promise((ok, mal) => lienzo.toBlob(b => (b ? ok(b) : mal(new Error('no se pudo'))), 'image/jpeg', 0.7));
+}
+
+type Periodo = 'todo' | 'semana' | 'mes' | 'anio';
+type Tipo = 'todos' | 'gastos' | 'ingresos' | 'transferencias' | 'deudas';
+interface Filtros { periodo: Periodo; atras: number; tipo: Tipo; categoria: string; cuenta: string; persona: string }
+
+const INICIALES: Filtros = { periodo: 'mes', atras: 0, tipo: 'todos', categoria: '', cuenta: '', persona: '' };
+const CLAVE = 'filtros_movimientos';
+const TIPOS: [Tipo, string][] = [['todos', 'Todos'], ['gastos', 'Gastos'], ['ingresos', 'Ingresos'], ['transferencias', 'Transferencias'], ['deudas', 'Deudas']];
+const PERIODOS: [Periodo, string][] = [['todo', 'Todo'], ['semana', 'Semana'], ['mes', 'Mes'], ['anio', 'Año']];
+const DE_TIPO: Record<Tipo, string[]> = {
+  todos: [], gastos: ['gasto', 'compartido'], ingresos: ['ingreso'], transferencias: ['transferencia', 'cambio_moneda'], deudas: ['prestamo', 'deuda', 'pago'],
+};
+
+function leerFiltros(): Filtros {
+  try { return { ...INICIALES, ...JSON.parse(localStorage.getItem(CLAVE) ?? '{}') }; } catch { return { ...INICIALES }; }
+}
+const filtros = signal<Filtros>(leerFiltros());
+const busqueda = signal('');
+const verAnulados = signal(false);
+const limite = signal(60);
+const abierto = signal<string | null>(null);
+
+function poner(cambio: Partial<Filtros>): void {
+  filtros.value = { ...filtros.value, ...cambio };
+  limite.value = 60;
+  try { localStorage.setItem(CLAVE, JSON.stringify(filtros.value)); } catch { /* sin almacenamiento: no se recuerda y ya */ }
+}
+
+/** Qué monto mostrar para un movimiento y de qué clase es. */
+function montoVisible(m: Movimiento, cuentas: Cuenta[]): { texto: string; clase: 'mal' | 'bien' | 'neutro' } {
+  if (m.tipo === 'apertura') return { texto: '', clase: 'neutro' };
+  const tipoDe = (id: string) => cuentas.find(c => c.id === id)?.tipo;
+  const cop = (f: (t: string | undefined) => boolean) => m.asientos.filter(a => a.moneda === 'COP' && f(tipoDe(a.cuentaId))).reduce((s, a) => s + a.monto, 0);
+  const gasto = cop(t => t === 'categoria');
+  if (gasto !== 0) return { texto: formatear(gasto), clase: gasto > 0 ? 'mal' : 'bien' };
+  const ingreso = -cop(t => t === 'fuente');
+  if (ingreso !== 0) return { texto: '+' + formatear(ingreso), clase: 'bien' };
+  const mayor = [...m.asientos].filter(a => tipoDe(a.cuentaId) !== 'sistema').sort((a, b) => Math.abs(b.monto) - Math.abs(a.monto))[0];
+  return mayor ? { texto: formatear(Math.abs(mayor.monto), mayor.moneda), clase: 'neutro' } : { texto: '', clase: 'neutro' };
+}
+
+export function tituloDelPeriodo(periodo: Periodo, desde: string): string {
+  return periodo === 'mes' ? `${nombreMes(desde)} ${desde.slice(0, 4)}` : periodo === 'anio' ? `Año ${desde.slice(0, 4)}` : `Semana del ${describirDia(desde.slice(0, 10))}`;
+}
+
+function Detalle({ m }: { m: Movimiento }) {
+  const datos = datosSignal.value!;
+  const ctx = contexto.value!;
+  const hoja = useRef<HTMLDivElement>(null);
+  const [foto, setFoto] = useState<string | null>(null);
+  const nombre = (id: string) => datos.cuentas.find(c => c.id === id)?.nombre ?? id;
+  const clave = `recibo:${m.id}`;
+  const claveSubida = `recibo-subido:${m.id}`;
+
+  // La foto se guarda en este aparato y, con internet, también en el servidor: así se ve desde otro celular.
+  // Si al tomarla no había internet, se sube la próxima vez que se abra este movimiento.
+  const verRecibo = async () => {
+    let blob = await leer<Blob>(clave);
+    if (blob && !(await leer<boolean>(claveSubida))) { if (await subirFoto(m.id, blob)) await escribir(claveSubida, true); }
+    if (!blob) {
+      blob = (await bajarFoto(m.id)) ?? undefined;
+      if (blob) { await escribir(clave, blob); await escribir(claveSubida, true); }
+    }
+    setFoto(prev => { if (prev) URL.revokeObjectURL(prev); return blob ? URL.createObjectURL(blob) : null; });
+  };
+  useEffect(() => { if (hoja.current) subirDesdeAbajo(hoja.current); void verRecibo(); }, [m.id]);
+
+  const alElegir = async (ev: Event) => {
+    const entrada = ev.target as HTMLInputElement;
+    const archivo = entrada.files?.[0];
+    entrada.value = ''; // para poder elegir la misma imagen otra vez
+    if (!archivo) return;
+    try {
+      await escribir(clave, await reducirFoto(archivo));
+      await escribir(claveSubida, undefined); // verRecibo la sube si hay internet
+      await verRecibo();
+    } catch { alert('No pude leer esa imagen.'); }
+  };
+  const quitar = async () => {
+    await escribir(clave, undefined); await escribir(claveSubida, undefined);
+    void borrarFotoEnServidor(m.id);
+    await verRecibo();
+  };
+  const anular = async () => {
+    if (!confirm(`¿Anular «${m.descripcion}»? No se borra: queda marcado como anulado.`)) return;
+    await app.repo.anularMovimiento(m.id, new Date(Date.now() - 5 * 3600e3).toISOString().slice(0, 19).replace('T', ' '));
+    abierto.value = null;
+    void sincronizar();
+    await refrescar();
+  };
+
+  // va fuera de la pantalla: un ancestro con transform (la animación de entrada) rompería el position: fixed
+  return createPortal(
+    <div id="detalle" class="fixed inset-0 z-50 flex items-end justify-center bg-black/55 backdrop-blur-[2px]" onClick={e => { if (e.target === e.currentTarget) abierto.value = null; }}>
+      <div ref={hoja} role="dialog" aria-modal="true" aria-label="Detalle del movimiento" class="max-h-[88%] w-full max-w-xl overflow-y-auto rounded-t-[1.8rem] bg-sup p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] shadow-[0_-20px_60px_-20px_rgba(0,0,0,.6)] ring-1 ring-anillo">
+        <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-bor" />
+        <h3 class="!mt-0">{m.descripcion}</h3>
+        <p class="sub">{describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora)} · {m.tipo} · {m.origen}{m.estado === 'anulado' ? ' · ANULADO' : ''}</p>
+        {m.mensajeOriginal && <p class="sub">Escribiste: «{m.mensajeOriginal}»</p>}
+        <ul class="asientos">
+          {m.asientos.map((a, i) => <li key={i}><span>{nombre(a.cuentaId)}</span><span class="tabular-nums">{formatear(a.monto, a.moneda)}</span></li>)}
+        </ul>
+        <div id="recibo" class="recibo">
+          {foto && <>
+            <img src={foto} alt="Foto del recibo" class="max-w-full rounded-2xl ring-1 ring-anillo" />
+            <button class="chip" id="quitarFoto" onClick={quitar}><Trash2 size={16} />Quitar la foto</button>
+          </>}
+        </div>
+        <div class="acciones">
+          <label class="secundario archivo"><Camera size={18} />Tomar foto<input type="file" id="fotoCamara" accept="image/*" capture="environment" hidden onChange={alElegir} /></label>
+          <label class="secundario archivo"><ImagePlus size={18} />Subir imagen<input type="file" id="fotoArchivo" accept="image/*" hidden onChange={alElegir} /></label>
+          {m.estado === 'ok' && <button class="peligro" id="anular" onClick={anular}><Ban size={18} />Anular</button>}
+          <button class="secundario" id="cerrar" onClick={() => { abierto.value = null; }}><X size={18} />Cerrar</button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+export function Movimientos() {
+  const datos = datosSignal.value;
+  const ctx = contexto.value;
+  if (!datos || !ctx) return <p class="vacio">Cargando…</p>;
+  const f = filtros.value;
+  const q = limpiar(busqueda.value);
+  const nombre = (id: string) => datos.cuentas.find(c => c.id === id)?.nombre ?? id;
+  const tocan = (m: Movimiento, id: string) => m.asientos.some(a => a.cuentaId === id);
+  const r = f.periodo === 'todo' ? null : rangoPeriodo(f.periodo, fechaAtras(ctx.ahora, f.periodo, f.atras));
+
+  const lista = datos.movimientos
+    .filter(m => (verAnulados.value || m.estado === 'ok')
+      && (!r || (m.ocurridoEn >= r.desde && m.ocurridoEn < r.hasta))
+      && (f.tipo === 'todos' || DE_TIPO[f.tipo].includes(m.tipo))
+      && (!f.categoria || conSubcategorias(datos.config, f.categoria).some(id => tocan(m, id)))
+      && (!f.cuenta || tocan(m, f.cuenta))
+      && (!f.persona || tocan(m, f.persona))
+      && (!q || limpiar(`${m.descripcion} ${m.etiqueta ?? ''} ${m.lugarDesde ?? ''} ${m.lugarHasta ?? ''}`).includes(q)))
+    .sort((a, b) => b.ocurridoEn.localeCompare(a.ocurridoEn));
+
+  // totales de lo que se está viendo (sin anulados) y en qué categorías se fue
+  let gastos = 0, ingresos = 0;
+  const porCat = new Map<string, number>();
+  for (const m of lista) {
+    if (m.estado !== 'ok') continue;
+    for (const a of m.asientos) {
+      const c = datos.cuentas.find(x => x.id === a.cuentaId);
+      if (a.moneda !== 'COP' || !c) continue;
+      if (c.tipo === 'categoria') { gastos += a.monto; porCat.set(c.id, (porCat.get(c.id) ?? 0) + a.monto); }
+      else if (c.tipo === 'fuente') ingresos -= a.monto;
+    }
+  }
+  const desglose = [...porCat.entries()].filter(([, v]) => v !== 0).sort((a, b) => b[1] - a[1]);
+
+  const usadas = (tipo: Cuenta['tipo']) => {
+    const ids = new Set(datos.movimientos.flatMap(m => m.asientos.map(a => a.cuentaId)));
+    for (const padre of Object.values(leerSubcategorias(datos.config))) ids.add(padre);
+    return datos.cuentas.filter(c => c.tipo === tipo && ids.has(c.id)).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  };
+  const selector = (id: string, etiqueta: string, vacio: string, tipo: Cuenta['tipo'], valor: string, campo: 'categoria' | 'cuenta' | 'persona') => (
+    <select id={id} aria-label={etiqueta} value={valor} onChange={e => poner({ [campo]: (e.target as HTMLSelectElement).value })}>
+      <option value="">{vacio}</option>
+      {usadas(tipo).map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+    </select>
+  );
+
+  const hayFiltros = f.tipo !== 'todos' || f.categoria || f.cuenta || f.persona || busqueda.value;
+  const visibles = lista.slice(0, limite.value);
+  // agrupadas por día, de lo más nuevo a lo más viejo
+  const grupos: { dia: string; items: Movimiento[] }[] = [];
+  for (const m of visibles) {
+    const dia = m.ocurridoEn.slice(0, 10);
+    const g = grupos[grupos.length - 1];
+    if (g && g.dia === dia) g.items.push(m); else grupos.push({ dia, items: [m] });
+  }
+  const abierta = abierto.value ? datos.movimientos.find(m => m.id === abierto.value) : undefined;
+
+  return (
+    <div class="space-y-3">
+      <div class="pestanas" role="group" aria-label="Periodo">
+        {PERIODOS.map(([p, t]) => <button key={p} class={`pestana ${f.periodo === p ? 'activa' : ''}`} data-periodo={p} onClick={() => poner({ periodo: p, atras: 0 })}>{t}</button>)}
+      </div>
+
+      {r && (
+        <div class="periodo" id="nav-periodo">
+          <button class="chip" id="anterior" aria-label="Ver el periodo anterior" onClick={() => poner({ atras: f.atras + 1 })}><ChevronLeft size={16} />Anterior</button>
+          <strong id="titulo-periodo">{tituloDelPeriodo(f.periodo, r.desde)}</strong>
+          <button class="chip" id="siguiente" aria-label="Ver el periodo siguiente" disabled={f.atras === 0} onClick={() => poner({ atras: Math.max(0, f.atras - 1) })}>Siguiente<ChevronRight size={16} /></button>
+        </div>
+      )}
+
+      <div class="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]" role="group" aria-label="Tipo">
+        {TIPOS.map(([t, e]) => <button key={t} class="chip shrink-0" data-tipo={t} aria-pressed={f.tipo === t} onClick={() => poner({ tipo: t })}>{e}</button>)}
+      </div>
+
+      <div class="barra filtros">
+        {selector('f-categoria', 'Categoría', 'Todas las categorías', 'categoria', f.categoria, 'categoria')}
+        {selector('f-cuenta', 'Cuenta', 'Todas las cuentas', 'dinero', f.cuenta, 'cuenta')}
+        {selector('f-persona', 'Persona', 'Todas las personas', 'persona', f.persona, 'persona')}
+      </div>
+
+      <div class="barra">
+        <div class="relative flex-1">
+          <Search size={17} class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-tx2" />
+          <input id="buscar" type="search" class="!pl-10" placeholder="Buscar (concepto, #evento, lugar)" aria-label="Buscar" value={busqueda.value} onInput={e => { busqueda.value = (e.target as HTMLInputElement).value; limite.value = 60; }} />
+        </div>
+        <label class="check"><input type="checkbox" id="anulados" checked={verAnulados.value} onChange={e => { verAnulados.value = (e.target as HTMLInputElement).checked; }} /> anulados</label>
+        {hayFiltros && <button class="chip" id="limpiar" onClick={() => { busqueda.value = ''; poner({ tipo: 'todos', categoria: '', cuenta: '', persona: '' }); }}><SlidersHorizontal size={15} />Quitar filtros</button>}
+      </div>
+
+      <div class="tarjeta flex flex-wrap items-center justify-between gap-x-4 gap-y-1 !py-3">
+        <span id="cuenta" class="text-sm">{lista.length} movimientos · Gastos <b class="mal tabular-nums">{formatear(gastos)}</b> · Ingresos <b class="bien tabular-nums">{formatear(ingresos)}</b></span>
+      </div>
+
+      {desglose.length > 0 && (
+        <details class="desglose tarjeta" id="desglose">
+          <summary>Desglose por categoría</summary>
+          {desglose.map(([id, v]) => (
+            <div key={id} class="barra-fila">
+              <span>{nombre(id)}</span>
+              <span class="barra-fondo"><span class="barra-relleno" style={{ width: `${Math.max(2, Math.round((Math.abs(v) / Math.abs(desglose[0][1] || 1)) * 100))}%` }} /></span>
+              <span class="tabular-nums">{formatear(v)}</span>
+            </div>
+          ))}
+        </details>
+      )}
+
+      <ul class="lista" id="lista">
+        {grupos.length === 0 && <li class="vacio">No hay movimientos con estos filtros.</li>}
+        {grupos.map(g => [
+          <li key={`d${g.dia}`} class="grupo" aria-hidden="true">{describirDia(g.dia)}</li>,
+          ...g.items.map(m => {
+            const v = montoVisible(m, datos.cuentas);
+            const cs = m.asientos.map(a => datos.cuentas.find(c => c.id === a.cuentaId)).filter((c): c is Cuenta => Boolean(c));
+            const categoria = cs.find(c => c.tipo === 'categoria')?.nombre ?? m.tipo;
+            const cuenta = cs.find(c => c.tipo === 'dinero')?.nombre ?? '';
+            const ruta = m.lugarDesde || m.lugarHasta ? ` · ${m.lugarDesde ?? '?'} a ${m.lugarHasta ?? '?'}` : '';
+            const tinta = tintaDe(categoria);
+            return (
+              <li key={m.id} class={`fila ${m.estado === 'anulado' ? 'anulado' : ''}`} data-id={m.id} onClick={() => { abierto.value = m.id; }}>
+                <div class="flex min-w-0 items-center gap-3">
+                  <span class={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-bold uppercase ${tinta.fondo} ${tinta.texto}`} aria-hidden="true">{categoria.slice(0, 1)}</span>
+                  <div class="min-w-0">
+                    <div class="titulo">{m.descripcion}{m.etiqueta && <span class="etiq"> #{m.etiqueta}</span>}</div>
+                    <div class="sub">{categoria}{cuenta ? ' · ' + cuenta : ''}{ruta} · {describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora)}</div>
+                  </div>
+                </div>
+                <div class={`monto tabular-nums ${v.clase}`}>{v.texto}</div>
+              </li>
+            );
+          }),
+        ])}
+      </ul>
+      {lista.length > limite.value && <button class="secundario" id="mas" onClick={() => { limite.value += 60; }}>Ver más</button>}
+      {abierta && <Detalle m={abierta} />}
+    </div>
+  );
+}

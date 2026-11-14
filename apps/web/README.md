@@ -1,26 +1,30 @@
 # apps/web
 
-La app instalable (PWA). TypeScript con Preact y signals para los componentes, Tailwind para los estilos nuevos, iconos de Lucide, animaciones con Motion y confeti con canvas-confetti. Todo se empaqueta con esbuild dentro de `scripts/build-web.mjs`, sin CDN, para que abra sin internet. Las pantallas que todavía no pasaron a componentes siguen armando HTML con plantillas de texto.
+La app instalable (PWA). TypeScript con Preact y signals para los componentes, Tailwind para los estilos, iconos de Lucide, animaciones con `motion/mini` y confeti con canvas-confetti. Todo se empaqueta con esbuild dentro de `scripts/build-web.mjs`, sin CDN, para que abra sin internet.
+
+Cinco pantallas son componentes (Chat, Saldos, Movimientos, Resumen y el menú Más). Las pantallas largas de configuración (Ajustes, Categorías y personas, Lista de compras, Productos, Buzón, Conciliar, Primeros pasos, Deudas, Revisión, Trabajadores) siguen armando HTML con plantillas de texto y se montan dentro de `VistaLegada`. Cambió su aspecto, no su lógica.
 
 ## Qué hay
 
 | Archivo | Para qué |
 |---|---|
 | `index.html` | La página. El instalador le pone el nombre, los colores y la plantilla de cada instalación |
-| `styles.css` | Todos los estilos. Los colores son variables que cambian según `data-piel`, `data-tema`, `data-letra` y `data-matiz` |
+| `estilos/tailwind.css` | La entrada de Tailwind y los componentes de estilo (`tarjeta`, `chip`, `fila`, `burbuja`...). El build la compila a `styles.css` |
+| `estilos/temas.css` | Las paletas: Midnight (libro oscuro), libro claro y Tierra. Cambian según `data-piel`, `data-tema`, `data-letra` y `data-matiz` |
 | `sw.js` | El service worker: guarda la app para que abra sin internet y muestra los avisos |
 | `manifest.webmanifest` | El nombre y los íconos de la app instalada |
-| `src/main.tsx` | Arranque, barra de abajo, menú Más, botón Volver y montaje de los componentes |
+| `src/main.tsx` | Arranque: carga los datos, monta `App` y sincroniza |
+| `src/App.tsx` | Cabecera de vidrio, pantalla actual y barra de abajo flotante con indicador |
 | `src/estado/store.ts` | La capa reactiva: signals que reflejan los datos, la cola de cambios y la sincronización. No guarda nada por su cuenta |
-| `src/componentes/` | Los componentes de Preact. Hoy solo `Raiz.tsx`, el punto de montaje |
-| `src/efectos.ts` | Entrada animada de elementos y confeti de celebración. Respeta `prefers-reduced-motion` |
-| `estilos/tailwind.css` | La entrada de Tailwind. El build la compila y la une a `styles.css` |
+| `src/estado/nav.ts` | Qué pantalla se ve y el texto que otra pantalla deja escrito en el chat |
+| `src/vistas/*.tsx` | Chat, Saldos, Movimientos, Resumen y Más (con el marco de las subpantallas) |
+| `src/vistas/*.ts`, `src/*Vista.ts` | Las pantallas hechas con HTML plano. `src/vistas.ts` les da lo que necesitan de la interfaz |
+| `src/ui/` | Piezas compartidas: `Carta.tsx` (la tarjeta Entendí o Guardado), números que cuentan, entrada escalonada |
+| `src/efectos.ts` | Animaciones y confeti. Respetan `prefers-reduced-motion` |
 | `src/app.ts` | Estado: copia local, cola de cambios, sincronización, avisos y llamada a la IA |
-| `src/vistas.ts` y `src/vistas/` | Las pantallas, una por archivo: chat, saldos, movimientos, resumen, deudas, ajustes. `vistas.ts` solo las junta |
-| `src/catalogoVista.ts` | Lista de compras y productos y precios |
-| `src/carta.ts` | Convierte la respuesta del bot en una tarjeta con datos ordenados |
+| `src/carta.ts` | Lee la respuesta del bot y la separa en monto, pastillas y notas |
+| `src/periodos.ts` | Fechas de referencia para ver semanas, meses y años anteriores |
 | `src/apariencia.ts`, `aparienciaVista.ts` | Tema, piel y tamaño de letra |
-| `src/iconos.ts` | Los íconos, dibujados en SVG |
 | `src/almacen.ts` | Lo que se guarda en IndexedDB |
 
 ## Cómo correrla
@@ -35,9 +39,9 @@ Si cambias algo y no lo ves, el navegador probablemente guardó la versión viej
 
 ## Cosas a tener en cuenta
 
-- Todo lo que viene de los datos se escapa antes de dibujarse (`esc`).
-- Las pantallas de Más se registran en `src/main.tsx` y llevan un botón Volver.
+- Todo lo que viene de los datos y se arma como texto HTML se escapa antes (`esc`). En JSX Preact ya escapa.
+- Una pantalla nueva de Más: su entrada en `ENTRADAS` y su caso en `Subvista`, ambos en `src/vistas/Mas.tsx`, y el nombre en `Pantalla` de `estado/nav.ts`.
 - Para que un componente se vuelva a pintar solo, lee un signal de `estado/store.ts` (`datos`, `ctx`, `pendientes`, `estadoSync`...). Quien cambia los datos sigue siendo `app.repo`; el store se entera por `alCambiarElEstado`.
+- Los colores son variables CSS en hexadecimal. Se revisan con `npm run contraste`; si agregas un par nuevo, agrégalo a ese script. El vidrio y los brillos usan `rgba` y quedan fuera de esa revisión.
+- Los textos de sección salen en mayúsculas por estilo, y `innerText` los devuelve así. Las pruebas de `npm run e2e` lo tienen en cuenta.
 - `react` se resuelve a `preact/compat` (en `tsconfig.json` y en el build), así que sirven librerías hechas para React.
-- Tailwind por ahora carga solo el tema y las utilidades, sin el reinicio de estilos (`preflight`), para no cambiar lo que todavía usa `styles.css`.
-- Los colores se revisan con `npm run contraste`. Si agregas un par de colores nuevo, agrégalo a ese script.
