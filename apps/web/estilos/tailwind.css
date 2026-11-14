@@ -1,0 +1,10 @@
+/*
+ * Entrada de Tailwind. Por ahora solo se cargan el tema y las utilidades: el «preflight» (el reinicio de
+ * estilos del navegador) se queda fuera para no cambiar las pantallas que todavía usan styles.css. Cuando
+ * las vistas pasen a componentes se enciende.
+ */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* dónde buscar las clases que se usan */
+@source "../src";
