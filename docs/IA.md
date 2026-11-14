@@ -16,7 +16,11 @@ La misma IA, con un modelo que ve imágenes, lee comprobantes: un pantallazo de 
 
 La app baja la foto a unos 150 KB y la manda a `POST /api/ocr`. El servidor devuelve monto, fecha, comercio y una categoría sugerida, y la app los vuelve una frase («mercado tienda don pepe 45000») que pasa por el bot y por la tarjeta de confirmación. Nada se guarda sin que pulses Confirmar, y la imagen no queda en ningún registro del servidor.
 
-Un modelo pequeño con visión se equivoca con letra borrosa o con tirillas largas. Por eso la tarjeta siempre se revisa antes de confirmar. Cuenta contra el mismo tope diario de ayudas. Si Cloudflare retira el modelo, se cambia con la variable `IA_OCR_MODELO` del Worker.
+El modelo es `@cf/meta/llama-3.2-11b-vision-instruct`. Antes se usó LLaVA 1.5 (7B), que con una tirilla real de D1 inventó el monto, tomó «Cambio» por el comercio y la fecha de la resolución de la DIAN por la de la compra. Las instrucciones (`INSTRUCCIONES_OCR` en `packages/core/src/ocr.ts`) le piden el TOTAL, ignorar CAMBIO, IVA y BASE, tomar la fecha de arriba y el nombre del encabezado. Además, la lectura descarta una fecha de hace más de un año o del futuro, y las palabras de factura como comercio. Aun así, la tarjeta siempre se revisa antes de confirmar.
+
+La foto para leer se baja a 1800 px (o 1400 si pesa más de 450 KB), más que la que se guarda del recibo, porque en una tirilla los dígitos son chicos. Una tirilla muy larga se reduce mucho dentro del modelo: conviene fotografiarla por partes o recortar donde está el total.
+
+Llama 3.2 pide aceptar la licencia de Meta **una sola vez por cuenta de Cloudflare**. Mientras no se acepte, `/api/ocr` responde 503 con ese motivo. Quien administra la cuenta la acepta con una llamada de una sola vez al modelo con el prompt `agree` (ver la documentación de Workers AI del modelo). Cuenta contra el mismo tope diario de ayudas. Si Cloudflare retira el modelo, se cambia con la variable `IA_OCR_MODELO` del Worker.
 
 ## Costo y límites
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { aLocal, conSubcategorias, deLocal, leerSubcategorias, normalizarDictado, quitarEnviadas, type Op, repartoEntre, revisarMes, diasParaMeta, fraseDeOCR, gastosHormiga, leerMetas, leerRespuestaOCR, rangoPeriodo, seguroParaGastar } from '../src/index.ts';
+import { INSTRUCCIONES_OCR, aLocal, conSubcategorias, deLocal, leerSubcategorias, normalizarDictado, quitarEnviadas, type Op, repartoEntre, revisarMes, diasParaMeta, fraseDeOCR, gastosHormiga, leerMetas, leerRespuestaOCR, rangoPeriodo, seguroParaGastar } from '../src/index.ts';
 import { AHORA, nuevoBot, textoDe } from '../../../tests/ayudas.ts';
 
 async function guardar(bot: ReturnType<typeof nuevoBot>, texto: string) {
@@ -194,4 +194,35 @@ test('plata de otra persona: se anota, se paga con ella y los pesos que sobran s
   const m = (await bot.repo.cargar()).movimientos.at(-1)!;
   assert.equal(m.tipo, 'ajuste');
   assert.deepEqual(m.asientos.map(a => a.monto).sort((x, y) => x - y), [-16, 16]);
+});
+
+// ---------------------------------------------------------------- lectura de comprobantes: lo que falló con una tirilla real
+
+test('ocr: una fecha imposible (la resolución de la DIAN) se descarta y no se inventa el día', () => {
+  const hoy = '2026-11-14';
+  const dian = leerRespuestaOCR({ monto: 50060, fecha: '2016-12-26', comercio: 'D1 SAS' }, hoy);
+  assert.equal(dian?.fecha, null);
+  assert.equal(fraseDeOCR(dian!, hoy), 'd1 sas 50060');
+  assert.equal(leerRespuestaOCR({ monto: 50060, fecha: '2026-11-07', comercio: 'D1' }, hoy)?.fecha, '2026-11-07');
+  assert.equal(leerRespuestaOCR({ monto: 1000, fecha: '2027-03-01' }, hoy)?.fecha, null, 'una compra del futuro no existe');
+  assert.equal(leerRespuestaOCR({ monto: 1000, fecha: '2026-11-15' }, hoy)?.fecha, '2026-11-15', 'un día de margen por la zona horaria');
+  // sin «hoy» no se juzga la fecha
+  assert.equal(leerRespuestaOCR({ monto: 1000, fecha: '2016-12-26' })?.fecha, '2016-12-26');
+});
+
+test('ocr: «Cambio», «Total» y demás palabras de la factura no son un comercio', () => {
+  for (const p of ['Cambio', 'TOTAL', 'Subtotal', 'Gracias', 'IVA', 'null']) {
+    assert.equal(leerRespuestaOCR({ monto: 50060, comercio: p, categoria: 'mercado' })?.comercio, '', p);
+  }
+  assert.equal(fraseDeOCR(leerRespuestaOCR({ monto: 50060, comercio: 'Cambio', categoria: 'mercado' })!, '2026-11-14'), 'mercado 50060');
+  assert.equal(leerRespuestaOCR({ monto: 50060, comercio: 'D1 SAS' })?.comercio, 'D1 SAS');
+});
+
+test('ocr: fechas con barras y montos escritos como total', () => {
+  const l = leerRespuestaOCR('{"total": "$ 50.060", "fecha": "07/11/2026", "comercio": "Ara"}', '2026-11-14');
+  assert.deepEqual(l, { monto: 50060, fecha: '2026-11-07', comercio: 'Ara', categoria: null });
+});
+
+test('ocr: las instrucciones traen las reglas que corrigen los errores vistos', () => {
+  for (const regla of [/DIAN/, /TOTAL/, /CAMBIO/, /VUELTO/, /encabezado/, /D1/, /Nequi/, /Daviplata/, /Bancolombia/, /null/]) assert.match(INSTRUCCIONES_OCR, regla);
 });

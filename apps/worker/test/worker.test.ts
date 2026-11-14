@@ -318,3 +318,67 @@ test('buzón: enviar un aviso a otra app usa su dirección y su clave, sin mostr
   assert.match(llamadas[0].cuerpo, /150000/);
   assert.equal((await enviarAlBuzon(env, { destino: 'nadie', de: 'M', monto: 1000, concepto: '' }, destino)).ok, false);
 });
+
+// ---------------------------------------------------------------- lectura de comprobantes (/api/ocr)
+
+const FOTO = 'data:image/jpeg;base64,' + btoa('no es una foto de verdad');
+
+test('ocr: sin el binding de Workers AI responde 501, y exige token e imagen', async () => {
+  assert.equal((await peticion(entorno(), '/api/ocr', { imagen: FOTO })).status, 501);
+  const env = entorno({ AI: iaFalsa('{}') });
+  assert.equal((await peticion(env, '/api/ocr', { imagen: FOTO }, 'malo')).status, 401);
+  assert.equal((await peticion(env, '/api/ocr', {})).status, 400);
+  assert.equal((await peticion(env, '/api/ocr', { imagen: 'data:image/jpeg;base64,' + 'A'.repeat(900_001) })).status, 400);
+});
+
+test('ocr: usa Llama 3.2 Vision por defecto, le manda la foto y las reglas, y devuelve la lectura sin la fecha de la DIAN', async () => {
+  const llamadas: { modelo: string; entrada: unknown }[] = [];
+  const respuesta = '{"monto": 50060, "fecha": "2016-12-26", "comercio": "D1 SAS", "categoria": "mercado"}';
+  const env = entorno({ AI: { run: async (modelo: string, entrada: unknown) => { llamadas.push({ modelo, entrada }); return { response: respuesta }; } } });
+  const r = await peticion(env, '/api/ocr', { imagen: FOTO });
+  assert.equal(r.status, 200);
+  assert.deepEqual(((await r.json()) as { lectura: unknown }).lectura, { monto: 50060, fecha: null, comercio: 'D1 SAS', categoria: 'mercado' });
+  assert.equal(llamadas.length, 1);
+  assert.equal(llamadas[0].modelo, '@cf/meta/llama-3.2-11b-vision-instruct');
+  const contenido = (llamadas[0].entrada as { messages: { content: { type: string; text?: string; image_url?: { url: string } }[] }[] }).messages[0].content;
+  assert.match(contenido[0].text!, /DIAN/);
+  assert.equal(contenido[1].image_url!.url, FOTO);
+});
+
+test('ocr: IA_OCR_MODELO cambia el modelo sin tocar el código', async () => {
+  let modelo = '';
+  const env = entorno({ IA_OCR_MODELO: '@cf/otro/modelo', AI: { run: async (m: string) => { modelo = m; return { response: '{"monto": 1000}' }; } } });
+  assert.equal((await peticion(env, '/api/ocr', { imagen: FOTO })).status, 200);
+  assert.equal(modelo, '@cf/otro/modelo');
+});
+
+test('ocr: si el modelo no acepta el formato de mensajes, se reintenta con prompt e imagen', async () => {
+  const formas: string[] = [];
+  const env = entorno({ AI: { run: async (_m: string, entrada: Record<string, unknown>) => {
+    formas.push('messages' in entrada ? 'mensajes' : 'prompt');
+    if ('messages' in entrada) throw new Error('entrada no valida');
+    return { description: '{"monto": 9000, "comercio": "Tienda"}' };
+  } } });
+  const r = await peticion(env, '/api/ocr', { imagen: FOTO });
+  assert.equal(r.status, 200);
+  assert.deepEqual(formas, ['mensajes', 'prompt']);
+});
+
+test('ocr: la licencia de Meta pendiente da un 503 con el motivo claro, y un fallo cualquiera un 502', async () => {
+  const licencia = entorno({ AI: { run: async () => { throw new Error('5016: Model Agreement: please agree to the license'); } } });
+  const r = await peticion(licencia, '/api/ocr', { imagen: FOTO });
+  assert.equal(r.status, 503);
+  assert.match(((await r.json()) as { error: string }).error, /licencia/);
+  const caido = entorno({ AI: { run: async () => { throw new Error('caído'); } } });
+  assert.equal((await peticion(caido, '/api/ocr', { imagen: FOTO })).status, 502);
+});
+
+test('ocr: si no se lee un monto responde 422, cuenta contra el tope diario y respeta el interruptor', async () => {
+  const env = entorno({ AI: iaFalsa('no veo nada'), IA_TOPE: '2' });
+  assert.equal((await peticion(env, '/api/ocr', { imagen: FOTO })).status, 422);
+  assert.equal((await peticion(env, '/api/ocr', { imagen: FOTO })).status, 422);
+  assert.equal((await peticion(env, '/api/ocr', { imagen: FOTO })).status, 429);
+  const apagada = entorno({ AI: iaFalsa('{}') });
+  await new D1Repo(apagada.DB).setConfig('ia', '0');
+  assert.equal((await peticion(apagada, '/api/ocr', { imagen: FOTO })).status, 403);
+});
