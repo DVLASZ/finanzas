@@ -171,6 +171,14 @@ try {
     igual(await pag.evaluate(() => Boolean(document.querySelector('[role=listbox]'))), false, 'la hoja cierra');
     igual(await pag.evaluate(() => Boolean(document.querySelector('#lista'))), true, 'sigue en Movimientos');
   });
+  await prueba('escanear: el botón pregunta si es cámara o galería, y hay una entrada para cada una', async () => {
+    await irA('Chat'); await espera(400);
+    await pag.evaluate(() => document.querySelector('#escanear').click()); await espera(500);
+    igual(await pag.evaluate(() => [...document.querySelectorAll('[role=option]')].map(o => o.dataset.valor).join(',')), 'camara,galeria', 'opciones');
+    await pag.keyboard.press('Escape'); await espera(500);
+    igual(await pag.evaluate(() => document.querySelector('#fotoEscanear').getAttribute('capture')), 'environment', 'la cámara usa capture');
+    igual(await pag.evaluate(() => document.querySelector('#archivoEscanear').hasAttribute('capture')), false, 'la galería no usa capture');
+  });
   await prueba('ninguna pantalla se sale del ancho del celular', async () => {
     for (const n of ['Chat', 'Saldos', 'Movimientos', 'Resumen', 'Más']) { await irA(n); if (!(await sinDesborde())) throw new Error(`«${n}» se sale de 390 px`); }
   });
