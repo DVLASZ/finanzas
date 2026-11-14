@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 250" width="820" height="250" role="img" aria-label="Ejemplos de frases que entiende el chat">
   <title>Frases que entiende el chat</title>
   <defs>
-    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B0F19"/><stop offset="1" stop-color="#111827"/></linearGradient>
+    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#090D16"/><stop offset="1" stop-color="#111827"/></linearGradient>
     <linearGradient id="borde" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#38BDF8"/><stop offset=".5" stop-color="#10B981"/><stop offset="1" stop-color="#818CF8"/></linearGradient>
     <linearGradient id="titulo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#38BDF8"/><stop offset=".55" stop-color="#10B981"/><stop offset="1" stop-color="#818CF8"/></linearGradient>
     <radialGradient id="luz1" cx=".1" cy="1" r=".7"><stop offset="0" stop-color="#10B981" stop-opacity=".28"/><stop offset="1" stop-color="#10B981" stop-opacity="0"/></radialGradient>
