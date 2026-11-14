@@ -34,7 +34,7 @@ Cada instalación trae un aspecto por defecto y cada persona lo cambia en Más, 
 
 ## Catálogo, lista de compras y alcancía
 
-Cualquier app puede tener lista de compras (Más, Lista de compras). Las que venden tienen además Productos y precios, y el bot calcula `vendí 3 botellas`, con fiado. Ver [BOT.md](BOT.md).
+Cualquier app puede tener lista de compras (Más, Lista de compras). Las que venden tienen también Productos y precios, y el bot calcula `vendí 3 botellas`, con fiado. Ver [BOT.md](BOT.md).
 
 ## Operación
 

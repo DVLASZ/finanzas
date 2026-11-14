@@ -14,7 +14,7 @@ Una app donde escribes lo que pasó con tu plata y queda anotado. Cada persona o
 ## 1. Bajar el código y comprobar
 
 ```bash
-git clone <la-dirección-de-tu-copia> finanzas
+git clone https://github.com/DVLASZ/finanzas.git finanzas
 cd finanzas
 npm install
 npm run check
@@ -51,7 +51,7 @@ La clave y el PIN no se pegan en chats ni se suben a git.
 
 1. Abre la dirección de la app en Chrome del celular.
 2. Entra a Más, Ajustes, y pega la clave. La dirección del servidor ya viene puesta.
-3. En el menú de Chrome (los tres puntos) elige Instalar app, o Añadir a la pantalla de inicio.
+3. En el menú de Chrome (los tres puntos) elige Instalar app. Si solo ves Añadir a la pantalla de inicio, es un acceso directo y no la app completa. Brave, Firefox y otros navegadores abren la app, pero no la instalan completa: sin accesos directos en el ícono y sin recibir imágenes con Compartir.
 4. Ábrela desde el ícono y prueba con `mecato 5000`. Pulsa Confirmar.
 5. Para ver que funciona sin internet, pon el celular en modo avión, anota un gasto y quita el modo avión. Se sincroniza solo.
 
@@ -62,7 +62,7 @@ Si una persona tiene dos apps (una personal y una de su negocio), se instala cad
 - Dile cuánta plata tienes: `saldo inicial efectivo 85000 monedas 12000` (usa las cuentas que tenga tu app).
 - Escribe `ayuda` o pulsa el botón Ayuda del chat para ver ejemplos.
 - En Más, Ajustes, activa los avisos del celular si quieres (ver [AVISOS.md](AVISOS.md)).
-- Si quieres meter el historial de un Excel, mira [IMPORTACION.md](IMPORTACION.md).
+- Si quieres leer comprobantes con la cámara, la primera vez Cloudflare pide aceptar una licencia de Meta, una sola vez por cuenta. Ver [IA.md](IA.md).
 
 ## Si algo falla
 

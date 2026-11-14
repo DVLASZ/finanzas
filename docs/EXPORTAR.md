@@ -21,4 +21,4 @@ Las pruebas lo abren con ExcelJS, que es una librería de verdad, y comprueban n
 
 ## Lo que no hace
 
-Es solo para sacar datos. Para meter el historial de un Excel existe el importador (ver [IMPORTACION.md](IMPORTACION.md)).
+Es solo para sacar datos.
