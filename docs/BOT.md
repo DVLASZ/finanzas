@@ -136,7 +136,7 @@ revisar
 
 Después de las 6 de la tarde, si hubo movimientos en la billetera y nadie la ha contado, la app pregunta: «según la app tienes X en efectivo y Y en monedas, ¿es lo que hay?». El botón «Sí, cuadra» manda el arqueo con esas cifras (queda una tarjeta por confirmar) y «No cuadra» deja escrito `arqueo efectivo ` para que pongas lo real. Aparece arriba del chat y en Saldos, no como aviso al celular.
 
-Los botones de abajo del chat traen Ayuda, y según la app, Ventas (donde se vende) y Jornales (donde hay trabajadores). Además incluyen los mensajes que repetiste dos veces o más en los últimos 90 días (por ejemplo `mecato 2000`). Tocar uno lo manda al chat y hay que confirmarlo como siempre.
+Los botones de abajo del chat traen Ayuda, y según la app, Ventas (donde se vende) y Jornales (donde hay trabajadores). También incluyen los mensajes que repetiste dos veces o más en los últimos 90 días (por ejemplo `mecato 2000`). Tocar uno lo manda al chat y hay que confirmarlo como siempre.
 
 ### Transporte
 
@@ -272,7 +272,7 @@ vendí 2 paquetes de 10 a 7 mil
 
 Con un cliente conocido pregunta si pagó o se lo fiaste. Fiado deja la deuda del cliente y no entra plata a la caja. El precio dicho (`a 7 mil`) gana sobre el del catálogo. El catálogo se edita en Más, Productos y precios.
 
-Para ver lo vendido por producto: `ventas` (del mes), `ventas semana` o `ventas del año`. Muestra el total y cuánto aportó cada producto; en el año, además, lo vendido mes por mes.
+Para ver lo vendido por producto: `ventas` (del mes), `ventas semana` o `ventas del año`. Muestra el total y cuánto aportó cada producto; en el año, también, lo vendido mes por mes.
 
 ## Gastos que se repiten
 

@@ -4,8 +4,8 @@
 
 <br />
 
-**Escribes lo que pasó. El bot muestra lo que entendió. Tú confirmas y todo cuadra.**
-Una app de finanzas personales y de negocio con partida doble, sin conexión y gratis sobre Cloudflare.
+**Anotas tu plata escribiendo, como se lo contarías a alguien.** El bot te muestra lo que entendió y tú confirmas.
+Lleva la contabilidad con partida doble, funciona sin internet y corre gratis en Cloudflare.
 
 <br />
 
@@ -52,7 +52,7 @@ Una app de finanzas personales y de negocio con partida doble, sin conexión y g
 | **Comprobantes** | Una foto de Nequi, Daviplata o una tirilla, leída con IA con visión. Llega como una tarjeta lista para confirmar. |
 | **Revisión del mes** | Nota de salud y hallazgos con botones que llevan directo a donde se arreglan. |
 | **Sin conexión** | Todo se guarda en el celular y se sincroniza al volver la red. |
-| **Móvil nativo** | Se instala desde el navegador, con gesto atrás, accesos directos del ícono y vibración al confirmar. |
+| **En el celular** | Se instala desde Chrome. Tiene gesto atrás, accesos directos en el ícono y vibra al confirmar. |
 
 ## ¿Qué puedes escribirle al chat?
 

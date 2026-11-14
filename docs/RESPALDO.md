@@ -2,7 +2,7 @@
 
 Cada domingo el servidor sube una copia de los datos de la instalación a un repositorio privado de GitHub. Va cifrada: sin la frase que tú eliges, el archivo no se puede leer ni en GitHub. Es gratis y queda fuera de Cloudflare, así que protege también si se pierde la cuenta.
 
-Está apagada hasta que pongas las cuatro claves (`RESPALDO_TOKEN`, `RESPALDO_REPO`, `RESPALDO_CLAVE` y `RESPALDO_NOMBRE`). Además Cloudflare guarda 30 días de historia de cada base (Time Travel), que cubre un error de hace unos días. Esto cubre lo demás.
+Está apagada hasta que pongas las cuatro claves (`RESPALDO_TOKEN`, `RESPALDO_REPO`, `RESPALDO_CLAVE` y `RESPALDO_NOMBRE`). Cloudflare también guarda 30 días de historia de cada base (Time Travel), que cubre un error de hace unos días. Esto cubre lo demás.
 
 ## Cómo activarla
 
