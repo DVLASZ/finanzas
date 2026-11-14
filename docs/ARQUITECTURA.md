@@ -25,7 +25,7 @@ Cada instalación (una persona o un negocio) es un Worker, una base D1 y una cla
 |---|---|
 | `packages/core` | El cerebro. No depende de ninguna plataforma. |
 | `apps/web` | La app: pantallas, copia local en IndexedDB, sincronización, service worker. |
-| `apps/worker` | El servidor: rutas de la API, repositorio sobre D1, avisos y IA. |
+| `apps/worker` | El servidor: rutas de la API por dominio (`src/rutas/`), repositorio sobre D1, avisos y IA. |
 | `db` | Esquema, datos iniciales, diccionario de palabras y migraciones. |
 | `scripts` | Instalador, compilación de la web y herramientas. |
 | `tests` | Ayudas compartidas por las pruebas. |

@@ -6,6 +6,9 @@ import { alternarTema, aplicar, actual } from './apariencia.ts';
 import { hayTrabajadores, vendeProductos } from '../../../packages/core/src/index.ts';
 import { app, iniciar, leerTodo, sincronizar } from './app.ts';
 import { icono } from './iconos.ts';
+import { render } from 'preact';
+import { Raiz } from './componentes/Raiz.tsx';
+import { iniciarEstado } from './estado/store.ts';
 import {
   actualizarEstado, prellenarChat, vistaAjustes, vistaCatalogo, vistaChat, vistaBuzon, vistaConciliar, vistaCuentas, vistaGuia, vistaDeudas, vistaLista, vistaMovimientos, vistaResumen, vistaSaldos, vistaTrabajadores, vistaRevision,
 } from './vistas.ts';
@@ -113,6 +116,9 @@ async function arrancar(): Promise<void> {
   });
 
   await iniciar();
+  // la capa reactiva y los componentes se montan aquí; las pantallas de siempre siguen funcionando igual
+  await iniciarEstado();
+  render(<Raiz />, document.getElementById('raiz')!);
   actualizarEstado();
   await mostrar('chat');
 
