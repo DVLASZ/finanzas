@@ -267,6 +267,36 @@ test('ocr: el nombre del comercio se corta en el NIT', () => {
 });
 
 test('ocr: las instrucciones piden transcribir las líneas clave', () => {
-  assert.match(INSTRUCCIONES_OCR, /"texto"/);
+  assert.match(INSTRUCCIONES_OCR, /TEXTO:/);
+  assert.match(INSTRUCCIONES_OCR, /sin JSON/);
   assert.match(INSTRUCCIONES_OCR, /No copies la tabla de impuestos/);
+});
+
+// ---------------------------------------------------------------- lectura de comprobantes: la forma de la respuesta
+
+const RESPUESTA_LINEAS = ['MONTO: 47724', 'FECHA: 2026-11-07', 'COMERCIO: D1 SAS NIT900276962-1', 'CATEGORIA: Comida', 'TEXTO:', ...TIRILLA_D1.split('\n')].join('\n');
+
+test('ocr: la respuesta en líneas CLAVE: valor se lee entera, con el texto de varias líneas', () => {
+  const l = leerRespuestaOCR(RESPUESTA_LINEAS, '2026-11-14');
+  assert.deepEqual(l, { monto: 50060, fecha: '2026-11-07', comercio: 'D1 SAS', categoria: 'comida' });
+});
+
+test('ocr: en líneas, una FECHA dentro del texto transcrito no pisa la de arriba, y vienen bien las vallas y los asteriscos', () => {
+  const r = '```\n**MONTO:** $ 50.060\n**FECHA:** 2026-11-07\nCOMERCIO: Ara\nCATEGORIA: mercado\nTEXTO:\nFECHA 2016-12-26\nTOTAL 50,060\n```';
+  const l = leerRespuestaOCR(r, '2026-11-14');
+  assert.deepEqual(l, { monto: 50060, fecha: '2026-11-07', comercio: 'Ara', categoria: 'mercado' });
+});
+
+test('ocr: un JSON con saltos de línea sueltos dentro de «texto» (lo que rompía JSON.parse) se repara y se lee', () => {
+  const roto = '{"monto": 47724, "fecha": "2026-11-07", "comercio": "D1 SAS NIT900276962-1", "categoria": "comida", "texto": "' + TIRILLA_D1 + '"}';
+  assert.throws(() => JSON.parse(roto), 'el JSON con saltos de línea sueltos no es válido');
+  assert.deepEqual(leerRespuestaOCR(roto, '2026-11-14'), { monto: 50060, fecha: '2026-11-07', comercio: 'D1 SAS', categoria: 'comida' });
+  // rodeado de palabras y con comillas escapadas dentro
+  const con = 'Aquí va:\n{"monto": "50.060", "comercio": "Tienda \\"El Sol\\"", "texto": "TOTAL 50,060\nGRACIAS"}\nListo.';
+  assert.equal(leerRespuestaOCR(con)?.comercio, 'Tienda "El Sol"');
+  assert.equal(leerRespuestaOCR(con)?.monto, 50060);
+});
+
+test('ocr: una respuesta sin nada útil no da lectura', () => {
+  for (const r of ['', 'no veo nada', 'MONTO: null\nFECHA: null', '{"monto": null}', '{roto']) assert.equal(leerRespuestaOCR(r), null, r);
 });

@@ -1,7 +1,7 @@
 /**
- * Lectura de comprobantes con IA con visión (Workers AI). El modelo recibe la foto y devuelve un JSON con lo que
- * ve. Aquí viven las instrucciones y la lectura tolerante de la respuesta; el Worker solo llama al modelo.
- * Lo que sale nunca se guarda solo: se convierte en una frase para el bot, que arma la tarjeta para confirmar.
+ * Lectura de comprobantes con IA con visión (Workers AI). El modelo recibe la foto y contesta con líneas
+ * «CLAVE: valor». Aquí viven las instrucciones y la lectura tolerante de la respuesta; el Worker solo llama al
+ * modelo. Lo que sale nunca se guarda solo: se convierte en una frase para el bot, que arma la tarjeta para confirmar.
  */
 import { limpiar } from './texto.ts';
 
@@ -18,19 +18,21 @@ export interface LecturaOCR {
 
 /**
  * Las reglas salen de errores reales: un modelo pequeño tomó la fecha de la resolución de la DIAN del pie de la
- * factura por la fecha de la compra, «CAMBIO» por el nombre del comercio y el vuelto por el total. Otro más grande tomó la BASE de la tabla de impuestos por el total.
+ * factura por la fecha de la compra, «CAMBIO» por el nombre del comercio y el vuelto por el total. Otro más grande
+ * tomó la BASE de la tabla de impuestos por el total.
  *
- * Por eso el modelo también transcribe las líneas clave (`texto`) y el monto se busca aquí, con reglas fijas
- * (`montoDeTexto`), en vez de fiarse de lo que el modelo eligió.
+ * Por eso el modelo también transcribe las líneas clave (`TEXTO`) y el monto se busca aquí, con reglas fijas
+ * (`montoDeTexto`), en vez de fiarse de lo que el modelo eligió. Y se le pide texto plano con una clave por línea y
+ * no JSON: un `TEXTO` de varias líneas dentro de un JSON trae saltos de línea sueltos que lo rompen.
  */
 export const INSTRUCCIONES_OCR = `Eres un lector de comprobantes de pago colombianos: tirillas de caja de supermercados y tiendas (D1, Ara, Éxito, Olímpica, tiendas de barrio) y comprobantes de transferencia de apps y bancos (Nequi, Daviplata, Bancolombia).
-Mira la imagen y responde SOLO un objeto JSON, sin texto antes ni después, con estas claves:
-- "monto": el valor total que se pagó, en pesos, como número entero sin puntos ni símbolos. Toma el TOTAL general o el VALOR PAGADO que aparece justo debajo de la lista de artículos (en una transferencia, «Valor» o «Monto»). En las facturas POS ignora por completo la tabla «RESUMEN DE IMPUESTOS» del final, con sus columnas TOTAL, BASE e IVA: esos números son de los impuestos y no de lo que se pagó. Tampoco uses CAMBIO, VUELTO, SUBTOTAL, descuentos, números de cuenta ni códigos de barras.
-- "fecha": la fecha de la compra o de la transacción, en formato AAAA-MM-DD. Suele estar arriba, junto a la hora. Ignora las fechas del pie de la factura: la resolución de la DIAN, su vigencia o el rango de numeración autorizado. Si no ves la fecha de la compra, pon null.
-- "comercio": el nombre del comercio que está en el encabezado (por ejemplo D1, Ara, Éxito, Nequi) o a quién se le pagó. Nunca una palabra suelta como Cambio, Total, Factura o Gracias.
-- "categoria": una sola palabra entre comida, mercado, transporte, salud, servicios, ropa, recarga u otro.
-- "texto": transcribe tal cual, una línea por renglón, las líneas clave de la tirilla: el encabezado con el nombre del comercio, la línea de la fecha, y las líneas de TOTAL, VALOR PAGADO, TARJETA o EFECTIVO con sus valores. No copies la tabla de impuestos.
-Si no estás seguro de un dato, pon null. No inventes valores.`;
+Mira la imagen y responde SOLO con estas líneas, una clave por renglón, sin JSON, sin comillas y sin explicaciones:
+MONTO: el valor total que se pagó, en pesos, como número entero sin puntos ni símbolos. Toma el TOTAL general o el VALOR PAGADO que aparece justo debajo de la lista de artículos (en una transferencia, «Valor» o «Monto»). En las facturas POS ignora por completo la tabla «RESUMEN DE IMPUESTOS» del final, con sus columnas TOTAL, BASE e IVA: esos números son de los impuestos y no de lo que se pagó. Tampoco uses CAMBIO, VUELTO, SUBTOTAL, descuentos, números de cuenta ni códigos de barras.
+FECHA: la fecha de la compra o de la transacción, en formato AAAA-MM-DD. Suele estar arriba, junto a la hora. Ignora las fechas del pie de la factura: la resolución de la DIAN, su vigencia o el rango de numeración autorizado. Si no ves la fecha de la compra, escribe null.
+COMERCIO: el nombre del comercio que está en el encabezado (por ejemplo D1, Ara, Éxito, Nequi) o a quién se le pagó. Nunca una palabra suelta como Cambio, Total, Factura o Gracias.
+CATEGORIA: una sola palabra entre comida, mercado, transporte, salud, servicios, ropa, recarga u otro.
+TEXTO: esta clave va al final. Desde la línea siguiente transcribe tal cual, una línea por renglón, las líneas clave de la tirilla: el encabezado con el nombre del comercio, la línea de la fecha, y las líneas de TOTAL, VALOR PAGADO, TARJETA o EFECTIVO con sus valores. No copies la tabla de impuestos.
+Si no estás seguro de un dato, escribe null. No inventes valores.`;
 
 /** Palabras que aparecen en una factura pero no son el nombre de un comercio. */
 const NO_ES_COMERCIO = /^(cambio|vuelto|total|subtotal|iva|base|valor|factura|gracias|efectivo|tarjeta|nit|resolucion|recibo|comprobante|null|n\/a)$/;
@@ -77,11 +79,57 @@ function limpiarComercio(c: string): string {
   return c.replace(/\s*\bn\.?\s?i\.?\s?t(?![a-záéíóúñ])\.?.*$/i, '').replace(/\s+\d{6,}.*$/, '').replace(/\s+/g, ' ').trim();
 }
 
-/** Saca el primer objeto JSON de un texto (el modelo a veces lo rodea de palabras). */
+/**
+ * Le pone `\n` a los saltos de línea que el modelo dejó sueltos dentro de las comillas de un JSON, que es lo que
+ * lo hace inválido. Lo de fuera de las comillas no se toca.
+ */
+function repararJson(texto: string): string {
+  let dentro = false, escapado = false, salida = '';
+  for (const c of texto) {
+    if (dentro && !escapado && c === '\n') { salida += '\\n'; continue; }
+    if (dentro && !escapado && c === '\r') continue;
+    if (dentro && !escapado && c === '\t') { salida += '\\t'; continue; }
+    if (c === '"' && !escapado) dentro = !dentro;
+    escapado = c === '\\' && !escapado;
+    salida += c;
+  }
+  return salida;
+}
+
+/** Saca el primer objeto JSON de un texto (el modelo a veces lo rodea de palabras o de vallas de código). */
 function primerJson(texto: string): unknown {
   const i = texto.indexOf('{'), j = texto.lastIndexOf('}');
   if (i < 0 || j <= i) return null;
-  try { return JSON.parse(texto.slice(i, j + 1)); } catch { return null; }
+  const objeto = texto.slice(i, j + 1);
+  for (const intento of [objeto, repararJson(objeto)]) {
+    try { return JSON.parse(intento); } catch { /* se prueba la versión reparada */ }
+  }
+  return null;
+}
+
+/** Las claves de la respuesta en líneas. */
+const LINEA_CLAVE = /^\s*(?:[-*•]\s*)?\**\s*(monto|total|fecha|comercio|categor[ií]a|texto)\s*\**\s*:\s*(.*)$/i;
+
+/**
+ * Lee la respuesta en líneas «CLAVE: valor». `TEXTO` junta todo lo que sigue hasta el final. Cada clave cuenta la
+ * primera vez que aparece: así una línea «FECHA 2026-11-07» dentro del texto transcrito no pisa la fecha de arriba.
+ * Devuelve null si no hay ninguna clave.
+ */
+function deLineas(texto: string): Record<string, string> | null {
+  const o: Record<string, string> = {};
+  let actual: string | null = null;
+  for (const linea of texto.replace(/```[a-z]*/gi, '').split('\n')) {
+    const m = linea.match(LINEA_CLAVE);
+    const clave = m ? limpiar(m[1]).replace('total', 'monto') : null;
+    if (m && clave && !(clave in o) && actual !== 'texto') {
+      actual = clave;
+      o[clave] = m[2].replace(/^[\s*]+|[\s*]+$/g, '');
+    } else if (actual === 'texto') {
+      o.texto += '\n' + linea;
+    }
+  }
+  for (const k of Object.keys(o)) o[k] = o[k].trim();
+  return Object.keys(o).length ? o : null;
 }
 
 /** Convierte «45.000», «$ 45,000» o 45000 en 45000. */
@@ -106,11 +154,12 @@ function aFechaIso(v: unknown): string | null {
 const dias = (a: string, b: string): number => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
 
 /**
+ * La respuesta del modelo puede venir en líneas «CLAVE: valor» (lo que se le pide) o en JSON (si lo usa igual).
  * `hoy` («AAAA-MM-DD», hora Colombia) sirve para descartar fechas imposibles: una compra del futuro o de hace más de
  * un año casi seguro es la resolución de la DIAN o un error de lectura, y es mejor dejar la fecha vacía (se usa hoy).
  */
 export function leerRespuestaOCR(respuesta: unknown, hoy?: string): LecturaOCR | null {
-  const bruto = typeof respuesta === 'string' ? primerJson(respuesta) : respuesta;
+  const bruto = typeof respuesta === 'string' ? (deLineas(respuesta) ?? primerJson(respuesta)) : respuesta;
   if (!bruto || typeof bruto !== 'object') return null;
   const o = bruto as Record<string, unknown>;
   // si el modelo transcribió las líneas, lo que dicen manda sobre el monto que él eligió
