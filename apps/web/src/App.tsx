@@ -4,15 +4,15 @@
  */
 import { BarChart3, Check, MessageCircle, MoreHorizontal, Moon, Receipt, Sun, WalletCards, WifiOff } from 'lucide-preact';
 import { useEffect, useRef } from 'preact/hooks';
-import { actual, alternarTema } from './apariencia.ts';
-import { enBarra, irA, pantalla, type Pantalla } from './estado/nav.ts';
-import { conServidor, datos, estadoSync, pendientes } from './estado/store.ts';
-import { entrarPantalla } from './efectos.ts';
-import { Chat } from './vistas/Chat.tsx';
-import { Saldos } from './vistas/Saldos.tsx';
-import { Movimientos } from './vistas/Movimientos.tsx';
-import { Resumen } from './vistas/Resumen.tsx';
-import { Mas, Subvista } from './vistas/Mas.tsx';
+import { actual, alternarTema } from './state/apariencia.ts';
+import { enBarra, irA, pantalla, type Pantalla } from './state/nav.ts';
+import { conServidor, datos, estadoSync, pendientes } from './state/store.ts';
+import { entrarPantalla } from './lib/efectos.ts';
+import { Chat } from './features/chat/Chat.tsx';
+import { Saldos } from './features/saldos/Saldos.tsx';
+import { Movimientos } from './features/movimientos/Movimientos.tsx';
+import { Resumen } from './features/resumen/Resumen.tsx';
+import { Mas, Subvista } from './features/mas/Mas.tsx';
 import { signal } from '@preact/signals';
 
 const BARRA: { id: Pantalla; nombre: string; Icono: typeof MessageCircle }[] = [

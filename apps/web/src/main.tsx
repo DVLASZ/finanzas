@@ -4,10 +4,10 @@
  */
 import { render } from 'preact';
 import { App } from './App.tsx';
-import { aplicar } from './apariencia.ts';
-import { app, iniciar, sincronizar } from './app.ts';
-import { activarGestoAtras, iniciarHistorial } from './estado/nav.ts';
-import { iniciarEstado } from './estado/store.ts';
+import { aplicar } from './state/apariencia.ts';
+import { app, iniciar, sincronizar } from './services/app.ts';
+import { activarGestoAtras, iniciarHistorial } from './state/nav.ts';
+import { iniciarEstado } from './state/store.ts';
 
 async function arrancar(): Promise<void> {
   aplicar();
