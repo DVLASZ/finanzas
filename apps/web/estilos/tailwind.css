@@ -200,6 +200,8 @@
   html[data-letra="grande"] nav#nav button span { font-size: .62rem; letter-spacing: -.01em; }
   .periodo h2 { margin: 0; text-align: center; flex: 1; font-size: 1.05rem; }
   .filtro-tipos { flex-wrap: wrap; margin: .5rem 0; background: transparent; padding: 0; }
+  .fila-tope { display: flex; justify-content: space-between; gap: .75rem; margin-bottom: .35rem; font-size: .92rem; }
+  .fila-tope > span:last-child { font-variant-numeric: tabular-nums; text-align: right; }
   .barra-fondo { display: block; background: var(--elev); border-radius: 999px; height: .7rem; overflow: hidden; }
   .barra-relleno { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--marca), var(--marca-2)); }
   .barra-relleno { animation: crece .8s cubic-bezier(.22, 1, .36, 1) both; }

@@ -8,7 +8,7 @@ Todo movimiento mueve plata entre cuentas, y sus asientos suman cero por moneda.
 
 | Tipo | Ejemplos | Qué dice su saldo |
 |---|---|---|
-| `dinero` | Efectivo, Monedas, Nequi, Alcancía, ARQ (dólares) | Lo que tienes |
+| `dinero` | Efectivo, Monedas, Nequi, Alcancía, Dólares | Lo que tienes |
 | `persona` | Ivan, Sergio | Positivo: te debe. Negativo: le debes |
 | `categoria` | Mecato, Transporte, Descuadre | Lo gastado, siempre positivo |
 | `fuente` | Chamba, Galletas | Lo recibido, en negativo porque es el origen del ingreso |

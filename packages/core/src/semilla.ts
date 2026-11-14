@@ -16,7 +16,7 @@ export const CUENTAS_INICIALES: Cuenta[] = [
   dinero('monedas', 'Monedas', 'COP', false),
   dinero('nequi', 'Nequi', 'COP', true),
   dinero('daviplata', 'Daviplata', 'COP', true),
-  dinero('arq', 'ARQ', 'USD', true),
+  dinero('arq', 'Dólares', 'USD', true),
   categoria('cat:mecato', 'Mecato'),
   categoria('cat:comida', 'Comida'),
   categoria('cat:transporte', 'Transporte'),
@@ -40,7 +40,7 @@ export const CUENTAS_INICIALES: Cuenta[] = [
 ];
 
 export const ATAJOS_INICIALES: Atajo[] = [
-  { palabra: 'pasaje', concepto: 'Pasaje Terminal', monto: 7000, moneda: 'COP', categoriaId: 'cat:viaje-semanal', cuentaId: 'efectivo' },
+  { palabra: 'pasaje', concepto: 'Pasaje', monto: 7000, moneda: 'COP', categoriaId: 'cat:viaje-semanal', cuentaId: 'efectivo' },
 ];
 
 export const CONFIG_INICIAL: Record<string, string> = {

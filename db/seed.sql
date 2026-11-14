@@ -5,7 +5,7 @@ INSERT INTO cuentas (id, nombre, clave, tipo, moneda, en_disponible) VALUES
   ('monedas',   'Monedas',   'monedas',   'dinero', 'COP', 0),
   ('nequi',     'Nequi',     'nequi',     'dinero', 'COP', 1),
   ('daviplata', 'Daviplata', 'daviplata', 'dinero', 'COP', 1),
-  ('arq',       'ARQ',       'arq',       'dinero', 'USD', 1);
+  ('arq',       'Dólares',   'dolares',   'dinero', 'USD', 1);
 
 INSERT INTO cuentas (id, nombre, clave, tipo, fijo) VALUES
   ('cat:mecato',        'Mecato',        'mecato',        'categoria', 0),
@@ -32,7 +32,7 @@ INSERT INTO cuentas (id, nombre, clave, tipo, moneda) VALUES
   ('sys:cambio-usd',  'Cambio de moneda USD', 'cambio usd', 'sistema', 'USD');
 
 INSERT INTO atajos (palabra, concepto, monto, moneda, categoria_id, cuenta_id) VALUES
-  ('pasaje', 'Pasaje Terminal', 7000, 'COP', 'cat:viaje-semanal', 'efectivo');
+  ('pasaje', 'Pasaje', 7000, 'COP', 'cat:viaje-semanal', 'efectivo');
 
 -- Mecato es el "gasto hormiga": el tope se fija cuando quieras (p.ej. 60000).
 INSERT INTO config (clave, valor) VALUES
