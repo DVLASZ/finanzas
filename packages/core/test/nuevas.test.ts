@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { repartoEntre, revisarMes, diasParaMeta, fraseDeOCR, gastosHormiga, leerMetas, leerRespuestaOCR, rangoPeriodo, seguroParaGastar } from '../src/index.ts';
-import { AHORA, nuevoBot } from '../../../tests/ayudas.ts';
+import { aLocal, conSubcategorias, deLocal, leerSubcategorias, normalizarDictado, quitarEnviadas, type Op, repartoEntre, revisarMes, diasParaMeta, fraseDeOCR, gastosHormiga, leerMetas, leerRespuestaOCR, rangoPeriodo, seguroParaGastar } from '../src/index.ts';
+import { AHORA, nuevoBot, textoDe } from '../../../tests/ayudas.ts';
 
 async function guardar(bot: ReturnType<typeof nuevoBot>, texto: string) {
   await bot.di(texto, AHORA);
@@ -89,4 +89,109 @@ test('«entre ana, luis y yo» reparte en partes iguales, igual que «pagué por
   const d = await bot.repo.cargar();
   const m = d.movimientos.filter(x => x.tipo === 'compartido').at(-1)!;
   assert.deepEqual(m.asientos.map(a => a.monto).sort((x, y) => x - y), [-60000, 20000, 20000, 20000]);
+});
+
+// ---------------------------------------------------------------- fechas en hora Colombia
+
+test('fechas: después de las 7 pm en Colombia el día sigue siendo el de Colombia, no el de UTC', () => {
+  // 8:30 pm del 19 de octubre en Colombia = 01:30 UTC del 20
+  const noche = new Date('2026-10-20T01:30:00Z');
+  assert.equal(noche.toISOString().slice(0, 10), '2026-10-20', 'en UTC ya es el día siguiente');
+  assert.equal(aLocal(noche).slice(0, 10), '2026-10-19');
+  assert.equal(aLocal(noche), '2026-10-19 20:30:00');
+  // la frontera: 7:00 pm en Colombia es medianoche UTC
+  assert.equal(aLocal(new Date('2026-10-20T00:00:00Z')), '2026-10-19 19:00:00');
+  assert.equal(aLocal(new Date('2026-10-20T04:59:59Z')).slice(0, 10), '2026-10-19');
+  assert.equal(aLocal(new Date('2026-10-20T05:00:00Z')).slice(0, 10), '2026-10-20');
+});
+
+test('fechas: anular de noche deja la fecha de Colombia en el movimiento', async () => {
+  const noche = new Date('2026-10-20T02:10:00Z'); // 9:10 pm del 19 en Colombia
+  const bot = nuevoBot();
+  await guardar(bot, 'saldo inicial efectivo 100000');
+  await bot.di('mecato 5000', noche);
+  await bot.pulsa('ok', noche);
+  const id = (await bot.repo.cargar()).movimientos.at(-1)!.id;
+  await bot.repo.anularMovimiento(id, aLocal(noche));
+  const m = (await bot.repo.cargar()).movimientos.find(x => x.id === id)!;
+  assert.equal(m.estado, 'anulado');
+  assert.equal(m.ocurridoEn.slice(0, 10), '2026-10-19');
+});
+
+test('seguro para gastar: los días del mes no dependen de la zona del navegador ni del año bisiesto', async () => {
+  const bot = nuevoBot();
+  await guardar(bot, 'saldo inicial efectivo 100000');
+  const datos = await bot.repo.cargar();
+  assert.equal(seguroParaGastar(datos, deLocal('2028-02-28 10:00:00')).dias, 2);   // 2028 es bisiesto: 28 y 29
+  assert.equal(seguroParaGastar(datos, deLocal('2027-02-28 10:00:00')).dias, 1);
+  assert.equal(seguroParaGastar(datos, deLocal('2026-10-31 23:00:00')).dias, 1);
+  assert.equal(seguroParaGastar(datos, deLocal('2026-10-01 00:30:00')).dias, 31);
+});
+
+// ---------------------------------------------------------------- cola de sincronización
+
+const op = (id: string): Op => ({ op: 'anular', id, cuando: '2026-10-19 10:00:00' });
+
+test('cola: solo se quitan las operaciones enviadas y lo anotado mientras viajaba se queda', () => {
+  const a = op('a'), b = op('b'), c = op('c');
+  const cola = [a, b];
+  const enviadas = [...cola];            // lo que sincronizar() manda
+  cola.push(c);                          // se anota algo durante el fetch
+  assert.equal(quitarEnviadas(cola, enviadas), 2);
+  assert.deepEqual(cola, [c]);
+});
+
+test('cola: si la cola se vació o se reemplazó durante el envío (restaurar un respaldo), no se pierde lo nuevo', () => {
+  const a = op('a'), b = op('b');
+  const enviadas = [a, b];
+  // se limpió y quedó una operación nueva
+  const cola = [op('nueva')];
+  assert.equal(quitarEnviadas(cola, enviadas), 0);
+  assert.equal(cola.length, 1);
+  // se vació por completo
+  const vacia: Op[] = [];
+  assert.equal(quitarEnviadas(vacia, enviadas), 0);
+  // se mezcló: una de las enviadas sigue y otra nueva llegó antes
+  const mezcla = [op('x'), b, op('y')];
+  assert.equal(quitarEnviadas(mezcla, enviadas), 1);
+  assert.deepEqual(mezcla.map(o => (o as { id: string }).id), ['x', 'y']);
+});
+
+test('cola: dos operaciones iguales pero distintas en memoria se tratan por separado', () => {
+  const uno = op('mismo'), otro = op('mismo');
+  const cola = [uno, otro];
+  quitarEnviadas(cola, [uno]);
+  assert.deepEqual(cola, [otro]);
+  assert.equal(cola[0], otro);
+});
+
+// ---------------------------------------------------------------- ejemplos de docs/BOT.md
+
+test('subcategorías: hasta tres niveles, el cuarto se rechaza y lo del nivel hondo suma en los de arriba', async () => {
+  const bot = nuevoBot();
+  assert.match(textoDe(await bot.di('subcategoria restaurante de comida')), /Creé la subcategoría Restaurante dentro de Comida/);
+  assert.match(textoDe(await bot.di('subcategoria domicilios de restaurante')), /Domicilios dentro de Restaurante/);
+  assert.match(textoDe(await bot.di('subcategoria postres de domicilios')), /pasaría de 3 niveles/);
+  const config = (await bot.repo.cargar()).config;
+  assert.deepEqual(leerSubcategorias(config), { 'cat:restaurante': 'cat:comida', 'cat:domicilios': 'cat:restaurante' });
+  assert.deepEqual(conSubcategorias(config, 'cat:comida'), ['cat:comida', 'cat:restaurante', 'cat:domicilios']);
+});
+
+test('voz: los números en palabras (docs/BOT.md, «Dictar por voz»)', () => {
+  assert.equal(normalizarDictado('mecato ciento veinte mil trescientos'), 'mecato 120300');
+  assert.equal(normalizarDictado('cinco mil quinientos'), '5500');
+  assert.equal(normalizarDictado('dos millones quinientos mil'), '2500000');
+});
+
+test('plata de otra persona: se anota, se paga con ella y los pesos que sobran se cuadran sin contar como gasto', async () => {
+  const bot = nuevoBot();
+  bot.repo.aplicarPlantilla('personal', { personas: [{ nombre: 'Mamá', grupo: 'familia' }] });
+  await guardar(bot, 'saldo inicial efectivo 500000 nequi 0');
+  await guardar(bot, 'plata de mamá para cooperativa 150000 nequi');
+  await guardar(bot, 'cooperativa 149984 con plata de mamá nequi');
+  assert.match(textoDe(await bot.di('cuadrar con mamá')), /Queda en cero con Mamá.*Descuadre/s);
+  await bot.pulsa('ok');
+  const m = (await bot.repo.cargar()).movimientos.at(-1)!;
+  assert.equal(m.tipo, 'ajuste');
+  assert.deepEqual(m.asientos.map(a => a.monto).sort((x, y) => x - y), [-16, 16]);
 });

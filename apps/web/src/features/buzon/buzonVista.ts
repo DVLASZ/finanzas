@@ -7,7 +7,8 @@ import { Inbox } from 'lucide-preact';
 import { vacioHtml } from '../../components/ui/iconos.tsx';
 import { app, avisarAOtraApp, destinosDelBuzon, hayServidor, leerTodo, sincronizar } from '../../services/app.ts';
 import { esc } from '../../lib/carta.ts';
-import { actualizarEstado, prellenarChat } from '../../lib/puenteLegado.ts';
+import { prellenarChat } from '../../state/nav.ts';
+import { actualizarEstado } from '../../lib/puenteLegado.ts';
 
 interface Aviso { id: string; de: string; monto: number; concepto: string; cuando: string; estado: 'nuevo' | 'hecho' }
 

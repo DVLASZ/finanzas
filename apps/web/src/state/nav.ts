@@ -49,15 +49,35 @@ export function abrirHoja(): void {
   history.pushState(estadoActual(), '');
 }
 
-/** Cierra lo que esté arriba: la hoja, el cajón o la subpantalla. Es lo mismo que el gesto «atrás». */
+/** Ya se pidió retroceder y todavía no llegó el `popstate`: otro «atrás» en ese lapso se ignora. */
+let retrocediendo = false;
+
+/**
+ * Cierra lo que esté arriba: la hoja, el cajón o la subpantalla. Es lo mismo que el gesto «atrás».
+ * Solo retrocede una vez por cierre y solo si la entrada actual del historial es nuestra: así un doble toque o un
+ * Escape repetido no sacan a la persona de la app.
+ */
 export function atras(): void {
-  if (hojaAbierta.value || detalle.value || INTERNAS.includes(pantalla.value)) history.back();
+  if (retrocediendo) return;
+  const hayQueCerrar = hojaAbierta.value || detalle.value || INTERNAS.includes(pantalla.value);
+  if (!hayQueCerrar) return;
+  const nuestra = Boolean((history.state as Estado | null)?.p);
+  if (!nuestra) {
+    // sin entrada propia a la que volver: se cierra a mano, sin tocar el historial
+    hojaAbierta.value = false;
+    detalle.value = null;
+    return;
+  }
+  retrocediendo = true;
+  setTimeout(() => { retrocediendo = false; }, 600); // por si el navegador nunca avisa
+  history.back();
 }
 
 /** Se llama una vez al arrancar: marca la entrada inicial y escucha el botón «atrás» del teléfono. */
 export function iniciarHistorial(): void {
   history.replaceState(estadoActual(), '');
   window.addEventListener('popstate', e => {
+    retrocediendo = false;
     const s = e.state as Estado | null;
     pantalla.value = s?.p ?? 'chat';
     detalle.value = s?.d ?? null;

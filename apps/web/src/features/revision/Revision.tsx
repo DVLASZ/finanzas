@@ -74,7 +74,7 @@ export function Revision() {
   const estado = nota >= 85 ? 'En orden' : nota >= 60 ? 'Con detalles' : 'Pide atención';
   const color = nota >= 85 ? 'var(--pos)' : nota >= 60 ? 'var(--adv)' : 'var(--neg)';
   const mes = rangoPeriodo('mes', ctx.ahora);
-  const diasDelMes = new Date(Number(mes.desde.slice(0, 4)), Number(mes.desde.slice(5, 7)), 0).getDate();
+  const diasDelMes = new Date(Date.UTC(Number(mes.desde.slice(0, 4)), Number(mes.desde.slice(5, 7)), 0)).getUTCDate();
 
   return (
     <div class="space-y-3 pb-10">

@@ -73,7 +73,7 @@ Todas piden la clave de la instalación en la cabecera `Authorization: Bearer`.
 
 Cualquier otra ruta sirve los archivos de la app. Además hay una tarea diaria (`scheduled`) que manda los avisos.
 
-La ruta `/api/sync` revisa la forma de cada operación antes de tocar la base. Una operación mala se rechaza sola y no frena a las demás. Desde la app solo se pueden cambiar tres claves de configuración: `fecha_apertura`, `catalogo` y `lista_compras`.
+La ruta `/api/sync` revisa la forma de cada operación antes de tocar la base. Una operación mala se rechaza sola y no frena a las demás. Desde la app solo se pueden cambiar estas claves de configuración, y cualquier otra se rechaza: `fecha_apertura`, `catalogo`, `lista_compras`, `recurrentes`, `metas`, `categoria_persona`, `apodos_personas`, `grupos`, `subcategorias`, `cerrado_hasta`, `tope_arrastra` y `buzon`. La lista vive en `CLAVES_CONFIG_PERMITIDAS` (`packages/core/src/sync.ts`).
 
 ## Sin internet y sincronización
 

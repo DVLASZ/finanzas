@@ -7,7 +7,7 @@ import { Ban, BarChart3, ScanLine, Share2, Camera, Image as IconoFoto, CalendarD
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  conSubcategorias, fraseDeOCR, describirDia, describirFecha, formatear, leerSubcategorias, limpiar, nombreMes, rangoPeriodo,
+  aLocal, conSubcategorias, fraseDeOCR, describirDia, describirFecha, formatear, leerSubcategorias, limpiar, nombreMes, rangoPeriodo,
   type Cuenta, type Movimiento,
 } from '../../../../../packages/core/src/index.ts';
 import { claves, escribir, leer } from '../../services/almacen.ts';
@@ -105,7 +105,7 @@ function Detalle({ m }: { m: Movimiento }) {
     if (!r.lectura) { setLectura(r.error ?? 'No pude leerlo.'); return; }
     const l = r.lectura;
     setLectura(`${l.comercio || 'Pago'} por ${formatear(l.monto)}${l.fecha ? ' el ' + l.fecha : ''}${l.categoria ? ' (' + l.categoria + ')' : ''}`);
-    prellenarChat(fraseDeOCR(l, new Date().toISOString().slice(0, 10)));
+    prellenarChat(fraseDeOCR(l, aLocal(new Date()).slice(0, 10)));
   };
   const nombre = (id: string) => datos.cuentas.find(c => c.id === id)?.nombre ?? id;
   const clave = `recibo:${m.id}`;
@@ -144,7 +144,7 @@ function Detalle({ m }: { m: Movimiento }) {
   };
   const anular = async () => {
     if (!confirm(`¿Anular «${m.descripcion}»? No se borra: queda marcado como anulado.`)) return;
-    await app.repo.anularMovimiento(m.id, new Date(Date.now() - 5 * 3600e3).toISOString().slice(0, 19).replace('T', ' '));
+    await app.repo.anularMovimiento(m.id, aLocal(new Date()));
     atras();
     void sincronizar();
     await refrescar();

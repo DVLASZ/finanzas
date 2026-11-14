@@ -8,7 +8,7 @@ import { FileWarning } from 'lucide-preact';
 import { vacioHtml } from '../../components/ui/iconos.tsx';
 import { leerTodo } from '../../services/app.ts';
 import { esc } from '../../lib/carta.ts';
-import { prellenarChat } from '../../lib/puenteLegado.ts';
+import { prellenarChat } from '../../state/nav.ts';
 
 export async function vistaConciliar(cont: HTMLElement, irAlChat: () => void): Promise<void> {
   const { datos } = await leerTodo();
@@ -21,7 +21,7 @@ export async function vistaConciliar(cont: HTMLElement, irAlChat: () => void): P
     <div id="resultado"></div>`;
   const sal = cont.querySelector<HTMLElement>('#resultado')!;
 
-  const dibujar = (r: Conciliacion, clave: string) => {
+  const dibujar = (r: Conciliacion) => {
     const fecha = (f: string) => `${Number(f.slice(8, 10))}/${Number(f.slice(5, 7))}`;
     sal.innerHTML = `
       <p><b>${r.encontrados.length}</b> ya estaban anotados · <b>${r.faltan.length}</b> faltan · <b>${r.soloEnLaApp.length}</b> están en la app y no en el banco</p>
@@ -36,7 +36,6 @@ export async function vistaConciliar(cont: HTMLElement, irAlChat: () => void): P
       prellenarChat(`${x.sugerencia} ${fecha(x.fila.fecha)}`);
       irAlChat();
     }));
-    void clave;
   };
 
   cont.querySelector<HTMLInputElement>('#csv')!.addEventListener('change', async e => {
@@ -45,6 +44,6 @@ export async function vistaConciliar(cont: HTMLElement, irAlChat: () => void): P
     const filas = leerExtracto(await archivo.text());
     if (!filas.length) { sal.innerHTML = vacioHtml(FileWarning, 'No pude leer ese archivo', 'Tiene que ser el CSV del extracto, con columnas de fecha y valor (o débito y crédito).', 'coral'); return; }
     const cuenta = cont.querySelector<HTMLSelectElement>('#cuenta')!.value;
-    dibujar(conciliar(datos, filas, cuenta), cuenta);
+    dibujar(conciliar(datos, filas, cuenta));
   });
 }

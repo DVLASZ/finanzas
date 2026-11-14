@@ -202,7 +202,9 @@ export function Chat() {
     if (rec.current) { rec.current.stop(); return; }
     if (navigator.onLine === false) { setEstadoVoz(ERRORES_VOZ.network); return; }
     if (!ctx) return;
-    const r = new Reconocedor!();
+    // sin soporte (Firefox, Safari) el botón no existe, pero un acceso directo («?accion=voz») puede llegar hasta aquí
+    if (!Reconocedor) { setEstadoVoz('Este navegador no permite dictar. Escríbelo.'); return; }
+    const r = new Reconocedor();
     r.lang = 'es-CO'; r.interimResults = true; r.maxAlternatives = 5; r.continuous = false;
     rec.current = r;
     setOyendo(true);

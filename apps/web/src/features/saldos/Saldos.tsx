@@ -30,7 +30,7 @@ export function Saldos() {
 
   // el saldo disponible al cierre de cada uno de los últimos días
   const evolucion = Array.from({ length: dias }, (_, k) => {
-    const d = new Date(ctx.ahora); d.setDate(d.getDate() - (dias - 1 - k));
+    const d = new Date(ctx.ahora.getTime() - (dias - 1 - k) * 86400000);
     const fin = `${aLocal(d).slice(0, 10)} 23:59:59`;
     return resumenSaldos(datos.movimientos.filter(m => m.ocurridoEn <= fin), datos.cuentas, apertura).disponibleCop;
   });

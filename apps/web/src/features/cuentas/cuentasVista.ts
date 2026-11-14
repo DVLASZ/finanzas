@@ -5,6 +5,7 @@
  * Para pedir un dato se usa el cuadro del navegador (prompt), igual que el PIN.
  */
 import { aMinor, formatear, gruposDe, hallarMontos, leerSubcategorias, limpiar, profundidad, puedeIrDentro, rutaDe, MAX_NIVELES, type Cuenta } from '../../../../../packages/core/src/index.ts';
+import { escuchar } from '../../lib/dom.ts';
 import { app, leerTodo, sincronizar } from '../../services/app.ts';
 import { esc } from '../../lib/carta.ts';
 import { Users } from 'lucide-preact';
@@ -84,7 +85,7 @@ export async function vistaCuentas(cont: HTMLElement): Promise<void> {
     await vistaCuentas(cont);
   });
 
-  cont.addEventListener('click', async e => {
+  escuchar(cont, 'click', async e => {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-renombrar],[data-tope],[data-persona],[data-apodos],[data-olvidar]');
     if (!el) return;
     if (el.dataset.olvidar) {
@@ -122,7 +123,7 @@ export async function vistaCuentas(cont: HTMLElement): Promise<void> {
     await vistaCuentas(cont);
   });
 
-  cont.addEventListener('change', async e => {
+  escuchar(cont, 'change', async e => {
     const s = e.target as HTMLSelectElement;
     if (s.dataset.padre !== undefined) {
       const nuevo = { ...padres };
