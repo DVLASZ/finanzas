@@ -14,6 +14,7 @@ import { vistaCuentas } from '../cuentas/cuentasVista.ts';
 import { vistaGuia } from '../guia/guiaVista.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { atras, irA, prellenarChat, type Pantalla } from '../../state/nav.ts';
+import { mejorarSelects } from '../../components/ui/Selector.tsx';
 import { Insignia, T, iconoHtml, type Icono, type Visual } from '../../components/ui/iconos.tsx';
 import { Escalonado } from '../../components/ui/piezas.tsx';
 import { vistaAjustes } from '../ajustes/ajustes.ts';
@@ -112,7 +113,7 @@ function VistaLegada({ dibujar, repintar = false }: { dibujar: (caja: HTMLElemen
   useEffect(() => {
     const caja = ref.current;
     if (!caja) return;
-    const ob = new MutationObserver(() => { ob.disconnect(); decorarNotas(caja); ob.observe(caja, { childList: true, subtree: true }); });
+    const ob = new MutationObserver(() => { ob.disconnect(); decorarNotas(caja); mejorarSelects(caja); ob.observe(caja, { childList: true, subtree: true }); });
     ob.observe(caja, { childList: true, subtree: true });
     return () => ob.disconnect();
   }, []);

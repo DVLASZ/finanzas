@@ -23,8 +23,11 @@ export const detalle = signal<string | null>(null);
 /** Texto que otra pantalla deja listo en el chat («Registrar pago» desde Deudas, «Contar lo que hay» desde Saldos). */
 export const chatPrellenado = signal<{ texto: string; enviar: boolean } | null>(null);
 
-interface Estado { p: Pantalla; d: string | null }
-const estadoActual = (): Estado => ({ p: pantalla.value, d: detalle.value });
+/** La hoja de un selector abierta (también es una entrada del historial). */
+export const hojaAbierta = signal(false);
+
+interface Estado { p: Pantalla; d: string | null; s?: boolean }
+const estadoActual = (): Estado => ({ p: pantalla.value, d: detalle.value, s: hojaAbierta.value });
 
 /** Cambia de pantalla y deja una entrada en el historial. */
 export function irA(p: Pantalla): void {
@@ -40,9 +43,15 @@ export function abrirDetalle(id: string): void {
   history.pushState(estadoActual(), '');
 }
 
-/** Cierra lo que esté arriba: el cajón si hay uno, o la subpantalla. Es lo mismo que el gesto «atrás». */
+/** Abre la hoja de un selector. */
+export function abrirHoja(): void {
+  hojaAbierta.value = true;
+  history.pushState(estadoActual(), '');
+}
+
+/** Cierra lo que esté arriba: la hoja, el cajón o la subpantalla. Es lo mismo que el gesto «atrás». */
 export function atras(): void {
-  if (detalle.value || INTERNAS.includes(pantalla.value)) history.back();
+  if (hojaAbierta.value || detalle.value || INTERNAS.includes(pantalla.value)) history.back();
 }
 
 /** Se llama una vez al arrancar: marca la entrada inicial y escucha el botón «atrás» del teléfono. */
@@ -52,6 +61,7 @@ export function iniciarHistorial(): void {
     const s = e.state as Estado | null;
     pantalla.value = s?.p ?? 'chat';
     detalle.value = s?.d ?? null;
+    hojaAbierta.value = Boolean(s?.s);
   });
 }
 
