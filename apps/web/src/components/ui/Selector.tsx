@@ -25,6 +25,11 @@ function abrir(h: Hoja): void {
   abrirHoja();
 }
 
+/** Abre la hoja con unas opciones desde un botón cualquiera (por ejemplo, «Cámara» o «Galería»). Al elegir, llama a `alElegir`. */
+export function abrirOpciones(titulo: string, opciones: Opcion[], alElegir: (valor: string) => void, ancla: HTMLElement): void {
+  abrir({ titulo, opciones, valor: '', elegir: alElegir, ancla: ancla.getBoundingClientRect() });
+}
+
 /** El botón que abre la hoja. Muestra la opción elegida. */
 export function Selector({ id, etiqueta, valor, opciones, alCambiar }: { id?: string; etiqueta: string; valor: string; opciones: Opcion[]; alCambiar: (valor: string) => void }) {
   const actual = opciones.find(o => o.valor === valor) ?? opciones[0];

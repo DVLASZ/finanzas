@@ -3,7 +3,7 @@
  * escritura con dictado por voz (ondas mientras escucha) y los avisos con botón de arriba.
  * La lógica es la de siempre: el bot corre dentro de la app y solo se pide ayuda a la IA si no entendió.
  */
-import { ArrowUp, HardHat, HelpCircle, Mic, ScanLine, Store } from 'lucide-preact';
+import { ArrowUp, Camera, HardHat, HelpCircle, Images, Mic, ScanLine, Store } from 'lucide-preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   aLocal, atajosFrecuentes, calcularAlertas, formatear, fraseDeOCR, limpiar, hayTrabajadores, interpretar, normalizarDictado, procesar, vendeProductos, type Boton,
@@ -19,6 +19,7 @@ import { vibrar } from '../../lib/haptico.ts';
 import { Ayuda, esAyuda, seEnvia } from './Ayuda.tsx';
 import { BotonesBot, Carta } from './Carta.tsx';
 import { Insignia, T, visualDeNombre, type Icono } from '../../components/ui/iconos.tsx';
+import { abrirOpciones } from '../../components/ui/Selector.tsx';
 
 interface Burbuja { de: 'yo' | 'bot'; texto: string; botones?: Boton[] }
 
@@ -178,6 +179,13 @@ export function Chat() {
     mandar(frase);
   }
 
+  const alElegirImagen = (e: Event) => {
+    const entrada = e.target as HTMLInputElement;
+    const f = entrada.files?.[0];
+    entrada.value = '';
+    if (f) void escanear(f);
+  };
+
   const alPulsar = (b: Boton) => { if (b.id === 'ok') vibrar(); void enviar({ boton: b.id }, b.titulo.replace(/^[\p{Extended_Pictographic}️‍\s]+/u, '').trim() || b.titulo); };
   const mandar = (t: string) => { void enviar({ texto: t }, t); };
   /** Un ejemplo de la guía: las consultas se envían; lo demás queda escrito para ponerle el monto. */
@@ -260,8 +268,14 @@ export function Chat() {
       <form id="form" class="entrada vidrio mx-3 mb-1 rounded-[1.4rem] p-2 ring-1 ring-anillo" onSubmit={alEnviar}>
         <input id="texto" type="text" autocomplete="off" autocapitalize="sentences" placeholder="Ej.: mecato 5000" aria-label="Escribe lo que pasó" class="!bg-transparent !shadow-none" value={texto}
           onInput={e => { const v = (e.target as HTMLInputElement).value; setTexto(v); void escribir('borrador', v); }} />
-        <input type="file" id="archivoEscanear" accept="image/*" hidden onChange={e => { const f = (e.target as HTMLInputElement).files?.[0]; (e.target as HTMLInputElement).value = ''; if (f) void escanear(f); }} />
-        <button type="button" id="escanear" class="secundario mic" aria-label="Leer un comprobante: cámara o galería" title="Leer comprobante" disabled={escaneando} onClick={() => document.querySelector<HTMLInputElement>('#archivoEscanear')?.click()}><ScanLine size={21} /></button>
+        {/* Android no ofrece cámara y galería en la misma lista: con «capture» solo abre la cámara y sin él solo la galería. Por eso hay dos entradas y una hoja que pregunta cuál. */}
+        <input type="file" id="archivoEscanear" accept="image/*" hidden onChange={alElegirImagen} />
+        <input type="file" id="fotoEscanear" accept="image/*" capture="environment" hidden onChange={alElegirImagen} />
+        <button type="button" id="escanear" class="secundario mic" aria-label="Leer un comprobante: cámara o galería" title="Leer comprobante" disabled={escaneando}
+          onClick={e => abrirOpciones('Leer un comprobante', [
+            { valor: 'camara', etiqueta: 'Tomar una foto', visual: { Icono: Camera, ...T.cian } },
+            { valor: 'galeria', etiqueta: 'Elegir de la galería', visual: { Icono: Images, ...T.violeta } },
+          ], v => document.querySelector<HTMLInputElement>(v === 'camara' ? '#fotoEscanear' : '#archivoEscanear')?.click(), e.currentTarget)}><ScanLine size={21} /></button>
         {Reconocedor && (
           <button type="button" id="mic" class={`secundario mic ${oyendo ? 'oyendo' : ''}`} aria-label={oyendo ? 'Dejar de escuchar' : 'Hablar'} aria-pressed={oyendo} onClick={alMicrofono}>
             {oyendo ? <span class="ondas" aria-hidden="true"><span /><span /><span /><span /><span /></span> : <Mic size={21} />}

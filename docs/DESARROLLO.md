@@ -16,7 +16,7 @@ Node 24 o superior. Ejecuta TypeScript directo, sin compilar.
 | `npm run instalar -- <orden> <nombre>` | Crea o publica una instalación (ver [DESPLIEGUE.md](DESPLIEGUE.md)) |
 | `npm run guia -- <plantilla>` | Arma la guía de usuario de una app con sus cuentas y categorías (queda en `docs-privado/`) |
 | `npm run abrir-respaldo -- <archivo>` | Abre un respaldo cifrado de la nube (ver [RESPALDO.md](RESPALDO.md)) |
-| `npm run e2e` | Abre la app en tu Chrome y recorre las pantallas como una persona (18 pruebas en tamaño de celular; en el celular real son 17, porque subir una imagen desde un archivo solo corre en PC). No va en `check` porque necesita Chrome |
+| `npm run e2e` | Abre la app en tu Chrome y recorre las pantallas como una persona (19 pruebas en tamaño de celular; en el celular real son 18, porque subir una imagen desde un archivo solo corre en PC). No va en `check` porque necesita Chrome |
 | `npm run salud` | Pregunta a cada instalación publicada cómo va: movimientos, último movimiento, avisos, IA |
 
 ## Convenciones
