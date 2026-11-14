@@ -1,8 +1,11 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Guía de desarrollo
 
 ## Lo que necesitas
 
-Node 24 o superior. Ejecuta TypeScript directo, sin compilar.
+> [!IMPORTANT]
+> Node 24 o superior. Ejecuta TypeScript directo, sin compilar.
 
 | Comando | Qué hace |
 |---|---|
@@ -34,6 +37,9 @@ Node 24 o superior. Ejecuta TypeScript directo, sin compilar.
 
 Las pruebas viven junto a lo que prueban. Se corren con `node --test`, sin librerías.
 
+<details>
+<summary>Mapa de las pruebas</summary>
+
 | Dónde | Qué cubre |
 |---|---|
 | `packages/core/test/basicos` | Montos, fechas, periodos y formatos |
@@ -54,9 +60,24 @@ Las pruebas viven junto a lo que prueban. Se corren con `node --test`, sin libre
 | `apps/worker/test/push` | Avisos: cifrado, firma, rutas y tarea diaria |
 | `apps/worker/test/estres-d1` | Estrés contra una D1 simulada |
 
+</details>
+
 El Worker se prueba contra una D1 simulada sobre SQLite (`tests/d1-shim.ts`), sin red ni cuentas. La IA se prueba con una falsa. Lo que ninguna prueba cubre es cómo se ve y se siente en un celular real. Eso se prueba a mano.
 
 ## Cómo agregar cosas
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#111827', 'primaryTextColor': '#F1F5FB', 'primaryBorderColor': '#38BDF8', 'lineColor': '#10B981', 'secondaryColor': '#1B2538', 'tertiaryColor': '#090D16', 'fontFamily': 'system-ui'}}}%%
+flowchart LR
+  A["Prueba primero<br/>packages/core/test"] --> B["Hacerla pasar<br/>packages/core/src/parser"]
+  B --> C["Actualizar BOT.md"]
+  C --> D["npm run check"]
+  classDef paso fill:#111827,stroke:#818CF8,color:#F1F5FB
+  class A,B,C,D paso
+```
+
+> [!TIP]
+> `docs/BOT.md` también es una prueba: cada ejemplo de sus bloques de código se corre contra el bot. Si el bot deja de entender uno, `npm run check` falla.
 
 Que el bot entienda algo nuevo:
 1. Escribe primero la prueba en `packages/core/test/bot.test.ts` (o en el archivo del tema): qué escribe la persona y qué debe responder o guardar.
@@ -79,8 +100,14 @@ El service worker, que es lo que da el modo sin internet, solo se registra en HT
 
 ## Tropiezos que ya pasaron
 
+<details>
+<summary>Tropiezos frecuentes</summary>
+
 - Un cambio en una plantilla no llega solo a las bases ya publicadas. Se aplica con `npm run instalar -- actualizar <nombre>` (ver [INSTALACIONES.md](INSTALACIONES.md)).
 - Un cambio de esquema es una migración nueva y numerada. `npm run verificar` comprueba que las migraciones dejen el mismo esquema que `db/schema.sql`.
 - Si el navegador sigue mostrando una versión vieja de la app, es el service worker. Se desregistra desde las herramientas del navegador, o se cierra y abre la app con internet.
 - Los datos de una instalación (personas, apodos, categoría fija de una persona) van por SQL o por `instalaciones/<nombre>.json`, nunca en la plantilla: la plantilla es del código y no lleva nombres de nadie.
 - Al escribir expresiones regulares por línea de comandos se pueden perder las barras invertidas. Si una regla del parser no responde, mira que la expresión haya quedado bien en el archivo.
+
+</details>
+

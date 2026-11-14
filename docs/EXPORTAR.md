@@ -1,3 +1,5 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Pasar los datos a Excel
 
 En Más, Ajustes, Pasar a Excel, el botón Descargar Excel baja un archivo `finanzas-AAAA-MM-DD.xlsx` con cuatro hojas:

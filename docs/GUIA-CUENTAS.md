@@ -1,3 +1,5 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Crear la cuenta de Cloudflare
 
 Es lo único que necesitas para publicar la app. El plan gratuito alcanza de sobra para una persona o un negocio pequeño.
@@ -19,7 +21,8 @@ Es lo único que necesitas para publicar la app. El plan gratuito alcanza de sob
 | El subdominio de workers.dev | No | Es público |
 | El id de la base D1 | No | Solo dice cuál base es |
 
-Los secretos los escribe el instalador por ti, sin mostrarlos. Si los pones a mano, escríbelos tú en tu terminal.
+> [!NOTE]
+> Los secretos los escribe el instalador por ti, sin mostrarlos. Si los pones a mano, escríbelos tú en tu terminal.
 
 ## Límites del plan gratuito
 

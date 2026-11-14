@@ -1,16 +1,37 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Arquitectura
 
 ## Las piezas
 
-```
- Celular o PC                       Cloudflare (gratis)
- +--------------------+            +-------------------------------+
- | apps/web           |  internet  | apps/worker                   |
- | la app (PWA)       +----------->| API con clave                 |
- | copia local        |  sincroniza| base de datos D1              |
- | el bot (packages/  |<-----------+ avisos al celular (cron)      |
- |   core) adentro    |            | IA: frases y comprobantes     |
- +--------------------+            +-------------------------------+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#111827', 'primaryTextColor': '#F1F5FB', 'primaryBorderColor': '#38BDF8', 'lineColor': '#10B981', 'secondaryColor': '#1B2538', 'tertiaryColor': '#090D16', 'fontFamily': 'system-ui'}}}%%
+flowchart LR
+  subgraph CLI["Celular o PC: la PWA"]
+    direction TB
+    UI["apps/web<br/>Preact y Signals"]
+    CORE["packages/core<br/>el bot adentro"]
+    IDB[("IndexedDB<br/>copia local y cola")]
+    SW["Service worker<br/>offline y avisos"]
+    UI --> CORE
+    UI <--> IDB
+    SW -.-> UI
+  end
+  subgraph CF["Cloudflare, plan gratis"]
+    direction TB
+    API["apps/worker<br/>API con clave"]
+    D1[("D1<br/>base de datos")]
+    CRON["Cron<br/>avisos y respaldo"]
+    AI{{"Workers AI<br/>frases y comprobantes"}}
+    API <--> D1
+    CRON --> API
+    API --> AI
+  end
+  CLI <-- "sincroniza la cola" --> API
+  classDef nube fill:#1B2538,stroke:#F59E0B,color:#F1F5FB
+  classDef local fill:#111827,stroke:#10B981,color:#F1F5FB
+  class API,D1,CRON,AI nube
+  class UI,CORE,IDB,SW local
 ```
 
 La idea de fondo es que el bot es una librería, no un servicio. Vive en `packages/core` y corre dentro del navegador, en el chat de la app. Por eso la app funciona sin internet y no hay dos formas distintas de entender los mensajes.
@@ -31,6 +52,9 @@ Cada instalación (una persona o un negocio) es un Worker, una base D1 y una cla
 | `tests` | Ayudas compartidas por las pruebas. |
 
 ## El cerebro (`packages/core/src`)
+
+<details>
+<summary>Mapa de archivos del cerebro</summary>
 
 | Archivo | Qué hace |
 |---|---|
@@ -55,11 +79,17 @@ Cada instalación (una persona o un negocio) es un Worker, una base D1 y una cla
 | `ia.ts` | Instrucciones y límites de la ayuda de la IA. |
 | `exportar.ts` | El archivo de Excel. |
 
+</details>
+
 El bot solo conoce la interfaz `Repo`. Hay tres implementaciones: una en memoria para las pruebas, `D1Repo` en el Worker y `RepoLocal` con `RepoConCola` en la app.
 
 ## Rutas del servidor
 
-Todas piden la clave de la instalación en la cabecera `Authorization: Bearer`.
+> [!NOTE]
+> Todas piden la clave de la instalación en la cabecera `Authorization: Bearer`.
+
+<details>
+<summary>Tabla de rutas del servidor</summary>
 
 | Ruta | Para qué |
 |---|---|
@@ -71,11 +101,32 @@ Todas piden la clave de la instalación en la cabecera `Authorization: Bearer`.
 | `POST /api/push/suscribir`, `/baja`, `/probar` | Suscribir, dar de baja y probar los avisos. |
 | `POST /api/purgar`, `/api/borrar-todo` | Borrado definitivo. Piden PIN siempre y una frase de confirmación. |
 
+</details>
+
 Cualquier otra ruta sirve los archivos de la app. Hay también una tarea diaria (`scheduled`) que manda los avisos.
 
 La ruta `/api/sync` revisa la forma de cada operación antes de tocar la base. Una operación mala se rechaza sola y no frena a las demás. Desde la app solo se pueden cambiar estas claves de configuración, y cualquier otra se rechaza: `fecha_apertura`, `catalogo`, `lista_compras`, `recurrentes`, `metas`, `categoria_persona`, `apodos_personas`, `grupos`, `subcategorias`, `cerrado_hasta`, `tope_arrastra` y `buzon`. La lista vive en `CLAVES_CONFIG_PERMITIDAS` (`packages/core/src/sync.ts`).
 
 ## Sin internet y sincronización
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#111827', 'primaryTextColor': '#F1F5FB', 'primaryBorderColor': '#38BDF8', 'lineColor': '#10B981', 'secondaryColor': '#1B2538', 'tertiaryColor': '#090D16', 'fontFamily': 'system-ui'}}}%%
+sequenceDiagram
+  autonumber
+  participant P as Persona
+  participant A as App con IndexedDB
+  participant W as Worker
+  participant D as D1
+  P->>A: escribe y confirma
+  A->>A: guarda en el celular y anota en la cola
+  Note over A,W: sin internet, la cola espera
+  A->>W: POST /api/sync con la cola
+  W->>W: revisa la forma de cada operación
+  W->>D: aplica operaciones idempotentes
+  D-->>W: todos los datos
+  W-->>A: todos los datos
+  A->>A: reemplaza la copia y repone lo pendiente
+```
 
 1. La app guarda primero en el celular (IndexedDB) y anota cada cambio en una cola.
 2. Cuando hay internet (al abrir, al recuperar la red, al volver a la app, cada minuto) manda la cola a `/api/sync`.

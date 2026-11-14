@@ -1,3 +1,5 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Cambios
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.

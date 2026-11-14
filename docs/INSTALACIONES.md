@@ -1,3 +1,5 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Instalaciones
 
 El mismo código sirve para varias apps. Cada persona o negocio tiene su instalación: su Worker, su base D1 y su clave. Nada se mezcla. Para crear una, mira [INICIO.md](INICIO.md).

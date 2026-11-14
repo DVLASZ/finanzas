@@ -1,3 +1,5 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Ramas: una app, tres variantes
 
 Este repositorio tiene tres ramas. Las tres son la misma app (mismo código, mismas pruebas, mismo servidor), pero cada una está preparada para un tipo de uso distinto.
@@ -9,6 +11,21 @@ Este repositorio tiene tres ramas. Las tres son la misma app (mismo código, mis
 | `empresa` | Negocio u organización | Un negocio pequeño entre varias personas: ventas con catálogo, insumos, impuestos, socios | `empresa` |
 
 El repositorio es solo la estructura vacía de cada variante. No trae datos, nombres, direcciones ni claves de nadie: cada instalación guarda lo suyo fuera de git (ver más abajo).
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#111827', 'primaryTextColor': '#F1F5FB', 'primaryBorderColor': '#38BDF8', 'lineColor': '#10B981', 'secondaryColor': '#1B2538', 'tertiaryColor': '#090D16', 'fontFamily': 'system-ui'}}}%%
+flowchart LR
+  M["main<br/>personal"] -- "git merge main" --> F["familiar<br/>plantilla familia"]
+  M -- "git merge main" --> E["empresa<br/>plantilla empresa"]
+  M --> I["instalaciones/nombre.json<br/>eliges la plantilla"]
+  F --> I
+  E --> I
+  I --> W["Un Worker y una D1<br/>por instalación"]
+  classDef rama fill:#111827,stroke:#38BDF8,color:#F1F5FB
+  classDef nube fill:#1B2538,stroke:#F59E0B,color:#F1F5FB
+  class M,F,E rama
+  class I,W nube
+```
 
 ## Qué cambia entre ramas
 
@@ -46,7 +63,8 @@ git merge main
 git checkout main
 ```
 
-Los archivos propios de cada variante (`VARIANTE.md`, `variante.json`, `scripts/instalacion-ejemplo.json`) no se mezclan: cada rama conserva los suyos. Para que git lo haga solo, una vez en cada copia del repositorio:
+> [!IMPORTANT]
+> Los archivos propios de cada variante (`VARIANTE.md`, `variante.json`, `scripts/instalacion-ejemplo.json`) no se mezclan: cada rama conserva los suyos. Para que git lo haga solo, corre esto una vez en cada copia del repositorio:
 
 ```bash
 git config merge.ours.driver true
@@ -54,7 +72,8 @@ git config merge.ours.driver true
 
 Las reglas están en `.gitattributes`. Si alguna vez un cambio es propio de una variante (una categoría nueva solo para la familiar, por ejemplo), se hace en su rama y no se pasa a las demás.
 
-Antes de pasar cambios, las pruebas tienen que pasar: `npm run check`.
+> [!TIP]
+> Antes de pasar cambios, las pruebas tienen que pasar: `npm run check`.
 
 ## Qué no va en el repositorio
 

@@ -1,6 +1,9 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Pendientes e ideas
 
-Lo que falta por hacer en el código y los límites que se conocen. Las tareas de cada instalación (saldos iniciales, claves, pruebas con personas) se llevan aparte, fuera del repositorio.
+> [!NOTE]
+> Lo que falta por hacer en el código y los límites que se conocen. Las tareas de cada instalación (saldos iniciales, claves, pruebas con personas) se llevan aparte, fuera del repositorio.
 
 ## Ideas
 

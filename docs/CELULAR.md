@@ -1,3 +1,5 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Probar en el celular
 
 Las pruebas automáticas usan un Chrome de computador con pantalla de celular. No ven lo que solo pasa en un celular de verdad: instalar la app, trabajar sin internet, los avisos, el micrófono, la letra grande. Hay dos maneras de acercarse. Las dos necesitan el celular conectado por USB.
@@ -36,14 +38,14 @@ Si `adb devices` no lista el celular aunque Windows lo vea, mira que la depuraci
 
 ## Manera 2: ver y tocar el celular desde el PC
 
-Con scrcpy el celular aparece en una ventana del PC y se maneja con el mouse. Sirve para instalar la app, ver las notificaciones y probar sin internet, que son cosas que Chrome del PC no tiene.
+> [!TIP]
+> Con scrcpy el celular aparece en una ventana del PC y se maneja con el mouse. Sirve para instalar la app, ver las notificaciones y probar sin internet, que son cosas que Chrome del PC no tiene.
 
 ```powershell
 winget install Genymobile.scrcpy
 scrcpy
 ```
 
-Quien me ayuda puede mirar esa ventana y tocarla (con el permiso de la herramienta de control del computador) para recorrer lo que haga falta. Mejor hacerlo sobre una instalación de prueba o sin escribir datos.
 
 ## Lo que no se puede probar así
 
