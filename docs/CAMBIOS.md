@@ -4,6 +4,16 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-14
+
+- Pagos fijos que ya no son solo mensuales: cada quincena, cada semana y cada año. «cada lunes mecato 12000», «cada año el 15 de marzo salud 300000». El seguro para gastar cuenta todas las veces que faltan del mes.
+- Anular un arqueo ya no deja rastro: sale de los listados, incluso con «anulados», y no cuenta entre los movimientos anulados de la revisión del mes.
+- Existencias en las ventas: `inventario galletas 200`, `llegaron 50 galletas` y `existencias`. Cada venta resta, anular devuelve y la tarjeta avisa si no alcanza.
+- Buzón entre apps: un aviso puede traer una frase para que la otra app la anote, siempre con confirmación.
+- Movimientos: rango de fechas, etiquetas como botones, y exportar lo que se ve a CSV o JSON. Resumen: compartir el resumen y bajar los movimientos del periodo en CSV.
+- Gráficos: tocar la curva de saldo muestra el día y el valor; la curva del ritmo y la dona tienen letra más grande.
+- Por dentro: todas las pantallas de Más son componentes de Preact, y los servicios de la app se partieron por tema (`estado`, `sincronizacion`, `avisos`, `ia`, `servidor`, `fotos`, `seguridad`).
+
 ## 2026-11-13
 
 - Aviso al celular, una vez por semana, cuando las fotos de recibos ocupan 3 GB o más de la base.

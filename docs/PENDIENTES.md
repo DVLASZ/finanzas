@@ -7,7 +7,6 @@
 
 ## Ideas
 
-- Un botón para anular un arqueo que resultó innecesario sin dejar rastro en el historial.
 - Varias monedas con tasa guardada por movimiento. Choca con la regla de no convertir dólares solos, así que antes hay que decidir qué se mostraría.
 
 ## Para probar con personas
@@ -24,6 +23,7 @@
 - El dictado necesita internet (lo hace Chrome con los servidores de Google) y funciona en Chrome y Edge, no en Firefox ni en Safari.
 - Las fotos de recibos no entran al respaldo de GitHub ni se restauran con él. Viven en la base.
 - Al restaurar un respaldo, cada celular tiene que volver a activar los avisos, y los secretos se ponen de nuevo.
+- El control de existencias no distingue sabores ni lotes: cuenta unidades por producto desde el último conteo.
 - El bot es de reglas. Una frase muy suelta puede no entenderse; para eso está la ayuda de la IA, que tiene tope diario.
 - Los dólares y las deudas en dólares se muestran en dólares, nunca se convierten.
 - El borrado definitivo en el servidor depende de que `PIN_BORRADO` esté puesto.
