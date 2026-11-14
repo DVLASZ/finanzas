@@ -1,4 +1,4 @@
-# Variante: App familiar (rama `app-2`)
+# Variante: App familiar (rama `familiar`)
 
 Los gastos de una casa con campo y trabajadores. Es la misma app que `main` con la plantilla `familia` (ver [docs/RAMAS.md](docs/RAMAS.md)).
 
