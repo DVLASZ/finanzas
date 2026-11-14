@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const destino = process.argv[2] ?? join(homedir(), 'Downloads');
 const MAX_LINEAS = 3500;
-const MAX_BYTES = 118_000;
+const MAX_BYTES = 125_000;
 
 const BINARIOS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.svg', '.woff', '.woff2', '.ttf', '.zip', '.bundle', '.pdf', '.xlsx', '.log']);
 const git = c => execSync(c, { cwd: raiz, encoding: 'utf8', maxBuffer: 1 << 28 }).trim();
@@ -66,18 +66,19 @@ function bloquesDe(ruta) {
   });
 }
 
-// ---- reparto en partes: cada capa empieza una parte nueva, y dentro de la capa se llena hasta el tope
+// ---- reparto en partes: se llena cada parte hasta el tope, de corrido y en el orden de las capas (así salen pocas partes)
 const cabecera = 700;  // reserva para el encabezado de cada parte (y el resumen de la parte 1)
 const partes = [];
+let actual = null;
 for (const c of [1, 2, 3, 4]) {
-  let actual = null;
   for (const ruta of rutas.filter(r => capa(r) === c).sort()) {
     for (const b of bloquesDe(ruta)) {
       const reserva = partes.length === 0 && !actual ? 2200 : cabecera;
       if (!actual || actual.lineas + b.lineas + reserva > MAX_LINEAS || actual.bytes + b.bytes > MAX_BYTES) {
-        actual = { capa: c, bloques: [], lineas: 0, bytes: 0 };
+        actual = { capas: new Set(), bloques: [], lineas: 0, bytes: 0 };
         partes.push(actual);
       }
+      actual.capas.add(c);
       actual.bloques.push(b); actual.lineas += b.lineas; actual.bytes += b.bytes;
     }
   }
@@ -85,7 +86,7 @@ for (const c of [1, 2, 3, 4]) {
 
 // ---- texto de la parte 1: árbol, commits, deuda técnica
 const commits = git('git log -15 --format=%h%x20%s');
-const indice = partes.map((p, i) => `- **auditoria-parte-${i + 1}.md**: capa ${p.capa}. ${[...new Set(p.bloques.map(b => b.ruta))].length} archivos, desde \`${p.bloques[0].ruta}\` hasta \`${p.bloques.at(-1).ruta}\``).join('\n');
+const indice = partes.map((p, i) => `- **auditoria-parte-${i + 1}.md**: capas ${[...p.capas].join(' y ')}. ${[...new Set(p.bloques.map(b => b.ruta))].length} archivos, desde \`${p.bloques[0].ruta}\` hasta \`${p.bloques.at(-1).ruta}\``).join('\n');
 const DEUDA = `
 ### Lo que falta o tiene deuda técnica
 
@@ -109,7 +110,7 @@ for (const f of readdirSync(destino)) if (/^auditoria-parte-\d+\.md$/.test(f)) r
 const resultado = [];
 partes.forEach((p, i) => {
   const n = i + 1;
-  let txt = `# Auditoría del código: parte ${n} de ${partes.length}\n\n**Capa ${p.capa}:** ${CAPAS[p.capa]}\n\nGenerado ${new Date().toISOString().slice(0, 10)} desde la rama \`${git('git branch --show-current')}\`, commit \`${git('git rev-parse --short HEAD')}\`. Solo archivos que git sigue.\n`;
+  let txt = `# Auditoría del código: parte ${n} de ${partes.length}\n\n**Capas:**\n${[...p.capas].map(c => `- ${c}: ${CAPAS[c]}`).join('\n')}\n\nGenerado ${new Date().toISOString().slice(0, 10)} desde la rama \`${git('git branch --show-current')}\`, commit \`${git('git rev-parse --short HEAD')}\`. Solo archivos que git sigue.\n`;
   if (n === 1) {
     txt += `\n## Cómo leer estos archivos\n\nEl código está repartido en ${partes.length} archivos numerados para que ninguno se trunque. Cada archivo empieza con la lista de lo que trae.\n\n${indice}\n`;
     txt += `\n## Árbol de directorios\n\n\`\`\`text\n${arbol(rutas)}\n\`\`\`\n`;
