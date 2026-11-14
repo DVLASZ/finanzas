@@ -49,3 +49,7 @@ export function sentidoDelMonto(c: DatosCarta): 'gasto' | 'ingreso' | 'neutro' {
   if (/^préstamo|^deuda/.test(t)) return c.pildoras.some(p => /te presta/.test(p)) ? 'ingreso' : 'neutro';
   return 'neutro';
 }
+
+/** Quita todos los emojis de un texto (la interfaz usa íconos vectoriales). Los que trae el bot en sus respuestas no se muestran. */
+export const quitarEmojis = (t: string): string =>
+  t.replace(/[\p{Extended_Pictographic}\u200d\ufe0f]/gu, '').replace(/[ \t]{2,}/g, ' ').replace(/^[ \t]+|[ \t]+$/gm, '').trim();

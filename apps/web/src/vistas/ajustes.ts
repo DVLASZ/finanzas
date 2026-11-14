@@ -11,7 +11,7 @@ import { esc } from '../carta.ts';
 /** Pide el PIN (o lo crea si aún no hay uno). Devuelve true si se puede continuar. */
 async function pedirPin(motivo: string): Promise<boolean> {
   if (!app.ajustes.pinHash) {
-    alert('Primero crea un PIN en Ajustes → Seguridad. Protege las acciones que borran datos.');
+    alert('Primero crea un PIN en Ajustes, sección Seguridad. Protege las acciones que borran datos.');
     return false;
   }
   const pin = prompt(`${motivo}\nEscribe tu PIN:`);
@@ -91,7 +91,7 @@ export async function vistaAjustes(cont: HTMLElement): Promise<void> {
 
     <h2>Instalar la app</h2>
     <div class="acciones"><button class="secundario" id="instalar" hidden>Instalar en este dispositivo</button></div>
-    <p class="sub">En el celular: menú del navegador → «Instalar app» / «Añadir a pantalla de inicio».</p>
+    <p class="sub">En el celular: menú del navegador, «Instalar app» o «Añadir a pantalla de inicio».</p>
 
     <h2 class="peligro-titulo">Zona de peligro</h2>
     <p class="sub">Estas acciones borran datos de verdad. Piden tu PIN, que escribas una frase y esperan unos segundos. Lo normal es <b>anular</b>, no borrar.</p>

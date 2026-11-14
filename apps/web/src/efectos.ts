@@ -20,7 +20,7 @@ export function entrar(el: Element, retraso = 0): void {
 /** Entrada de una pantalla entera (cambio de pestaña). */
 export function entrarPantalla(el: Element): void {
   if (menosMovimiento()) return;
-  animate(el, { opacity: [0, 1], transform: ['translateY(8px)', 'translateY(0)'] }, { duration: 0.3, ease: [0.22, 1, 0.36, 1] });
+  animate(el, { opacity: [0, 1], transform: ['translateY(8px)', 'translateY(0)'] }, { duration: 0.2, ease: [0.22, 1, 0.36, 1] });
 }
 
 /** Un cuadro de ayuda que sube desde abajo (el detalle de un movimiento). */

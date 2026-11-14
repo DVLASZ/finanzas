@@ -4,6 +4,8 @@
  * como todo lo demás. Para pedir un dato se usa el cuadro del navegador (prompt), igual que el PIN.
  */
 import { formatear, leerCatalogo, leerLista, presentacionDeTexto, type Catalogo, type Producto } from '../../../packages/core/src/index.ts';
+import { Package, ShoppingBasket } from 'lucide-preact';
+import { vacioHtml } from './ui/iconos.tsx';
 import { app, leerTodo, sincronizar } from './app.ts';
 import { esc } from './carta.ts';
 import { actualizarEstado } from './vistas.ts';
@@ -21,13 +23,13 @@ export async function vistaLista(cont: HTMLElement): Promise<void> {
   const { datos } = await leerTodo();
   const lista = leerLista(datos.config);
   cont.innerHTML = `
-    <h2 style="margin-top:0">Lista de compras</h2>
+    
     <form class="entrada" id="formLista" style="padding:0 0 .8rem">
       <input id="nuevo" type="text" autocomplete="off" placeholder="Agregar: arroz" aria-label="Agregar a la lista" />
       <button class="primario" type="submit">Agregar</button>
     </form>
     <ul class="lista">${lista.map((x, i) => `<li class="fila" style="cursor:default"><span class="titulo">${esc(x)}</span>
-      <button class="chip" data-comprado="${i}">Ya lo compré</button></li>`).join('') || '<li class="vacio">La lista está vacía.</li>'}</ul>
+      <button class="chip" data-comprado="${i}">Ya lo compré</button></li>`).join('') || `<li>${vacioHtml(ShoppingBasket, 'La lista está vacía', 'Nada por comprar por ahora.', 'rosa')}</li>`}</ul>
     <p class="sub">También puedes escribirle al chat: «falta arroz y sal». Al comprar, anota el gasto con su precio: «arroz 8000».</p>`;
   cont.querySelector('#formLista')!.addEventListener('submit', async e => {
     e.preventDefault();
@@ -54,13 +56,13 @@ export async function vistaCatalogo(cont: HTMLElement): Promise<void> {
   const { datos } = await leerTodo();
   const cat: Catalogo = leerCatalogo(datos) ?? { productos: [] };
   cont.innerHTML = `
-    <h2 style="margin-top:0">Catálogo</h2>
+    
     <p class="sub">Los productos que vendes, con su precio. Después escribes «vendí 3 botellas de jugo» o «15 galletas a granel» y el bot calcula el total.</p>
     ${cat.productos.map((p, i) => `<section class="tarjeta" style="margin-bottom:.6rem">
       <div class="fila-tope"><b>${esc(p.nombre)}</b><button class="chip" data-quitar="${i}">Quitar</button></div>
       <ul class="lista" style="margin-top:.5rem">${p.presentaciones.map((x, j) => `<li class="fila" data-precio="${i}:${j}">
         <span class="titulo">${esc(x.nombre)}</span><span class="monto">${formatear(x.precio)}</span></li>`).join('')}</ul>
-      <div class="acciones"><button class="secundario" data-mas="${i}">Agregar presentación</button></div></section>`).join('') || '<p class="vacio">Todavía no hay productos.</p>'}
+      <div class="acciones"><button class="secundario" data-mas="${i}">Agregar presentación</button></div></section>`).join('') || vacioHtml(Package, 'Todavía no hay productos', 'Agrégalos para poder vender desde el chat.', 'cian')}
     <div class="acciones"><button class="primario" id="nuevoProducto">Agregar producto</button></div>
     <p class="sub">Toca un precio para cambiarlo.</p>`;
 

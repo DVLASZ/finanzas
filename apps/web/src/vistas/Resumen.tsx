@@ -3,7 +3,7 @@
  * comparativas contra el periodo anterior, topes con color según el avance y el informe para imprimir.
  */
 import { signal } from '@preact/signals';
-import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Minus, PiggyBank, Scale, TrendingDown, TrendingUp } from 'lucide-preact';
+import { Receipt, ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Minus, PiggyBank, Scale, TrendingDown, TrendingUp } from 'lucide-preact';
 import { useState } from 'preact/hooks';
 import {
   agruparCategorias, aLocal, describirDia, estadoPresupuesto, formatear, gastoPorCategoria, ingresosPorFuente, leerMetas,
@@ -12,6 +12,7 @@ import {
 import { esc } from '../carta.ts';
 import { ctx as contexto, datos as datosSignal } from '../estado/store.ts';
 import { fechaAtras } from '../periodos.ts';
+import { BarraAvance, Insignia, Vacio, visualDeNombre } from '../ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../ui/piezas.tsx';
 
 type Periodo = 'semana' | 'mes' | 'anio';
@@ -173,11 +174,10 @@ export function Resumen() {
         <section class="tarjeta space-y-3">
           <h3 class="!m-0">Topes</h3>
           {topes.map(t => {
-            const clase = t.porcentaje >= 100 ? 'mal' : t.porcentaje >= 80 ? 'aviso' : '';
             return (
               <div key={t.nombre} class="tope">
                 <div class="fila-tope"><span>{t.nombre}</span><span class="tabular-nums">{formatear(t.gastado)} de {formatear(t.tope)} ({t.porcentaje}%)</span></div>
-                <div class="barra-fondo"><div class={`barra-relleno ${clase}`} style={{ width: `${Math.min(100, t.porcentaje)}%` }} /></div>
+                <BarraAvance porcentaje={t.porcentaje} />
               </div>
             );
           })}
@@ -200,10 +200,10 @@ export function Resumen() {
       <section class="tarjeta">
         <h3 class="!mt-0">Por categoría</h3>
         <div class="barras">
-          {grupos.length === 0 && <p class="vacio">Sin gastos en este periodo.</p>}
+          {grupos.length === 0 && <Vacio Icono={Receipt} titulo="Sin gastos en este periodo" detalle="Cuando anotes gastos, aquí ves en qué se fueron." tono="esmeralda" />}
           {grupos.map(c => [
             <div key={c.cuenta.id} class="barra-fila">
-              <span class="barra-nombre">{c.cuenta.nombre}</span>
+              <span class="barra-nombre flex items-center gap-2"><Insignia v={visualDeNombre(c.cuenta.nombre)} tam={26} /><span class="truncate">{c.cuenta.nombre}</span></span>
               <div class="barra-fondo"><div class="barra-relleno" style={{ width: `${Math.max(2, (c.total / maximo) * 100)}%` }} /></div>
               <span class="barra-valor tabular-nums">{formatear(c.total)}</span>
             </div>,

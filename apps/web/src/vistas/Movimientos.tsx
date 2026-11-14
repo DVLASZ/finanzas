@@ -3,7 +3,7 @@
  * la foto del recibo y el botón de anular. Los filtros se recuerdan entre visitas.
  */
 import { signal } from '@preact/signals';
-import { Ban, Camera, ChevronLeft, ChevronRight, ImagePlus, Search, SlidersHorizontal, Trash2, X } from 'lucide-preact';
+import { Ban, Camera, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
@@ -15,7 +15,8 @@ import { app, bajarFoto, borrarFotoEnServidor, sincronizar, subirFoto } from '..
 import { subirDesdeAbajo } from '../efectos.ts';
 import { ctx as contexto, datos as datosSignal, refrescar } from '../estado/store.ts';
 import { fechaAtras } from '../periodos.ts';
-import { tintaDe } from '../ui/piezas.tsx';
+import { Esqueleto, Insignia, Vacio, visualDeMovimiento } from '../ui/iconos.tsx';
+import { MontoAnimado } from '../ui/piezas.tsx';
 
 /** Baja la foto a 1000 px de lado largo y la guarda como JPEG: un recibo no necesita más y así pesa poco (unos 100 KB). */
 async function reducirFoto(archivo: File): Promise<Blob> {
@@ -77,6 +78,7 @@ function Detalle({ m }: { m: Movimiento }) {
   const ctx = contexto.value!;
   const hoja = useRef<HTMLDivElement>(null);
   const [foto, setFoto] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(true);
   const nombre = (id: string) => datos.cuentas.find(c => c.id === id)?.nombre ?? id;
   const clave = `recibo:${m.id}`;
   const claveSubida = `recibo-subido:${m.id}`;
@@ -91,6 +93,7 @@ function Detalle({ m }: { m: Movimiento }) {
       if (blob) { await escribir(clave, blob); await escribir(claveSubida, true); }
     }
     setFoto(prev => { if (prev) URL.revokeObjectURL(prev); return blob ? URL.createObjectURL(blob) : null; });
+    setCargando(false);
   };
   useEffect(() => { if (hoja.current) subirDesdeAbajo(hoja.current); void verRecibo(); }, [m.id]);
 
@@ -130,6 +133,7 @@ function Detalle({ m }: { m: Movimiento }) {
           {m.asientos.map((a, i) => <li key={i}><span>{nombre(a.cuentaId)}</span><span class="tabular-nums">{formatear(a.monto, a.moneda)}</span></li>)}
         </ul>
         <div id="recibo" class="recibo">
+          {cargando && <Esqueleto class="h-28 w-full" />}
           {foto && <>
             <img src={foto} alt="Foto del recibo" class="max-w-full rounded-2xl ring-1 ring-anillo" />
             <button class="chip" id="quitarFoto" onClick={quitar}><Trash2 size={16} />Quitar la foto</button>
@@ -218,14 +222,14 @@ export function Movimientos() {
         </div>
       )}
 
-      <div class="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]" role="group" aria-label="Tipo">
-        {TIPOS.map(([t, e]) => <button key={t} class="chip shrink-0" data-tipo={t} aria-pressed={f.tipo === t} onClick={() => poner({ tipo: t })}>{e}</button>)}
+      <div class="carrusel no-scrollbar" role="group" aria-label="Tipo">
+        {TIPOS.map(([t, e]) => <button key={t} class="chip" data-tipo={t} aria-pressed={f.tipo === t} onClick={() => poner({ tipo: t })}>{e}</button>)}
       </div>
 
       <div class="barra filtros">
         {selector('f-categoria', 'Categoría', 'Todas las categorías', 'categoria', f.categoria, 'categoria')}
-        {selector('f-cuenta', 'Cuenta', 'Todas las cuentas', 'dinero', f.cuenta, 'cuenta')}
-        {selector('f-persona', 'Persona', 'Todas las personas', 'persona', f.persona, 'persona')}
+        {selector('f-cuenta', 'Cuenta', 'Cuentas', 'dinero', f.cuenta, 'cuenta')}
+        {selector('f-persona', 'Persona', 'Personas', 'persona', f.persona, 'persona')}
       </div>
 
       <div class="barra">
@@ -233,13 +237,16 @@ export function Movimientos() {
           <Search size={17} class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-tx2" />
           <input id="buscar" type="search" class="!pl-10" placeholder="Buscar (concepto, #evento, lugar)" aria-label="Buscar" value={busqueda.value} onInput={e => { busqueda.value = (e.target as HTMLInputElement).value; limite.value = 60; }} />
         </div>
-        <label class="check"><input type="checkbox" id="anulados" checked={verAnulados.value} onChange={e => { verAnulados.value = (e.target as HTMLInputElement).checked; }} /> anulados</label>
+        <label class="check check-chip"><input type="checkbox" id="anulados" checked={verAnulados.value} onChange={e => { verAnulados.value = (e.target as HTMLInputElement).checked; }} /> anulados</label>
         {hayFiltros && <button class="chip" id="limpiar" onClick={() => { busqueda.value = ''; poner({ tipo: 'todos', categoria: '', cuenta: '', persona: '' }); }}><SlidersHorizontal size={15} />Quitar filtros</button>}
       </div>
 
-      <div class="tarjeta flex flex-wrap items-center justify-between gap-x-4 gap-y-1 !py-3">
-        <span id="cuenta" class="text-sm">{lista.length} movimientos · Gastos <b class="mal tabular-nums">{formatear(gastos)}</b> · Ingresos <b class="bien tabular-nums">{formatear(ingresos)}</b></span>
+      <div class="grid grid-cols-3 gap-2">
+        <div class="tarjeta kpi"><div class="etiqueta flex items-center gap-1"><TrendingUp size={13} class="text-pos" />Ingresos</div><div class="kpi-v bien"><MontoAnimado valor={ingresos} /></div></div>
+        <div class="tarjeta kpi"><div class="etiqueta flex items-center gap-1"><TrendingDown size={13} class="text-neg" />Gastos</div><div class="kpi-v mal"><MontoAnimado valor={gastos} /></div></div>
+        <div class="tarjeta kpi"><div class="etiqueta flex items-center gap-1"><Scale size={13} class="text-info" />Balance</div><div class={`kpi-v ${ingresos - gastos < 0 ? 'mal' : 'bien'}`}><MontoAnimado valor={ingresos - gastos} /></div></div>
       </div>
+      <p id="cuenta" class="sub !my-0 px-1">{lista.length} movimientos · Gastos {formatear(gastos)} · Ingresos {formatear(ingresos)}</p>
 
       {desglose.length > 0 && (
         <details class="desglose tarjeta" id="desglose">
@@ -255,7 +262,7 @@ export function Movimientos() {
       )}
 
       <ul class="lista" id="lista">
-        {grupos.length === 0 && <li class="vacio">No hay movimientos con estos filtros.</li>}
+        {grupos.length === 0 && <li><Vacio Icono={SearchX} titulo="No hay movimientos" detalle="Prueba con otro periodo o quita los filtros." /></li>}
         {grupos.map(g => [
           <li key={`d${g.dia}`} class="grupo" aria-hidden="true">{describirDia(g.dia)}</li>,
           ...g.items.map(m => {
@@ -264,11 +271,11 @@ export function Movimientos() {
             const categoria = cs.find(c => c.tipo === 'categoria')?.nombre ?? m.tipo;
             const cuenta = cs.find(c => c.tipo === 'dinero')?.nombre ?? '';
             const ruta = m.lugarDesde || m.lugarHasta ? ` · ${m.lugarDesde ?? '?'} a ${m.lugarHasta ?? '?'}` : '';
-            const tinta = tintaDe(categoria);
+            const visual = visualDeMovimiento(m, datos.cuentas);
             return (
               <li key={m.id} class={`fila ${m.estado === 'anulado' ? 'anulado' : ''}`} data-id={m.id} onClick={() => { abierto.value = m.id; }}>
                 <div class="flex min-w-0 items-center gap-3">
-                  <span class={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-bold uppercase ${tinta.fondo} ${tinta.texto}`} aria-hidden="true">{categoria.slice(0, 1)}</span>
+                  <Insignia v={visual} tam={42} />
                   <div class="min-w-0">
                     <div class="titulo">{m.descripcion}{m.etiqueta && <span class="etiq"> #{m.etiqueta}</span>}</div>
                     <div class="sub">{categoria}{cuenta ? ' · ' + cuenta : ''}{ruta} · {describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora)}</div>

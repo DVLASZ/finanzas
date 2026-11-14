@@ -7,6 +7,8 @@
 import { aMinor, formatear, gruposDe, hallarMontos, leerSubcategorias, limpiar, profundidad, puedeIrDentro, rutaDe, MAX_NIVELES, type Cuenta } from '../../../packages/core/src/index.ts';
 import { app, leerTodo, sincronizar } from './app.ts';
 import { esc } from './carta.ts';
+import { Users } from 'lucide-preact';
+import { insigniaHtml, vacioHtml, visualDeNombre } from './ui/iconos.tsx';
 import { actualizarEstado } from './vistas.ts';
 
 const CATEGORIAS_DEL_SISTEMA = ['cat:descuadre'];
@@ -39,17 +41,20 @@ export async function vistaCuentas(cont: HTMLElement): Promise<void> {
   try { fijas = JSON.parse(datos.config.categoria_persona ?? '{}') ?? {}; } catch { /* JSON mal escrito: sin categorías fijas */ }
 
   cont.innerHTML = `
-    <h2 style="margin-top:0">Categorías</h2>
-    <form class="entrada" id="formCat" style="padding:0 0 .8rem">
+    
+    <form class="form-nueva" id="formCat">
       <input id="nuevaCat" type="text" autocomplete="off" placeholder="Nueva categoría: Viajes" aria-label="Nueva categoría" />
-      <select id="dentroDe" aria-label="Dentro de"><option value="">Categoría principal</option>${sitiosParaNueva.map(c => `<option value="${esc(c.id)}">Dentro de ${esc(rutaDe(padres, c.id, datos.cuentas))}</option>`).join('')}</select>
-      <button class="primario" type="submit">Agregar</button>
+      <div class="fila2">
+        <select id="dentroDe" aria-label="Dentro de"><option value="">Categoría principal</option>${sitiosParaNueva.map(c => `<option value="${esc(c.id)}">Dentro de ${esc(rutaDe(padres, c.id, datos.cuentas))}</option>`).join('')}</select>
+        <button class="primario" type="submit">Agregar</button>
+      </div>
     </form>
     <ul class="lista">${categorias.map(c => {
       const tope = datos.presupuestos[c.id];
-      return `<li class="fila" style="cursor:default"><div><div class="titulo">${esc(c.nombre)}</div>
-        <div class="sub">${padres[c.id] ? `Dentro de ${esc(rutaDe(padres, padres[c.id], datos.cuentas))} · ` : ''}${tope ? `Tope mensual ${esc(formatear(tope))}` : 'Sin tope'}</div></div>
-        <div class="acciones"><button class="chip" data-renombrar="${esc(c.id)}">Renombrar</button><button class="chip" data-tope="${esc(c.id)}">Tope</button>
+      return `<li class="ficha"><div class="ficha-cab">${insigniaHtml(visualDeNombre(c.nombre), 42)}<div class="cuerpo"><div class="titulo">${esc(c.nombre)}</div>
+        <div class="sub">${padres[c.id] ? `Dentro de ${esc(rutaDe(padres, padres[c.id], datos.cuentas))}` : 'Categoría principal'}</div></div>
+        <span class="insig-tope ${tope ? 'con' : ''}">${tope ? esc(formatear(tope)) : 'Sin tope'}</span></div>
+        <div class="ficha-acc"><button class="chip" data-renombrar="${esc(c.id)}">Renombrar</button><button class="chip" data-tope="${esc(c.id)}">Tope</button>
         <select data-padre="${esc(c.id)}" aria-label="Dentro de, para ${esc(c.nombre)}"><option value="">Principal</option>${categorias.filter(x => puedeIrDentro(padres, c.id, x.id) || padres[c.id] === x.id).map(x => `<option value="${esc(x.id)}"${padres[c.id] === x.id ? ' selected' : ''}>Dentro de ${esc(rutaDe(padres, x.id, datos.cuentas))}</option>`).join('')}</select></div></li>`;
     }).join('')}</ul>
 
@@ -58,10 +63,10 @@ export async function vistaCuentas(cont: HTMLElement): Promise<void> {
       <div class="sub">${esc(grupos.find(g => g.id === p.grupo)?.nombre ?? 'Sin grupo')}${fijas[p.id] ? ` · lo que se le da va a ${esc(datos.cuentas.find(c => c.id === fijas[p.id])?.nombre ?? '?')}` : ''}</div></div>
       <div class="acciones"><button class="chip" data-persona="${esc(p.id)}">Cambiar nombre</button><button class="chip" data-apodos="${esc(p.id)}">Apodos${apodos[p.id]?.length ? ` (${apodos[p.id].length})` : ''}</button>
       <select data-grupo="${esc(p.id)}" aria-label="Grupo de ${esc(p.nombre)}"><option value="">Grupo...</option>${grupos.map(g => `<option value="${esc(g.id)}"${g.id === p.grupo ? ' selected' : ''}>${esc(g.nombre)}</option>`).join('')}</select>
-      <select data-fija="${esc(p.id)}" aria-label="Categoría fija de ${esc(p.nombre)}"><option value="">Sin categoría fija</option>${categorias.map(c => `<option value="${esc(c.id)}"${c.id === fijas[p.id] ? ' selected' : ''}>${esc(c.nombre)}</option>`).join('')}</select></div></li>`).join('') || '<li class="vacio">Todavía no hay personas. Aparecen cuando las nombras en el chat.</li>'}</ul>
+      <select data-fija="${esc(p.id)}" aria-label="Categoría fija de ${esc(p.nombre)}"><option value="">Sin categoría fija</option>${categorias.map(c => `<option value="${esc(c.id)}"${c.id === fijas[p.id] ? ' selected' : ''}>${esc(c.nombre)}</option>`).join('')}</select></div></li>`).join('') || `<li>${vacioHtml(Users, 'Todavía no hay personas', 'Aparecen cuando las nombras en el chat.', 'violeta')}</li>`}</ul>
     <h2>Palabras que aprendí</h2>
     <p class="sub">Cuando me dices en qué categoría va una palabra, la recuerdo. Si una quedó mal, olvídala y te vuelvo a preguntar.</p>
-    <ul class="lista">${palabras.map(([w, a]) => `<li class="fila" style="cursor:default"><div><div class="titulo">${esc(w)}</div><div class="sub">${esc(datos.cuentas.find(x => x.id === (a.categoriaId ?? a.cuentaId))?.nombre ?? '?')}</div></div><button class="chip" data-olvidar="${esc(w)}">Olvidar</button></li>`).join('') || '<li class="vacio">Todavía no aprendí palabras nuevas.</li>'}</ul>
+    <ul class="lista">${palabras.map(([w, a]) => `<li class="fila" style="cursor:default"><div><div class="titulo">${esc(w)}</div><div class="sub">${esc(datos.cuentas.find(x => x.id === (a.categoriaId ?? a.cuentaId))?.nombre ?? '?')}</div></div><button class="chip" data-olvidar="${esc(w)}">Olvidar</button></li>`).join('') || `<li>${vacioHtml(Users, 'Sin palabras aprendidas', 'Cuando me digas en qué categoría va una palabra, la recordaré.', 'cian')}</li>`}</ul>
     <p class="sub">Un tope mensual avisa cuando llevas el 80 % y el 100 % de lo que le pusiste. La categoría fija de una persona hace que lo que le das vaya siempre ahí, sin preguntar qué fue.</p>`;
 
   cont.querySelector('#formCat')!.addEventListener('submit', async e => {

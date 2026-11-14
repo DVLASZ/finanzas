@@ -17,7 +17,7 @@ export async function vistaGuia(cont: HTMLElement, irAlChat: () => void): Promis
     { titulo: '5. Mira cómo vas', texto: 'En el chat puedes escribir «saldo», «mes» o «deudas». Abajo tienes Saldos, Movimientos (con filtros) y Resumen.', ejemplo: 'saldo' },
   ];
   cont.innerHTML = `
-    <h2 style="margin-top:0">Primeros pasos</h2>
+    
     <p class="sub">Toca «Probar» y el ejemplo queda escrito en el chat. Solo falta enviarlo.</p>
     <ul class="lista">${pasos.map((p, i) => `<li class="fila" style="cursor:default;align-items:flex-start"><div>
       <div class="titulo">${esc(p.titulo)}</div><div class="sub">${esc(p.texto)}</div>
