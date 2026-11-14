@@ -3,7 +3,7 @@
  * abren desde aquí. Las pantallas grandes de configuración siguen siendo las de siempre (HTML armado con
  * plantillas) montadas dentro de `VistaLegada`; llevan el mismo aspecto porque comparten las clases del CSS.
  */
-import { ArrowLeft, BookOpen, ChevronRight, CircleHelp, ClipboardCheck, HandCoins, Inbox, Landmark, Settings, ShoppingBasket, Tags, Users, Package } from 'lucide-preact';
+import { ArrowLeft, Info, BookOpen, ChevronRight, CircleHelp, ClipboardCheck, HandCoins, Inbox, Landmark, Settings, ShoppingBasket, Tags, Users, Package } from 'lucide-preact';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { hayTrabajadores, vendeProductos } from '../../../../packages/core/src/index.ts';
@@ -13,8 +13,8 @@ import { vistaConciliar } from '../conciliarVista.ts';
 import { vistaCuentas } from '../cuentasVista.ts';
 import { vistaGuia } from '../guiaVista.ts';
 import { ctx as contexto, datos as datosSignal } from '../estado/store.ts';
-import { irA, prellenarChat, type Pantalla } from '../estado/nav.ts';
-import { Insignia, T, type Icono, type Visual } from '../ui/iconos.tsx';
+import { atras, irA, prellenarChat, type Pantalla } from '../estado/nav.ts';
+import { Insignia, T, iconoHtml, type Icono, type Visual } from '../ui/iconos.tsx';
 import { Escalonado } from '../ui/piezas.tsx';
 import { vistaAjustes } from './ajustes.ts';
 import { vistaDeudas } from './deudas.ts';
@@ -84,12 +84,35 @@ export function Mas() {
   );
 }
 
+/** Las notas sueltas (párrafos con la clase `sub`) pasan a ser un cuadro con ícono, para que no queden pegadas al borde. */
+function decorarNotas(raiz: HTMLElement): void {
+  raiz.querySelectorAll<HTMLElement>('p.sub:not([id]):not(.callout)').forEach(p => {
+    if (!p.textContent?.trim() || p.closest('.fila, .alerta')) return;
+    const txt = document.createElement('span');
+    txt.className = 'callout-txt';
+    while (p.firstChild) txt.append(p.firstChild);
+    const ico = document.createElement('span');
+    ico.className = 'callout-ico';
+    ico.innerHTML = iconoHtml(Info, 16);
+    p.classList.add('callout');
+    p.append(ico, txt);
+  });
+}
+
 /** Monta una pantalla hecha con HTML plano dentro de un componente. Con `repintar`, se vuelve a armar cuando cambian los datos. */
 function VistaLegada({ dibujar, repintar = false }: { dibujar: (caja: HTMLElement) => unknown; repintar?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const datos = repintar ? datosSignal.value : null;
   useEffect(() => { if (ref.current) void dibujar(ref.current); }, [datos]);
-  return <div ref={ref} />;
+  // las pantallas se vuelven a armar a cada acción: las notas se decoran cada vez
+  useEffect(() => {
+    const caja = ref.current;
+    if (!caja) return;
+    const ob = new MutationObserver(() => { ob.disconnect(); decorarNotas(caja); ob.observe(caja, { childList: true, subtree: true }); });
+    ob.observe(caja, { childList: true, subtree: true });
+    return () => ob.disconnect();
+  }, []);
+  return <div ref={ref} class="pb-10" />;
 }
 
 export function Subvista({ pantalla }: { pantalla: Pantalla }) {
@@ -109,7 +132,7 @@ export function Subvista({ pantalla }: { pantalla: Pantalla }) {
   const e = TODAS.find(x => x.id === pantalla);
   return (
     <>
-      <button class="volver" aria-label="Volver al menú Más" onClick={() => irA('mas')}><ArrowLeft size={20} /><span>Volver</span></button>
+      <button class="volver" aria-label="Volver al menú Más" onClick={atras}><ArrowLeft size={20} /><span>Volver</span></button>
       {e && <div class="mb-3 flex items-center gap-3"><Insignia v={{ Icono: e.Icono, ...T[e.tema] }} tam={44} /><h2 class="!m-0 min-w-0 truncate">{e.nombre}</h2></div>}
       {pantallas[pantalla]}
     </>

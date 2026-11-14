@@ -13,6 +13,7 @@ import {
 import { escribir, leer } from '../almacen.ts';
 import { app, bajarFoto, borrarFotoEnServidor, sincronizar, subirFoto } from '../app.ts';
 import { subirDesdeAbajo } from '../efectos.ts';
+import { abrirDetalle, atras, detalle } from '../estado/nav.ts';
 import { ctx as contexto, datos as datosSignal, refrescar } from '../estado/store.ts';
 import { fechaAtras } from '../periodos.ts';
 import { Esqueleto, Insignia, Vacio, visualDeMovimiento } from '../ui/iconos.tsx';
@@ -48,7 +49,6 @@ const filtros = signal<Filtros>(leerFiltros());
 const busqueda = signal('');
 const verAnulados = signal(false);
 const limite = signal(60);
-const abierto = signal<string | null>(null);
 
 function poner(cambio: Partial<Filtros>): void {
   filtros.value = { ...filtros.value, ...cambio };
@@ -116,14 +116,14 @@ function Detalle({ m }: { m: Movimiento }) {
   const anular = async () => {
     if (!confirm(`¿Anular «${m.descripcion}»? No se borra: queda marcado como anulado.`)) return;
     await app.repo.anularMovimiento(m.id, new Date(Date.now() - 5 * 3600e3).toISOString().slice(0, 19).replace('T', ' '));
-    abierto.value = null;
+    atras();
     void sincronizar();
     await refrescar();
   };
 
   // va fuera de la pantalla: un ancestro con transform (la animación de entrada) rompería el position: fixed
   return createPortal(
-    <div id="detalle" class="fixed inset-0 z-50 flex items-end justify-center bg-black/55 backdrop-blur-[2px]" onClick={e => { if (e.target === e.currentTarget) abierto.value = null; }}>
+    <div id="detalle" class="fixed inset-0 z-50 flex items-end justify-center bg-black/55 backdrop-blur-[2px]" onClick={e => { if (e.target === e.currentTarget) atras(); }}>
       <div ref={hoja} role="dialog" aria-modal="true" aria-label="Detalle del movimiento" class="max-h-[88%] w-full max-w-xl overflow-y-auto rounded-t-[1.8rem] bg-sup p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] shadow-[0_-20px_60px_-20px_rgba(0,0,0,.6)] ring-1 ring-anillo">
         <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-bor" />
         <h3 class="!mt-0">{m.descripcion}</h3>
@@ -143,7 +143,7 @@ function Detalle({ m }: { m: Movimiento }) {
           <label class="secundario archivo"><Camera size={18} />Tomar foto<input type="file" id="fotoCamara" accept="image/*" capture="environment" hidden onChange={alElegir} /></label>
           <label class="secundario archivo"><ImagePlus size={18} />Subir imagen<input type="file" id="fotoArchivo" accept="image/*" hidden onChange={alElegir} /></label>
           {m.estado === 'ok' && <button class="peligro" id="anular" onClick={anular}><Ban size={18} />Anular</button>}
-          <button class="secundario" id="cerrar" onClick={() => { abierto.value = null; }}><X size={18} />Cerrar</button>
+          <button class="secundario" id="cerrar" onClick={atras}><X size={18} />Cerrar</button>
         </div>
       </div>
     </div>,
@@ -206,7 +206,7 @@ export function Movimientos() {
     const g = grupos[grupos.length - 1];
     if (g && g.dia === dia) g.items.push(m); else grupos.push({ dia, items: [m] });
   }
-  const abierta = abierto.value ? datos.movimientos.find(m => m.id === abierto.value) : undefined;
+  const abierta = detalle.value ? datos.movimientos.find(m => m.id === detalle.value) : undefined;
 
   return (
     <div class="space-y-3">
@@ -273,7 +273,7 @@ export function Movimientos() {
             const ruta = m.lugarDesde || m.lugarHasta ? ` · ${m.lugarDesde ?? '?'} a ${m.lugarHasta ?? '?'}` : '';
             const visual = visualDeMovimiento(m, datos.cuentas);
             return (
-              <li key={m.id} class={`fila ${m.estado === 'anulado' ? 'anulado' : ''}`} data-id={m.id} onClick={() => { abierto.value = m.id; }}>
+              <li key={m.id} class={`fila ${m.estado === 'anulado' ? 'anulado' : ''}`} data-id={m.id} onClick={() => abrirDetalle(m.id)}>
                 <div class="flex min-w-0 items-center gap-3">
                   <Insignia v={visual} tam={42} />
                   <div class="min-w-0">
