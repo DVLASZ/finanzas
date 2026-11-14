@@ -70,7 +70,7 @@ const banner = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" 
   <rect x="1.5" y="1.5" width="${W - 3}" height="${H - 3}" rx="25" fill="none" stroke="url(#borde)" stroke-opacity=".55" stroke-width="2"/>
   <g font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
     <text x="64" y="104" font-size="56" font-weight="800" fill="url(#titulo)" letter-spacing="-1">Finanzas por mensajes</text>
-    <text x="66" y="146" font-size="22" fill="#9CA9BF">Cuéntale tu plata al chat como se la contarías a alguien. Todo cuadra.</text>
+    <text x="66" y="146" font-size="22" fill="#9CA9BF">Cuéntale tu plata al chat, como se la contarías a alguien.</text>
   </g>
   <g transform="translate(64 0)">
     <rect x="0" y="172" width="${W - 128}" height="136" rx="18" fill="#111827" stroke="#263249" stroke-width="1.5"/>

@@ -71,7 +71,7 @@ Todas piden la clave de la instalación en la cabecera `Authorization: Bearer`.
 | `POST /api/push/suscribir`, `/baja`, `/probar` | Suscribir, dar de baja y probar los avisos. |
 | `POST /api/purgar`, `/api/borrar-todo` | Borrado definitivo. Piden PIN siempre y una frase de confirmación. |
 
-Cualquier otra ruta sirve los archivos de la app. Además hay una tarea diaria (`scheduled`) que manda los avisos.
+Cualquier otra ruta sirve los archivos de la app. Hay también una tarea diaria (`scheduled`) que manda los avisos.
 
 La ruta `/api/sync` revisa la forma de cada operación antes de tocar la base. Una operación mala se rechaza sola y no frena a las demás. Desde la app solo se pueden cambiar estas claves de configuración, y cualquier otra se rechaza: `fecha_apertura`, `catalogo`, `lista_compras`, `recurrentes`, `metas`, `categoria_persona`, `apodos_personas`, `grupos`, `subcategorias`, `cerrado_hasta`, `tope_arrastra` y `buzon`. La lista vive en `CLAVES_CONFIG_PERMITIDAS` (`packages/core/src/sync.ts`).
 
@@ -89,7 +89,7 @@ Como cada instalación la usa una sola persona, los choques casi no existen. Sin
 | Qué | Cómo se protege |
 |---|---|
 | La API | Clave larga, comparada en tiempo constante. |
-| Borrados definitivos | PIN en el servidor y una frase. En la app además hay PIN local, espera de 5 segundos y una última confirmación. |
+| Borrados definitivos | PIN en el servidor y una frase. En la app hay también PIN local, espera de 5 segundos y una última confirmación. |
 | Secretos | `wrangler secret put`. Nunca en git. |
 | Avisos | Llaves del servidor guardadas en claves `secreto_` de la base, que no salen del servidor. El aviso va cifrado. |
 | Datos | El bot anula, no borra. Una partida que no suma cero no se guarda. |
