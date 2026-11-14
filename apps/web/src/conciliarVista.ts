@@ -4,6 +4,8 @@
  * El archivo se lee en este aparato; no se sube a ningún lado.
  */
 import { conciliar, formatear, leerExtracto, describirDia, type Conciliacion } from '../../../packages/core/src/index.ts';
+import { FileWarning } from 'lucide-preact';
+import { vacioHtml } from './ui/iconos.tsx';
 import { leerTodo } from './app.ts';
 import { esc } from './carta.ts';
 import { prellenarChat } from './vistas.ts';
@@ -12,7 +14,7 @@ export async function vistaConciliar(cont: HTMLElement, irAlChat: () => void): P
   const { datos } = await leerTodo();
   const cuentas = datos.cuentas.filter(c => c.tipo === 'dinero' && c.enDisponible !== false && c.moneda === 'COP' && c.id !== 'efectivo');
   cont.innerHTML = `
-    <h2 style="margin-top:0">Conciliar con el banco</h2>
+    
     <p class="sub">Baja el extracto de la página del banco en CSV, elige la cuenta y súbelo. La app marca lo que ya anotaste y te propone lo que falta, como el 4x1000. El archivo no sale de este aparato.</p>
     <label>Cuenta<select id="cuenta">${cuentas.map(c => `<option value="${esc(c.id)}">${esc(c.nombre)}</option>`).join('')}</select></label>
     <div class="acciones"><label class="primario archivo">Elegir el CSV<input type="file" id="csv" accept=".csv,text/csv,text/plain" hidden /></label></div>
@@ -41,7 +43,7 @@ export async function vistaConciliar(cont: HTMLElement, irAlChat: () => void): P
     const archivo = (e.target as HTMLInputElement).files?.[0];
     if (!archivo) return;
     const filas = leerExtracto(await archivo.text());
-    if (!filas.length) { sal.innerHTML = '<p class="vacio">No pude leer ese archivo. Tiene que ser el CSV del extracto, con columnas de fecha y valor (o débito y crédito).</p>'; return; }
+    if (!filas.length) { sal.innerHTML = vacioHtml(FileWarning, 'No pude leer ese archivo', 'Tiene que ser el CSV del extracto, con columnas de fecha y valor (o débito y crédito).', 'coral'); return; }
     const cuenta = cont.querySelector<HTMLSelectElement>('#cuenta')!.value;
     dibujar(conciliar(datos, filas, cuenta), cuenta);
   });
