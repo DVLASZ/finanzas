@@ -10,7 +10,8 @@ import { BarraAvance, Insignia, Vacio, T } from '../../components/ui/iconos.tsx'
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
 import { celebrar } from '../../lib/efectos.ts';
 import { vibrar } from '../../lib/haptico.ts';
-import { app, sincronizar } from '../../services/app.ts';
+import { app } from '../../services/estado.ts';
+import { sincronizar } from '../../services/sincronizacion.ts';
 import { ctx as contexto, datos as datosSignal, refrescar } from '../../state/store.ts';
 
 /** Un color distinto para cada alcancía, según su lugar en la lista. */

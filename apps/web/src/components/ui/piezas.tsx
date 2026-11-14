@@ -2,6 +2,7 @@
  * Piezas pequeñas que usan todas las pantallas: números que cuentan, entrada escalonada, títulos de sección.
  * Los estilos están en estilos/tailwind.css (clases tarjeta, chip, primario...).
  */
+import { Info } from 'lucide-preact';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { formatear, type Moneda } from '../../../../../packages/core/src/index.ts';
@@ -51,3 +52,11 @@ export function tintaDe(texto: string): (typeof TINTAS)[number] {
   for (const c of texto) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return TINTAS[h % TINTAS.length];
 }
+
+/** Una nota suelta con ícono: lo que antes eran párrafos `p.sub` decorados a mano. */
+export function Nota({ children }: { children: ComponentChildren }) {
+  return <p class="callout"><span class="callout-ico"><Info size={16} /></span><span class="callout-txt">{children}</span></p>;
+}
+
+/** Lo que se muestra mientras los datos terminan de cargar. */
+export const Cargando = () => <p class="vacio">Cargando…</p>;

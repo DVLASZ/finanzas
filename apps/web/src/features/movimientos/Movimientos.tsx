@@ -11,7 +11,9 @@ import {
   type Cuenta, type Movimiento,
 } from '../../../../../packages/core/src/index.ts';
 import { claves, escribir, leer } from '../../services/almacen.ts';
-import { app, bajarFoto, borrarFotoEnServidor, sincronizar, subirFoto } from '../../services/app.ts';
+import { app } from '../../services/estado.ts';
+import { bajarFoto, borrarFotoEnServidor, subirFoto } from '../../services/fotos.ts';
+import { sincronizar } from '../../services/sincronizacion.ts';
 import { subirDesdeAbajo } from '../../lib/efectos.ts';
 import { abrirDetalle, atras, detalle, irA, prellenarChat } from '../../state/nav.ts';
 import { ctx as contexto, datos as datosSignal, refrescar } from '../../state/store.ts';

@@ -4,7 +4,7 @@
  */
 import type { LecturaOCR } from '../../../../packages/core/src/index.ts';
 import { aDataUrl, reducirParaLectura } from '../lib/imagen.ts';
-import { app, hayServidor } from './app.ts';
+import { app, hayServidor } from './estado.ts';
 
 export async function leerComprobante(foto: Blob): Promise<{ lectura?: LecturaOCR; error?: string }> {
   if (!hayServidor()) return { error: 'Leer comprobantes necesita el servidor. Conéctalo en Ajustes o escribe el gasto.' };

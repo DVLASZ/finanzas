@@ -8,7 +8,7 @@
  */
 import { computed, signal } from '@preact/signals';
 import { contextoDe, type Datos } from '../../../../packages/core/src/index.ts';
-import { alCambiarElEstado, app, hayServidor } from '../services/app.ts';
+import { alCambiarElEstado, app, hayServidor } from '../services/estado.ts';
 
 /** Una copia de los datos tal como están ahora (cuentas, movimientos, deudas, config...). Nula hasta que carga. */
 export const datos = signal<Datos | null>(null);
