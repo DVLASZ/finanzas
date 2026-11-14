@@ -260,8 +260,8 @@ export function Chat() {
       <form id="form" class="entrada vidrio mx-3 mb-1 rounded-[1.4rem] p-2 ring-1 ring-anillo" onSubmit={alEnviar}>
         <input id="texto" type="text" autocomplete="off" autocapitalize="sentences" placeholder="Ej.: mecato 5000" aria-label="Escribe lo que pasó" class="!bg-transparent !shadow-none" value={texto}
           onInput={e => { const v = (e.target as HTMLInputElement).value; setTexto(v); void escribir('borrador', v); }} />
-        <input type="file" id="archivoEscanear" accept="image/*" capture="environment" hidden onChange={e => { const f = (e.target as HTMLInputElement).files?.[0]; (e.target as HTMLInputElement).value = ''; if (f) void escanear(f); }} />
-        <button type="button" id="escanear" class="secundario mic" aria-label="Leer un comprobante con la cámara" title="Leer comprobante" disabled={escaneando} onClick={() => document.querySelector<HTMLInputElement>('#archivoEscanear')?.click()}><ScanLine size={21} /></button>
+        <input type="file" id="archivoEscanear" accept="image/*" hidden onChange={e => { const f = (e.target as HTMLInputElement).files?.[0]; (e.target as HTMLInputElement).value = ''; if (f) void escanear(f); }} />
+        <button type="button" id="escanear" class="secundario mic" aria-label="Leer un comprobante: cámara o galería" title="Leer comprobante" disabled={escaneando} onClick={() => document.querySelector<HTMLInputElement>('#archivoEscanear')?.click()}><ScanLine size={21} /></button>
         {Reconocedor && (
           <button type="button" id="mic" class={`secundario mic ${oyendo ? 'oyendo' : ''}`} aria-label={oyendo ? 'Dejar de escuchar' : 'Hablar'} aria-pressed={oyendo} onClick={alMicrofono}>
             {oyendo ? <span class="ondas" aria-hidden="true"><span /><span /><span /><span /><span /></span> : <Mic size={21} />}
