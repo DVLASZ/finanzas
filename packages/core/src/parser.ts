@@ -14,6 +14,7 @@ import { deuda, mePago, pagoDeDeuda, prestamo, regalo, ventaDelCatalogo } from '
 import { compraConLineas } from './parser/compras.ts';
 import { declaraciones } from './parser/declaraciones.ts';
 import { hallarFecha, hallarFechaLimite } from './fechas.ts';
+import { quitarComasDeMiles, repartoEnOtroOrden } from './reparto.ts';
 import { limpiar } from './texto.ts';
 import { type Contexto, type Moneda } from './tipos.ts';
 
@@ -134,7 +135,8 @@ export function repartoEntre(texto: string): string {
 }
 
 export function interpretar(texto: string, ctx: Contexto): Resultado {
-  texto = repartoEntre(texto);
+  // primero los números (el dictado trae «25,000»), después las dos formas de repartir un gasto
+  texto = repartoEnOtroOrden(repartoEntre(quitarComasDeMiles(texto)), ctx);
   // una compra con varias líneas se lee como un solo gasto y deja el detalle en la nota
   const compra = compraConLineas(texto);
   const deTerceros = plataDeTerceros(texto) !== texto;

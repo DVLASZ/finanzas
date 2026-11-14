@@ -5,6 +5,7 @@
  * («banco colombia», «davi plata») y quita la puntuación que el reconocedor agrega.
  */
 import { limpiar } from './texto.ts';
+import { quitarComasDeMiles } from './reparto.ts';
 
 const UNIDADES: Record<string, number> = {
   uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9,
@@ -83,7 +84,7 @@ export function normalizarDictado(dictado: string): string {
     salida.push(originales[i]);
     i++;
   }
-  let t = salida.join(' ').replace(/(\d)\s+pesos\b/gi, '$1');
+  let t = quitarComasDeMiles(salida.join(' ')).replace(/(\d)\s+pesos\b/gi, '$1');
   for (const [re, bien] of MAL_OIDAS) t = t.replace(re, bien);
   return t;
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { INSTRUCCIONES_OCR, montoDeTexto, aLocal, conSubcategorias, deLocal, leerSubcategorias, normalizarDictado, quitarEnviadas, type Op, repartoEntre, revisarMes, diasParaMeta, fraseDeOCR, gastosHormiga, leerMetas, leerRespuestaOCR, rangoPeriodo, seguroParaGastar } from '../src/index.ts';
+import { contextoDe, repartoEnOtroOrden, instruccionesIA, normalizarDictado as dictado, quitarComasDeMiles, INSTRUCCIONES_OCR, montoDeTexto, aLocal, conSubcategorias, deLocal, leerSubcategorias, normalizarDictado, quitarEnviadas, type Op, repartoEntre, revisarMes, diasParaMeta, fraseDeOCR, gastosHormiga, leerMetas, leerRespuestaOCR, rangoPeriodo, seguroParaGastar } from '../src/index.ts';
 import { AHORA, nuevoBot, textoDe } from '../../../tests/ayudas.ts';
 
 async function guardar(bot: ReturnType<typeof nuevoBot>, texto: string) {
@@ -299,4 +299,75 @@ test('ocr: un JSON con saltos de línea sueltos dentro de «texto» (lo que romp
 
 test('ocr: una respuesta sin nada útil no da lectura', () => {
   for (const r of ['', 'no veo nada', 'MONTO: null\nFECHA: null', '{"monto": null}', '{roto']) assert.equal(leerRespuestaOCR(r), null, r);
+});
+
+// ---------------------------------------------------------------- gastos repartidos dichos en voz alta
+
+async function conMarta() {
+  const bot = nuevoBot();
+  bot.repo.aplicarPlantilla('personal', { personas: [{ nombre: 'Marta', grupo: 'amigos' }] });
+  await guardar(bot, 'saldo inicial efectivo 100000');
+  return bot;
+}
+const asientosDe = (m: { asientos: { cuentaId: string; monto: number }[] }) => Object.fromEntries(m.asientos.map(a => [a.cuentaId, a.monto]));
+
+test('dictado: las comas de miles de Android se quitan, y un decimal no se toca', () => {
+  assert.equal(quitarComasDeMiles('almuerzo 25,000 pagué 20,000 por marta'), 'almuerzo 25000 pagué 20000 por marta');
+  assert.equal(quitarComasDeMiles('saldo 1,250,000 y 3,500'), 'saldo 1250000 y 3500');
+  assert.equal(quitarComasDeMiles('pesa 2,5 kilos y cuesta 1,50'), 'pesa 2,5 kilos y cuesta 1,50');
+  assert.equal(dictado('almuerzo 25,000 pagué 20,000 por marta'), 'almuerzo 25000 pagué 20000 por marta');
+  assert.equal(dictado('almuerzo veinticinco mil pagué veinte mil por marta'), 'almuerzo 25000 pagué 20000 por marta');
+});
+
+test('gasto repartido: todas las formas de decirlo dan lo mismo (25000 en total, 20000 de Marta)', async () => {
+  for (const frase of [
+    'almuerzo 25,000 pagué 20,000 por marta',
+    'almuerzo 25000 pagué 20000 por marta',
+    'almuerzo 25.000 pagué 20.000 por marta',
+    'almuerzo 25000 pagué por marta 20000',
+    'almuerzo 25000 por marta 20000',
+    'almuerzo 25000 20000 de marta',
+    'almuerzo 25000 marta 20000',
+    'Almuerzo 25,000 por Marta 20,000',
+    'almuerzo 25k pagué 20k por marta',
+  ]) {
+    const bot = await conMarta();
+    const tarjeta = textoDe(await bot.di(frase));
+    assert.match(tarjeta, /Gasto compartido/, frase + '\n' + tarjeta);
+    assert.doesNotMatch(tarjeta, /Veo varios montos/, frase);
+    await bot.pulsa('ok');
+    const m = (await bot.repo.cargar()).movimientos.filter(x => x.tipo === 'compartido').at(-1)!;
+    assert.deepEqual(asientosDe(m), { efectivo: -25000, 'cat:comida': 5000, 'per:marta': 20000 }, frase);
+  }
+});
+
+test('gasto repartido: lo que dicta el celular pasa por el dictado y queda igual', async () => {
+  const bot = await conMarta();
+  const oido = dictado('almuerzo 25,000 pagué 20,000 por marta');
+  assert.match(textoDe(await bot.di(oido)), /Tu parte: \$5\.000.*Marta te debe \$20\.000/s);
+});
+
+test('gasto repartido: no se confunde con otras frases', async () => {
+  const bot = await conMarta();
+  // sin gasto principal: «pagué 20000 por marta» sigue siendo lo que era
+  assert.doesNotMatch(textoDe(await bot.di('pagué 20000 por marta')), /Gasto compartido/);
+  await bot.pulsa('cancelar');
+  // una parte mayor que el total no es un reparto
+  assert.equal(repartoEnOtroOrden('almuerzo 25000 por marta 30000', (await bot.repo.cargar()) as never), 'almuerzo 25000 por marta 30000');
+  // un nombre que no conoces no se toma por persona
+  const ctx = contextoDe(await bot.repo.cargar(), AHORA);
+  assert.equal(repartoEnOtroOrden('almuerzo 25000 pedro 20000', ctx), 'almuerzo 25000 pedro 20000');
+  assert.equal(repartoEnOtroOrden('almuerzo 25000 por pedro 20000', ctx), 'almuerzo 25000 por pedro 20000');
+  // «pagué ... por» no necesita que la persona exista: se crea como en «pagué por ivan 3000»
+  assert.equal(repartoEnOtroOrden('almuerzo 25000 pagué 20000 por pedro', ctx), 'almuerzo 25000 pagué por pedro 20000');
+  // dos personas con una sola parte: no se adivina
+  assert.equal(repartoEnOtroOrden('almuerzo 25000 pagué 20000 por marta y pedro', ctx), 'almuerzo 25000 pagué 20000 por marta y pedro');
+});
+
+test('IA: las instrucciones dicen que un gasto repartido va en una sola frase y que no es pagar una deuda', async () => {
+  const bot = await conMarta();
+  const texto = instruccionesIA(await bot.repo.cargar());
+  assert.match(texto, /UNA sola frase/);
+  assert.match(texto, /pagué 20000 por marta/);
+  assert.match(texto, /no es pagar una deuda/);
 });

@@ -32,3 +32,4 @@ export * from './diccionario.ts';
 export * from './seguro.ts';
 export * from './hormiga.ts';
 export * from './ocr.ts';
+export * from './reparto.ts';
