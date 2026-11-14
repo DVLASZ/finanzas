@@ -1,4 +1,4 @@
-// Genera los dos SVG animados del README: docs/assets/banner.svg y docs/assets/typing-demo.svg.
+// Genera los dos SVG animados del README: docs/screenshots/banner.svg y docs/assets/typing-demo.svg.
 // Son SVG con animaciones CSS, sin imágenes: GitHub los muestra animados. Las frases son ejemplos reales que
 // el bot entiende (están en docs/BOT.md). Uso: node scripts/readme-assets.mjs
 
@@ -8,7 +8,9 @@ import { fileURLToPath } from 'node:url';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const salida = join(raiz, 'docs', 'assets');
+const salidaBanner = join(raiz, 'docs', 'screenshots');
 mkdirSync(salida, { recursive: true });
+mkdirSync(salidaBanner, { recursive: true });
 
 const FRASES = [
   { dice: 'mecato 5000', entiende: 'Gasto · Mecato · $5.000 · Efectivo' },
@@ -48,7 +50,7 @@ function bloque(x, y, tam, colorFrase, colorResp) {
 }
 
 const FONDO = `
-    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B0F19"/><stop offset="1" stop-color="#111827"/></linearGradient>
+    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#090D16"/><stop offset="1" stop-color="#111827"/></linearGradient>
     <linearGradient id="borde" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#38BDF8"/><stop offset=".5" stop-color="#10B981"/><stop offset="1" stop-color="#818CF8"/></linearGradient>
     <linearGradient id="titulo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#38BDF8"/><stop offset=".55" stop-color="#10B981"/><stop offset="1" stop-color="#818CF8"/></linearGradient>
     <radialGradient id="luz1" cx=".1" cy="1" r=".7"><stop offset="0" stop-color="#10B981" stop-opacity=".28"/><stop offset="1" stop-color="#10B981" stop-opacity="0"/></radialGradient>
@@ -71,6 +73,8 @@ const banner = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" 
   <g font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
     <text x="64" y="104" font-size="56" font-weight="800" fill="url(#titulo)" letter-spacing="-1">Finanzas por mensajes</text>
     <text x="66" y="146" font-size="22" fill="#9CA9BF">Cuéntale tu plata al chat, como se la contarías a alguien.</text>
+    <text x="${W - 64}" y="104" font-size="15" font-weight="700" fill="#818CF8" text-anchor="end" letter-spacing="1.5">PARTIDA DOBLE · SIN CONEXIÓN · GRATIS</text>
+    <text x="${W - 64}" y="130" font-size="14" fill="#6B7A92" text-anchor="end">TypeScript · Preact · Cloudflare Workers y D1</text>
   </g>
   <g transform="translate(64 0)">
     <rect x="0" y="172" width="${W - 128}" height="136" rx="18" fill="#111827" stroke="#263249" stroke-width="1.5"/>
@@ -80,7 +84,7 @@ const banner = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" 
   </g>
 </svg>
 `;
-writeFileSync(join(salida, 'banner.svg'), banner);
+writeFileSync(join(salidaBanner, 'banner.svg'), banner);
 
 // ------------------------------------------------------------------ demostración tipo chat
 const W2 = 820, H2 = 250;
@@ -104,4 +108,4 @@ const demo = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W2} ${H2}" 
 </svg>
 `;
 writeFileSync(join(salida, 'typing-demo.svg'), demo);
-console.log('Listo: docs/assets/banner.svg y docs/assets/typing-demo.svg');
+console.log('Listo: docs/screenshots/banner.svg y docs/assets/typing-demo.svg');
