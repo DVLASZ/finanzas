@@ -1,8 +1,11 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Cómo hablarle al bot
 
 El bot es el chat de la app. Escribes como hablas: el orden no importa, las tildes y las mayúsculas tampoco, y las faltas de ortografía se perdonan (`nekui` se entiende como Nequi).
 
-La regla de oro: el mensaje tiene que traer en qué y cuánto. Con solo `mecato` o solo `10k` no guarda nada y te dice qué falta. La fecha y la hora son las de ahora (hora de Colombia), salvo que digas otra.
+> [!IMPORTANT]
+> La regla de oro: el mensaje tiene que traer en qué y cuánto. Con solo `mecato` o solo `10k` no guarda nada y te dice qué falta. La fecha y la hora son las de ahora (hora de Colombia), salvo que digas otra.
 
 ## Cómo funciona
 
@@ -11,7 +14,11 @@ La regla de oro: el mensaje tiene que traer en qué y cuánto. Con solo `mecato`
 3. Nada se guarda hasta que pulsas Confirmar.
 4. Ya guardado, salen los botones Editar y Deshacer por si te equivocaste.
 
-El bot nunca borra, solo anula. Lo anulado queda marcado y se puede ver en la app. El borrado de verdad existe únicamente en Ajustes, con PIN.
+> [!NOTE]
+> El bot nunca borra, solo anula. Lo anulado queda marcado y se puede ver en la app. El borrado de verdad existe únicamente en Ajustes, con PIN.
+
+> [!TIP]
+> Escribe `ayuda` en el chat y el bot te da ejemplos con las cuentas de tu app. El camino de un mensaje, con diagrama, está en [MOTOR-CONTABLE.md](MOTOR-CONTABLE.md).
 
 Si no entiende una frase y el servidor tiene la ayuda de la IA, la reescribe y te muestra la tarjeta igual (ver [IA.md](IA.md)).
 

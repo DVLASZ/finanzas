@@ -1,3 +1,5 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Motor contable
 
 Todo el trabajo de entender un mensaje y convertirlo en plata que cuadra vive en `packages/core`. No depende de ninguna plataforma: lo usa el navegador (dentro de la app), el Worker y las pruebas. Este documento cuenta el camino de un mensaje; las tablas y las reglas de la partida doble están en [MODELO-DATOS.md](MODELO-DATOS.md).
@@ -14,12 +16,35 @@ flowchart LR
   C -- Editar o Cancelar --> R
 ```
 
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#111827', 'primaryTextColor': '#F1F5FB', 'primaryBorderColor': '#38BDF8', 'lineColor': '#10B981', 'secondaryColor': '#1B2538', 'tertiaryColor': '#090D16', 'fontFamily': 'system-ui'}}}%%
+sequenceDiagram
+  autonumber
+  participant P as Persona
+  participant B as bot.ts
+  participant X as parser.ts
+  participant S as asientos.ts
+  participant R as Repo
+  P->>B: almuerzo 12000
+  B->>X: interpretar el texto
+  X-->>B: propuesta, o lo que falta
+  B-->>P: tarjeta Entendí
+  P->>B: Confirmar
+  B->>S: propuesta a movimiento
+  S-->>B: asientos que suman cero
+  B->>R: guardar
+  R-->>P: queda anotado
+```
+
 1. `parser.ts` limpia el texto, reconoce montos, fechas, cuentas, personas y categorías, y arma una propuesta. Si algo falta (una categoría, con cuánto pagó), la propuesta lo dice y el bot pregunta con botones.
 2. `bot.ts` muestra la tarjeta «Entendí». Nada se guarda todavía.
 3. Al confirmar, `asientos.ts` convierte la propuesta en un movimiento con asientos que suman cero por moneda. Si no suman cero, no se guarda.
 4. El movimiento pasa al `Repo` y, en la app, a la cola de sincronización.
 
 ## La partida doble en una línea
+
+> [!NOTE]
+> Si los asientos de un movimiento no suman cero por moneda, no se guarda. Esa es la única regla que sostiene todo lo demás.
 
 Cada movimiento mueve plata entre cuentas y sus asientos suman cero. Un gasto resta de una cuenta de dinero y suma a una categoría; un préstamo resta de dinero y suma a una persona. No hay casos especiales: gastos, ingresos, deudas, ventas y cambios de moneda son el mismo modelo con otras cuentas.
 

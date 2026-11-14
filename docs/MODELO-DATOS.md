@@ -1,6 +1,33 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Modelo de datos
 
 El esquema está en `db/schema.sql`, comentado, y los datos iniciales en `db/seed.sql`. Los tipos de TypeScript equivalentes están en `packages/core/src/tipos.ts`.
+
+## Cómo se relacionan las tablas
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#111827', 'primaryTextColor': '#F1F5FB', 'primaryBorderColor': '#38BDF8', 'lineColor': '#10B981', 'secondaryColor': '#1B2538', 'tertiaryColor': '#090D16', 'fontFamily': 'system-ui'}}}%%
+erDiagram
+  cuentas ||--o{ asientos : "recibe"
+  movimientos ||--|{ asientos : "se compone de"
+  cuentas ||--o{ compromisos : "es la persona"
+  compromisos ||--o{ movimientos : "se mueve con"
+  cuentas {
+    text id
+    text tipo
+    text moneda
+  }
+  movimientos {
+    text id
+    text tipo
+    text estado
+  }
+  asientos {
+    text cuenta_id
+    int monto
+  }
+```
 
 ## La idea: cuentas y partida doble
 

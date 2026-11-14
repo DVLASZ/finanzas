@@ -1,8 +1,11 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Buzón entre apps y acceso de solo lectura
 
 ## Avisos entre tus apps
 
-Sirve para casos como este: otra persona te gira plata desde su app y a ti te aparece un aviso para anotar el ingreso. No pasan claves de acceso entre las apps. Cada Worker tiene una clave de buzón que solo sirve para dejar un aviso: con ella nadie puede leer ni cambiar datos.
+> [!NOTE]
+> Sirve para casos como este: otra persona te gira plata desde su app y a ti te aparece un aviso para anotar el ingreso. No pasan claves de acceso entre las apps. Cada Worker tiene una clave de buzón que solo sirve para dejar un aviso: con ella nadie puede leer ni cambiar datos.
 
 Cómo funciona:
 
