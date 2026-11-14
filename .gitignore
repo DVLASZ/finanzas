@@ -32,3 +32,4 @@ docs-privado/
 scripts/importar-*.mjs
 scripts/lib-excel.mjs
 docs/IMPORTACION.md
+auditoria-rework-completo.md

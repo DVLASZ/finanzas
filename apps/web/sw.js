@@ -38,6 +38,19 @@ self.addEventListener('notificationclick', evento => {
 self.addEventListener('fetch', evento => {
   const req = evento.request;
   const url = new URL(req.url);
+
+  // «Compartir» desde otra app (Nequi, la galería): la imagen se guarda aparte y se abre la app, que la lee con la IA
+  if (req.method === 'POST' && url.pathname.endsWith('/compartir')) {
+    evento.respondWith((async () => {
+      try {
+        const datos = await req.formData();
+        const archivo = datos.get('imagen');
+        if (archivo && typeof archivo !== 'string') await (await caches.open('finanzas-compartido')).put('./imagen', new Response(archivo));
+      } catch { /* sin imagen: se abre la app igual */ }
+      return Response.redirect('./?compartido=1', 303);
+    })());
+    return;
+  }
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/webhook/')) return;
 

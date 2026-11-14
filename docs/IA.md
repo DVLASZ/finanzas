@@ -10,6 +10,14 @@ La app lo hace sola cuando el bot responde que no entendió, hay servidor config
 
 Sin internet no hay ayuda de la IA: el bot dice lo que no entendió y reescribes la frase más simple.
 
+## Leer comprobantes
+
+La misma IA, con un modelo que ve imágenes, lee comprobantes: un pantallazo de Nequi, Daviplata o Bancolombia, o la foto de una tirilla de caja. Desde el botón de la cámara del chat, desde el detalle de un movimiento con foto, o compartiendo la imagen hacia la app desde otra app (el ícono ofrece «compartir» cuando la app está instalada).
+
+La app baja la foto a unos 150 KB y la manda a `POST /api/ocr`. El servidor devuelve monto, fecha, comercio y una categoría sugerida, y la app los vuelve una frase («mercado tienda don pepe 45000») que pasa por el bot y por la tarjeta de confirmación. Nada se guarda sin que pulses Confirmar, y la imagen no queda en ningún registro del servidor.
+
+Un modelo pequeño con visión se equivoca con letra borrosa o con tirillas largas. Por eso la tarjeta siempre se revisa antes de confirmar. Cuenta contra el mismo tope diario de ayudas. Si Cloudflare retira el modelo, se cambia con la variable `IA_OCR_MODELO` del Worker.
+
 ## Costo y límites
 
 Usa Workers AI de Cloudflare, que tiene una cuota gratis diaria. Para no pasarse hay un tope de 30 ayudas por día por instalación. Pasado el tope, el servidor responde que ya se usaron todas y la app muestra el mensaje normal del bot.

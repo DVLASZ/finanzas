@@ -4,16 +4,36 @@
  */
 import { render } from 'preact';
 import { App } from './App.tsx';
-import { aplicar } from './apariencia.ts';
-import { app, iniciar, sincronizar } from './app.ts';
-import { activarGestoAtras, iniciarHistorial } from './estado/nav.ts';
-import { iniciarEstado } from './estado/store.ts';
+import { aplicar } from './state/apariencia.ts';
+import { app, iniciar, sincronizar } from './services/app.ts';
+import { accionInicial, activarGestoAtras, imagenCompartida, irA, iniciarHistorial } from './state/nav.ts';
+import { iniciarEstado } from './state/store.ts';
+
+/**
+ * Lo que trae la dirección con la que se abrió la app: un acceso directo del ícono («?accion=gasto|voz|saldos») o una
+ * imagen compartida desde otra app («?compartido=1», que dejó guardada el service worker).
+ */
+async function atenderEntradas(): Promise<void> {
+  const q = new URLSearchParams(location.search);
+  const accion = q.get('accion');
+  if (accion === 'saldos') irA('saldos');
+  else if (accion === 'gasto' || accion === 'voz') accionInicial.value = accion;
+  if (q.get('compartido')) {
+    try {
+      const cache = await caches.open('finanzas-compartido');
+      const r = await cache.match('./imagen');
+      if (r) { imagenCompartida.value = await r.blob(); await cache.delete('./imagen'); }
+    } catch { /* sin cache: no hay imagen que leer */ }
+  }
+  if (q.size) history.replaceState(history.state, '', location.pathname);
+}
 
 async function arrancar(): Promise<void> {
   aplicar();
   await iniciar();
   await iniciarEstado();
   iniciarHistorial();
+  await atenderEntradas();
   activarGestoAtras();
   render(<App />, document.getElementById('raiz')!);
 
