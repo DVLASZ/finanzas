@@ -218,8 +218,8 @@ test('transferencia: retirar de Nequi llega al efectivo', async () => {
 
 test('cambio de moneda: pesos y dólares', async () => {
   const bot = nuevoBot();
-  const t = textoDe(await bot.di('cambio 32000 nequi a arq 8 usd'));
-  assert.match(t, /Cambio de moneda · \$32\.000 \(Nequi\) → US\$8,00 \(ARQ\)/);
+  const t = textoDe(await bot.di('cambio 32000 nequi a dolares 8 usd'));
+  assert.match(t, /Cambio de moneda · \$32\.000 \(Nequi\) → US\$8,00 \(Dólares\)/);
   assert.match(t, /\$4\.000 por dólar/);
   await bot.pulsa('ok');
   assert.equal(await saldo(bot, 'nequi'), -32000);
@@ -421,28 +421,28 @@ test('corrección sin pulsar Editar: «nequi» cambia la cuenta de la tarjeta', 
 
 test('saldo inicial: fija los saldos y NO es un ingreso', async () => {
   const bot = nuevoBot();
-  const t = textoDe(await bot.di('saldo inicial efectivo 85000 nequi 150000 arq 2 usd monedas 12000'));
+  const t = textoDe(await bot.di('saldo inicial efectivo 85000 nequi 150000 dolares 2 usd monedas 12000'));
   assert.match(t, /Efectivo: \$85\.000/);
-  assert.match(t, /ARQ: US\$2,00/);
+  assert.match(t, /Dólares: US\$2,00/);
   assert.match(t, /NO cuenta como ingreso/);
   await bot.pulsa('ok');
   const s = textoDe(await bot.di('saldo'));
   assert.match(s, /Efectivo \(billetera\): \$85\.000/);
   assert.match(s, /Nequi: \$150\.000/);
-  assert.match(s, /ARQ: US\$2,00/);
+  assert.match(s, /Dólares: US\$2,00/);
   assert.match(s, /Monedas \(aparte\): \$12\.000/);
   assert.match(textoDe(await bot.di('mes')), /Gastos: \$0/);
   assert.doesNotMatch(textoDe(await bot.di('mes')), /Ingresos/);
 });
 
-test('saldo: el ARQ (dólares) no se mezcla con el disponible en pesos', async () => {
+test('saldo: la cuenta en dólares no se mezcla con el disponible en pesos', async () => {
   const bot = nuevoBot();
-  await guardar(bot, 'saldo inicial efectivo 34000 nequi 90000 arq 2.22 usd');
-  await guardar(bot, 'cambio 32000 nequi a arq 8 usd'); // aunque haya una conversión, no se usa para convertir
+  await guardar(bot, 'saldo inicial efectivo 34000 nequi 90000 dolares 2.22 usd');
+  await guardar(bot, 'cambio 32000 nequi a dolares 8 usd'); // aunque haya una conversión, no se usa para convertir
   const s = textoDe(await bot.di('saldo'));
   assert.match(s, /Disponible: \$92\.000/);
-  assert.match(s, /ARQ: US\$10,22/);
-  assert.match(s, /ARQ va aparte, en dólares/);
+  assert.match(s, /Dólares: US\$10,22/);
+  assert.match(s, /Dólares va aparte, en dólares/);
 });
 
 test('saldo inicial con deudas', async () => {
@@ -511,7 +511,7 @@ test('los datos no se guardan dos veces al pulsar Confirmar dos veces', async ()
 
 test('todos los movimientos guardados cuadran (asientos suman 0)', async () => {
   const bot = nuevoBot();
-  for (const t of ['mecato 5000', 'pizza 9000 pagué por ivan 3000 y daniel 2500', 'presté 40k a ivan nequi', '+mamá 100k', 'cambio 50k efectivo a nequi', 'cambio 32000 nequi a arq 8 usd', 'le debo 54k a sergio por la bicicleta', 'ivan me pagó el almuerzo 6000']) {
+  for (const t of ['mecato 5000', 'pizza 9000 pagué por ivan 3000 y daniel 2500', 'presté 40k a ivan nequi', '+mamá 100k', 'cambio 50k efectivo a nequi', 'cambio 32000 nequi a dolares 8 usd', 'le debo 54k a sergio por la bicicleta', 'ivan me pagó el almuerzo 6000']) {
     await guardar(bot, t);
   }
   for (const m of (await bot.repo.cargar()).movimientos) {

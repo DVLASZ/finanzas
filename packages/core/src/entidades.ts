@@ -15,7 +15,7 @@ const ALIAS_CUENTAS: [string, string[]][] = [
   ['alcancia', ['alcancia', 'alcancias']],
   ['nequi', ['nequi', 'nq', 'neki']],
   ['daviplata', ['daviplata', 'davi', 'daviplta']],
-  ['arq', ['arq', 'dollarapp', 'dolarapp']],
+  ['arq', ['arq', 'dolares', 'dolar']],
 ];
 
 export interface CuentaMencionada {
@@ -62,7 +62,7 @@ export function ejemploDeSaldos(ctx: Pick<Contexto, 'cuentas' | 'config'>): stri
   return otra ? `efectivo 85000 ${ejemploDeCuenta(ctx)} 150000 monedas 12000` : 'efectivo 85000 monedas 12000';
 }
 
-/** La cuenta en dólares de esta instalación, si tiene (hoy solo la personal: el ARQ). */
+/** La cuenta en dólares de esta instalación, si tiene (hoy solo la personal). */
 export const cuentaEnDolares = (ctx: Pick<Contexto, 'cuentas'>) => ctx.cuentas.find(x => x.tipo === 'dinero' && x.moneda === 'USD');
 
 /** ¿Esta instalación vende productos? (tiene catálogo o lo pide su plantilla). */
@@ -74,10 +74,8 @@ export function hallarCuentas(t: string, ctx?: Contexto): CuentaMencionada[] {
   // tiene Nequi: si alguien lo escribe, es una palabra más, no una cuenta que no existe).
   const extra = ctx ? aliasDeCuentas(ctx) : [];
   const existe = (id: string) => !ctx || ctx.cuentas.some(c => c.id === id && c.tipo === 'dinero');
-  // "dollar app" son dos palabras: se junta antes de buscar (conserva el largo con espacios)
-  const texto = t.replace(/dollar app|dolar app/g, m => m.replace(' ', '') + ' ');
   const res: CuentaMencionada[] = [];
-  for (const m of texto.matchAll(/[a-z]+/g)) {
+  for (const m of t.matchAll(/[a-z]+/g)) {
     const id = cuentaDePalabra(m[0], extra);
     if (id && existe(id)) res.push({ id, inicio: m.index ?? 0, fin: (m.index ?? 0) + m[0].length });
   }

@@ -27,18 +27,18 @@ test('el diccionario categoriza conceptos reales de tus gastos', () => {
     ['arepas', 'cat:comida'], ['empanadas', 'cat:comida'], ['pizza', 'cat:comida'], ['almuerzo', 'cat:comida'],
     ['mecato', 'cat:mecato'], ['galletas', 'cat:mecato'], ['mango', 'cat:mecato'], ['trident', 'cat:mecato'],
     ['moto terminal', 'cat:transporte'], ['taxi casa', 'cat:transporte'], ['bus casa rosada', 'cat:transporte'],
-    ['recarga', 'cat:recargas'], ['compra juego steam', 'cat:juegos'],
-    ['entrada cine', 'cat:salidas'], ['gokarts', 'cat:salidas'], ['peluqueada', 'cat:personal'],
-    ['juego regalo cuco', 'cat:regalos'], ['materiales unilingua', 'cat:universidad'], ['compra audifonos', 'cat:compras'],
+    ['recarga', 'cat:recargas'], ['compra juego steam', 'cat:juegos'], ['pago netflix', 'cat:suscripciones'],
+    ['entrada cine', 'cat:salidas'], ['concierto', 'cat:salidas'], ['peluqueada', 'cat:personal'],
+    ['regalo cumpleaños', 'cat:regalos'], ['materiales colegio', 'cat:universidad'], ['compra audifonos', 'cat:compras'],
   ];
   for (const [texto, esperado] of casos) assert.equal(categorizar(texto, ctx), esperado, texto);
 });
 
 test('los conceptos reales del Excel nunca rompen el intérprete', () => {
   const ctx = contextoDe(new MemoriaRepo().datos, AHORA);
-  const conceptos = ['Mecato', 'Pasaje Terminal', 'Moto Terminal', 'Taxi Casa', 'Salsa de Tomate y Lecherita', 'Compra Far Cry 5 (Steam)',
-    'Entradas Cine Triple Entente', 'Comida Salida TE', 'Mantenimiento Cicla', 'Cocas y Salero', 'Compra No Man´s Sky Steam',
-    'Carro Pisoje (Ed, Ivan, Daniel)', 'Compra Certificado Ivan', 'Perro Mona', 'Gatorade Gomez'];
+  const conceptos = ['Mecato', 'Pasaje', 'Moto Terminal', 'Taxi Casa', 'Salsa de Tomate y Lecherita', 'Compra Juego (Steam)',
+    'Entradas Cine Fin de Semana', 'Comida Salida Amigos', 'Mantenimiento Cicla', 'Cocas y Sal', 'Compra Juego Steam',
+    'Carro Paseo (Ana, Luis, Marta)', 'Compra Certificado Luis', 'Perro Rocky', 'Gatorade Cancha'];
   for (const c of conceptos) {
     for (const monto of ['5000', '12.500', '8k']) {
       const r = interpretar(`${c} ${monto}`, ctx);

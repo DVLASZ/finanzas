@@ -8,7 +8,7 @@ Una plantilla (`packages/core/src/plantillas.ts`) define con qué nace una app: 
 
 | Plantilla | Para quién | Cuentas de dinero | Grupos de personas |
 |---|---|---|---|
-| `personal` | Finanzas de una persona | Efectivo, monedas, Nequi, Daviplata y ARQ (dólares) | Amigos, familia, otros |
+| `personal` | Finanzas de una persona | Efectivo, monedas, Nequi, Daviplata y una cuenta en dólares | Amigos, familia, otros |
 | `familia` | Uso personal con letra grande y más grupos | Efectivo, monedas, Bancolombia, Banco de Bogotá y una alcancía de monedas | Casa, familia directa, familiares, compañeros de trabajo, empresa, amigos, trabajadores |
 | `empresa` | Un negocio pequeño entre varias personas | Efectivo, monedas y En otras cuentas (plata del negocio en cuentas personales) | Socios, clientes, proveedores, otros |
 

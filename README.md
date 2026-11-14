@@ -100,7 +100,7 @@ Más ejemplos, con todos los casos: [docs/BOT.md](docs/BOT.md).
 
 </div>
 
-> Los nombres de archivo que espera esta tabla son `saldos.png`, `chat.png`, `movimientos.png`, `deudas.png` y `resumen.png`, dentro de `docs/screenshots/`.
+> Las imágenes salen de `npm run capturas`, que anota unos movimientos inventados y fotografía la app en un Chrome con pantalla de celular. Si cambia el diseño, se vuelve a correr.
 
 ## Arquitectura
 
@@ -192,7 +192,7 @@ Necesitas Node 24 o superior y una cuenta gratuita de Cloudflare ([cómo crearla
 **1. Clonar, instalar y probar en local**
 
 ```bash
-git clone https://github.com/<tu-usuario>/finanzas.git
+git clone https://github.com/DVLASZ/finanzas.git
 cd finanzas
 npm install
 npm run check        # tipos, pruebas, base de datos, contraste y privacidad
@@ -214,6 +214,31 @@ npm run instalar -- publicar mi-app   # para publicar de nuevo después de cambi
 ```
 
 El instalador genera `instalaciones/mi-app/wrangler.toml` con el identificador de tu base, crea la clave y el PIN y los guarda en `instalaciones/mi-app/acceso.txt` (esa carpeta no se sube a git). Después, abre la dirección que te da en el celular y sigue [docs/INICIO.md](docs/INICIO.md). Para probar la app extremo a extremo antes de publicar: `npm run e2e`.
+
+## Cómo funcionan las ramas
+
+El repositorio tiene tres ramas. Son la misma app con distinta plantilla de cuentas y categorías, y cada una es lo que se publica para ese tipo de instalación:
+
+| Rama | Para quién | Qué cambia |
+|---|---|---|
+| `main` | Una persona | Efectivo, monedas, Nequi, Daviplata y una cuenta en dólares; categorías de todos los días |
+| `app-2` | Una familia | Casa, campo y trabajadores; categorías y personas del hogar |
+| `empresa` | Un negocio u organización | Ventas con catálogo, insumos y socios |
+
+**Si solo quieres usar la app**, clona cualquiera: las tres ramas traen las tres plantillas y en `instalaciones/<nombre>.json` eliges la que quieras con el campo `plantilla`. La rama solo decide cuál viene por defecto (`variante.json`). Cada instalación tiene su propio Worker, su base y su clave, así que nada se mezcla.
+
+**Si quieres cambiar el código**, hazlo en `main`: ahí vive todo lo común (el motor, la interfaz, el servidor). Después se pasa a las otras dos:
+
+```bash
+git checkout app-2 && git merge main
+git checkout empresa && git merge main
+```
+
+Tres archivos son propios de cada rama y no se mezclan: `VARIANTE.md`, `variante.json` y `scripts/instalacion-ejemplo.json`. Para que git los respete, una vez por clon: `git config merge.ours.driver true`. El detalle está en [docs/RAMAS.md](docs/RAMAS.md).
+
+## Licencia
+
+MIT. Ver [LICENSE](LICENSE).
 
 ## Privacidad
 

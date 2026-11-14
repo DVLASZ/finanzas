@@ -30,8 +30,8 @@ export function calcularSaldos(movs: Movimiento[], fechaApertura: string): Saldo
 export interface ResumenSaldos {
   cuentas: { cuenta: Cuenta; saldo: number }[];
   /**
-   * Efectivo + Nequi + Daviplata, en pesos. NO incluye las monedas ni el ARQ: el dólar fluctúa y
-   * convertirlo con una tasa vieja daría un número engañoso, así que el ARQ se muestra aparte en USD.
+   * Efectivo + Nequi + Daviplata, en pesos. NO incluye las monedas ni la cuenta en dólares: el dólar fluctúa y
+   * convertirlo con una tasa vieja daría un número engañoso, así que esa cuenta se muestra aparte en USD.
    */
   disponibleCop: number;
   monedasCop: number;

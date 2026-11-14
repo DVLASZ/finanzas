@@ -97,7 +97,7 @@ export function gasto(b: Base, ctx: Contexto): Resultado {
   const m0 = principales[0];
   let moneda: Moneda = m0?.moneda ?? atajo?.moneda ?? 'COP';
   if (cuentaId === 'arq') moneda = 'USD';
-  else if (moneda === 'USD') return error('El monto está en dólares pero la cuenta no es ARQ. Dime cuántos pesos salieron, por ejemplo: «juego 32000».');
+  else if (moneda === 'USD') return error('El monto está en dólares pero la cuenta no es la de dólares. Dime cuántos pesos salieron, por ejemplo: «juego 32000».');
   let monto = m0 ? aMinor(m0.valor, moneda) : (atajo!.monto as number);
 
   // Si dijo el vuelto sin decir con qué pagó y el monto es justo un billete, ese monto es el billete
@@ -272,7 +272,7 @@ export function transferencia(b: Base, ctx: Contexto): Resultado {
     const usd = conUsd ?? explicitos.find(m => m.valor < 1000 && m.moneda === null && explicitos.length === 2);
     const cop = explicitos.find(m => m !== usd && m.moneda === null);
     if (!usd || !cop) {
-      return error(`Para mover plata de/hacia ARQ dime los pesos y los dólares. Ejemplo: «cambio 32000 ${ejemploDeCuenta(ctx)} a arq 8 usd».`);
+      return error(`Para mover plata de/hacia la cuenta de dólares dime los pesos y los dólares. Ejemplo: «cambio 32000 ${ejemploDeCuenta(ctx)} a dolares 8 usd».`);
     }
     const p = propuestaBase(b, 'cambio_moneda', 'Cambio de moneda', 0, 'COP');
     const pesos = aMinor(cop.valor, 'COP');

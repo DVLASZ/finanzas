@@ -25,7 +25,7 @@ Cada app tiene sus cuentas (ver [INSTALACIONES.md](INSTALACIONES.md)). Estas son
 | Monedas | `monedas`, `sueltos` | Va aparte, no suma al disponible |
 | Nequi | `nequi`, `nq`, `nekui` | |
 | Daviplata | `daviplata`, `davi` | |
-| ARQ | `arq`, `dollarapp` | Guarda dólares |
+| Dólares | `dolares`, `dolar`, `arq` | Guarda dólares |
 
 La ayuda de cada app (`ayuda`) solo muestra ejemplos con las cuentas que esa app tiene.
 
@@ -179,7 +179,7 @@ No es gasto ni ingreso.
 ```
 cambio 50k efectivo a nequi
 saqué 50k de nequi
-cambio 32000 nequi a arq 8 usd
+cambio 32000 nequi a dolares 8 usd
 ```
 
 El último es un cambio de moneda: la tarjeta muestra a cuánto salió el dólar esa vez.

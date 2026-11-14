@@ -182,7 +182,7 @@ test('la ayuda y el saldo solo hablan de las cuentas que esa app tiene', async (
   const yo = bot('personal');
   assert.match(textoDe(await yo.di('ayuda')), /nequi/);
   assert.doesNotMatch(textoDe(await yo.di('ayuda')), /vendí/);
-  assert.match(textoDe(await yo.di('saldo')), /ARQ va aparte, en dólares/);
+  assert.match(textoDe(await yo.di('saldo')), /Dólares va aparte, en dólares/);
 });
 
 test('los errores con ejemplos usan las cuentas de esa app, no las de otra', async () => {
