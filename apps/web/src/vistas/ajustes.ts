@@ -115,7 +115,7 @@ export async function vistaAjustes(cont: HTMLElement): Promise<void> {
   cont.querySelector('#apariencia')?.addEventListener('click', e => {
     const b = (e.target as HTMLElement).closest<HTMLElement>('[data-ap]');
     if (!b) return;
-    elegirApariencia({ [b.dataset.ap!]: b.dataset.v } as never);
+    if (b.dataset.ap === 'combo') { const [piel, tema] = b.dataset.v!.split('|'); elegirApariencia({ piel, tema } as never); } else elegirApariencia({ [b.dataset.ap!]: b.dataset.v } as never);
     $<HTMLElement>(cont, '#apariencia').innerHTML = seccionApariencia();
   });
 

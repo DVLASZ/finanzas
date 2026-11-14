@@ -12,7 +12,7 @@ Cinco pantallas son componentes (Chat, Saldos, Movimientos, Resumen y el menú M
 | `estilos/tailwind.css` | La entrada de Tailwind y los componentes de estilo (`tarjeta`, `chip`, `fila`, `burbuja`...). El build la compila a `styles.css` |
 | `estilos/temas.css` | Las paletas: Midnight (libro oscuro), libro claro y Tierra. Cambian según `data-piel`, `data-tema`, `data-letra` y `data-matiz` |
 | `sw.js` | El service worker: guarda la app para que abra sin internet y muestra los avisos |
-| `manifest.webmanifest` | El nombre y los íconos de la app instalada |
+| `manifest.webmanifest` | El nombre y los íconos de la app instalada. El build le pone como `theme_color` y `background_color` el fondo del tema de fábrica, para que la barra del sistema no muestre otro color |
 | `src/main.tsx` | Arranque: carga los datos, monta `App` y sincroniza |
 | `src/App.tsx` | Cabecera de vidrio, pantalla actual y barra de abajo flotante con indicador |
 | `src/estado/store.ts` | La capa reactiva: signals que reflejan los datos, la cola de cambios y la sincronización. No guarda nada por su cuenta |
@@ -44,6 +44,7 @@ Si cambias algo y no lo ves, el navegador probablemente guardó la versión viej
 
 - La navegación usa el historial del navegador (`estado/nav.ts`): cada pantalla y cada cajón de detalle es una entrada, así el gesto «atrás» del teléfono vuelve dentro de la app. Para volver desde código, usa `atras()`, no `irA`.
 - Las notas sueltas de las pantallas de HTML plano (`p.sub`) se convierten solas en cuadros con ícono (`decorarNotas` en `vistas/Mas.tsx`).
+- El ícono lo dibuja `scripts/icono.mjs` (sin imágenes): tres barras que suben y un destello dentro de la zona segura de los íconos maskable. El acento sale de la plantilla: personal en esmeralda y cian, familia en violeta e índigo, empresa en ámbar y dorado.
 - No hay emojis en la interfaz: se usan íconos de Lucide. Lo que el bot escribe con emojis pasa por `quitarEmojis` (`carta.ts`) antes de mostrarse. Las pantallas de HTML plano piden íconos con `iconoHtml`, `insigniaHtml` y `vacioHtml`.
 - Todo lo que viene de los datos y se arma como texto HTML se escapa antes (`esc`). En JSX Preact ya escapa.
 - Una pantalla nueva de Más: su entrada en `ENTRADAS` y su caso en `Subvista`, ambos en `src/vistas/Mas.tsx`, y el nombre en `Pantalla` de `estado/nav.ts`.

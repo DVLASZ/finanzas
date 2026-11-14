@@ -59,3 +59,14 @@ export async function vaciar(): Promise<void> {
     tx.onerror = () => resolver();
   });
 }
+
+/** Las claves guardadas que empiezan con un prefijo (por ejemplo, «recibo:» para saber qué movimientos tienen foto). */
+export async function claves(prefijo: string): Promise<string[]> {
+  const bd = await abrir();
+  if (!bd) return [...memoria.keys()].filter(k => k.startsWith(prefijo));
+  return new Promise(resolver => {
+    const req = bd.transaction(TABLA).objectStore(TABLA).getAllKeys();
+    req.onsuccess = () => resolver((req.result as string[]).filter(k => typeof k === 'string' && k.startsWith(prefijo)));
+    req.onerror = () => resolver([]);
+  });
+}

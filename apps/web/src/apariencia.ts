@@ -32,7 +32,7 @@ export function aplicar(): void {
   html.dataset.tema = tema === 'auto' ? (oscuroDelSistema() ? 'oscuro' : 'claro') : tema;
   html.dataset.letra = e.letra ?? html.dataset.letraDefecto ?? 'normal';
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', getComputedStyle(html).getPropertyValue('--sup').trim() || '#ffffff');
+  if (meta) meta.setAttribute('content', getComputedStyle(html).getPropertyValue('--fondo').trim() || '#090d16');
   window.dispatchEvent(new Event('apariencia')); // para que la cabecera y Ajustes se pongan al día
 }
 

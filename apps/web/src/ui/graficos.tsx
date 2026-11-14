@@ -110,3 +110,32 @@ export function Ritmo({ ahora, antes, hastaDia }: { ahora: number[]; antes: numb
     </div>
   );
 }
+
+export interface Barra { etiqueta: string; valor: number }
+
+/** Barras verticales (un día o un mes cada una). La más alta se marca; tocar una barra muestra su valor. */
+export function BarrasPeriodo({ barras }: { barras: Barra[] }) {
+  const [sel, setSel] = useState<number | null>(null);
+  const max = Math.max(1, ...barras.map(b => b.valor));
+  const iMax = barras.findIndex(b => b.valor === max);
+  const ver = sel ?? iMax;
+  const hay = barras[ver];
+  return (
+    <div>
+      <div class="mb-2 flex items-baseline justify-between text-xs text-tx2">
+        <span>{sel === null ? 'Lo más alto: ' : ''}<b class="text-tx">{hay?.etiqueta}</b></span>
+        <b class="tabular-nums text-neg">{formatear(hay?.valor ?? 0)}</b>
+      </div>
+      <div class="flex h-24 items-end gap-[3px]" role="img" aria-label="Gasto por día">
+        {barras.map((b, i) => (
+          <button key={b.etiqueta} type="button" aria-label={`${b.etiqueta}: ${formatear(b.valor)}`} onClick={() => setSel(sel === i ? null : i)}
+            class="group relative flex h-full min-w-0 flex-1 items-end rounded-sm outline-offset-2">
+            <span class="barra-sube block w-full rounded-t-md transition-[filter,opacity] group-active:brightness-125"
+              style={{ height: `${Math.max(b.valor > 0 ? 6 : 2, (b.valor / max) * 100)}%`, animationDelay: `${Math.min(i, 30) * 16}ms`, background: i === ver ? 'linear-gradient(180deg, var(--neg), color-mix(in srgb, var(--neg) 55%, var(--adv)))' : 'linear-gradient(180deg, var(--marca), var(--marca-2))', opacity: i === ver ? 1 : b.valor > 0 ? 0.62 : 0.25 }} />
+          </button>
+        ))}
+      </div>
+      <div class="mt-1 flex justify-between text-[10px] text-tx2"><span>{barras[0]?.etiqueta}</span><span>{barras[barras.length - 1]?.etiqueta}</span></div>
+    </div>
+  );
+}

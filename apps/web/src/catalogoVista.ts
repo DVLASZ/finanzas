@@ -4,6 +4,7 @@
  * como todo lo demás. Para pedir un dato se usa el cuadro del navegador (prompt), igual que el PIN.
  */
 import { vibrar } from './haptico.ts';
+import { celebrar } from './efectos.ts';
 import { formatear, leerCatalogo, leerLista, presentacionDeTexto, type Catalogo, type Producto } from '../../../packages/core/src/index.ts';
 import { Package, ShoppingBasket } from 'lucide-preact';
 import { vacioHtml } from './ui/iconos.tsx';
@@ -20,10 +21,16 @@ const guardarConfig = async (clave: string, valor: string): Promise<void> => {
 // Lista de compras
 // ---------------------------------------------------------------------------------------
 
+/** Cuántas cosas se compraron en esta visita: con eso se arma la barra de avance. */
+let comprados = 0;
+
 export async function vistaLista(cont: HTMLElement): Promise<void> {
   const { datos } = await leerTodo();
   const lista = leerLista(datos.config);
+  const total = comprados + lista.length;
+  const pct = total ? Math.round((comprados / total) * 100) : 0;
   cont.innerHTML = `
+    ${total ? `<div class="tarjeta"><div class="flex items-center justify-between"><div class="etiqueta">Avance de la compra</div><b class="tabular-nums">${comprados} de ${total}</b></div><div class="barra-fondo mt-2"><div class="barra-relleno ${pct === 100 ? 'pos' : ''}" style="width:${pct}%"></div></div></div><div class="h-3"></div>` : ''}
     
     <form class="entrada" id="formLista" style="padding:0 0 .8rem">
       <input id="nuevo" type="text" autocomplete="off" placeholder="Agregar: arroz" aria-label="Agregar a la lista" />
@@ -39,12 +46,16 @@ export async function vistaLista(cont: HTMLElement): Promise<void> {
     if (!t) return;
     const nuevas = t.split(/\s*,\s*|\s+y\s+/).map(x => x.trim()).filter(Boolean).slice(0, 20);
     await guardarConfig('lista_compras', JSON.stringify([...lista, ...nuevas.filter(n => !lista.some(x => x.toLowerCase() === n.toLowerCase()))]));
+    const quedan = leerLista((await leerTodo()).datos.config).length;
+    if (quedan === 0 && comprados > 0) { celebrar(); vibrar([18, 40, 18]); }
     await vistaLista(cont);
+    if (quedan === 0) comprados = 0;
   });
   cont.addEventListener('click', async e => {
     const b = (e.target as HTMLElement).closest<HTMLElement>('[data-comprado]');
     if (!b) return;
     vibrar();
+    comprados++;
     await guardarConfig('lista_compras', JSON.stringify(lista.filter((_, i) => i !== Number(b.dataset.comprado))));
     await vistaLista(cont);
   });
