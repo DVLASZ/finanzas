@@ -52,6 +52,11 @@ export const rutaOCR: Ruta = async ({ req, url, env, repo }) => {
     const r = (await preguntar(env, env.IA_OCR_MODELO || MODELO_OCR, `data:image/jpeg;base64,${base64}`, bytes)) as { description?: unknown; response?: unknown };
     const lectura = leerRespuestaOCR(r?.response ?? r?.description ?? r, hoy);
     // la imagen no se guarda en ningún registro
+    if (!lectura) {
+      // solo la forma de la respuesta, nunca su contenido: así se ve si el modelo rompió el formato sin guardar datos del comprobante
+      const t = typeof (r?.response ?? r?.description) === 'string' ? String(r?.response ?? r?.description) : '';
+      console.error(`ocr sin lectura: largo=${t.length} lineas=${t.split('\n').length} llaves=${t.includes('{')} monto=${/monto\s*:/i.test(t)}`);
+    }
     return lectura ? json({ lectura }) : json({ error: 'No pude leer el monto en esa foto. Prueba con otra o escríbelo.' }, 422);
   } catch (e) {
     console.error('ocr:', (e as Error).message); // solo el motivo, nunca la imagen
