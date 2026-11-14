@@ -2,7 +2,7 @@ name: check
 
 on:
   push:
-    branches: [main, app-2, empresa]
+    branches: [main, familiar, empresa]
   pull_request:
 
 jobs:

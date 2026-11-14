@@ -192,7 +192,7 @@ El repositorio tiene tres ramas. Son la misma app con distinta plantilla de cuen
 | Rama | Para quién | Qué cambia |
 |---|---|---|
 | `main` | Una persona | Efectivo, monedas, Nequi, Daviplata y una cuenta en dólares; categorías de todos los días |
-| `app-2` | Una familia | Casa, campo y trabajadores; categorías y personas del hogar |
+| `familiar` | Una familia | Casa, campo y trabajadores; categorías y personas del hogar |
 | `empresa` | Un negocio u organización | Ventas con catálogo, insumos y socios |
 
 **Si solo quieres usar la app**, clona cualquiera: las tres ramas traen las tres plantillas y en `instalaciones/<nombre>.json` eliges la que quieras con el campo `plantilla`. La rama solo decide cuál viene por defecto (`variante.json`). Cada instalación tiene su propio Worker, su base y su clave, así que nada se mezcla.
@@ -200,7 +200,7 @@ El repositorio tiene tres ramas. Son la misma app con distinta plantilla de cuen
 **Si quieres cambiar el código**, hazlo en `main`: ahí vive todo lo común (el motor, la interfaz, el servidor). Después se pasa a las otras dos:
 
 ```bash
-git checkout app-2 && git merge main
+git checkout familiar && git merge main
 git checkout empresa && git merge main
 ```
 
