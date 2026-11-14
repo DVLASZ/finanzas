@@ -131,6 +131,12 @@
   select { width: auto; padding-right: .5rem; }
   label { display: block; margin: .65rem 0; font-size: .9rem; color: var(--tx2); }
   label input { margin-top: .3rem; }
+  .select-btn { display: flex; align-items: center; justify-content: space-between; gap: .5rem; width: 100%; min-width: 0; min-height: var(--alto-btn); padding: .55rem .85rem; border: 0; border-radius: var(--radio-b); background: var(--sup); color: var(--tx); font: inherit; text-align: left; box-shadow: 0 0 0 1px var(--anillo); transition: transform .12s ease, box-shadow .2s ease; }
+  .select-btn > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .select-btn svg { flex: none; color: var(--tx2); }
+  .select-btn:active { transform: scale(.98); }
+  .select-btn:focus-visible { box-shadow: 0 0 0 2px var(--marca), 0 0 0 6px var(--brillo); }
+  .fila .acciones .select-btn, .ficha-acc .select-btn { flex: 1 1 11rem; min-height: 42px; }
   .check { display: flex; align-items: center; gap: .45rem; margin: 0; white-space: nowrap; }
   .check-chip { min-height: var(--alto-btn); padding: 0 .9rem; border-radius: var(--radio-b); background: var(--sup); box-shadow: 0 0 0 1px var(--anillo); color: var(--tx); }
   .kpi { padding: .7rem .8rem; min-width: 0; }
@@ -139,14 +145,15 @@
   .check input { width: auto; min-height: 0; box-shadow: none; accent-color: var(--marca); }
   .barra { display: flex; gap: .6rem; align-items: center; margin-bottom: .55rem; }
   .filtros { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
-  .filtros select:first-child { grid-column: 1 / -1; }
+  .filtros > :first-child { grid-column: 1 / -1; }
   .filtros select { width: 100%; min-width: 0; text-overflow: ellipsis; padding-right: 2rem; }
-  @media (min-width: 640px) { .filtros { grid-template-columns: repeat(3, 1fr); } .filtros select:first-child { grid-column: auto; } }
+  @media (min-width: 640px) { .filtros { grid-template-columns: repeat(3, 1fr); } .filtros > :first-child { grid-column: auto; } }
   .entrada { display: flex; gap: .5rem; align-items: center; }
   .entrada input { flex: 1; }
   /* formulario de alta: el nombre arriba a lo ancho; en pantalla ancha todo en una fila */
   .form-nueva { display: grid; gap: .5rem; margin-bottom: .8rem; }
   .form-nueva .fila2 { display: flex; gap: .5rem; }
+  .form-nueva .fila2 .select-btn { flex: 1; }
   .form-nueva .fila2 select { flex: 1; min-width: 0; width: 100%; text-overflow: ellipsis; }
   @media (min-width: 640px) { .form-nueva { grid-template-columns: 1fr auto; } .form-nueva .fila2 { min-width: 22rem; } }
   /* ficha de dos niveles: identidad arriba, acciones abajo */

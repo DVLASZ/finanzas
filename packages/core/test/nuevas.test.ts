@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { diasParaMeta, fraseDeOCR, gastosHormiga, leerMetas, leerRespuestaOCR, rangoPeriodo, seguroParaGastar } from '../src/index.ts';
+import { revisarMes, diasParaMeta, fraseDeOCR, gastosHormiga, leerMetas, leerRespuestaOCR, rangoPeriodo, seguroParaGastar } from '../src/index.ts';
 import { AHORA, nuevoBot } from '../../../tests/ayudas.ts';
 
 async function guardar(bot: ReturnType<typeof nuevoBot>, texto: string) {
@@ -64,4 +64,17 @@ test('ocr: lee el JSON aunque venga rodeado de texto y arma la frase', () => {
   assert.equal(fraseDeOCR(l!, '2026-10-20'), 'tienda don pepe 45000');
   assert.equal(leerRespuestaOCR('no se ve nada'), null);
   assert.equal(leerRespuestaOCR({ monto: 0 }), null);
+});
+
+test('revisión: un tope superado y los anulados salen con su tipo para poder actuar', async () => {
+  const bot = nuevoBot();
+  await guardar(bot, 'saldo inicial efectivo 500000');
+  await guardar(bot, 'mecato 5000');
+  await bot.repo.setPresupuesto('cat:mecato', 3000);
+  const puntos = revisarMes(await bot.repo.cargar(), AHORA);
+  const tope = puntos.find(p => p.tipo === 'tope');
+  assert.ok(tope, JSON.stringify(puntos));
+  assert.equal(tope.categoriaId, 'cat:mecato');
+  assert.match(tope.texto, /Superaste el tope de Mecato/);
+  assert.ok(puntos.every(p => p.titulo && p.tipo));
 });
