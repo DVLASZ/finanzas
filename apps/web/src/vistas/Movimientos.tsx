@@ -3,20 +3,21 @@
  * la foto del recibo y el botón de anular. Los filtros se recuerdan entre visitas.
  */
 import { signal } from '@preact/signals';
-import { Ban, Camera, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
+import { Ban, BarChart3, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   conSubcategorias, describirDia, describirFecha, formatear, leerSubcategorias, limpiar, nombreMes, rangoPeriodo,
   type Cuenta, type Movimiento,
 } from '../../../../packages/core/src/index.ts';
-import { escribir, leer } from '../almacen.ts';
+import { claves, escribir, leer } from '../almacen.ts';
 import { app, bajarFoto, borrarFotoEnServidor, sincronizar, subirFoto } from '../app.ts';
 import { subirDesdeAbajo } from '../efectos.ts';
 import { abrirDetalle, atras, detalle } from '../estado/nav.ts';
 import { ctx as contexto, datos as datosSignal, refrescar } from '../estado/store.ts';
 import { fechaAtras } from '../periodos.ts';
-import { Esqueleto, Insignia, Vacio, visualDeMovimiento } from '../ui/iconos.tsx';
+import { BarrasPeriodo } from '../ui/graficos.tsx';
+import { Esqueleto, Insignia, Vacio, visualDeMovimiento, visualDeNombre } from '../ui/iconos.tsx';
 import { MontoAnimado } from '../ui/piezas.tsx';
 
 /** Baja la foto a 1000 px de lado largo y la guarda como JPEG: un recibo no necesita más y así pesa poco (unos 100 KB). */
@@ -49,6 +50,12 @@ const filtros = signal<Filtros>(leerFiltros());
 const busqueda = signal('');
 const verAnulados = signal(false);
 const limite = signal(60);
+const modoGrafico = signal<'tiempo' | 'categoria'>('tiempo');
+/** Los movimientos que tienen foto de recibo guardada en este aparato. */
+const conFoto = signal<Set<string>>(new Set());
+async function cargarFotos(): Promise<void> {
+  conFoto.value = new Set((await claves('recibo:')).map(k => k.slice('recibo:'.length)));
+}
 
 function poner(cambio: Partial<Filtros>): void {
   filtros.value = { ...filtros.value, ...cambio };
@@ -94,6 +101,7 @@ function Detalle({ m }: { m: Movimiento }) {
     }
     setFoto(prev => { if (prev) URL.revokeObjectURL(prev); return blob ? URL.createObjectURL(blob) : null; });
     setCargando(false);
+    void cargarFotos();
   };
   useEffect(() => { if (hoja.current) subirDesdeAbajo(hoja.current); void verRecibo(); }, [m.id]);
 
@@ -152,6 +160,7 @@ function Detalle({ m }: { m: Movimiento }) {
 }
 
 export function Movimientos() {
+  useEffect(() => { void cargarFotos(); }, []);
   const datos = datosSignal.value;
   const ctx = contexto.value;
   if (!datos || !ctx) return <p class="vacio">Cargando…</p>;
@@ -174,17 +183,36 @@ export function Movimientos() {
   // totales de lo que se está viendo (sin anulados) y en qué categorías se fue
   let gastos = 0, ingresos = 0;
   const porCat = new Map<string, number>();
+  const porTiempo = new Map<string, number>();
+  const porMes = f.periodo === 'anio' || f.periodo === 'todo';
   for (const m of lista) {
     if (m.estado !== 'ok') continue;
     for (const a of m.asientos) {
       const c = datos.cuentas.find(x => x.id === a.cuentaId);
       if (a.moneda !== 'COP' || !c) continue;
-      if (c.tipo === 'categoria') { gastos += a.monto; porCat.set(c.id, (porCat.get(c.id) ?? 0) + a.monto); }
+      if (c.tipo === 'categoria') {
+        gastos += a.monto; porCat.set(c.id, (porCat.get(c.id) ?? 0) + a.monto);
+        const k = m.ocurridoEn.slice(0, porMes ? 7 : 10);
+        porTiempo.set(k, (porTiempo.get(k) ?? 0) + a.monto);
+      }
       else if (c.tipo === 'fuente') ingresos -= a.monto;
     }
   }
   const desglose = [...porCat.entries()].filter(([, v]) => v !== 0).sort((a, b) => b[1] - a[1]);
 
+  // una barra por día (semana o mes) o por mes (año o todo), con ceros donde no hubo gasto
+  const claveBarra = (k: string) => (porMes ? `${k.slice(5, 7)}/${k.slice(2, 4)}` : `${k.slice(8, 10)}/${k.slice(5, 7)}`);
+  const barras: { etiqueta: string; valor: number }[] = [];
+  if (r && !porMes) {
+    for (let d = new Date(`${r.desde.slice(0, 10)}T12:00:00Z`); d.toISOString().slice(0, 10) < r.hasta.slice(0, 10); d.setUTCDate(d.getUTCDate() + 1)) {
+      const k = d.toISOString().slice(0, 10);
+      barras.push({ etiqueta: claveBarra(k), valor: Math.max(0, porTiempo.get(k) ?? 0) });
+    }
+  } else if (r && f.periodo === 'anio') {
+    for (let mes = 1; mes <= 12; mes++) { const k = `${r.desde.slice(0, 4)}-${String(mes).padStart(2, '0')}`; barras.push({ etiqueta: claveBarra(k), valor: Math.max(0, porTiempo.get(k) ?? 0) }); }
+  } else {
+    for (const k of [...porTiempo.keys()].sort()) barras.push({ etiqueta: claveBarra(k), valor: Math.max(0, porTiempo.get(k)!) });
+  }
   const usadas = (tipo: Cuenta['tipo']) => {
     const ids = new Set(datos.movimientos.flatMap(m => m.asientos.map(a => a.cuentaId)));
     for (const padre of Object.values(leerSubcategorias(datos.config))) ids.add(padre);
@@ -248,24 +276,34 @@ export function Movimientos() {
       </div>
       <p id="cuenta" class="sub !my-0 px-1">{lista.length} movimientos · Gastos {formatear(gastos)} · Ingresos {formatear(ingresos)}</p>
 
-      {desglose.length > 0 && (
-        <details class="desglose tarjeta" id="desglose">
-          <summary>Desglose por categoría</summary>
-          {desglose.map(([id, v]) => (
-            <div key={id} class="barra-fila">
-              <span>{nombre(id)}</span>
-              <span class="barra-fondo"><span class="barra-relleno" style={{ width: `${Math.max(2, Math.round((Math.abs(v) / Math.abs(desglose[0][1] || 1)) * 100))}%` }} /></span>
-              <span class="tabular-nums">{formatear(v)}</span>
+      {gastos > 0 && (
+        <section class="tarjeta" id="desglose" aria-label="Análisis de lo que se ve">
+          <div class="mb-3 flex items-center justify-between gap-2">
+            <h3 class="!m-0 flex items-center gap-1.5"><BarChart3 size={14} />Dónde se concentra</h3>
+            <div class="pestanas !p-0.5" role="group" aria-label="Ver por">
+              <button class={`pestana !min-h-9 !px-2.5 text-xs ${modoGrafico.value === 'tiempo' ? 'activa' : ''}`} onClick={() => { modoGrafico.value = 'tiempo'; }}><CalendarDays size={13} class="mr-1 inline" />{porMes ? 'Mes' : 'Día'}</button>
+              <button class={`pestana !min-h-9 !px-2.5 text-xs ${modoGrafico.value === 'categoria' ? 'activa' : ''}`} onClick={() => { modoGrafico.value = 'categoria'; }}><Tags size={13} class="mr-1 inline" />Categoría</button>
             </div>
-          ))}
-        </details>
+          </div>
+          {modoGrafico.value === 'tiempo' && barras.length > 1 ? <BarrasPeriodo key={barras.length + f.periodo + f.atras + f.tipo + f.categoria + f.cuenta + q} barras={barras} /> : (
+            <div class="space-y-2">
+              {desglose.slice(0, 6).map(([id, v]) => (
+                <div key={id} class="barra-fila">
+                  <span class="barra-nombre flex items-center gap-2"><Insignia v={visualDeNombre(nombre(id))} tam={26} /><span class="truncate">{nombre(id)}</span></span>
+                  <span class="barra-fondo"><span class="barra-relleno" style={{ width: `${Math.max(2, Math.round((Math.abs(v) / Math.abs(desglose[0][1] || 1)) * 100))}%` }} /></span>
+                  <span class="tabular-nums">{formatear(v)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       )}
 
       <ul class="lista" id="lista">
         {grupos.length === 0 && <li><Vacio Icono={SearchX} titulo="No hay movimientos" detalle="Prueba con otro periodo o quita los filtros." /></li>}
         {grupos.map(g => [
           <li key={`d${g.dia}`} class="grupo" aria-hidden="true">{describirDia(g.dia)}</li>,
-          ...g.items.map(m => {
+          ...g.items.map((m, idx) => {
             const v = montoVisible(m, datos.cuentas);
             const cs = m.asientos.map(a => datos.cuentas.find(c => c.id === a.cuentaId)).filter((c): c is Cuenta => Boolean(c));
             const categoria = cs.find(c => c.tipo === 'categoria')?.nombre ?? m.tipo;
@@ -273,11 +311,11 @@ export function Movimientos() {
             const ruta = m.lugarDesde || m.lugarHasta ? ` · ${m.lugarDesde ?? '?'} a ${m.lugarHasta ?? '?'}` : '';
             const visual = visualDeMovimiento(m, datos.cuentas);
             return (
-              <li key={m.id} class={`fila ${m.estado === 'anulado' ? 'anulado' : ''}`} data-id={m.id} onClick={() => abrirDetalle(m.id)}>
+              <li key={m.id} class={`fila fila-entra ${m.estado === 'anulado' ? 'anulado' : ''}`} style={{ animationDelay: `${Math.min(idx, 12) * 28}ms` }} data-id={m.id} onClick={() => abrirDetalle(m.id)}>
                 <div class="flex min-w-0 items-center gap-3">
                   <Insignia v={visual} tam={42} />
                   <div class="min-w-0">
-                    <div class="titulo">{m.descripcion}{m.etiqueta && <span class="etiq"> #{m.etiqueta}</span>}</div>
+                    <div class="titulo">{m.descripcion}{m.etiqueta && <span class="etiq"> #{m.etiqueta}</span>}{conFoto.value.has(m.id) && <span class="insig-foto" title="Tiene foto del recibo"><IconoFoto size={12} />recibo</span>}</div>
                     <div class="sub">{categoria}{cuenta ? ' · ' + cuenta : ''}{ruta} · {describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora)}</div>
                   </div>
                 </div>
