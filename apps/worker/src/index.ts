@@ -8,6 +8,7 @@
  *   rutas/fotos.ts    /api/foto/<id>
  *   rutas/push.ts     /api/push/*
  *   rutas/ia.ts       /api/interpretar
+ *   rutas/ocr.ts      /api/ocr
  *   rutas/buzon.ts    /api/buzon*
  *   rutas/admin.ts    /api/respaldo/probar, /api/purgar, /api/borrar-todo
  *   (cualquier otra)  la app web (archivos estáticos)
@@ -23,6 +24,7 @@ import { rutaAdmin } from './rutas/admin.ts';
 import { buzonPublico, rutaBuzon } from './rutas/buzon.ts';
 import { rutaFotos } from './rutas/fotos.ts';
 import { rutaIA } from './rutas/ia.ts';
+import { rutaOCR } from './rutas/ocr.ts';
 import { rutaPush } from './rutas/push.ts';
 import { rutaSync } from './rutas/sync.ts';
 
@@ -34,7 +36,7 @@ export async function avisarAlCelular(env: Env, ahora = new Date(), momento: 'ma
 }
 
 /** Las rutas autorizadas, en el orden en que se prueban. */
-const RUTAS: Ruta[] = [rutaSync, rutaBuzon, rutaAdmin, rutaPush, rutaIA, rutaFotos];
+const RUTAS: Ruta[] = [rutaSync, rutaBuzon, rutaAdmin, rutaPush, rutaIA, rutaOCR, rutaFotos];
 
 export default {
   async scheduled(_evento: unknown, env: Env): Promise<void> {

@@ -21,6 +21,8 @@ export interface Env extends EnvRespaldo, EnvBuzon {
   IA_TOPE?: string;
   /** Otro modelo de Workers AI, si el de siempre se retira. */
   IA_MODELO?: string;
+  /** Otro modelo con visión para leer comprobantes. */
+  IA_OCR_MODELO?: string;
 }
 
 /** Todo lo que una ruta necesita para atender una petición ya autorizada. */
