@@ -20,7 +20,8 @@ import { compartirTarjeta, dibujarTarjetaDivision } from '../../lib/tarjetaDivis
 import { leerComprobante } from '../../services/ocr.ts';
 import { fechaAtras } from '../../lib/periodos.ts';
 import { BarrasPeriodo } from '../../components/charts/graficos.tsx';
-import { Esqueleto, Insignia, Vacio, visualDeMovimiento, visualDeNombre } from '../../components/ui/iconos.tsx';
+import { Esqueleto, Insignia, Vacio, visualDeCuenta, visualDeMovimiento, visualDeNombre, visualDePersona } from '../../components/ui/iconos.tsx';
+import { Selector } from '../../components/ui/Selector.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
 
 type Periodo = 'todo' | 'semana' | 'mes' | 'anio';
@@ -182,6 +183,14 @@ function Detalle({ m }: { m: Movimiento }) {
   );
 }
 
+/** Abre Movimientos ya filtrado (lo usa la Revisión del mes): el mes actual, con anulados o con una categoría. */
+export function verMovimientos(f: { anulados?: boolean; categoria?: string } = {}): void {
+  busqueda.value = '';
+  verAnulados.value = Boolean(f.anulados);
+  poner({ periodo: 'mes', atras: 0, tipo: 'todos', categoria: f.categoria ?? '', cuenta: '', persona: '' });
+  irA('movimientos');
+}
+
 export function Movimientos() {
   useEffect(() => { void cargarFotos(); }, []);
   const datos = datosSignal.value;
@@ -242,10 +251,8 @@ export function Movimientos() {
     return datos.cuentas.filter(c => c.tipo === tipo && ids.has(c.id)).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   };
   const selector = (id: string, etiqueta: string, vacio: string, tipo: Cuenta['tipo'], valor: string, campo: 'categoria' | 'cuenta' | 'persona') => (
-    <select id={id} aria-label={etiqueta} value={valor} onChange={e => poner({ [campo]: (e.target as HTMLSelectElement).value })}>
-      <option value="">{vacio}</option>
-      {usadas(tipo).map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-    </select>
+    <Selector id={id} etiqueta={etiqueta} valor={valor} alCambiar={v => poner({ [campo]: v })}
+      opciones={[{ valor: '', etiqueta: vacio }, ...usadas(tipo).map(c => ({ valor: c.id, etiqueta: c.nombre, visual: tipo === 'categoria' ? visualDeNombre(c.nombre) : tipo === 'dinero' ? visualDeCuenta(c) : visualDePersona(c.nombre) }))]} />
   );
 
   const hayFiltros = f.tipo !== 'todos' || f.categoria || f.cuenta || f.persona || busqueda.value;
