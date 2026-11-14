@@ -127,6 +127,20 @@ export async function aplicarOps(repo: Repo, ops: Op[]): Promise<Rechazo[]> {
  * Envuelve un repositorio y anota cada cambio como una `Op` (para enviarla luego al servidor).
  * La app usa uno de estos sobre su copia local.
  */
+/**
+ * Quita de la cola las operaciones que ya se enviaron, por identidad (la misma referencia), y deja todo lo demás.
+ * Así lo que se anotó mientras viajaba la petición no se pierde, ni tampoco si la cola se reemplazó entre tanto
+ * (por ejemplo, al restaurar un respaldo): lo que no está en `enviadas` se queda. Devuelve cuántas quitó.
+ */
+export function quitarEnviadas(cola: Op[], enviadas: Op[]): number {
+  const enviado = new Set(enviadas);
+  let quitadas = 0;
+  for (let i = cola.length - 1; i >= 0; i--) {
+    if (enviado.has(cola[i])) { cola.splice(i, 1); quitadas++; }
+  }
+  return quitadas;
+}
+
 export class RepoConCola implements Repo {
   private base: Repo;
   /** Cambios aún no enviados. La app los persiste. */

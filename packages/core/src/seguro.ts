@@ -36,7 +36,7 @@ export function seguroParaGastar(datos: Datos, ahora: Date): SeguroHoy {
   const apartado = totalApartado(leerMetas(datos.config));
   const crudo = disponible - fijos - apartado;
   const anio = Number(hoy.slice(0, 4)), mes = Number(hoy.slice(5, 7));
-  const diasDelMes = new Date(anio, mes, 0).getDate();
+  const diasDelMes = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
   const dias = Math.max(1, diasDelMes - Number(hoy.slice(8, 10)) + 1);
   const dia = hoy.slice(0, 10);
   let gastadoHoy = 0;

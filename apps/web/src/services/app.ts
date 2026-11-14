@@ -6,7 +6,7 @@
  * otros dispositivos. Sin servidor, la app es un cuaderno local completo ("modo local").
  */
 import {
-  alinearConPlantilla, aplicarOps, fusionarRespuesta, contextoDe, MemoriaRepo, RepoConCola,
+  alinearConPlantilla, aplicarOps, fusionarRespuesta, contextoDe, MemoriaRepo, quitarEnviadas, RepoConCola,
   type Compromiso, type Cuenta, type Datos, type Movimiento, type Op, type Pendiente, type RespuestaSync,
 } from '../../../../packages/core/src/index.ts';
 import { escribir, leer } from './almacen.ts';
@@ -248,7 +248,7 @@ export async function sincronizar(): Promise<string> {
     if (!respuesta.parcial) await escribir('copia_completa', true);
 
     // Lo enviado ya está en el servidor. Si mientras tanto hiciste cambios nuevos, se reaplican encima.
-    app.repo.cola.splice(0, enviadas.length);
+    quitarEnviadas(app.repo.cola, enviadas);
     const base = new MemoriaRepo();
     base.datos = datos;
     await aplicarOps(base, app.repo.cola);

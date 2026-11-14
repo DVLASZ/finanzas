@@ -4,7 +4,6 @@ Lo que falta por hacer en el código y los límites que se conocen. Las tareas d
 
 ## Ideas
 
-- Una sola frase para gastos que otra persona paga en parte (hoy hay una para el caso en que todo el gasto es de ella: `pollo 8000 para luis puso 6000 nequi`).
 - Un botón para anular un arqueo que resultó innecesario sin dejar rastro en el historial.
 - Varias monedas con tasa guardada por movimiento. Choca con la regla de no convertir dólares solos, así que antes hay que decidir qué se mostraría.
 

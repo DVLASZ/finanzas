@@ -4,6 +4,7 @@
  * como todo lo demás. Para pedir un dato se usa el cuadro del navegador (prompt), igual que el PIN.
  */
 import { vibrar } from '../../lib/haptico.ts';
+import { escuchar } from '../../lib/dom.ts';
 import { celebrar } from '../../lib/efectos.ts';
 import { formatear, leerCatalogo, leerLista, presentacionDeTexto, type Catalogo, type Producto } from '../../../../../packages/core/src/index.ts';
 import { Package, ShoppingBasket } from 'lucide-preact';
@@ -24,7 +25,9 @@ const guardarConfig = async (clave: string, valor: string): Promise<void> => {
 /** Cuántas cosas se compraron en esta visita: con eso se arma la barra de avance. */
 let comprados = 0;
 
-export async function vistaLista(cont: HTMLElement): Promise<void> {
+/** `reiniciar` es falso cuando la pantalla se vuelve a dibujar por una acción (marcar algo comprado): ahí el avance sigue. */
+export async function vistaLista(cont: HTMLElement, reiniciar = true): Promise<void> {
+  if (reiniciar) comprados = 0;
   const { datos } = await leerTodo();
   const lista = leerLista(datos.config);
   const total = comprados + lista.length;
@@ -48,16 +51,16 @@ export async function vistaLista(cont: HTMLElement): Promise<void> {
     await guardarConfig('lista_compras', JSON.stringify([...lista, ...nuevas.filter(n => !lista.some(x => x.toLowerCase() === n.toLowerCase()))]));
     const quedan = leerLista((await leerTodo()).datos.config).length;
     if (quedan === 0 && comprados > 0) { celebrar(); vibrar([18, 40, 18]); }
-    await vistaLista(cont);
+    await vistaLista(cont, false);
     if (quedan === 0) comprados = 0;
   });
-  cont.addEventListener('click', async e => {
+  escuchar(cont, 'click', async e => {
     const b = (e.target as HTMLElement).closest<HTMLElement>('[data-comprado]');
     if (!b) return;
     vibrar();
     comprados++;
     await guardarConfig('lista_compras', JSON.stringify(lista.filter((_, i) => i !== Number(b.dataset.comprado))));
-    await vistaLista(cont);
+    await vistaLista(cont, false);
   });
 }
 
@@ -96,7 +99,7 @@ export async function vistaCatalogo(cont: HTMLElement): Promise<void> {
     const id = nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'producto';
     await guardar({ productos: [...cat.productos.filter(p => p.id !== id), { id, nombre, alias: [], presentaciones }] });
   });
-  cont.addEventListener('click', async e => {
+  escuchar(cont, 'click', async e => {
     const el = e.target as HTMLElement;
     const quitar = el.closest<HTMLElement>('[data-quitar]');
     const mas = el.closest<HTMLElement>('[data-mas]');

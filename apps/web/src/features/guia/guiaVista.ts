@@ -5,7 +5,7 @@
 import { ejemploDeCuenta, ejemploDeSaldos } from '../../../../../packages/core/src/index.ts';
 import { leerTodo } from '../../services/app.ts';
 import { esc } from '../../lib/carta.ts';
-import { prellenarChat } from '../../lib/puenteLegado.ts';
+import { prellenarChat } from '../../state/nav.ts';
 
 export async function vistaGuia(cont: HTMLElement, irAlChat: () => void): Promise<void> {
   const { ctx } = await leerTodo();

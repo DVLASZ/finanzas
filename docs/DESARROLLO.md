@@ -16,7 +16,7 @@ Node 24 o superior. Ejecuta TypeScript directo, sin compilar.
 | `npm run instalar -- <orden> <nombre>` | Crea o publica una instalación (ver [DESPLIEGUE.md](DESPLIEGUE.md)) |
 | `npm run guia -- <plantilla>` | Arma la guía de usuario de una app con sus cuentas y categorías (queda en `docs-privado/`) |
 | `npm run abrir-respaldo -- <archivo>` | Abre un respaldo cifrado de la nube (ver [RESPALDO.md](RESPALDO.md)) |
-| `npm run e2e` | Abre la app en tu Chrome y recorre las pantallas como una persona (10 pruebas en tamaño de celular). No va en `check` porque necesita Chrome |
+| `npm run e2e` | Abre la app en tu Chrome y recorre las pantallas como una persona (18 pruebas en tamaño de celular; en el celular real son 17, porque subir una imagen desde un archivo solo corre en PC). No va en `check` porque necesita Chrome |
 | `npm run salud` | Pregunta a cada instalación publicada cómo va: movimientos, último movimiento, avisos, IA |
 
 ## Convenciones
@@ -47,6 +47,7 @@ Las pruebas viven junto a lo que prueban. Se corren con `node --test`, sin libre
 | `packages/core/test/ia` | Instrucciones, limpieza de respuestas y tope diario |
 | `packages/core/test/exportar` | El Excel, abierto con ExcelJS |
 | `packages/core/test/alertas` | Deudas por vencer, topes y días sin anotar |
+| `packages/core/test/nuevas` | Seguro para gastar, gastos hormiga, alcancías, lectura de comprobantes, revisión del mes, reparto «entre ... y yo», fechas en hora Colombia, cola de sincronización y subcategorías de tres niveles |
 | `packages/core/test/robustez`, `estres` | Entradas raras y mensajes al azar con semilla fija |
 | `packages/core/test/datos` | La semilla coincide con `seed.sql` y el diccionario |
 | `apps/worker/test/worker` | La API: sincronización, rechazos, borrados con PIN, ayuda de la IA |

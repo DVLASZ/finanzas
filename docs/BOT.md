@@ -117,7 +117,7 @@ Solo sirve para diferencias de hasta $1.000 en pesos. Lo que sobra va a Descuadr
 
 En el chat, junto a Enviar, hay un micrófono (en Chrome del celular; necesita internet). Se toca, se habla como se escribiría y el texto queda en el cuadro para revisarlo y pulsar Enviar. Nunca se envía solo.
 
-El dictado entiende los números en palabras: «cinco mil quinientos» es 5500, «ciento veinte mil trescientos» es 150000, «dos millones quinientos mil», «treinta y cinco mil». También arregla cómo suenan las cuentas («banco colombia» pasa a Bancolombia, «davi plata» a Daviplata, «neki» a Nequi). El reconocedor da varias versiones de lo que oyó y se elige la primera que el bot entiende. Si ninguna se entiende, deja la primera para que la corrijas.
+El dictado entiende los números en palabras: «cinco mil quinientos» es 5500, «ciento veinte mil trescientos» es 120300, «dos millones quinientos mil», «treinta y cinco mil». También arregla cómo suenan las cuentas («banco colombia» pasa a Bancolombia, «davi plata» a Daviplata, «neki» a Nequi). El reconocedor da varias versiones de lo que oyó y se elige la primera que el bot entiende. Si ninguna se entiende, deja la primera para que la corrijas.
 
 ### Pagos a trabajadores y revisión del mes
 
@@ -215,7 +215,7 @@ plata de mamá para cooperativa 150000 nequi
 cooperativa 149984 con plata de mamá nequi
 ```
 
-La primera anota lo que ella te mandó (en Deudas sale con el motivo). La segunda anota el pago como un pago a ella. Si sobran unos pesos, quedan como lo que le debes. Si la cantidad es pequeña y no se va a devolver, se cuadra con un arqueo de la cuenta.
+La primera anota lo que ella te mandó (en Deudas sale con el motivo). La segunda anota el pago como un pago a ella. Si sobran unos pesos, quedan como lo que le debes. Cuando son pocos y no se van a devolver, se cuadran con `cuadrar con mamá` (ver más arriba, «Cuadrar unos pesos con una persona»): la deuda queda en cero y la diferencia va a Descuadre, que no cuenta como gasto de verdad.
 
 ## Gastos compartidos
 
@@ -298,7 +298,7 @@ La plata no cambia de cuenta: la meta solo la aparta, como una etiqueta, y los s
 subcategoria restaurante de comida
 ```
 
-Crea la categoría Restaurante dentro de Comida. Lo que anotes en Restaurante suma también en Comida: el resumen muestra Comida con lo de adentro desglosado, y `cuánto llevo en comida` cuenta todo. Solo hay un nivel. También se crean y se mueven en Más, Categorías y personas.
+Crea la categoría Restaurante dentro de Comida. Lo que anotes en Restaurante suma también en Comida: el resumen muestra Comida con lo de adentro desglosado, y `cuánto llevo en comida` cuenta todo. Pueden anidarse hasta tres niveles (categoría, subcategoría y sub-subcategoría): por ejemplo Comida, dentro Restaurante y dentro Domicilios. Lo anotado en el nivel más hondo suma en los dos de arriba. Un cuarto nivel no se acepta. También se crean y se mueven en Más, Categorías y personas.
 
 ## Cerrar meses
 
