@@ -3,7 +3,7 @@
  * escritura con dictado por voz (ondas mientras escucha) y los avisos con botón de arriba.
  * La lógica es la de siempre: el bot corre dentro de la app y solo se pide ayuda a la IA si no entendió.
  */
-import { ArrowUp, HardHat, HelpCircle, Mic, Store, Zap } from 'lucide-preact';
+import { ArrowUp, HardHat, HelpCircle, Mic, Store } from 'lucide-preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   atajosFrecuentes, calcularAlertas, hayTrabajadores, interpretar, normalizarDictado, procesar, vendeProductos, type Boton,
@@ -17,6 +17,7 @@ import { ctx as contexto, datos as datosSignal } from '../estado/store.ts';
 import { vibrar } from '../haptico.ts';
 import { Ayuda, esAyuda, seEnvia } from '../ui/Ayuda.tsx';
 import { BotonesBot, Carta } from '../ui/Carta.tsx';
+import { Insignia, T, visualDeNombre, type Icono } from '../ui/iconos.tsx';
 
 interface Burbuja { de: 'yo' | 'bot'; texto: string; botones?: Boton[] }
 
@@ -64,7 +65,7 @@ function BurbujaVista({ b, ultima, alPulsar, alEjemplo }: { b: Burbuja; ultima: 
   const carta = b.de === 'bot' ? parsearCarta(b.texto) : null;
   const botones = b.botones?.length ? <BotonesBot botones={b.botones} activo={ultima} alPulsar={alPulsar} dentroDeCarta={Boolean(carta)} /> : null;
   if (b.de === 'bot' && esAyuda(b.texto)) return <div ref={ref} class="burbuja bot guia"><Ayuda texto={b.texto} alElegir={alEjemplo} /></div>;
-  if (carta) return <div ref={ref} class="burbuja bot carta"><Carta datos={carta} hijos={botones} /></div>;
+  if (carta) return <div ref={ref} class="burbuja bot carta"><Carta datos={carta} hijos={botones} impacto={ultima} /></div>;
   return <div ref={ref} class={`burbuja ${b.de}`}><div class="texto">{quitarEmojis(b.texto)}</div>{botones}</div>;
 }
 
@@ -74,6 +75,8 @@ export function Chat() {
   const [texto, setTexto] = useState('');
   const [oyendo, setOyendo] = useState(false);
   const [estadoVoz, setEstadoVoz] = useState('');
+  const [pensando, setPensando] = useState(false);
+  const enCurso = useRef(0);
   const fin = useRef<HTMLDivElement>(null);
   const turno = useRef<Promise<void>>(Promise.resolve());
   const rec = useRef<Reconocimiento | null>(null);
@@ -101,7 +104,7 @@ export function Chat() {
     return () => { rec.current?.stop(); window.removeEventListener('online', ante); };
   }, []);
 
-  useEffect(() => { fin.current?.scrollIntoView({ block: 'end' }); }, [burbujas]);
+  useEffect(() => { fin.current?.scrollIntoView({ block: 'end' }); }, [burbujas, pensando]);
 
   /** Frases que quedaron guardadas sin internet: si ya hay conexión, la IA las piensa y se ofrece anotarlas. */
   async function revisarCola() {
@@ -118,6 +121,7 @@ export function Chat() {
 
   // Los mensajes se atienden de uno en uno (si escribes rápido, el orden de las respuestas se respeta).
   function enviar(entrada: { texto?: string; boton?: string }, mostrar?: string): Promise<void> {
+    enCurso.current++; setPensando(true);
     turno.current = turno.current.then(async () => {
       if (mostrar) agregar({ de: 'yo', texto: mostrar });
       let salidas = await procesar(app.repo, entrada, new Date(), 'app');
@@ -145,7 +149,7 @@ export function Chat() {
       void escribir('chat', burbujasRef.current);
       if (mereceConfeti(salidas.map(s => s.texto))) { celebrar(); vibrar([18, 40, 18]); }
       void sincronizar();
-    });
+    }).finally(() => { enCurso.current--; setPensando(enCurso.current > 0); });
     return turno.current;
   }
 
@@ -197,9 +201,9 @@ export function Chat() {
 
   const avisos = datos && ctx ? calcularAlertas(datos, ctx.ahora).filter(a => a.acciones?.length && (a.id === 'cierre-dia' || a.id === 'saldo-negativo')) : [];
   const frecuentes = datos && ctx ? atajosFrecuentes(datos.movimientos, ctx.ahora) : [];
-  const fijos: { orden: string; etiqueta: string; Icono: typeof Zap }[] = [{ orden: 'ayuda', etiqueta: 'Ayuda', Icono: HelpCircle }];
-  if (ctx && vendeProductos(ctx)) fijos.push({ orden: 'ventas', etiqueta: 'Ventas', Icono: Store });
-  if (datos && hayTrabajadores(datos.cuentas, datos.movimientos)) fijos.push({ orden: 'jornales', etiqueta: 'Jornales', Icono: HardHat });
+  const fijos: { orden: string; etiqueta: string; Icono: Icono; tema: keyof typeof T }[] = [{ orden: 'ayuda', etiqueta: 'Ayuda', Icono: HelpCircle, tema: 'coral' }];
+  if (ctx && vendeProductos(ctx)) fijos.push({ orden: 'ventas', etiqueta: 'Ventas', Icono: Store, tema: 'cian' });
+  if (datos && hayTrabajadores(datos.cuentas, datos.movimientos)) fijos.push({ orden: 'jornales', etiqueta: 'Jornales', Icono: HardHat, tema: 'lima' });
 
   const alAviso = (i: number, j: number) => {
     const accion = avisos[i]?.acciones?.[j];
@@ -218,11 +222,12 @@ export function Chat() {
       ))}
       <div class="chat flex flex-1 flex-col gap-2.5 overflow-y-auto p-4" id="chat">
         {burbujas.map((b, i) => <BurbujaVista key={`${i}-${b.texto.length}`} b={b} ultima={i === burbujas.length - 1} alPulsar={alPulsar} alEjemplo={alEjemplo} />)}
+        {pensando && <div class="burbuja bot pensando" role="status" aria-label="Pensando"><span /><span /><span /></div>}
         <div ref={fin} />
       </div>
       <div class="atajos -mb-1 flex gap-2 overflow-x-auto px-4 pb-2 pt-1 [scrollbar-width:none]">
-        {fijos.map(({ orden, etiqueta, Icono }) => <button key={orden} class="chip shrink-0" data-atajo={orden} onClick={() => mandar(orden)}><Icono size={16} aria-hidden="true" />{etiqueta}</button>)}
-        {frecuentes.map(f => <button key={f} class="chip shrink-0" data-atajo={f} onClick={() => mandar(f)}><Zap size={15} aria-hidden="true" />{f}</button>)}
+        {fijos.map(({ orden, etiqueta, Icono, tema }) => <button key={orden} class="chip atajo shrink-0" data-atajo={orden} onClick={() => mandar(orden)}><Insignia v={{ Icono, ...T[tema] }} tam={26} redondo />{etiqueta}</button>)}
+        {frecuentes.map(f => <button key={f} class="chip atajo shrink-0" data-atajo={f} onClick={() => mandar(f)}><Insignia v={visualDeNombre(f)} tam={26} redondo />{f}</button>)}
       </div>
       <form id="form" class="entrada vidrio mx-3 mb-1 rounded-[1.4rem] p-2 ring-1 ring-anillo" onSubmit={alEnviar}>
         <input id="texto" type="text" autocomplete="off" autocapitalize="sentences" placeholder="Ej.: almuerzo 12000" aria-label="Escribe lo que pasó" class="!bg-transparent !shadow-none" value={texto}
