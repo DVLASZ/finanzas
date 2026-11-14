@@ -8,7 +8,7 @@ export async function vistaRevision(cont: HTMLElement, irAlChat: () => void): Pr
   const { datos, ctx } = await leerTodo();
   const puntos = revisarMes(datos, ctx.ahora);
   cont.innerHTML = `
-    <h2 style="margin-top:0">Revisión del mes</h2>
+    
     ${puntos.length
       ? puntos.map((p, i) => `<div class="alerta ${p.nivel === 'urgente' ? 'urgente' : p.nivel === 'aviso' ? 'aviso' : ''}">${esc(p.texto)}${p.accion ? `<div class="botones"><button class="chip" data-punto="${i}">${esc(p.accion.titulo)}</button></div>` : ''}</div>`).join('')
       : '<div class="alerta">Todo en orden: saldos al día, sin descuadres grandes y sin cobros viejos.</div>'}`;

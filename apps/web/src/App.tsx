@@ -46,7 +46,7 @@ function Estado() {
 
 function Cabecera() {
   return (
-    <header class="vidrio sticky top-0 z-30 flex items-center justify-between gap-3 px-4 pb-2.5 pt-[calc(env(safe-area-inset-top)+.6rem)] ring-1 ring-anillo">
+    <header class="vidrio sticky top-0 z-30 flex lg:col-span-2 items-center justify-between gap-3 px-4 pb-2.5 pt-[calc(env(safe-area-inset-top)+.6rem)] ring-1 ring-anillo">
       <h1 class="truncate">{document.title}</h1>
       <div class="flex items-center gap-2">
         <Estado />
@@ -62,7 +62,7 @@ function Barra() {
   const activa = enBarra(pantalla.value);
   const i = Math.max(0, BARRA.findIndex(b => b.id === activa));
   return (
-    <nav id="nav" aria-label="Secciones" class="vidrio fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+.6rem)] z-40 mx-auto flex max-w-md rounded-[1.6rem] p-1.5 shadow-[0_18px_50px_-14px_rgba(0,0,0,.55)] ring-1 ring-anillo lg:inset-x-auto lg:bottom-auto lg:left-0 lg:top-16 lg:mx-0 lg:h-[calc(100%-4rem)] lg:w-60 lg:max-w-none lg:flex-col lg:rounded-none lg:p-3 lg:shadow-none">
+    <nav id="nav" aria-label="Secciones" class="vidrio fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+.6rem)] z-40 mx-auto flex max-w-md rounded-[1.6rem] p-1.5 shadow-[0_18px_50px_-14px_rgba(0,0,0,.55)] ring-1 ring-anillo lg:static lg:col-start-1 lg:row-start-2 lg:m-0 lg:max-w-none lg:flex-col lg:gap-1 lg:rounded-none lg:bg-transparent lg:p-3 lg:shadow-none lg:ring-0 lg:backdrop-blur-none">
       <span aria-hidden="true" class="pointer-events-none absolute bottom-1.5 left-1.5 top-1.5 w-[calc((100%-.75rem)/5)] rounded-[1.2rem] bg-marca-sup ring-1 ring-anillo transition-transform duration-[380ms] ease-[cubic-bezier(.22,1.2,.36,1)] lg:hidden" style={{ transform: `translateX(${i * 100}%)` }} />
       {BARRA.map(({ id, nombre, Icono }) => (
         <button key={id} data-p={id} aria-label={nombre} aria-current={id === activa ? 'page' : undefined} onClick={() => irA(id)}
@@ -81,8 +81,8 @@ function Contenido() {
   useEffect(() => { if (ref.current) { ref.current.parentElement?.scrollTo(0, 0); entrarPantalla(ref.current); } }, [p]);
   const interna = enBarra(p) === 'mas' && p !== 'mas';
   return (
-    <main id="contenido" aria-live="polite" class={`contenido mx-auto w-full flex-1 overflow-y-auto overscroll-contain ${p === 'chat' ? 'flex max-w-3xl flex-col overflow-hidden pb-24 lg:pb-0' : 'max-w-3xl px-4 pb-32 pt-4 lg:pb-8'} lg:ml-60 lg:max-w-none`}>
-      <div ref={ref} key={p} class={p === 'chat' ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto w-full max-w-3xl'}>
+    <main id="contenido" aria-live="polite" class={`contenido mx-auto w-full flex-1 overflow-y-auto overscroll-contain ${p === 'chat' ? 'flex max-w-3xl flex-col overflow-hidden pb-24 lg:pb-0' : 'max-w-3xl px-4 pb-32 pt-4 lg:pb-8'} lg:col-start-2 lg:row-start-2 lg:max-w-none`}>
+      <div ref={ref} key={p} class={p === 'chat' ? 'mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col' : 'mx-auto w-full max-w-3xl'}>
         {p === 'chat' && <Chat />}
         {p === 'saldos' && <Saldos />}
         {p === 'movimientos' && <Movimientos />}
@@ -96,7 +96,7 @@ function Contenido() {
 
 export function App() {
   return (
-    <div id="raiz-preact" data-listo="1" data-estado={estadoSync.value} data-pendientes={pendientes.value} data-movimientos={datos.value?.movimientos.length ?? 0} class="marco flex h-full flex-col">
+    <div id="raiz-preact" data-listo="1" data-estado={estadoSync.value} data-pendientes={pendientes.value} data-movimientos={datos.value?.movimientos.length ?? 0} class="marco flex h-full flex-col lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)]">
       <Cabecera />
       <Contenido />
       <Barra />

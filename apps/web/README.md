@@ -19,7 +19,7 @@ Cinco pantallas son componentes (Chat, Saldos, Movimientos, Resumen y el menú M
 | `src/estado/nav.ts` | Qué pantalla se ve y el texto que otra pantalla deja escrito en el chat |
 | `src/vistas/*.tsx` | Chat, Saldos, Movimientos, Resumen y Más (con el marco de las subpantallas) |
 | `src/vistas/*.ts`, `src/*Vista.ts` | Las pantallas hechas con HTML plano. `src/vistas.ts` les da lo que necesitan de la interfaz |
-| `src/ui/` | Piezas compartidas: `Carta.tsx` (la tarjeta Entendí o Guardado), números que cuentan, entrada escalonada |
+| `src/ui/` | Piezas compartidas: `Carta.tsx` (la tarjeta Entendí o Guardado), `iconos.tsx` (ícono y color por categoría, cuenta y movimiento, estados vacíos, barras de avance, esqueletos), números que cuentan, entrada escalonada |
 | `src/efectos.ts` | Animaciones y confeti. Respetan `prefers-reduced-motion` |
 | `src/app.ts` | Estado: copia local, cola de cambios, sincronización, avisos y llamada a la IA |
 | `src/carta.ts` | Lee la respuesta del bot y la separa en monto, pastillas y notas |
@@ -39,6 +39,7 @@ Si cambias algo y no lo ves, el navegador probablemente guardó la versión viej
 
 ## Cosas a tener en cuenta
 
+- No hay emojis en la interfaz: se usan íconos de Lucide. Lo que el bot escribe con emojis pasa por `quitarEmojis` (`carta.ts`) antes de mostrarse. Las pantallas de HTML plano piden íconos con `iconoHtml`, `insigniaHtml` y `vacioHtml`.
 - Todo lo que viene de los datos y se arma como texto HTML se escapa antes (`esc`). En JSX Preact ya escapa.
 - Una pantalla nueva de Más: su entrada en `ENTRADAS` y su caso en `Subvista`, ambos en `src/vistas/Mas.tsx`, y el nombre en `Pantalla` de `estado/nav.ts`.
 - Para que un componente se vuelva a pintar solo, lee un signal de `estado/store.ts` (`datos`, `ctx`, `pendientes`, `estadoSync`...). Quien cambia los datos sigue siendo `app.repo`; el store se entera por `alCambiarElEstado`.

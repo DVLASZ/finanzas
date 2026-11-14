@@ -10,7 +10,7 @@ import {
 } from '../../../../packages/core/src/index.ts';
 import { app, atenderColaIA, encolarFraseIA, hayServidor, pedirAyudaIA, sincronizar } from '../app.ts';
 import { escribir, leer } from '../almacen.ts';
-import { parsearCarta } from '../carta.ts';
+import { parsearCarta, quitarEmojis } from '../carta.ts';
 import { celebrar, entrar } from '../efectos.ts';
 import { chatPrellenado } from '../estado/nav.ts';
 import { ctx as contexto, datos as datosSignal } from '../estado/store.ts';
@@ -18,7 +18,7 @@ import { BotonesBot, Carta } from '../ui/Carta.tsx';
 
 interface Burbuja { de: 'yo' | 'bot'; texto: string; botones?: Boton[] }
 
-const BIENVENIDA = '👋 ¡Hola! Aquí me cuentas lo que gastaste o te llegó y yo lo anoto.\n1. Escribe como hablas, por ejemplo: «almuerzo 12000».\n2. Te muestro lo que entendí. Pulsa Confirmar y queda guardado.\n3. Si te equivocas, pulsa Editar o Deshacer.\n4. Tus saldos y resúmenes están en las pestañas de abajo.\nSi no sabes qué escribir, pulsa «Ayuda».';
+const BIENVENIDA = '¡Hola! Aquí me cuentas lo que gastaste o te llegó y yo lo anoto.\n1. Escribe como hablas, por ejemplo: «almuerzo 12000».\n2. Te muestro lo que entendí. Pulsa Confirmar y queda guardado.\n3. Si te equivocas, pulsa Editar o Deshacer.\n4. Tus saldos y resúmenes están en las pestañas de abajo.\nSi no sabes qué escribir, pulsa «Ayuda».';
 
 /** Lo mínimo del reconocimiento de voz del navegador (Chrome en el celular lo trae; necesita internet). */
 interface Alternativa { transcript: string }
@@ -62,7 +62,7 @@ function BurbujaVista({ b, ultima, alPulsar }: { b: Burbuja; ultima: boolean; al
   const carta = b.de === 'bot' ? parsearCarta(b.texto) : null;
   const botones = b.botones?.length ? <BotonesBot botones={b.botones} activo={ultima} alPulsar={alPulsar} dentroDeCarta={Boolean(carta)} /> : null;
   if (carta) return <div ref={ref} class="burbuja bot carta"><Carta datos={carta} hijos={botones} /></div>;
-  return <div ref={ref} class={`burbuja ${b.de}`}><div class="texto">{b.texto}</div>{botones}</div>;
+  return <div ref={ref} class={`burbuja ${b.de}`}><div class="texto">{quitarEmojis(b.texto)}</div>{botones}</div>;
 }
 
 export function Chat() {
@@ -125,7 +125,7 @@ export function Chat() {
       }
       // Si el bot no entendió y hay servidor, la IA reescribe la frase y el bot la vuelve a leer.
       if (entrada.texto && salidas.length === 1 && salidas[0].noEntendido && hayServidor() && navigator.onLine !== false) {
-        agregar({ de: 'bot', texto: '🤔 No lo entendí a la primera. Déjame pensarlo un momento...' });
+        agregar({ de: 'bot', texto: 'No lo entendí a la primera. Déjame pensarlo un momento...' });
         const ayuda = await pedirAyudaIA(entrada.texto);
         poner(burbujasRef.current.slice(0, -1));
         if (ayuda.frases.length) {
@@ -203,7 +203,7 @@ export function Chat() {
     <>
       {avisos.map((a, i) => (
         <div key={i} class={`alerta mx-4 mt-3 ${a.nivel === 'urgente' ? 'urgente' : a.nivel === 'aviso' ? 'aviso' : ''}`}>
-          {a.texto}
+          {quitarEmojis(a.texto)}
           <div class="botones">{a.acciones!.map((x, j) => <button key={j} class="chip" data-aviso={`${i}.${j}`} onClick={() => alAviso(i, j)}>{x.titulo}</button>)}</div>
         </div>
       ))}
