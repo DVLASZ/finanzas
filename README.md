@@ -1,36 +1,25 @@
 <div align="center">
 
-<img src="docs/assets/banner.svg" alt="Finanzas por mensajes: cuéntale tu plata al chat" width="100%" />
+<img src="docs/screenshots/banner.svg" alt="Finanzas por mensajes: cuéntale tu plata al chat" width="100%" />
 
 <br />
 
-**Anotas tu plata escribiendo, como se lo contarías a alguien.** El bot te muestra lo que entendió y tú confirmas.
-Lleva la contabilidad con partida doble, funciona sin internet y corre gratis en Cloudflare.
+Escribes lo que pasó, como se lo contarías a alguien. El bot te muestra lo que entendió y tú confirmas.
+La contabilidad es de partida doble, funciona sin internet y corre gratis en Cloudflare.
 
 <br />
 
-[**Qué hace**](#qué-hace) &nbsp;·&nbsp; [**Chat**](#qué-puedes-escribirle-al-chat) &nbsp;·&nbsp; [**Capturas**](#capturas) &nbsp;·&nbsp; [**Arquitectura**](#arquitectura) &nbsp;·&nbsp; [**Estructura**](#estructura-del-monorepo) &nbsp;·&nbsp; [**Despliegue**](#despliegue-en-3-pasos) &nbsp;·&nbsp; [**Docs**](docs/README.md)
+[Qué hace](#qué-hace) · [Chat](#qué-puedes-escribirle-al-chat) · [Capturas](#capturas) · [Arquitectura](#arquitectura) · [Despliegue](#despliegue-en-3-pasos) · [Docs](docs/README.md)
 
 <br />
 
-**Frontend y PWA**<br />
-![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Preact](https://img.shields.io/badge/Preact-11-673AB8?style=for-the-badge&logo=preact&logoColor=white)
-![Signals](https://img.shields.io/badge/Signals-2-8B5CF6?style=for-the-badge&logo=preact&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-![esbuild](https://img.shields.io/badge/esbuild-0.28-FFCF00?style=for-the-badge&logo=esbuild&logoColor=black)
-![PWA](https://img.shields.io/badge/PWA-Offline--First-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)
-
-**Backend en el borde y base de datos**<br />
-![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-API-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
-![Cloudflare D1](https://img.shields.io/badge/Cloudflare_D1-Edge-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-Esquema-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
-
-**IA y herramientas**<br />
-![Workers AI](https://img.shields.io/badge/Workers_AI-Frases_y_OCR-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-24+-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white)
-![Puppeteer](https://img.shields.io/badge/Puppeteer-E2E-40B5A4?style=for-the-badge&logo=puppeteer&logoColor=white)
-![Lucide](https://img.shields.io/badge/Lucide-Iconos-F56565?style=for-the-badge&logo=lucide&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-111827?style=flat-square&logo=typescript&logoColor=38BDF8&labelColor=090D16)
+![Preact](https://img.shields.io/badge/Preact-111827?style=flat-square&logo=preact&logoColor=818CF8&labelColor=090D16)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-111827?style=flat-square&logo=tailwindcss&logoColor=38BDF8&labelColor=090D16)
+![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-111827?style=flat-square&logo=cloudflare&logoColor=F59E0B&labelColor=090D16)
+![Cloudflare D1](https://img.shields.io/badge/Cloudflare_D1-111827?style=flat-square&logo=sqlite&logoColor=F59E0B&labelColor=090D16)
+![PWA](https://img.shields.io/badge/PWA-offline--first-111827?style=flat-square&logo=pwa&logoColor=10B981&labelColor=090D16)
+![Licencia MIT](https://img.shields.io/badge/licencia-MIT-111827?style=flat-square&labelColor=090D16&color=10B981)
 
 <br />
 
@@ -42,17 +31,20 @@ Lleva la contabilidad con partida doble, funciona sin internet y corre gratis en
 
 ## Qué hace
 
-| | |
-|---|---|
-| **Contabilidad** | Gastos, ingresos, préstamos, deudas, pagos y gastos compartidos con partida doble: cada movimiento suma cero o no se guarda. Efectivo con billetes, monedas y vuelto. |
-| **Saldos** | Disponible con la curva de los últimos días, liquidez contra deudas y el widget "seguro para gastar hoy". |
-| **Movimientos** | Filtros, gráfico de dónde se concentra el gasto, foto del recibo, lectura con IA y tarjeta para compartir por WhatsApp. |
-| **Resumen** | Dona interactiva, ritmo de gasto contra el mes anterior, topes y gastos hormiga. |
-| **Planear** | Alcancías con fecha estimada de cumplimiento y pagos fijos con aviso antes del cobro. |
-| **Comprobantes** | Una foto de Nequi, Daviplata o una tirilla, leída con IA con visión. Llega como una tarjeta lista para confirmar. |
-| **Revisión del mes** | Nota de salud y hallazgos con botones que llevan directo a donde se arreglan. |
-| **Sin conexión** | Todo se guarda en el celular y se sincroniza al volver la red. |
-| **En el celular** | Se instala desde Chrome. Tiene gesto atrás, accesos directos en el ícono y vibra al confirmar. |
+<table>
+  <tr>
+    <td width="33%" valign="top"><b>Chat en lenguaje natural</b><br />Escribes "mecato 5000" o "presté 40000 a Ana". El bot sale a buscar el monto, la cuenta y la categoría, y te muestra la tarjeta antes de guardar nada.</td>
+    <td width="33%" valign="top"><b>Partida doble</b><br />Cada movimiento suma cero o no se guarda. Gastos, ingresos, préstamos, deudas y gastos compartidos dejan sus dos asientos solos.</td>
+    <td width="33%" valign="top"><b>Comprobantes con IA</b><br />Una foto de Nequi, Daviplata o una tirilla llega como tarjeta lista para confirmar. El monto lo busca el código, no el modelo.</td>
+  </tr>
+  <tr>
+    <td valign="top"><b>Sin conexión</b><br />Todo se guarda en el celular y se sincroniza cuando vuelve la red. Se instala desde Chrome, con accesos directos y gesto atrás.</td>
+    <td valign="top"><b>Saldos y resumen</b><br />Disponible con la curva de los últimos días, liquidez contra deudas, topes, gastos hormiga y una dona que se toca.</td>
+    <td valign="top"><b>Tres variantes por rama</b><br />Personal, familiar y de empresa. Es el mismo código con otra plantilla de cuentas y categorías.</td>
+  </tr>
+</table>
+
+También hay alcancías con fecha estimada, pagos fijos con aviso antes del cobro, efectivo con billetes y vuelto, y una revisión del mes con botones que llevan a donde se arregla cada hallazgo.
 
 ## ¿Qué puedes escribirle al chat?
 
@@ -77,30 +69,18 @@ Más ejemplos, con todos los casos: [docs/BOT.md](docs/BOT.md).
 
 <table>
   <tr>
-    <th width="33%">Saldos</th>
-    <th width="33%">Chat: "Entendí"</th>
-    <th width="33%">Movimientos</th>
+    <td align="center" width="33%"><img src="docs/screenshots/saldos.png" alt="Saldos" width="230" /><br /><b>Saldos</b><br /><sub>Lo disponible y lo que debes</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/chat.png" alt="Chat con la tarjeta Entendí" width="230" /><br /><b>Chat</b><br /><sub>La tarjeta "Entendí"</sub></td>
+    <td align="center" width="33%"><img src="docs/screenshots/movimientos.png" alt="Movimientos" width="230" /><br /><b>Movimientos</b><br /><sub>Filtros y gasto por categoría</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/saldos.png" alt="Saldos" width="240" /></td>
-    <td align="center"><img src="docs/screenshots/chat.png" alt="Chat con la tarjeta Entendí" width="240" /></td>
-    <td align="center"><img src="docs/screenshots/movimientos.png" alt="Movimientos" width="240" /></td>
-  </tr>
-  <tr>
-    <th>Deudas</th>
-    <th>Resumen</th>
-    <th></th>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/deudas.png" alt="Deudas" width="240" /></td>
-    <td align="center"><img src="docs/screenshots/resumen.png" alt="Resumen" width="240" /></td>
-    <td></td>
+    <td align="center"><img src="docs/screenshots/deudas.png" alt="Deudas" width="230" /><br /><b>Deudas</b><br /><sub>Quién te debe y a quién le debes</sub></td>
+    <td align="center"><img src="docs/screenshots/resumen.png" alt="Resumen" width="230" /><br /><b>Resumen</b><br /><sub>Ritmo, topes y hormiga</sub></td>
+    <td align="center" valign="middle"><sub>Los nombres y las cifras son inventados.<br />Las imágenes salen de <code>npm run capturas</code>.</sub></td>
   </tr>
 </table>
 
 </div>
-
-> Las imágenes salen de `npm run capturas`, que anota unos movimientos inventados y fotografía la app en un Chrome con pantalla de celular. Si cambia el diseño, se vuelve a correr.
 
 ## Arquitectura
 
@@ -147,16 +127,6 @@ flowchart LR
 El bot es una librería (`packages/core`), no un servicio: corre dentro del navegador, por eso la app funciona sin internet y hay una sola forma de entender los mensajes. El servidor guarda, sincroniza, avisa y, cuando hace falta, le pide ayuda a la IA. La IA nunca guarda nada: todo pasa por la tarjeta de confirmación.
 
 Más detalle: [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) y [docs/MOTOR-CONTABLE.md](docs/MOTOR-CONTABLE.md).
-
-## Tres variantes, tres ramas
-
-| Rama | Variante | Plantilla | Acento del ícono |
-|---|---|---|---|
-| `main` | App personal | `personal` | Esmeralda y cian |
-| `app-2` | App familiar: casa, campo y trabajadores | `familia` | Violeta e índigo |
-| `empresa` | Negocio u organización: ventas, insumos, socios | `empresa` | Ámbar y dorado |
-
-Son la misma app con distinta plantilla de cuentas y categorías. El código común se escribe en `main` y se pasa a las otras con `git merge main`. Cómo se mantienen: [docs/RAMAS.md](docs/RAMAS.md).
 
 ## Estructura del monorepo
 
