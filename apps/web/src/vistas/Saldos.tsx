@@ -2,17 +2,20 @@
  * Saldos: el «Disponible» grande con malla de color y conteo animado, lo que entró y salió este mes, una
  * tarjeta por cuenta con su color e ícono, y lo que te deben y debes.
  */
+import { useState } from 'preact/hooks';
 import { ArrowDownLeft, ArrowUpRight, HandCoins, Nfc, Scale } from 'lucide-preact';
 import {
-  calcularAlertas, formatear, gastoPorCategoria, rangoPeriodo, resumenSaldos, totalIngresos,
+  aLocal, calcularAlertas, formatear, gastoPorCategoria, rangoPeriodo, resumenSaldos, totalIngresos,
 } from '../../../../packages/core/src/index.ts';
 import { quitarEmojis } from '../carta.ts';
 import { irA, prellenarChat } from '../estado/nav.ts';
 import { ctx as contexto, datos as datosSignal } from '../estado/store.ts';
+import { BarraApilada, Sparkline } from '../ui/graficos.tsx';
 import { Insignia, visualDeCuenta } from '../ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../ui/piezas.tsx';
 
 export function Saldos() {
+  const [dias, setDias] = useState<14 | 30>(14);
   const datos = datosSignal.value;
   const ctx = contexto.value;
   if (!datos || !ctx) return <p class="vacio">Cargando…</p>;
@@ -25,6 +28,14 @@ export function Saldos() {
   const entro = totalIngresos(datos.movimientos, datos.cuentas, mes.desde, mes.hasta);
   const salio = gastoPorCategoria(datos.movimientos, datos.cuentas, mes.desde, mes.hasta).reduce((s, x) => s + x.total, 0);
 
+  // el saldo disponible al cierre de cada uno de los últimos días
+  const evolucion = Array.from({ length: dias }, (_, k) => {
+    const d = new Date(ctx.ahora); d.setDate(d.getDate() - (dias - 1 - k));
+    const fin = `${aLocal(d).slice(0, 10)} 23:59:59`;
+    return resumenSaldos(datos.movimientos.filter(m => m.ocurridoEn <= fin), datos.cuentas, apertura).disponibleCop;
+  });
+  const cambio = evolucion[evolucion.length - 1] - evolucion[0];
+  const liquidez = Math.max(0, r.disponibleCop);
   const deuda = (v: { COP: number; USD: number }) => [v.COP && formatear(v.COP), v.USD && formatear(v.USD, 'USD')].filter(Boolean).join(' + ') || '$0';
   const cuentasEnDisponible = r.cuentas.filter(x => x.cuenta.enDisponible !== false && x.cuenta.moneda === 'COP').map(x => x.cuenta.nombre).join(' + ');
 
@@ -50,7 +61,12 @@ export function Saldos() {
           <div class="flex items-center justify-between"><div class="text-xs font-semibold uppercase tracking-[.09em] opacity-85">Disponible</div><Nfc size={22} class="opacity-80" /></div>
           <div class="mt-1 text-[2.6rem] font-extrabold leading-none tracking-tight"><MontoAnimado valor={r.disponibleCop} /></div>
           <div class="mt-2 text-[.8rem] opacity-85">{cuentasEnDisponible} · sin las monedas{r.cuentas.some(x => x.cuenta.moneda === 'USD') ? ' ni los dólares' : ''}</div>
-          <div class="mt-4 grid grid-cols-2 gap-2">
+          <div class="-mx-1 mt-3"><Sparkline valores={evolucion} claro /></div>
+          <div class="mb-3 flex items-center justify-between text-xs">
+            <span class="opacity-90">{cambio === 0 ? 'Sin cambios' : `${cambio > 0 ? '+' : '-'}${formatear(Math.abs(cambio))}`} en {dias} días</span>
+            <span class="flex gap-1">{([14, 30] as const).map(n => <button key={n} class={`rounded-full px-2.5 py-1 font-semibold transition active:scale-95 ${dias === n ? 'bg-white/30' : 'bg-black/10'}`} aria-pressed={dias === n} onClick={() => setDias(n)}>{n} d</button>)}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
             <div class="rounded-2xl bg-black/15 px-3 py-2 backdrop-blur-sm">
               <div class="flex items-center gap-1 text-[.7rem] font-semibold uppercase tracking-wider opacity-85"><ArrowDownLeft size={14} />Entró este mes</div>
               <div class="mt-0.5 text-lg font-bold"><MontoAnimado valor={entro} /></div>
@@ -79,6 +95,7 @@ export function Saldos() {
       </Escalonado>
 
       <section class="tarjeta !p-0 overflow-hidden" aria-label="Lo que te deben y lo que debes">
+        <div class="p-4 pb-1"><div class="etiqueta mb-2.5">Liquidez contra deudas</div><BarraApilada tramos={[{ nombre: 'Disponible', valor: liquidez, color: 'var(--pos)' }, { nombre: 'Te deben', valor: Math.abs(r.teDeben.COP), color: 'var(--info)' }, { nombre: 'Debes', valor: Math.abs(r.debes.COP), color: 'var(--neg)' }]} /></div>
         <div class="grid grid-cols-2 divide-x divide-white/10">
           <div class="p-4"><div class="etiqueta flex items-center gap-1.5"><span class="grid h-6 w-6 place-items-center rounded-lg bg-pos/15 text-pos"><HandCoins size={14} /></span>Te deben</div><div class="monto bien mt-1.5">{deuda(r.teDeben)}</div></div>
           <div class="p-4"><div class="etiqueta flex items-center gap-1.5"><span class="grid h-6 w-6 place-items-center rounded-lg bg-neg/15 text-neg"><Scale size={14} /></span>Debes</div><div class="monto mal mt-1.5">{deuda(r.debes)}</div></div>

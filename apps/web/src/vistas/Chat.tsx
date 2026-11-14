@@ -14,6 +14,8 @@ import { parsearCarta, quitarEmojis } from '../carta.ts';
 import { celebrar, entrar } from '../efectos.ts';
 import { chatPrellenado } from '../estado/nav.ts';
 import { ctx as contexto, datos as datosSignal } from '../estado/store.ts';
+import { vibrar } from '../haptico.ts';
+import { Ayuda, esAyuda, seEnvia } from '../ui/Ayuda.tsx';
 import { BotonesBot, Carta } from '../ui/Carta.tsx';
 
 interface Burbuja { de: 'yo' | 'bot'; texto: string; botones?: Boton[] }
@@ -56,11 +58,12 @@ function mereceConfeti(textos: string[]): boolean {
   return /Deuda con .* saldada/.test(t) || (/Contar la plata/.test(t) && /\(cuadra\)|tienes \$[\d.]+ \(cuadra/.test(t)) || /\(100 %\)/.test(t) || /Llegaste a la meta/.test(t);
 }
 
-function BurbujaVista({ b, ultima, alPulsar }: { b: Burbuja; ultima: boolean; alPulsar: (x: Boton) => void }) {
+function BurbujaVista({ b, ultima, alPulsar, alEjemplo }: { b: Burbuja; ultima: boolean; alPulsar: (x: Boton) => void; alEjemplo: (e: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { if (ref.current && ultima) entrar(ref.current); }, []);
   const carta = b.de === 'bot' ? parsearCarta(b.texto) : null;
   const botones = b.botones?.length ? <BotonesBot botones={b.botones} activo={ultima} alPulsar={alPulsar} dentroDeCarta={Boolean(carta)} /> : null;
+  if (b.de === 'bot' && esAyuda(b.texto)) return <div ref={ref} class="burbuja bot guia"><Ayuda texto={b.texto} alElegir={alEjemplo} /></div>;
   if (carta) return <div ref={ref} class="burbuja bot carta"><Carta datos={carta} hijos={botones} /></div>;
   return <div ref={ref} class={`burbuja ${b.de}`}><div class="texto">{quitarEmojis(b.texto)}</div>{botones}</div>;
 }
@@ -140,14 +143,20 @@ export function Chat() {
       }
       agregar(...salidas.map(s => ({ de: 'bot' as const, texto: s.texto, botones: s.botones })));
       void escribir('chat', burbujasRef.current);
-      if (mereceConfeti(salidas.map(s => s.texto))) celebrar();
+      if (mereceConfeti(salidas.map(s => s.texto))) { celebrar(); vibrar([18, 40, 18]); }
       void sincronizar();
     });
     return turno.current;
   }
 
-  const alPulsar = (b: Boton) => { void enviar({ boton: b.id }, b.titulo.replace(/^[\p{Extended_Pictographic}️‍\s]+/u, '').trim() || b.titulo); };
+  const alPulsar = (b: Boton) => { if (b.id === 'ok') vibrar(); void enviar({ boton: b.id }, b.titulo.replace(/^[\p{Extended_Pictographic}️‍\s]+/u, '').trim() || b.titulo); };
   const mandar = (t: string) => { void enviar({ texto: t }, t); };
+  /** Un ejemplo de la guía: las consultas se envían; lo demás queda escrito para ponerle el monto. */
+  const alEjemplo = (e: string) => {
+    if (seEnvia(e)) { mandar(e); return; }
+    setTexto(e); void escribir('borrador', e);
+    document.querySelector<HTMLInputElement>('#texto')?.focus();
+  };
 
   const alEnviar = (e: Event) => {
     e.preventDefault();
@@ -208,7 +217,7 @@ export function Chat() {
         </div>
       ))}
       <div class="chat flex flex-1 flex-col gap-2.5 overflow-y-auto p-4" id="chat">
-        {burbujas.map((b, i) => <BurbujaVista key={`${i}-${b.texto.length}`} b={b} ultima={i === burbujas.length - 1} alPulsar={alPulsar} />)}
+        {burbujas.map((b, i) => <BurbujaVista key={`${i}-${b.texto.length}`} b={b} ultima={i === burbujas.length - 1} alPulsar={alPulsar} alEjemplo={alEjemplo} />)}
         <div ref={fin} />
       </div>
       <div class="atajos -mb-1 flex gap-2 overflow-x-auto px-4 pb-2 pt-1 [scrollbar-width:none]">
@@ -225,7 +234,7 @@ export function Chat() {
         )}
         <button type="submit" class="primario !min-h-11 !w-11 !rounded-full !p-0" aria-label="Enviar" title="Enviar"><ArrowUp size={22} strokeWidth={2.4} /></button>
       </form>
-      <div id="vozEstado" class="sub min-h-5 px-5 pb-2" role="status" aria-live="polite">{estadoVoz}</div>
+      <div id="vozEstado" class={`sub px-5 ${estadoVoz ? 'pb-1 pt-1' : 'h-0'}`} role="status" aria-live="polite">{estadoVoz}</div>
     </>
   );
 }

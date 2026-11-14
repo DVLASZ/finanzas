@@ -81,7 +81,7 @@ function Contenido() {
   useEffect(() => { if (ref.current) { ref.current.parentElement?.scrollTo(0, 0); entrarPantalla(ref.current); } }, [p]);
   const interna = enBarra(p) === 'mas' && p !== 'mas';
   return (
-    <main id="contenido" aria-live="polite" class={`contenido mx-auto w-full flex-1 overflow-y-auto overscroll-contain ${p === 'chat' ? 'flex max-w-3xl flex-col overflow-hidden pb-24 lg:pb-0' : 'max-w-3xl px-4 pb-32 pt-4 lg:pb-8'} lg:col-start-2 lg:row-start-2 lg:max-w-none`}>
+    <main id="contenido" aria-live="polite" class={`contenido mx-auto w-full flex-1 overflow-y-auto overscroll-contain ${p === 'chat' ? 'flex max-w-3xl flex-col overflow-hidden pb-[calc(env(safe-area-inset-bottom)+5.3rem)] lg:pb-0' : 'max-w-3xl px-4 pb-32 pt-4 lg:pb-8'} lg:col-start-2 lg:row-start-2 lg:max-w-none`}>
       <div ref={ref} key={p} class={p === 'chat' ? 'mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col' : 'mx-auto w-full max-w-3xl'}>
         {p === 'chat' && <Chat />}
         {p === 'saldos' && <Saldos />}
@@ -96,9 +96,10 @@ function Contenido() {
 
 export function App() {
   return (
-    <div id="raiz-preact" data-listo="1" data-estado={estadoSync.value} data-pendientes={pendientes.value} data-movimientos={datos.value?.movimientos.length ?? 0} class="marco flex h-full flex-col lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)]">
+    <div id="raiz-preact" data-listo="1" data-estado={estadoSync.value} data-pendientes={pendientes.value} data-movimientos={datos.value?.movimientos.length ?? 0} class="marco flex h-[100dvh] flex-col lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)]">
       <Cabecera />
       <Contenido />
+      <div aria-hidden="true" class="fixed inset-x-0 bottom-0 z-30 h-[calc(env(safe-area-inset-bottom)+.7rem)] bg-fondo lg:hidden" />
       <Barra />
     </div>
   );

@@ -20,6 +20,9 @@ Cinco pantallas son componentes (Chat, Saldos, Movimientos, Resumen y el menú M
 | `src/vistas/*.tsx` | Chat, Saldos, Movimientos, Resumen y Más (con el marco de las subpantallas) |
 | `src/vistas/*.ts`, `src/*Vista.ts` | Las pantallas hechas con HTML plano. `src/vistas.ts` les da lo que necesitan de la interfaz |
 | `src/ui/` | Piezas compartidas: `Carta.tsx` (la tarjeta Entendí o Guardado), `iconos.tsx` (ícono y color por categoría, cuenta y movimiento, estados vacíos, barras de avance, esqueletos), números que cuentan, entrada escalonada |
+| `src/ui/graficos.tsx` | Gráficos en SVG: línea del saldo, barra apilada y ritmo de gasto |
+| `src/ui/Ayuda.tsx` | La respuesta de «ayuda» como guía con ejemplos tocables |
+| `src/haptico.ts` | Vibración corta al confirmar |
 | `src/efectos.ts` | Animaciones y confeti. Respetan `prefers-reduced-motion` |
 | `src/app.ts` | Estado: copia local, cola de cambios, sincronización, avisos y llamada a la IA |
 | `src/carta.ts` | Lee la respuesta del bot y la separa en monto, pastillas y notas |
@@ -39,6 +42,8 @@ Si cambias algo y no lo ves, el navegador probablemente guardó la versión viej
 
 ## Cosas a tener en cuenta
 
+- La navegación usa el historial del navegador (`estado/nav.ts`): cada pantalla y cada cajón de detalle es una entrada, así el gesto «atrás» del teléfono vuelve dentro de la app. Para volver desde código, usa `atras()`, no `irA`.
+- Las notas sueltas de las pantallas de HTML plano (`p.sub`) se convierten solas en cuadros con ícono (`decorarNotas` en `vistas/Mas.tsx`).
 - No hay emojis en la interfaz: se usan íconos de Lucide. Lo que el bot escribe con emojis pasa por `quitarEmojis` (`carta.ts`) antes de mostrarse. Las pantallas de HTML plano piden íconos con `iconoHtml`, `insigniaHtml` y `vacioHtml`.
 - Todo lo que viene de los datos y se arma como texto HTML se escapa antes (`esc`). En JSX Preact ya escapa.
 - Una pantalla nueva de Más: su entrada en `ENTRADAS` y su caso en `Subvista`, ambos en `src/vistas/Mas.tsx`, y el nombre en `Pantalla` de `estado/nav.ts`.
