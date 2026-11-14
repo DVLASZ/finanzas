@@ -660,6 +660,7 @@ class Motor {
     const cantidad = aMinor(m.valor, 'COP');
     if (signo < 0 && cantidad > meta.apartado) return [{ texto: `Solo hay ${formatear(meta.apartado)} apartados en ${meta.nombre}.` }];
     meta.apartado += signo * cantidad;
+    meta.aportes = [...(meta.aportes ?? []), { f: aLocal(this.ctx.ahora).slice(0, 10), m: signo * cantidad }].slice(-40);
     await this.repo.setConfig('metas', JSON.stringify(metas));
     return [{ texto: textoAvance(meta, signo > 0 ? `🎯 Apartaste ${formatear(cantidad)} para` : `🎯 Sacaste ${formatear(cantidad)} de`) }];
   }

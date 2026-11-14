@@ -27,7 +27,7 @@ La plantilla `familia` trae un gasto "Aporte Cooperativa" para un pago mensual q
 
 Cada instalación trae un aspecto por defecto y cada persona lo cambia en Más, Ajustes, Letra y colores.
 
-- `piel`: `libro` (denso, cifras en letra de máquina) o `tierra` (cálida, con más aire).
+- `piel`: `libro` (la paleta Midnight Fintech, o su versión clara) o `tierra` (café cálido, con más aire). Dentro de la app se elige entre cuatro temas con vista previa en Ajustes.
 - `tema`: `claro`, `oscuro` o `auto`.
 - `letra`: `normal` o `grande`.
 - `matiz` (opcional): `azulado` sobre la piel `tierra`.

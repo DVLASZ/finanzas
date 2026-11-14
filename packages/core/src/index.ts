@@ -29,3 +29,6 @@ export * from './subcategorias.ts';
 export * from './conciliacion.ts';
 export * from './semilla.ts';
 export * from './diccionario.ts';
+export * from './seguro.ts';
+export * from './hormiga.ts';
+export * from './ocr.ts';

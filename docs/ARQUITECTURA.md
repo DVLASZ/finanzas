@@ -9,7 +9,7 @@
  | la app (PWA)       +----------->| API con clave                 |
  | copia local        |  sincroniza| base de datos D1              |
  | el bot (packages/  |<-----------+ avisos al celular (cron)      |
- |   core) adentro    |            | ayuda de la IA                |
+ |   core) adentro    |            | IA: frases y comprobantes     |
  +--------------------+            +-------------------------------+
 ```
 
@@ -24,7 +24,7 @@ Cada instalación (una persona o un negocio) es un Worker, una base D1 y una cla
 | Carpeta | Qué tiene |
 |---|---|
 | `packages/core` | El cerebro. No depende de ninguna plataforma. |
-| `apps/web` | La app: componentes de Preact con signals, estilos con Tailwind, copia local en IndexedDB, sincronización, service worker. |
+| `apps/web` | La app: componentes de Preact con signals, estilos con Tailwind, copia local en IndexedDB, sincronización, service worker. Ordenada en `components/`, `features/`, `state/`, `services/` y `lib/` (ver [apps/web/README.md](../apps/web/README.md)). |
 | `apps/worker` | El servidor: rutas de la API por dominio (`src/rutas/`), repositorio sobre D1, avisos y IA. |
 | `db` | Esquema, datos iniciales, diccionario de palabras y migraciones. |
 | `scripts` | Instalador, compilación de la web y herramientas. |
@@ -50,6 +50,8 @@ Cada instalación (una persona o un negocio) es un Worker, una base D1 y una cla
 | `repo.ts` | La interfaz `Repo` (dónde se guarda) y la versión en memoria. |
 | `sync.ts` | Operaciones, validación y cola para sincronizar. |
 | `alertas.ts` | Qué conviene avisar: deudas por vencer, topes, días sin anotar. |
+| `seguro.ts`, `hormiga.ts`, `metas.ts`, `recurrentes.ts` | El seguro para gastar hoy, los gastos hormiga, las alcancías y los pagos fijos. |
+| `ocr.ts` | Lee la respuesta de la IA con visión y la vuelve una frase para el bot. |
 | `ia.ts` | Instrucciones y límites de la ayuda de la IA. |
 | `exportar.ts` | El archivo de Excel. |
 
@@ -64,6 +66,7 @@ Todas piden la clave de la instalación en la cabecera `Authorization: Bearer`.
 | `GET /api/datos` | Todos los datos. |
 | `POST /api/sync` | La app manda su cola de cambios y recibe todos los datos. |
 | `POST /api/interpretar` | Pide a la IA que reescriba una frase (ver [IA.md](IA.md)). |
+| `POST /api/ocr` | Manda la foto de un comprobante a la IA con visión y devuelve monto, fecha, comercio y categoría sugerida. No guarda la imagen. |
 | `GET /api/push/clave` | La llave pública para suscribir un celular a los avisos. |
 | `POST /api/push/suscribir`, `/baja`, `/probar` | Suscribir, dar de baja y probar los avisos. |
 | `POST /api/purgar`, `/api/borrar-todo` | Borrado definitivo. Piden PIN siempre y una frase de confirmación. |
