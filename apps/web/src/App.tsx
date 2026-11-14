@@ -38,7 +38,7 @@ function Estado() {
     : p ? `${p} sin enviar` : 'Todo guardado';
   const tono = e === 'ok' && !sinRed ? 'text-pos bg-pos/12' : e === 'local' ? 'text-tx2 bg-elev' : 'text-adv bg-adv/12';
   return (
-    <span id="estado" class={`estado inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${tono}`}>
+    <span id="estado" class={`estado inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${tono}`}>
       {sinRed ? <WifiOff size={13} /> : e === 'ok' ? <Check size={13} /> : <span class="h-1.5 w-1.5 rounded-full bg-current" />}
       {texto}
     </span>
@@ -47,9 +47,9 @@ function Estado() {
 
 function Cabecera() {
   return (
-    <header class="vidrio sticky top-0 z-30 flex lg:col-span-2 items-center justify-between gap-3 px-4 pb-2.5 pt-[calc(env(safe-area-inset-top)+.6rem)] ring-1 ring-anillo">
-      <h1 class="truncate">{document.title}</h1>
-      <div class="flex items-center gap-2">
+    <header class="vidrio sticky top-0 z-30 flex lg:col-span-2 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 pb-2.5 pt-[calc(env(safe-area-inset-top)+.6rem)] ring-1 ring-anillo">
+      <h1 class="min-w-[6rem] flex-[1_1_0] truncate">{document.title}</h1>
+      <div class="ml-auto flex items-center gap-2">
         <Estado />
         <button id="cambiar-tema" class="grid h-11 w-11 place-items-center rounded-full bg-sup text-tx ring-1 ring-anillo transition active:scale-90" aria-label="Cambiar entre tema claro y oscuro" title="Claro u oscuro" onClick={alternarTema}>
           {oscuro.value ? <Sun size={19} /> : <Moon size={19} />}

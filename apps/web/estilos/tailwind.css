@@ -193,6 +193,11 @@
   .pestana { flex: 1; min-height: 44px; border: 0; background: transparent; color: var(--tx2); border-radius: calc(var(--radio-b) - 3px); transition: background .2s, color .2s; font-weight: 600; }
   .pestana.activa { background: var(--sup); color: var(--tx); box-shadow: 0 0 0 1px var(--anillo), 0 4px 12px -6px rgba(0, 0, 0, .4); }
   .periodo { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: .7rem 0 .5rem; }
+  /* con letra grande no caben las tres piezas en una fila: el título pasa arriba y los botones se reparten abajo */
+  html[data-letra="grande"] .periodo { flex-wrap: wrap; }
+  html[data-letra="grande"] .periodo > :nth-child(2) { flex: 1 1 100%; order: -1; text-align: center; }
+  html[data-letra="grande"] .periodo > .chip { flex: 1 1 0; min-width: 0; padding-inline: .6rem; }
+  html[data-letra="grande"] nav#nav button span { font-size: .62rem; letter-spacing: -.01em; }
   .periodo h2 { margin: 0; text-align: center; flex: 1; font-size: 1.05rem; }
   .filtro-tipos { flex-wrap: wrap; margin: .5rem 0; background: transparent; padding: 0; }
   .barra-fondo { display: block; background: var(--elev); border-radius: 999px; height: .7rem; overflow: hidden; }
