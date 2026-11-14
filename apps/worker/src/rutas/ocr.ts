@@ -22,13 +22,13 @@ async function preguntar(env: Env, modelo: string, dataUrl: string, bytes: () =>
   try {
     return await env.AI!.run(modelo, {
       messages: [{ role: 'user', content: [{ type: 'text', text: INSTRUCCIONES_OCR }, { type: 'image_url', image_url: { url: dataUrl } }] }],
-      max_tokens: 300,
+      max_tokens: 500,
       temperature: 0,
     });
   } catch (e) {
     if (esDeLicencia(e)) throw e;
     // algunos modelos solo aceptan la forma {prompt, image}
-    return await env.AI!.run(modelo, { prompt: INSTRUCCIONES_OCR, image: bytes(), max_tokens: 300 });
+    return await env.AI!.run(modelo, { prompt: INSTRUCCIONES_OCR, image: bytes(), max_tokens: 500 });
   }
 }
 

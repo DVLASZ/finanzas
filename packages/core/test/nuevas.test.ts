@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { INSTRUCCIONES_OCR, aLocal, conSubcategorias, deLocal, leerSubcategorias, normalizarDictado, quitarEnviadas, type Op, repartoEntre, revisarMes, diasParaMeta, fraseDeOCR, gastosHormiga, leerMetas, leerRespuestaOCR, rangoPeriodo, seguroParaGastar } from '../src/index.ts';
+import { INSTRUCCIONES_OCR, montoDeTexto, aLocal, conSubcategorias, deLocal, leerSubcategorias, normalizarDictado, quitarEnviadas, type Op, repartoEntre, revisarMes, diasParaMeta, fraseDeOCR, gastosHormiga, leerMetas, leerRespuestaOCR, rangoPeriodo, seguroParaGastar } from '../src/index.ts';
 import { AHORA, nuevoBot, textoDe } from '../../../tests/ayudas.ts';
 
 async function guardar(bot: ReturnType<typeof nuevoBot>, texto: string) {
@@ -225,4 +225,48 @@ test('ocr: fechas con barras y montos escritos como total', () => {
 
 test('ocr: las instrucciones traen las reglas que corrigen los errores vistos', () => {
   for (const regla of [/RESUMEN DE IMPUESTOS/, /BASE/, /justo debajo de la lista de artículos/, /DIAN/, /TOTAL/, /CAMBIO/, /VUELTO/, /encabezado/, /D1/, /Nequi/, /Daviplata/, /Bancolombia/, /null/]) assert.match(INSTRUCCIONES_OCR, regla);
+});
+
+// ---------------------------------------------------------------- lectura de comprobantes: el monto sale del texto transcrito
+
+const TIRILLA_D1 = [
+  'D1 SAS NIT900276962-1', 'FECHA 2026-11-07 18:42', 'ARROZ 1KG 4,200', 'ACEITE 8,900', 'SUBTOTAL 47,324', 'IVA 2,736',
+  'TOTAL 50,060', 'TARJ CRE 50,060', 'CAMBIO 0', 'RESUMEN DE IMPUESTOS', 'TARIFA BASE IVA TOTAL', 'EXCLUIDO 47,324 0 47,324', 'TOTAL 47,324',
+].join('\n');
+
+test('ocr: con el texto transcrito, el total de la tirilla manda sobre el monto que eligió el modelo', () => {
+  assert.equal(montoDeTexto(TIRILLA_D1), 50060);
+  const l = leerRespuestaOCR({ monto: 47724, fecha: '2026-11-07', comercio: 'D1 SAS NIT900276962-1', categoria: 'comida', texto: TIRILLA_D1 }, '2026-11-14');
+  assert.deepEqual(l, { monto: 50060, fecha: '2026-11-07', comercio: 'D1 SAS', categoria: 'comida' });
+});
+
+test('ocr: la tabla de impuestos nunca cuenta, aunque su TOTAL salga primero que el de la compra', () => {
+  assert.equal(montoDeTexto('RESUMEN DE IMPUESTOS\nTOTAL 47,324\nVALOR PAGADO 50,060'), 50060, 'si lo pagado está solo ahí, se acepta');
+  assert.equal(montoDeTexto('EXCLUIDO\nTOTAL 47,324'), 0, 'un TOTAL que solo está en la tabla no se acepta');
+  assert.equal(montoDeTexto('TOTAL 50,060\nEXENTO\nTOTAL 1,000'), 50060);
+});
+
+test('ocr: prioridad entre valor pagado, total y forma de pago, y líneas que no son el total', () => {
+  assert.equal(montoDeTexto('TOTAL 50,060\nVALOR PAGADO 50.100'), 50100, 'lo pagado va primero');
+  assert.equal(montoDeTexto('TOTAL ITEMS 5\nTOTAL 12.500'), 12500, 'el número de ítems no es plata');
+  assert.equal(montoDeTexto('SUBTOTAL 47,324\nTOTAL IVA 2,736\nTARJ DEB 50,060'), 50060, 'sin TOTAL, la forma de pago');
+  assert.equal(montoDeTexto('TOTAL $ 1.250.500,00'), 1250500);
+  assert.equal(montoDeTexto('gracias por su compra'), 0);
+});
+
+test('ocr: sin texto, o si el texto no trae un total seguro, se queda el monto del modelo', () => {
+  assert.equal(leerRespuestaOCR({ monto: 9000, comercio: 'Tienda' })?.monto, 9000);
+  assert.equal(leerRespuestaOCR({ monto: 9000, texto: 'TIENDA DON PEPE\nGRACIAS' })?.monto, 9000);
+  assert.equal(leerRespuestaOCR({ texto: 'TOTAL 50,060' })?.monto, 50060, 'el texto basta aunque el modelo no dé monto');
+});
+
+test('ocr: el nombre del comercio se corta en el NIT', () => {
+  for (const [dado, queda] of [['D1 SAS NIT900276962-1', 'D1 SAS'], ['Ara NIT 800.000.000-1', 'Ara'], ['Tiendas Ara N.I.T. 12345', 'Tiendas Ara'], ['Éxito 890900608', 'Éxito'], ['Nequi', 'Nequi']]) {
+    assert.equal(leerRespuestaOCR({ monto: 1000, comercio: dado })?.comercio, queda, dado);
+  }
+});
+
+test('ocr: las instrucciones piden transcribir las líneas clave', () => {
+  assert.match(INSTRUCCIONES_OCR, /"texto"/);
+  assert.match(INSTRUCCIONES_OCR, /No copies la tabla de impuestos/);
 });

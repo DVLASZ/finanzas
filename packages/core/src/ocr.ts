@@ -18,7 +18,10 @@ export interface LecturaOCR {
 
 /**
  * Las reglas salen de errores reales: un modelo pequeño tomó la fecha de la resolución de la DIAN del pie de la
- * factura por la fecha de la compra, «CAMBIO» por el nombre del comercio y el vuelto por el total.
+ * factura por la fecha de la compra, «CAMBIO» por el nombre del comercio y el vuelto por el total. Otro más grande tomó la BASE de la tabla de impuestos por el total.
+ *
+ * Por eso el modelo también transcribe las líneas clave (`texto`) y el monto se busca aquí, con reglas fijas
+ * (`montoDeTexto`), en vez de fiarse de lo que el modelo eligió.
  */
 export const INSTRUCCIONES_OCR = `Eres un lector de comprobantes de pago colombianos: tirillas de caja de supermercados y tiendas (D1, Ara, Éxito, Olímpica, tiendas de barrio) y comprobantes de transferencia de apps y bancos (Nequi, Daviplata, Bancolombia).
 Mira la imagen y responde SOLO un objeto JSON, sin texto antes ni después, con estas claves:
@@ -26,10 +29,53 @@ Mira la imagen y responde SOLO un objeto JSON, sin texto antes ni después, con 
 - "fecha": la fecha de la compra o de la transacción, en formato AAAA-MM-DD. Suele estar arriba, junto a la hora. Ignora las fechas del pie de la factura: la resolución de la DIAN, su vigencia o el rango de numeración autorizado. Si no ves la fecha de la compra, pon null.
 - "comercio": el nombre del comercio que está en el encabezado (por ejemplo D1, Ara, Éxito, Nequi) o a quién se le pagó. Nunca una palabra suelta como Cambio, Total, Factura o Gracias.
 - "categoria": una sola palabra entre comida, mercado, transporte, salud, servicios, ropa, recarga u otro.
+- "texto": transcribe tal cual, una línea por renglón, las líneas clave de la tirilla: el encabezado con el nombre del comercio, la línea de la fecha, y las líneas de TOTAL, VALOR PAGADO, TARJETA o EFECTIVO con sus valores. No copies la tabla de impuestos.
 Si no estás seguro de un dato, pon null. No inventes valores.`;
 
 /** Palabras que aparecen en una factura pero no son el nombre de un comercio. */
 const NO_ES_COMERCIO = /^(cambio|vuelto|total|subtotal|iva|base|valor|factura|gracias|efectivo|tarjeta|nit|resolucion|recibo|comprobante|null|n\/a)$/;
+
+/** Desde aquí empiezan las tablas de impuestos: sus TOTAL y BASE no son lo que se pagó. */
+const INICIO_IMPUESTOS = /resumen\s+de\s+impuestos|\bexcluido\b|\bexento\b/i;
+/** Una línea con el valor que se pagó. Va por prioridad: lo pagado, el total y, al final, la forma de pago. */
+const LINEAS_DE_MONTO = [
+  /\b(valor\s+pagado|total\s+pagado|total\s+a\s+pagar)\b/i,
+  /^\W*total\b/i,
+  /\btarj(?:eta)?\.?\s*(?:cre|deb)\w*|\befectivo\b/i,
+];
+/** Líneas que parecen de total pero no lo son. */
+const NO_ES_TOTAL = /\b(items?|art[ií]culos?|cantidad|cant\.?|descuento|iva|base|subtotal|cambio|vuelto|impuesto)\b/i;
+/** Un valor en pesos: con separador de miles («50,060», «50.060») o de cuatro cifras o más. */
+const VALOR = /\$?\s*(\d{1,3}(?:[.,]\d{3})+|\d{4,})(?![\d])(?:[.,]\d{1,2}(?!\d))?/g;
+
+/**
+ * El monto que sale de las líneas transcritas, con reglas fijas. Primero corta lo que viene desde «RESUMEN DE
+ * IMPUESTOS» para que esa tabla no se cuele. Si el total está solo en esa parte, solo se aceptan líneas de lo
+ * pagado o de la forma de pago. Devuelve 0 si no encuentra nada seguro.
+ */
+export function montoDeTexto(texto: string): number {
+  const corte = texto.search(INICIO_IMPUESTOS);
+  const antes = (corte >= 0 ? texto.slice(0, corte) : texto).split('\n');
+  const todo = texto.split('\n');
+  const buscar = (lineas: string[], patrones: RegExp[]): number => {
+    for (const p of patrones) {
+      const valores: number[] = [];
+      for (const l of lineas) {
+        if (!p.test(l) || NO_ES_TOTAL.test(l)) continue;
+        for (const m of l.matchAll(VALOR)) valores.push(aPesos(m[1]));
+      }
+      const v = Math.max(0, ...valores);
+      if (v > 0) return v;
+    }
+    return 0;
+  };
+  return buscar(antes, LINEAS_DE_MONTO) || buscar(todo, [LINEAS_DE_MONTO[0], LINEAS_DE_MONTO[2]]);
+}
+
+/** «D1 SAS NIT900276962-1» queda «D1 SAS»: del NIT en adelante no es el nombre. */
+function limpiarComercio(c: string): string {
+  return c.replace(/\s*\bn\.?\s?i\.?\s?t(?![a-záéíóúñ])\.?.*$/i, '').replace(/\s+\d{6,}.*$/, '').replace(/\s+/g, ' ').trim();
+}
 
 /** Saca el primer objeto JSON de un texto (el modelo a veces lo rodea de palabras). */
 function primerJson(texto: string): unknown {
@@ -67,11 +113,13 @@ export function leerRespuestaOCR(respuesta: unknown, hoy?: string): LecturaOCR |
   const bruto = typeof respuesta === 'string' ? primerJson(respuesta) : respuesta;
   if (!bruto || typeof bruto !== 'object') return null;
   const o = bruto as Record<string, unknown>;
-  const monto = aPesos(o.monto ?? o.total ?? o.valor);
+  // si el modelo transcribió las líneas, lo que dicen manda sobre el monto que él eligió
+  const deTexto = typeof o.texto === 'string' ? montoDeTexto(o.texto) : 0;
+  const monto = deTexto || aPesos(o.monto ?? o.total ?? o.valor);
   if (!(monto > 0) || monto > 2_000_000_000) return null;
   let fecha = aFechaIso(o.fecha);
   if (fecha && hoy && (dias(hoy, fecha) > 1 || dias(fecha, hoy) > 365)) fecha = null;
-  let comercio = typeof o.comercio === 'string' ? o.comercio.replace(/\s+/g, ' ').trim().slice(0, 40) : '';
+  let comercio = typeof o.comercio === 'string' ? limpiarComercio(o.comercio).slice(0, 40) : '';
   if (NO_ES_COMERCIO.test(limpiar(comercio))) comercio = '';
   const categoria = typeof o.categoria === 'string' && o.categoria.trim() && limpiar(o.categoria) !== 'null' ? limpiar(o.categoria).slice(0, 20) : null;
   return { monto, fecha, comercio, categoria };
