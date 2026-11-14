@@ -135,7 +135,7 @@ export function Resumen() {
   // ritmo del mes: gasto acumulado día a día contra el mes anterior
   const diaHoy = ctx.ahora.getDate();
   const acumulado = (rango: { desde: string; hasta: string }): number[] => {
-    const dias = Number(new Date(Number(rango.desde.slice(0, 4)), Number(rango.desde.slice(5, 7)), 0).getDate());
+    const dias = new Date(Date.UTC(Number(rango.desde.slice(0, 4)), Number(rango.desde.slice(5, 7)), 0)).getUTCDate();
     let suma = 0;
     return Array.from({ length: dias }, (_, i) => {
       const d = `${rango.desde.slice(0, 8)}${String(i + 1).padStart(2, '0')}`;

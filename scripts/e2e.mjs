@@ -163,6 +163,14 @@ try {
     await abrirDeMas('Pagos fijos'); contiene((await pag.evaluate(() => document.body.innerText)).toLowerCase(), 'falta por pagar', 'pagos fijos');
     await abrirDeMas('Revisión del mes'); contiene((await pag.evaluate(() => document.body.innerText)).toLowerCase(), 'salud del mes', 'salud del mes');
   });
+  await prueba('selector: Escape dos veces seguidas cierra la hoja una sola vez y no saca de la app', async () => {
+    await irA('Movimientos'); await espera(400);
+    await pag.evaluate(() => document.querySelector('#f-categoria').click()); await espera(500);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('[role=listbox]'))), true, 'la hoja abre');
+    await pag.keyboard.press('Escape'); await pag.keyboard.press('Escape'); await espera(700);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('[role=listbox]'))), false, 'la hoja cierra');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#lista'))), true, 'sigue en Movimientos');
+  });
   await prueba('ninguna pantalla se sale del ancho del celular', async () => {
     for (const n of ['Chat', 'Saldos', 'Movimientos', 'Resumen', 'Más']) { await irA(n); if (!(await sinDesborde())) throw new Error(`«${n}» se sale de 390 px`); }
   });

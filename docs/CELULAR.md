@@ -30,7 +30,7 @@ npm run e2e:celular
 
 Compila la app, la sirve en el PC y hace que el celular la vea como `localhost`. Abre una pestaña en el Chrome del celular y recorre las pantallas como lo hace `npm run e2e`. Usa datos de prueba que viven solo en ese navegador: no toca la app real ni ninguna base. Es lo más parecido a que alguien use la app, con el motor real de Chrome Android.
 
-Probado el 2026-11-07 con un celular Android: pasan las 13 pruebas en el Chrome del celular.
+Probado el 2026-11-07 con un celular Android: pasaban las 13 pruebas de entonces en el Chrome del celular. Hoy son 17 en el celular (18 en PC) y no se han vuelto a correr en el aparato.
 
 Si `adb devices` no lista el celular aunque Windows lo vea, mira que la depuración USB siga activada (a veces Android la apaga) y que el modo USB sea Transferencia de archivos. Chrome Android deja varios sockets de control; el script prueba cada uno hasta que uno contesta.
 

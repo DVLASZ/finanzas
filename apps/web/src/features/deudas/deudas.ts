@@ -1,5 +1,4 @@
 import { prellenarChat } from '../../state/nav.ts';
-import { $ } from '../../lib/dom.ts';
 import { deudasPorPersona, gruposDe, describirDia, formatear } from '../../../../../packages/core/src/index.ts';
 import { leerTodo } from '../../services/app.ts';
 import { esc } from '../../lib/carta.ts';
@@ -28,7 +27,7 @@ export async function vistaDeudas(cont: HTMLElement, irAlChat: () => void): Prom
   const deOtros = lista.filter(d => d.deOtros > 0);
   const filaOtros = (d: (typeof lista)[number]) => `<li class="fila"><div class="flex min-w-0 items-center gap-3">${insigniaHtml(visualDePersona(d.persona.nombre), 42)}<div><div class="titulo">${esc(d.persona.nombre)} <span class="etiq">${esc(nombreGrupo(d.persona.grupo))}</span></div>
       <div class="sub">${d.compromisos[0]?.motivo ? esc(d.compromisos[0].motivo) + ' · ' : ''}al gastarla escribe «... con plata de ${esc(d.persona.nombre.toLowerCase())}»</div></div></div>
-      <div><div class="monto">${formatear(d.deOtros, d.moneda)}</div><button class="chip" data-accion="${esc('pagué ' + d.deOtros + ' a ' + d.persona.nombre)}">Devolver</button></div></li>`;
+      <div><div class="monto">${formatear(d.deOtros, d.moneda)}</div><button class="chip" data-accion="${esc('pagué ' + d.deOtros + (d.moneda === 'USD' ? ' usd' : '') + ' a ' + d.persona.nombre)}">Devolver</button></div></li>`;
   const porCobrar = teDeben.filter(d => d.moneda === 'COP').reduce((s, d) => s + d.saldo, 0);
   const porPagar = debes.filter(d => d.moneda === 'COP').reduce((s, d) => s - d.saldo - d.deOtros, 0);
   const kpis = `<div class="kpis"><div class="tarjeta kpi"><div class="etiqueta">Por cobrar</div><div class="kpi-v bien">${formatear(porCobrar)}</div><div class="sub">${teDeben.length} ${teDeben.length === 1 ? 'persona' : 'personas'}</div></div><div class="tarjeta kpi"><div class="etiqueta">Por pagar</div><div class="kpi-v mal">${formatear(porPagar)}</div><div class="sub">${debes.length} ${debes.length === 1 ? 'persona' : 'personas'}</div></div></div>`;

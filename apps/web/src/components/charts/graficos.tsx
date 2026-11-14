@@ -3,7 +3,7 @@
  * liquidez contra deudas y la curva del ritmo de gasto del mes. Se dibujan con animación y respetan
  * `prefers-reduced-motion` (el CSS las apaga).
  */
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useId, useState } from 'preact/hooks';
 import { formatear } from '../../../../../packages/core/src/index.ts';
 
 /** Una curva suave que pasa por los puntos (Catmull-Rom convertida a Bézier). */
@@ -30,15 +30,16 @@ export function Sparkline({ valores, claro = false, alto = 64 }: { valores: numb
   const linea = curva(pts);
   const ult = pts[pts.length - 1];
   const color = claro ? '#ffffff' : 'var(--marca)';
+  const idRelleno = `spk-${useId()}`;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} class="block w-full" style={{ height: `${H}px` }} role="img" aria-label="Evolución del saldo" preserveAspectRatio="none">
       <defs>
-        <linearGradient id={claro ? 'spk-c' : 'spk'} x1="0" x2="0" y1="0" y2="1">
+        <linearGradient id={idRelleno} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0" stop-color={color} stop-opacity={claro ? 0.38 : 0.3} />
           <stop offset="1" stop-color={color} stop-opacity="0" />
         </linearGradient>
       </defs>
-      <path d={`${linea} L${ult[0]},${H} L${pts[0][0]},${H} Z`} fill={`url(#${claro ? 'spk-c' : 'spk'})`} class="aparece" />
+      <path d={`${linea} L${ult[0]},${H} L${pts[0][0]},${H} Z`} fill={`url(#${idRelleno})`} class="aparece" />
       <path d={linea} pathLength={1} fill="none" stroke={color} stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" class="trazo" />
       <circle cx={ult[0]} cy={ult[1]} r="3.6" fill={color} class="aparece" vector-effect="non-scaling-stroke" />
     </svg>
