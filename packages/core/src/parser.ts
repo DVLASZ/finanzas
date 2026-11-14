@@ -15,6 +15,7 @@ import { compraConLineas } from './parser/compras.ts';
 import { declaraciones } from './parser/declaraciones.ts';
 import { hallarFecha, hallarFechaLimite } from './fechas.ts';
 import { quitarComasDeMiles, repartoEnOtroOrden } from './reparto.ts';
+import { diaDeSemana, mesDeNombre } from './recurrentes.ts';
 import { limpiar } from './texto.ts';
 import { type Contexto, type Moneda } from './tipos.ts';
 
@@ -60,11 +61,30 @@ function detectarComando(t: string): { comando: Comando; arg?: string } | null {
   const sacarMeta = t.match(/^(?:saque|retire|gaste) (\d[\d. ]*(?:k|mil|lucas?)?) de (?:la )?meta ([a-z ]+)$/);
   if (sacarMeta) return { comando: 'meta_sacar', arg: `${sacarMeta[2]}|${sacarMeta[1]}` };
   // Gastos que se repiten:«cada mes el 5 internet 60000», «recurrentes», «quitar recurrente internet»
+  // El arg es «frecuencia|día|mes|frase». Mensual y quincenal llevan el día; semanal, el nombre del día; anual, día y mes.
   const rec = t.match(/^(?:cada mes|todos los meses|mensual|mensualmente)(?: el)?(?: dia)?\s*(\d{1,2})?\s*(.*)$/);
-  if (rec) return { comando: 'recurrente_agregar', arg: `${rec[1] ?? ''}|${rec[2]}` };
+  if (rec) return { comando: 'recurrente_agregar', arg: `mensual|${rec[1] ?? ''}||${rec[2]}` };
+  const quincena = t.match(/^(?:cada quincena|todas las quincenas|quincenal|quincenalmente)(?: el)?(?: dia)?\s*(\d{1,2})?\s*(.*)$/);
+  if (quincena) return { comando: 'recurrente_agregar', arg: `quincenal|${quincena[1] ?? ''}||${quincena[2]}` };
+  const semana = t.match(/^(?:cada semana|todas las semanas|semanal|semanalmente)(?: el| los)?\s*(lunes|martes|miercoles|jueves|viernes|sabado|domingo)?\s*(.*)$/)
+    ?? t.match(/^(?:cada|todos los)\s+(lunes|martes|miercoles|jueves|viernes|sabado|domingo)\s+(.*)$/);
+  if (semana) return { comando: 'recurrente_agregar', arg: `semanal|${diaDeSemana(semana[1] ?? '') || ''}||${semana[2]}` };
+  const anual = t.match(/^(?:cada ano|todos los anos|anual|anualmente)(?: el)?\s*(\d{1,2})?\s*(?:de\s+)?([a-z]+)?\s*(.*)$/);
+  if (anual) {
+    const mes = mesDeNombre(anual[2] ?? '');
+    // si la palabra después del día no es un mes, es parte del gasto
+    const frase = mes ? anual[3] : `${anual[2] ?? ''} ${anual[3]}`.trim();
+    return { comando: 'recurrente_agregar', arg: `anual|${anual[1] ?? ''}|${mes || ''}|${frase}` };
+  }
   if (/^(recurrentes|gastos recurrentes|gastos fijos|pagos del mes)$/.test(t)) return { comando: 'recurrentes' };
   const quitarRec = t.match(/^(?:quitar|borrar|eliminar) recurrente (.+)$/);
   if (quitarRec) return { comando: 'recurrente_quitar', arg: quitarRec[1].trim() };
+  // Existencias de los productos del catálogo: «existencias», «inventario galletas 200», «llegaron 50 galletas»
+  if (/^(existencias|inventario|stock)$/.test(t)) return { comando: 'existencias' };
+  const fijarStock = t.match(/^(?:inventario|stock|conteo)\s+(.+?)\s+(\d+)$/);
+  if (fijarStock) return { comando: 'existencias_fijar', arg: `${fijarStock[1]}|${fijarStock[2]}` };
+  const sumarStock = t.match(/^(?:me )?(?:llegaron|entraron)\s+(\d+)\s+(.+)$/);
+  if (sumarStock) return { comando: 'existencias_sumar', arg: `${sumarStock[2]}|${sumarStock[1]}` };
   const v = t.match(/^ventas(?: de| del| de la| este| esta)?(?: (semana|mes|ano|anio))?$/);
   if (v) return { comando: 'ventas', arg: v[1] === 'semana' ? 'semana' : v[1] === 'ano' || v[1] === 'anio' ? 'anio' : 'mes' };
   if (/^(lista|lista de compras|mi lista|la lista|que falta|que me falta)$/.test(t)) return { comando: 'lista' };

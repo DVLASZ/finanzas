@@ -5,7 +5,8 @@
 import { render } from 'preact';
 import { App } from './App.tsx';
 import { aplicar } from './state/apariencia.ts';
-import { app, iniciar, sincronizar } from './services/app.ts';
+import { app, iniciar } from './services/estado.ts';
+import { sincronizar } from './services/sincronizacion.ts';
 import { accionInicial, activarGestoAtras, imagenCompartida, irA, iniciarHistorial } from './state/nav.ts';
 import { iniciarEstado } from './state/store.ts';
 

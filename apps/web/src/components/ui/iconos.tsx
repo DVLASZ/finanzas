@@ -1,13 +1,12 @@
 /**
  * La identidad visual de la app: un ícono de Lucide y un color para cada categoría, cuenta o tipo de movimiento,
- * más los estados vacíos, las barras de avance y los esqueletos de carga. Las pantallas hechas con HTML plano
- * piden su ícono como texto con `iconoHtml`.
+ * más los estados vacíos, las barras de avance y los esqueletos de carga.
  */
 import {
   ArrowLeftRight, Banknote, Bus, Cake, Coins, Cookie, DollarSign, Gamepad2, GraduationCap, Gift, HandCoins, HeartPulse, Inbox, Landmark,
   PartyPopper, PiggyBank, Receipt, Repeat, Shapes, ShoppingBag, Smartphone, Tag, TrendingUp, User, UtensilsCrossed, Wallet, Wrench,
 } from 'lucide-preact';
-import { render, type ComponentType } from 'preact';
+import type { ComponentType } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import type { Cuenta, Movimiento } from '../../../../../packages/core/src/index.ts';
 import { tintaDe } from './piezas.tsx';
@@ -99,16 +98,6 @@ export function Insignia({ v, tam = 40, redondo = false }: { v: Visual; tam?: nu
   );
 }
 
-function comoHtml(nodo: preact.VNode): string {
-  const div = document.createElement('div');
-  render(nodo, div);
-  return div.innerHTML;
-}
-
-/** Lo mismo que los componentes, pero como texto HTML para las pantallas que arman HTML a mano. */
-export const iconoHtml = (I: Icono, tam = 18): string => comoHtml(<I size={tam} />);
-export const insigniaHtml = (v: Visual, tam = 40): string => comoHtml(<Insignia v={v} tam={tam} />);
-
 /** Estado vacío: un ícono que flota suavemente y una frase. */
 export function Vacio({ Icono = Inbox, titulo, detalle, tono = 'gris' }: { Icono?: Icono; titulo: string; detalle?: string; tono?: keyof typeof T }) {
   const t = T[tono];
@@ -120,7 +109,6 @@ export function Vacio({ Icono = Inbox, titulo, detalle, tono = 'gris' }: { Icono
     </div>
   );
 }
-export const vacioHtml = (I: Icono, titulo: string, detalle = '', tono: keyof typeof T = 'gris'): string => comoHtml(<Vacio Icono={I} titulo={titulo} detalle={detalle} tono={tono} />);
 
 /** Barra de avance: crece al aparecer y cambia de esmeralda a ámbar y a coral según se acerca al límite. */
 export function BarraAvance({ porcentaje, alto = 10 }: { porcentaje: number; alto?: number }) {

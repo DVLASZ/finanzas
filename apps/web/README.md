@@ -15,7 +15,7 @@ La app instalable (PWA). TypeScript con Preact y signals, Tailwind para los esti
 | `features/mas/` | El menú Más y el marco de las subpantallas |
 | `features/ajustes/`, `cuentas/`, `catalogo/`, `buzon/`, `conciliar/`, `guia/`, `deudas/`, `trabajadores/` | Pantallas que siguen armando HTML con plantillas de texto. Se montan dentro de `VistaLegada` |
 | `state/` | `store.ts` (signals que reflejan los datos, la cola y la sincronización), `nav.ts` (pantalla, cajón de detalle e historial) y `apariencia.ts` (tema, piel y letra) |
-| `services/` | `app.ts` (copia local, cola, sincronización, avisos, IA, fotos), `ocr.ts` (lectura de comprobantes) y `almacen.ts` (IndexedDB) |
+| `services/` | Un módulo por tema: `estado.ts` (copia local, ajustes y cola), `sincronizacion.ts`, `http.ts`, `avisos.ts`, `ia.ts`, `servidor.ts` (salud y buzón), `fotos.ts`, `seguridad.ts` (PIN), `ocr.ts` (comprobantes) y `almacen.ts` (IndexedDB) |
 | `lib/` | Utilidades: `efectos.ts`, `haptico.ts`, `imagen.ts`, `tarjetaDivision.ts` (la imagen para compartir por WhatsApp), `carta.ts` (leer la respuesta del bot), `periodos.ts` |
 
 Fuera de `src/`: `index.html`, `sw.js` (offline, avisos y recibir imágenes compartidas), `manifest.webmanifest` (accesos directos y compartir hacia la app) y `estilos/` (`tailwind.css` y `temas.css`).

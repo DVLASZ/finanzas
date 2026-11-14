@@ -1,28 +1,26 @@
 /**
  * «Más»: el menú de todo lo demás como una cuadrícula de tarjetas (bento), y el marco de las pantallas que se
- * abren desde aquí. Las pantallas grandes de configuración siguen siendo las de siempre (HTML armado con
- * plantillas) montadas dentro de `VistaLegada`; llevan el mismo aspecto porque comparten las clases del CSS.
+ * abren desde aquí. Todas son componentes de Preact que leen sus datos de `state/store.ts`.
  */
-import { ArrowLeft, CalendarClock, Info, PiggyBank, BookOpen, ChevronRight, CircleHelp, ClipboardCheck, HandCoins, Inbox, Landmark, Settings, ShoppingBasket, Tags, Users, Package } from 'lucide-preact';
+import { ArrowLeft, CalendarClock, PiggyBank, BookOpen, ChevronRight, CircleHelp, ClipboardCheck, HandCoins, Inbox, Landmark, Settings, ShoppingBasket, Tags, Users, Package } from 'lucide-preact';
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef } from 'preact/hooks';
 import { hayTrabajadores, vendeProductos } from '../../../../../packages/core/src/index.ts';
-import { vistaCatalogo, vistaLista } from '../catalogo/catalogoVista.ts';
-import { vistaBuzon } from '../buzon/buzonVista.ts';
-import { vistaConciliar } from '../conciliar/conciliarVista.ts';
-import { vistaCuentas } from '../cuentas/cuentasVista.ts';
-import { vistaGuia } from '../guia/guiaVista.ts';
+import { Buzon } from '../buzon/Buzon.tsx';
+import { Catalogo } from '../catalogo/Catalogo.tsx';
+import { Lista } from '../catalogo/Lista.tsx';
+import { Conciliar } from '../conciliar/Conciliar.tsx';
+import { Cuentas } from '../cuentas/Cuentas.tsx';
+import { Guia } from '../guia/Guia.tsx';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { atras, irA, prellenarChat, type Pantalla } from '../../state/nav.ts';
-import { mejorarSelects } from '../../components/ui/Selector.tsx';
-import { Insignia, T, iconoHtml, type Icono, type Visual } from '../../components/ui/iconos.tsx';
+import { Insignia, T, type Icono, type Visual } from '../../components/ui/iconos.tsx';
 import { Escalonado } from '../../components/ui/piezas.tsx';
-import { vistaAjustes } from '../ajustes/ajustes.ts';
-import { vistaDeudas } from '../deudas/deudas.ts';
+import { Ajustes } from '../ajustes/Ajustes.tsx';
+import { Deudas } from '../deudas/Deudas.tsx';
 import { Revision } from '../revision/Revision.tsx';
 import { Alcancias } from '../metas/Alcancias.tsx';
 import { PagosFijos } from '../recurrentes/PagosFijos.tsx';
-import { vistaTrabajadores } from '../trabajadores/trabajadores.ts';
+import { Trabajadores } from '../trabajadores/Trabajadores.tsx';
 
 interface Entrada { id: Pantalla | 'ayuda'; nombre: string; detalle: string; Icono: Icono; tema: keyof typeof T; soloSiVende?: boolean; soloSiTrabajadores?: boolean }
 interface Grupo { titulo: string; destacadas?: boolean; entradas: Entrada[] }
@@ -89,49 +87,17 @@ export function Mas() {
   );
 }
 
-/** Las notas sueltas (párrafos con la clase `sub`) pasan a ser un cuadro con ícono, para que no queden pegadas al borde. */
-function decorarNotas(raiz: HTMLElement): void {
-  raiz.querySelectorAll<HTMLElement>('p.sub:not([id]):not(.callout)').forEach(p => {
-    if (!p.textContent?.trim() || p.closest('.fila, .alerta')) return;
-    const txt = document.createElement('span');
-    txt.className = 'callout-txt';
-    while (p.firstChild) txt.append(p.firstChild);
-    const ico = document.createElement('span');
-    ico.className = 'callout-ico';
-    ico.innerHTML = iconoHtml(Info, 16);
-    p.classList.add('callout');
-    p.append(ico, txt);
-  });
-}
-
-/** Monta una pantalla hecha con HTML plano dentro de un componente. Con `repintar`, se vuelve a armar cuando cambian los datos. */
-function VistaLegada({ dibujar, repintar = false }: { dibujar: (caja: HTMLElement) => unknown; repintar?: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const datos = repintar ? datosSignal.value : null;
-  useEffect(() => { if (ref.current) void dibujar(ref.current); }, [datos]);
-  // las pantallas se vuelven a armar a cada acción: las notas se decoran cada vez
-  useEffect(() => {
-    const caja = ref.current;
-    if (!caja) return;
-    const ob = new MutationObserver(() => { ob.disconnect(); decorarNotas(caja); mejorarSelects(caja); ob.observe(caja, { childList: true, subtree: true }); });
-    ob.observe(caja, { childList: true, subtree: true });
-    return () => ob.disconnect();
-  }, []);
-  return <div ref={ref} class="pb-10" />;
-}
-
 export function Subvista({ pantalla }: { pantalla: Pantalla }) {
-  const alChat = () => irA('chat');
   const pantallas: Partial<Record<Pantalla, ComponentChildren>> = {
-    deudas: <VistaLegada repintar dibujar={c => vistaDeudas(c, alChat)} />,
-    ajustes: <VistaLegada dibujar={vistaAjustes} />,
-    lista: <VistaLegada dibujar={vistaLista} />,
-    catalogo: <VistaLegada dibujar={vistaCatalogo} />,
-    cuentas: <VistaLegada dibujar={vistaCuentas} />,
-    guia: <VistaLegada dibujar={c => vistaGuia(c, alChat)} />,
-    conciliar: <VistaLegada dibujar={c => vistaConciliar(c, alChat)} />,
-    buzon: <VistaLegada dibujar={c => vistaBuzon(c, alChat)} />,
-    trabajadores: <VistaLegada repintar dibujar={vistaTrabajadores} />,
+    deudas: <Deudas />,
+    ajustes: <Ajustes />,
+    lista: <Lista />,
+    catalogo: <Catalogo />,
+    cuentas: <Cuentas />,
+    guia: <Guia />,
+    conciliar: <Conciliar />,
+    buzon: <Buzon />,
+    trabajadores: <Trabajadores />,
     revision: <Revision />,
     alcancias: <Alcancias />,
     pagosfijos: <PagosFijos />,

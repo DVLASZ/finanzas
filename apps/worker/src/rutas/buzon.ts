@@ -20,7 +20,7 @@ export async function buzonPublico(req: Request, url: URL, env: Env): Promise<Re
   const repo = new D1Repo(env.DB);
   await repo.setConfig('buzon', agregarAviso((await repo.cargar()).config, aviso));
   try {
-    await mandarAviso(repo, { titulo: `Aviso de ${aviso.de}`, cuerpo: `${aviso.de}: ${formatear(aviso.monto)}${aviso.concepto ? ` · ${aviso.concepto}` : ''}. Míralo en Más, Buzón.` });
+    await mandarAviso(repo, { titulo: `Aviso de ${aviso.de}`, cuerpo: `${aviso.de}: ${formatear(aviso.monto)}${aviso.concepto ? ` · ${aviso.concepto}` : ''}${aviso.propuesta ? ' (trae una propuesta para anotar)' : ''}. Míralo en Más, Buzón.` });
   } catch (e) { console.error('avisos:', (e as Error).message); }
   return json({ ok: true });
 }
@@ -28,8 +28,8 @@ export async function buzonPublico(req: Request, url: URL, env: Env): Promise<Re
 export const rutaBuzon: Ruta = async ({ req, url, env }) => {
   if (url.pathname === '/api/buzon/destinos' && req.method === 'GET') return json({ destinos: Object.keys(destinosDe(env)) });
   if (url.pathname === '/api/buzon/enviar' && req.method === 'POST') {
-    const c = (await req.json().catch(() => null)) as { destino?: unknown; monto?: unknown; concepto?: unknown } | null;
-    const r = await enviarAlBuzon(env, { destino: String(c?.destino ?? ''), monto: Number(c?.monto), concepto: String(c?.concepto ?? '') });
+    const c = (await req.json().catch(() => null)) as { destino?: unknown; monto?: unknown; concepto?: unknown; propuesta?: unknown } | null;
+    const r = await enviarAlBuzon(env, { destino: String(c?.destino ?? ''), monto: Number(c?.monto), concepto: String(c?.concepto ?? ''), propuesta: typeof c?.propuesta === 'string' && c.propuesta.trim() ? c.propuesta : undefined });
     return json(r, r.ok ? 200 : 400);
   }
   return null;

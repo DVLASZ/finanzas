@@ -9,9 +9,12 @@
 
 Cómo funciona:
 
-1. La app de tu mamá avisa (Más, Buzón, Avisar a otra app, eliges "julio", el monto y el concepto).
+1. La app de tu mamá avisa (Más, Buzón, Avisar a otra app, eliges "julio", el monto y el concepto, y si quieres una frase para que la otra app la anote).
 2. Su Worker llama al Worker de Julio con la clave de buzón de Julio y deja el aviso.
-3. En la app de Julio, Más, Buzón muestra el aviso. Con Anotar queda escrito en el chat `ingreso 150000 Mamá` para confirmar. Con Descartar se va.
+3. En la app de Julio, Más, Buzón muestra el aviso. Con Anotar queda escrito en el chat la frase que propuso la otra app, o `ingreso 150000 Mamá` si no propuso ninguna, para confirmar. Con Descartar se va.
+
+> [!IMPORTANT]
+> Una propuesta nunca se guarda sola. Llega como texto en el chat y la persona confirma la tarjeta «Entendí» como cualquier otra frase. La propuesta puede tener hasta 120 letras y una sola línea.
 
 Para activarlo hacen falta dos valores por cada app, que se ponen con wrangler (te los pide y no se muestran; no los pegues en ningún chat):
 

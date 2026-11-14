@@ -5,7 +5,7 @@
 import { useState } from 'preact/hooks';
 import { ArrowDownLeft, ArrowUpRight, CalendarClock, HandCoins, Nfc, PiggyBank, Scale, ShieldCheck } from 'lucide-preact';
 import {
-  aLocal, calcularAlertas, formatear, gastoPorCategoria, rangoPeriodo, resumenSaldos, seguroParaGastar, totalIngresos,
+  aLocal, calcularAlertas, describirDia, formatear, gastoPorCategoria, rangoPeriodo, resumenSaldos, seguroParaGastar, totalIngresos,
 } from '../../../../../packages/core/src/index.ts';
 import { quitarEmojis } from '../../lib/carta.ts';
 import { irA, prellenarChat } from '../../state/nav.ts';
@@ -34,6 +34,7 @@ export function Saldos() {
     const fin = `${aLocal(d).slice(0, 10)} 23:59:59`;
     return resumenSaldos(datos.movimientos.filter(m => m.ocurridoEn <= fin), datos.cuentas, apertura).disponibleCop;
   });
+  const etiquetasEvolucion = Array.from({ length: dias }, (_, k) => describirDia(aLocal(new Date(ctx.ahora.getTime() - (dias - 1 - k) * 86400000)).slice(0, 10)));
   const cambio = evolucion[evolucion.length - 1] - evolucion[0];
   const seguro = seguroParaGastar(datos, ctx.ahora);
   const restaHoy = Math.max(0, seguro.porDia - seguro.gastadoHoy);
@@ -64,7 +65,7 @@ export function Saldos() {
           <div class="flex items-center justify-between"><div class="text-xs font-semibold uppercase tracking-[.09em] opacity-85">Disponible</div><Nfc size={22} class="opacity-80" /></div>
           <div class="mt-1 text-[2.6rem] font-extrabold leading-none tracking-tight"><MontoAnimado valor={r.disponibleCop} /></div>
           <div class="mt-2 text-[.8rem] opacity-85">{cuentasEnDisponible} · sin las monedas{r.cuentas.some(x => x.cuenta.moneda === 'USD') ? ' ni los dólares' : ''}</div>
-          <div class="-mx-1 mt-3"><Sparkline valores={evolucion} claro /></div>
+          <div class="-mx-1 mt-3"><Sparkline valores={evolucion} etiquetas={etiquetasEvolucion} claro /></div>
           <div class="mb-3 flex items-center justify-between text-xs">
             <span class="opacity-90">{cambio === 0 ? 'Sin cambios' : `${cambio > 0 ? '+' : '-'}${formatear(Math.abs(cambio))}`} en {dias} días</span>
             <span class="flex gap-1">{([14, 30] as const).map(n => <button key={n} class={`rounded-full px-2.5 py-1 font-semibold transition active:scale-95 ${dias === n ? 'bg-white/30' : 'bg-black/10'}`} aria-pressed={dias === n} onClick={() => setDias(n)}>{n} d</button>)}</span>

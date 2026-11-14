@@ -2,10 +2,6 @@
  * Selector propio en lugar del `<select>` del sistema. En el celular abre una hoja que sube desde abajo (con el
  * fondo de la app, un ícono por opción y una marca en la elegida); en pantalla ancha, un menú flotante junto al
  * botón. Entra al historial como un cajón más, así el botón atrás del teléfono lo cierra.
- *
- * `Selector` es para pantallas hechas con componentes. Las que arman HTML a mano siguen usando su `<select>`,
- * que se esconde y se reemplaza por un botón igual (ver `mejorarSelects`); el `<select>` original conserva el
- * valor y recibe el evento `change`, así su lógica no cambia.
  */
 import { signal } from '@preact/signals';
 import { Check, ChevronDown } from 'lucide-preact';
@@ -40,37 +36,6 @@ export function Selector({ id, etiqueta, valor, opciones, alCambiar }: { id?: st
       <span>{actual?.etiqueta ?? etiqueta}</span><ChevronDown size={16} aria-hidden="true" />
     </button>
   );
-}
-
-/**
- * Cambia cada `<select>` de una pantalla hecha con HTML por un botón que abre la hoja. El `<select>` queda escondido:
- * sigue guardando el valor y, al elegir, recibe `change` como si la persona lo hubiera usado.
- */
-export function mejorarSelects(raiz: HTMLElement): void {
-  raiz.querySelectorAll<HTMLSelectElement>('select:not([data-mejorado])').forEach(sel => {
-    sel.dataset.mejorado = '1';
-    sel.hidden = true;
-    const boton = document.createElement('button');
-    boton.type = 'button';
-    boton.className = 'select-btn';
-    boton.setAttribute('aria-haspopup', 'listbox');
-    const etiqueta = sel.getAttribute('aria-label') ?? sel.closest('label')?.firstChild?.textContent?.trim() ?? 'Elegir';
-    const poner = () => {
-      boton.innerHTML = '<span></span>';
-      boton.firstElementChild!.textContent = sel.selectedOptions[0]?.textContent ?? etiqueta;
-      boton.insertAdjacentHTML('beforeend', '<svg class="i" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>');
-      boton.setAttribute('aria-label', `${etiqueta}: ${sel.selectedOptions[0]?.textContent ?? ''}`);
-    };
-    poner();
-    boton.addEventListener('click', () => abrir({
-      titulo: etiqueta,
-      opciones: [...sel.options].map(o => ({ valor: o.value, etiqueta: o.textContent ?? '', visual: visualDeNombre((o.textContent ?? '').replace(/^Dentro de /, '')) })),
-      valor: sel.value,
-      elegir: v => { sel.value = v; sel.dispatchEvent(new Event('change', { bubbles: true })); poner(); },
-      ancla: boton.getBoundingClientRect(),
-    }));
-    sel.after(boton);
-  });
 }
 
 /** La hoja o el menú flotante. Se monta una sola vez, en `App`. */

@@ -73,7 +73,7 @@ Para quitarla del todo, borra el bloque `[ai]` del `wrangler.toml` y vuelve a pu
 
 - `packages/core/src/ia.ts` arma las instrucciones del modelo con las cuentas y categorías de esa app, limpia lo que devuelve y lleva la cuenta del día.
 - `apps/worker/src/rutas/ia.ts` tiene la ruta `POST /api/interpretar` (pide el token). Usa el modelo `@cf/meta/llama-3.3-70b-instruct-fp8-fast` con respuesta en JSON. Cloudflare retira modelos de vez en cuando (el primero que usé ya estaba retirado). Si pasa, se cambia con la variable `IA_MODELO` o en `MODELO_IA` de ese archivo.
-- `apps/web/src/services/app.ts` (`pedirAyudaIA`) y `apps/web/src/features/chat/Chat.tsx` llaman a la ruta cuando el bot no entiende.
+- `apps/web/src/services/ia.ts` (`pedirAyudaIA`) y `apps/web/src/features/chat/Chat.tsx` llaman a la ruta cuando el bot no entiende.
 
 Las pruebas usan una IA falsa, así que no gastan cuota. La calidad del modelo se miró con frases reales en la app publicada de la empresa: "gasté cinco lukas en etiquetas" salió como "gasto 5000 en etiquetas" y "hola como estas" no devolvió nada.
 
