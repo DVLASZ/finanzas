@@ -14,7 +14,7 @@ import { guardarCambio } from '../../state/acciones.ts';
 import { irA, prellenarChat } from '../../state/nav.ts';
 import { datos as datosSignal } from '../../state/store.ts';
 
-interface Aviso { id: string; de: string; monto: number; concepto: string; cuando: string; estado: 'nuevo' | 'hecho' }
+interface Aviso { id: string; de: string; monto: number; concepto: string; cuando: string; estado: 'nuevo' | 'hecho'; propuesta?: string }
 
 function leerAvisos(config: Record<string, string>): Aviso[] {
   try { const l = JSON.parse(config.buzon ?? '[]'); return Array.isArray(l) ? l : []; } catch { return []; }
@@ -26,6 +26,7 @@ export function Buzon() {
   const [destino, setDestino] = useState('');
   const [monto, setMonto] = useState('');
   const [concepto, setConcepto] = useState('');
+  const [propuesta, setPropuesta] = useState('');
   const [mensaje, setMensaje] = useState('');
   useEffect(() => { if (hayServidor()) void destinosDelBuzon().then(setDestinos); }, []);
   if (!datos) return <Cargando />;
@@ -33,11 +34,11 @@ export function Buzon() {
   const nuevos = avisos.filter(a => a.estado === 'nuevo').reverse();
 
   const marcar = (id: string) => guardarCambio(() => app.repo.setConfig('buzon', JSON.stringify(avisos.map(a => (a.id === id ? { ...a, estado: 'hecho' } : a)))));
-  const anotar = async (a: Aviso) => { await marcar(a.id); prellenarChat(`ingreso ${a.monto} ${a.de}`); irA('chat'); };
+  const anotar = async (a: Aviso) => { await marcar(a.id); prellenarChat(a.propuesta || `ingreso ${a.monto} ${a.de}`); irA('chat'); };
   const avisar = async (e: Event) => {
     e.preventDefault();
     setMensaje('Enviando...');
-    setMensaje(await avisarAOtraApp(destino || destinos[0], Number(monto), concepto));
+    setMensaje(await avisarAOtraApp(destino || destinos[0], Number(monto), concepto, propuesta));
   };
 
   return (
@@ -49,6 +50,7 @@ export function Buzon() {
             <div>
               <div class="titulo">{a.de}: {formatear(a.monto)}</div>
               <div class="sub">{a.concepto || 'Sin concepto'} · {a.cuando.slice(0, 10)}</div>
+              {a.propuesta && <div class="sub">Propone anotar: <code>{a.propuesta}</code></div>}
             </div>
             <div class="acciones">
               <button class="chip" onClick={() => void anotar(a)}>Anotar</button>
@@ -65,6 +67,7 @@ export function Buzon() {
           </label>
           <label>Monto<input type="number" inputMode="numeric" min="1" placeholder="150000" required value={monto} onInput={e => setMonto((e.target as HTMLInputElement).value)} /></label>
           <label>Concepto<input type="text" maxLength={80} placeholder="Giro para Cooperativa" value={concepto} onInput={e => setConcepto((e.target as HTMLInputElement).value)} /></label>
+          <label>Frase para que la otra app anote (opcional)<input type="text" maxLength={120} placeholder="ingreso 150000 mamá" value={propuesta} onInput={e => setPropuesta((e.target as HTMLInputElement).value)} /></label>
           <div class="acciones"><button class="primario" type="submit">Avisar</button></div>
           <p class="sub" aria-live="polite">{mensaje}</p>
         </form>

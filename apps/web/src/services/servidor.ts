@@ -11,12 +11,12 @@ export async function leerSalud(): Promise<SaludServidor | string> {
 export async function destinosDelBuzon(): Promise<string[]> {
   try { return (await llamar<{ destinos: string[] }>('GET', '/api/buzon/destinos')).destinos; } catch { return []; }
 }
-export async function avisarAOtraApp(destino: string, monto: number, concepto: string): Promise<string> {
+export async function avisarAOtraApp(destino: string, monto: number, concepto: string, propuesta = ''): Promise<string> {
   try {
     const r = await fetch(`${urlBase()}/api/buzon/enviar`, {
-      method: 'POST', headers: cabeceraJson(), body: JSON.stringify({ destino, monto, concepto }),
+      method: 'POST', headers: cabeceraJson(), body: JSON.stringify({ destino, monto, concepto, ...(propuesta.trim() ? { propuesta: propuesta.trim() } : {}) }),
     });
     const d = (await r.json().catch(() => ({}))) as { ok?: boolean; motivo?: string };
-    return r.ok ? 'Listo, le dejé el aviso.' : d.motivo ?? 'No se pudo enviar.';
+    return r.ok ? (propuesta.trim() ? 'Listo, le dejé el aviso con la propuesta.' : 'Listo, le dejé el aviso.') : d.motivo ?? 'No se pudo enviar.';
   } catch { return 'No pude hablar con el servidor.'; }
 }

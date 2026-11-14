@@ -6,7 +6,7 @@ import { calcularSaldos, deudasPorPersona, diasSinRegistros, estadoPresupuesto, 
 import { formatear } from './dinero.ts';
 import { ejemploDeSaldos } from './entidades.ts';
 import { aLocal, describirDia, nombreMes, rangoPeriodo } from './fechas.ts';
-import { recurrentesPendientes } from './recurrentes.ts';
+import { describirFrecuencia, periodoDe, recurrentesPendientes } from './recurrentes.ts';
 import type { Datos } from './repo.ts';
 
 export interface Alerta {
@@ -90,7 +90,7 @@ export function calcularAlertas(d: Datos, ahora: Date): Alerta[] {
 
   // Gastos que se repiten cada mes y todavía no se han anotado
   for (const r of recurrentesPendientes(d.config, d.movimientos, hoy)) {
-    res.push({ nivel: 'aviso', texto: `Este mes toca ${r.concepto} (${formatear(r.monto)}, el ${r.dia}). Anótalo así: «${r.frase}».` });
+    res.push({ nivel: 'aviso', texto: `${periodoDe(r).replace(/^./, c => c.toUpperCase())} toca ${r.concepto} (${formatear(r.monto)}, ${describirFrecuencia(r)}). Anótalo así: «${r.frase}».` });
   }
 
   // Topes mensuales

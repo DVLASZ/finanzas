@@ -302,4 +302,11 @@
   .ondas span:nth-child(3) { height: 20px; animation-delay: .24s; } .ondas span:nth-child(4) { height: 14px; animation-delay: .36s; } .ondas span:nth-child(5) { height: 9px; animation-delay: .48s; }
   @keyframes onda { 0%, 100% { transform: scaleY(.45); } 50% { transform: scaleY(1.1); } }
 
+
+  /* pulido: las tarjetas que se tocan se levantan un poco; los filtros por fecha caben en una fila */
+  button.tarjeta { transition: transform .18s ease, box-shadow .25s ease, border-color .25s ease; }
+  @media (hover: hover) { button.tarjeta:hover { transform: translateY(-2px); box-shadow: 0 14px 34px -18px rgba(0, 0, 0, .55), 0 0 0 1px var(--anillo); } }
+  .barra > label { flex: 1 1 9rem; min-width: 0; }
+  .vacio-caja { transition: opacity .3s ease; }
+  .carrusel .chip { transition: background .2s ease, color .2s ease, box-shadow .2s ease, transform .12s ease; }
 }

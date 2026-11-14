@@ -5,7 +5,7 @@
  *   libre = disponible - pagos fijos que faltan este mes - lo apartado para metas
  */
 import { leerMetas, totalApartado } from './metas.ts';
-import { leerRecurrentes, yaRegistrado } from './recurrentes.ts';
+import { leerRecurrentes, vecesQueFaltanEsteMes } from './recurrentes.ts';
 import { resumenSaldos } from './consultas.ts';
 import { aLocal } from './fechas.ts';
 import type { Datos } from './repo.ts';
@@ -32,7 +32,7 @@ export function seguroParaGastar(datos: Datos, ahora: Date): SeguroHoy {
   const hoy = aLocal(ahora);
   const apertura = datos.config.fecha_apertura ?? '2000-01-01 00:00:00';
   const disponible = resumenSaldos(datos.movimientos, datos.cuentas, apertura).disponibleCop;
-  const fijos = leerRecurrentes(datos.config).filter(r => !yaRegistrado(r, datos.movimientos, hoy)).reduce((s, r) => s + r.monto, 0);
+  const fijos = leerRecurrentes(datos.config).reduce((s, r) => s + r.monto * vecesQueFaltanEsteMes(r, datos.movimientos, hoy), 0);
   const apartado = totalApartado(leerMetas(datos.config));
   const crudo = disponible - fijos - apartado;
   const anio = Number(hoy.slice(0, 4)), mes = Number(hoy.slice(5, 7));

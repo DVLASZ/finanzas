@@ -319,6 +319,24 @@ test('buzón: enviar un aviso a otra app usa su dirección y su clave, sin mostr
   assert.equal((await enviarAlBuzon(env, { destino: 'nadie', de: 'M', monto: 1000, concepto: '' }, destino)).ok, false);
 });
 
+test('buzón: un aviso puede traer una frase propuesta, pero no una larga ni de varias líneas', async () => {
+  const env = { ...entorno(), BUZON_CLAVE: 'clave-del-buzon' };
+  const llamada = (cuerpo: unknown) => worker.fetch(new Request('https://x.workers.dev/api/buzon', {
+    method: 'POST', body: JSON.stringify(cuerpo), headers: { Authorization: 'Bearer clave-del-buzon', 'Content-Type': 'application/json' },
+  }), env);
+  const base = { de: 'Mamá', monto: 150000, concepto: 'Giro' };
+  assert.equal((await llamada({ ...base, propuesta: 'x'.repeat(121) })).status, 400);
+  assert.equal((await llamada({ ...base, propuesta: 'ingreso 150000\nmama' })).status, 400);
+  assert.equal((await llamada({ ...base, propuesta: 5 })).status, 400);
+  assert.equal((await llamada({ ...base, propuesta: '  ingreso 150000 mama  ' })).status, 200);
+  const datos = (await (await peticion(env, '/api/datos')).json()) as { datos: { config: Record<string, string> } };
+  const buzon = JSON.parse(datos.datos.config.buzon) as { propuesta?: string }[];
+  assert.equal(buzon.at(-1)?.propuesta, 'ingreso 150000 mama');
+  // sin frase, el aviso queda como siempre
+  assert.equal((await llamada(base)).status, 200);
+  assert.equal((JSON.parse(((await (await peticion(env, '/api/datos')).json()) as { datos: { config: Record<string, string> } }).datos.config.buzon) as { propuesta?: string }[]).at(-1)?.propuesta, undefined);
+});
+
 // ---------------------------------------------------------------- lectura de comprobantes (/api/ocr)
 
 const FOTO = 'data:image/jpeg;base64,' + btoa('no es una foto de verdad');

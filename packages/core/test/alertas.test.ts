@@ -73,7 +73,7 @@ test('recurrentes: «cada mes el 5 recarga 9000» avisa desde dos días antes ha
   await guardar(bot, 'saldo inicial efectivo 500000', deLocal('2026-10-01 08:00:00'));
   const r = textoDe(await bot.di('cada mes el 5 recarga 9000', deLocal('2026-11-01 08:00:00')));
   assert.match(r, /Cada mes, el 5: Recarga \$9.000/);
-  assert.match(textoDe(await bot.di('recurrentes')), /Recarga \$9.000 \(el 5\)/);
+  assert.match(textoDe(await bot.di('recurrentes')), /Recarga \$9.000 \(cada mes, el 5\)/);
   const d = () => bot.repo.cargar();
   // faltan 4 días: todavía no
   assert.ok(!calcularAlertas(await d(), deLocal('2026-11-01 09:00:00')).some(x => /toca Recarga/.test(x.texto)));

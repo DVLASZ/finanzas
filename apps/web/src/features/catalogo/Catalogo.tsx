@@ -4,12 +4,12 @@
  * como todo lo demás. Para pedir un dato se usa el cuadro del navegador (prompt), igual que el PIN.
  */
 import { Package } from 'lucide-preact';
-import { formatear, leerCatalogo, presentacionDeTexto, type Catalogo as CatalogoDatos, type Producto } from '../../../../../packages/core/src/index.ts';
+import { aLocal, conConteo, existenciasDe, formatear, leerCatalogo, presentacionDeTexto, type Catalogo as CatalogoDatos, type Producto } from '../../../../../packages/core/src/index.ts';
 import { Vacio } from '../../components/ui/iconos.tsx';
 import { Cargando, Nota } from '../../components/ui/piezas.tsx';
 import { app } from '../../services/estado.ts';
 import { guardarCambio } from '../../state/acciones.ts';
-import { datos as datosSignal } from '../../state/store.ts';
+import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 
 const idDe = (nombre: string): string =>
   nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'producto';
@@ -24,8 +24,10 @@ function pedirPresentaciones(): Producto['presentaciones'] | null {
 
 export function Catalogo() {
   const datos = datosSignal.value;
-  if (!datos) return <Cargando />;
+  const ctx = contexto.value;
+  if (!datos || !ctx) return <Cargando />;
   const cat: CatalogoDatos = leerCatalogo(datos) ?? { productos: [] };
+  const quedan = (p: Producto) => existenciasDe(p, datos.movimientos);
   const guardar = (c: CatalogoDatos) => guardarCambio(() => app.repo.setConfig('catalogo', JSON.stringify(c)));
 
   const nuevoProducto = async () => {
@@ -43,6 +45,15 @@ export function Catalogo() {
     const nuevas = pedirPresentaciones();
     if (nuevas) await guardar({ productos: cat.productos.map((p, a) => (a === i ? { ...p, presentaciones: [...p.presentaciones, ...nuevas] } : p)) });
   };
+  /** Dice cuántas unidades hay (o cuántas llegaron, con `sumar`). Desde ese momento las ventas las van restando. */
+  const contar = async (p: Producto, sumar: boolean) => {
+    const quedan = existenciasDe(p, datos.movimientos) ?? 0;
+    const t = prompt(sumar ? `¿Cuántas unidades de «${p.nombre}» llegaron?` : `¿Cuántas unidades de «${p.nombre}» tienes ahora?`, sumar ? '' : String(quedan));
+    if (t === null) return;
+    const n = Math.round(Number(t.replace(/\D/g, '')));
+    if (!t.trim() || !Number.isFinite(n) || n < 0 || n > 1_000_000) { alert('No entendí ese número.'); return; }
+    await guardar(conConteo(cat, p, sumar ? quedan + n : n, aLocal(ctx.ahora)));
+  };
   const cambiarPrecio = async (i: number, j: number) => {
     const pres = cat.productos[i].presentaciones[j];
     const nuevo = presentacionDeTexto(`${pres.nombre}=${prompt(`Nuevo precio de «${pres.nombre}»:`, String(pres.precio)) ?? ''}`);
@@ -54,7 +65,7 @@ export function Catalogo() {
       <Nota>Los productos que vendes, con su precio. Después escribes «vendí 3 botellas de jugo» o «15 galletas a granel» y el bot calcula el total.</Nota>
       {cat.productos.length ? cat.productos.map((p, i) => (
         <section key={p.id} class="tarjeta" style={{ marginBottom: '.6rem' }}>
-          <div class="fila-tope"><b>{p.nombre}</b><button class="chip" onClick={() => void quitar(p)}>Quitar</button></div>
+          <div class="fila-tope"><b>{p.nombre}</b>{quedan(p) !== null && <span class={`insig-tope ${(quedan(p) ?? 0) > 5 ? 'con' : ''}`}>Quedan {quedan(p)}</span>}<button class="chip" onClick={() => void quitar(p)}>Quitar</button></div>
           <ul class="lista" style={{ marginTop: '.5rem' }}>
             {p.presentaciones.map((x, j) => (
               <li key={x.nombre} class="fila" onClick={() => void cambiarPrecio(i, j)}>
@@ -62,11 +73,15 @@ export function Catalogo() {
               </li>
             ))}
           </ul>
-          <div class="acciones"><button class="secundario" onClick={() => void agregarPresentacion(i)}>Agregar presentación</button></div>
+          <div class="acciones">
+            <button class="secundario" onClick={() => void agregarPresentacion(i)}>Agregar presentación</button>
+            <button class="secundario" onClick={() => void contar(p, false)}>{quedan(p) === null ? 'Llevar existencias' : 'Contar de nuevo'}</button>
+            {quedan(p) !== null && <button class="secundario" onClick={() => void contar(p, true)}>Llegó mercancía</button>}
+          </div>
         </section>
       )) : <Vacio Icono={Package} titulo="Todavía no hay productos" detalle="Agrégalos para poder vender desde el chat." tono="cian" />}
       <div class="acciones"><button class="primario" onClick={() => void nuevoProducto()}>Agregar producto</button></div>
-      <Nota>Toca un precio para cambiarlo.</Nota>
+      <Nota>Toca un precio para cambiarlo. Si llevas existencias, cada venta resta las unidades y el chat avisa cuando no alcanzan o quedan pocas.</Nota>
     </div>
   );
 }

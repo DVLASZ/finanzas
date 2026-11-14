@@ -11,7 +11,8 @@ import type { Datos } from '../../../packages/core/src/index.ts';
 
 export interface EnvBuzon { BUZON_CLAVE?: string; BUZON_DESTINOS?: string; BUZON_NOMBRE?: string }
 
-export interface AvisoBuzon { id: string; de: string; monto: number; concepto: string; cuando: string; estado: 'nuevo' | 'hecho' }
+/** `propuesta` es opcional: una frase para el bot de la app que la recibe («ingreso 150000 mama»). Nunca se guarda sola: la otra persona la confirma. */
+export interface AvisoBuzon { id: string; de: string; monto: number; concepto: string; cuando: string; estado: 'nuevo' | 'hecho'; propuesta?: string }
 
 const MAX_AVISOS = 50;
 
@@ -22,7 +23,9 @@ export function leerAviso(x: unknown): Omit<AvisoBuzon, 'id' | 'estado'> | strin
   if (typeof o.de !== 'string' || !o.de.trim() || o.de.length > 40) return 'Falta quién lo manda (hasta 40 letras)';
   if (!Number.isInteger(o.monto) || (o.monto as number) <= 0 || (o.monto as number) > 2_000_000_000) return 'El monto tiene que ser un número entero mayor que cero';
   if (o.concepto !== undefined && (typeof o.concepto !== 'string' || o.concepto.length > 80)) return 'El concepto es muy largo (hasta 80 letras)';
-  return { de: o.de.trim(), monto: o.monto as number, concepto: ((o.concepto as string | undefined) ?? '').trim(), cuando: new Date().toISOString() };
+  if (o.propuesta !== undefined && (typeof o.propuesta !== 'string' || o.propuesta.length > 120 || /[\u0000-\u001f]/.test(o.propuesta))) return 'La frase propuesta es muy larga (hasta 120 letras, en una sola l�nea)';
+  const propuesta = typeof o.propuesta === 'string' ? o.propuesta.trim() : '';
+  return { de: o.de.trim(), monto: o.monto as number, concepto: ((o.concepto as string | undefined) ?? '').trim(), cuando: new Date().toISOString(), ...(propuesta ? { propuesta } : {}) };
 }
 
 export function leerBuzon(config: Datos['config']): AvisoBuzon[] {
@@ -47,11 +50,11 @@ export function destinosDe(env: EnvBuzon): Record<string, { url: string; clave: 
 
 /** Deja un aviso en el buzón de otra instalación. Nunca devuelve su dirección ni su clave. */
 export async function enviarAlBuzon(
-  env: EnvBuzon, dato: { destino: string; de?: string; monto: number; concepto: string }, llamar: typeof fetch = fetch,
+  env: EnvBuzon, dato: { destino: string; de?: string; monto: number; concepto: string; propuesta?: string }, llamar: typeof fetch = fetch,
 ): Promise<{ ok: boolean; motivo?: string }> {
   const d = destinosDe(env)[dato.destino];
   if (!d?.url || !d.clave) return { ok: false, motivo: `No tengo configurado el destino «${dato.destino}».` };
-  const aviso = leerAviso({ de: dato.de ?? env.BUZON_NOMBRE ?? 'Otra app', monto: dato.monto, concepto: dato.concepto });
+  const aviso = leerAviso({ de: dato.de ?? env.BUZON_NOMBRE ?? 'Otra app', monto: dato.monto, concepto: dato.concepto, propuesta: dato.propuesta });
   if (typeof aviso === 'string') return { ok: false, motivo: aviso };
   try {
     const r = await llamar(`${d.url.replace(/\/$/, '')}/api/buzon`, {

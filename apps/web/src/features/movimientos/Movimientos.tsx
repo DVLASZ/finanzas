@@ -3,11 +3,11 @@
  * la foto del recibo y el botón de anular. Los filtros se recuerdan entre visitas.
  */
 import { signal } from '@preact/signals';
-import { Ban, BarChart3, ScanLine, Share2, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
+import { Ban, BarChart3, Download, ScanLine, Share2, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  aLocal, conSubcategorias, fraseDeOCR, describirDia, describirFecha, formatear, leerSubcategorias, limpiar, nombreMes, rangoPeriodo,
+  aLocal, esArqueo, etiquetasUsadas, filtrarMovimientos, fraseDeOCR, movimientosACsv, movimientosAJson, describirDia, describirFecha, formatear, leerSubcategorias, limpiar, nombreMes, rangoPeriodo,
   type Cuenta, type Movimiento,
 } from '../../../../../packages/core/src/index.ts';
 import { claves, escribir, leer } from '../../services/almacen.ts';
@@ -26,14 +26,14 @@ import { Esqueleto, Insignia, Vacio, visualDeCuenta, visualDeMovimiento, visualD
 import { Selector } from '../../components/ui/Selector.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
 
-type Periodo = 'todo' | 'semana' | 'mes' | 'anio';
+type Periodo = 'todo' | 'semana' | 'mes' | 'anio' | 'rango';
 type Tipo = 'todos' | 'gastos' | 'ingresos' | 'transferencias' | 'deudas';
-interface Filtros { periodo: Periodo; atras: number; tipo: Tipo; categoria: string; cuenta: string; persona: string }
+interface Filtros { periodo: Periodo; atras: number; tipo: Tipo; categoria: string; cuenta: string; persona: string; etiqueta: string; desde: string; hasta: string }
 
-const INICIALES: Filtros = { periodo: 'mes', atras: 0, tipo: 'todos', categoria: '', cuenta: '', persona: '' };
+const INICIALES: Filtros = { periodo: 'mes', atras: 0, tipo: 'todos', categoria: '', cuenta: '', persona: '', etiqueta: '', desde: '', hasta: '' };
 const CLAVE = 'filtros_movimientos';
 const TIPOS: [Tipo, string][] = [['todos', 'Todos'], ['gastos', 'Gastos'], ['ingresos', 'Ingresos'], ['transferencias', 'Transferencias'], ['deudas', 'Deudas']];
-const PERIODOS: [Periodo, string][] = [['todo', 'Todo'], ['semana', 'Semana'], ['mes', 'Mes'], ['anio', 'Año']];
+const PERIODOS: [Periodo, string][] = [['todo', 'Todo'], ['semana', 'Semana'], ['mes', 'Mes'], ['anio', 'Año'], ['rango', 'Fechas']];
 const DE_TIPO: Record<Tipo, string[]> = {
   todos: [], gastos: ['gasto', 'compartido'], ingresos: ['ingreso'], transferencias: ['transferencia', 'cambio_moneda'], deudas: ['prestamo', 'deuda', 'pago'],
 };
@@ -69,6 +69,28 @@ function montoVisible(m: Movimiento, cuentas: Cuenta[]): { texto: string; clase:
   if (ingreso !== 0) return { texto: '+' + formatear(ingreso), clase: 'bien' };
   const mayor = [...m.asientos].filter(a => tipoDe(a.cuentaId) !== 'sistema').sort((a, b) => Math.abs(b.monto) - Math.abs(a.monto))[0];
   return mayor ? { texto: formatear(Math.abs(mayor.monto), mayor.moneda), clase: 'neutro' } : { texto: '', clase: 'neutro' };
+}
+
+/** El rango de fechas que se está viendo, o null si es «Todo» (o un rango incompleto). */
+function rangoDeFiltros(f: Filtros, ahora: Date): { desde: string; hasta: string } | null {
+  if (f.periodo === 'todo') return null;
+  if (f.periodo === 'rango') {
+    if (!f.desde) return null;
+    const hasta = f.hasta && f.hasta >= f.desde ? f.hasta : f.desde;
+    const siguiente = new Date(`${hasta}T12:00:00Z`);
+    siguiente.setUTCDate(siguiente.getUTCDate() + 1);
+    return { desde: `${f.desde} 00:00:00`, hasta: `${siguiente.toISOString().slice(0, 10)} 00:00:00` };
+  }
+  return rangoPeriodo(f.periodo, fechaAtras(ahora, f.periodo, f.atras));
+}
+
+const diasEntre = (a: string, b: string): number => Math.round((Date.parse(b.slice(0, 10)) - Date.parse(a.slice(0, 10))) / 86_400_000);
+
+/** Baja un archivo con lo que se está viendo. */
+function descargar(nombre: string, contenido: string, tipo: string): void {
+  const url = URL.createObjectURL(new Blob(['\ufeff' + contenido], { type: `${tipo};charset=utf-8` }));
+  Object.assign(document.createElement('a'), { href: url, download: nombre }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 export function tituloDelPeriodo(periodo: Periodo, desde: string): string {
@@ -145,7 +167,8 @@ function Detalle({ m }: { m: Movimiento }) {
     await verRecibo();
   };
   const anular = async () => {
-    if (!confirm(`¿Anular «${m.descripcion}»? No se borra: queda marcado como anulado.`)) return;
+    const aviso = esArqueo(m) ? `¿Anular este arqueo? Deja de contar y no aparece más en los listados.` : `¿Anular «${m.descripcion}»? No se borra: queda marcado como anulado.`;
+    if (!confirm(aviso)) return;
     await app.repo.anularMovimiento(m.id, aLocal(new Date()));
     atras();
     void sincronizar();
@@ -176,7 +199,7 @@ function Detalle({ m }: { m: Movimiento }) {
           {filasDivision.length > 0 && <button class="secundario" id="compartirDivision" onClick={compartir}><Share2 size={18} />Compartir cuentas</button>}
           <label class="secundario archivo"><Camera size={18} />Tomar foto<input type="file" id="fotoCamara" accept="image/*" capture="environment" hidden onChange={alElegir} /></label>
           <label class="secundario archivo"><ImagePlus size={18} />Subir imagen<input type="file" id="fotoArchivo" accept="image/*" hidden onChange={alElegir} /></label>
-          {m.estado === 'ok' && <button class="peligro" id="anular" onClick={anular}><Ban size={18} />Anular</button>}
+          {m.estado === 'ok' && <button class="peligro" id="anular" onClick={anular}><Ban size={18} />{esArqueo(m) ? 'Anular arqueo' : 'Anular'}</button>}
           <button class="secundario" id="cerrar" onClick={atras}><X size={18} />Cerrar</button>
         </div>
       </div>
@@ -189,7 +212,7 @@ function Detalle({ m }: { m: Movimiento }) {
 export function verMovimientos(f: { anulados?: boolean; categoria?: string } = {}): void {
   busqueda.value = '';
   verAnulados.value = Boolean(f.anulados);
-  poner({ periodo: 'mes', atras: 0, tipo: 'todos', categoria: f.categoria ?? '', cuenta: '', persona: '' });
+  poner({ periodo: 'mes', atras: 0, tipo: 'todos', categoria: f.categoria ?? '', cuenta: '', persona: '', etiqueta: '', desde: '', hasta: '' });
   irA('movimientos');
 }
 
@@ -201,24 +224,19 @@ export function Movimientos() {
   const f = filtros.value;
   const q = limpiar(busqueda.value);
   const nombre = (id: string) => datos.cuentas.find(c => c.id === id)?.nombre ?? id;
-  const tocan = (m: Movimiento, id: string) => m.asientos.some(a => a.cuentaId === id);
-  const r = f.periodo === 'todo' ? null : rangoPeriodo(f.periodo, fechaAtras(ctx.ahora, f.periodo, f.atras));
+  const r = rangoDeFiltros(f, ctx.ahora);
 
-  const lista = datos.movimientos
-    .filter(m => (verAnulados.value || m.estado === 'ok')
-      && (!r || (m.ocurridoEn >= r.desde && m.ocurridoEn < r.hasta))
-      && (f.tipo === 'todos' || DE_TIPO[f.tipo].includes(m.tipo))
-      && (!f.categoria || conSubcategorias(datos.config, f.categoria).some(id => tocan(m, id)))
-      && (!f.cuenta || tocan(m, f.cuenta))
-      && (!f.persona || tocan(m, f.persona))
-      && (!q || limpiar(`${m.descripcion} ${m.etiqueta ?? ''} ${m.lugarDesde ?? ''} ${m.lugarHasta ?? ''}`).includes(q)))
-    .sort((a, b) => b.ocurridoEn.localeCompare(a.ocurridoEn));
+  const lista = filtrarMovimientos(datos, {
+    texto: busqueda.value, etiqueta: f.etiqueta, tipos: DE_TIPO[f.tipo], categoria: f.categoria, cuenta: f.cuenta, persona: f.persona,
+    desde: r?.desde.slice(0, 10), hasta: r?.hasta.slice(0, 10), anulados: verAnulados.value,
+  });
+  const etiquetas = etiquetasUsadas(datos.movimientos);
 
   // totales de lo que se está viendo (sin anulados) y en qué categorías se fue
   let gastos = 0, ingresos = 0;
   const porCat = new Map<string, number>();
   const porTiempo = new Map<string, number>();
-  const porMes = f.periodo === 'anio' || f.periodo === 'todo';
+  const porMes = f.periodo === 'anio' || f.periodo === 'todo' || (f.periodo === 'rango' && Boolean(r) && diasEntre(r!.desde, r!.hasta) > 62);
   for (const m of lista) {
     if (m.estado !== 'ok') continue;
     for (const a of m.asientos) {
@@ -257,7 +275,7 @@ export function Movimientos() {
       opciones={[{ valor: '', etiqueta: vacio }, ...usadas(tipo).map(c => ({ valor: c.id, etiqueta: c.nombre, visual: tipo === 'categoria' ? visualDeNombre(c.nombre) : tipo === 'dinero' ? visualDeCuenta(c) : visualDePersona(c.nombre) }))]} />
   );
 
-  const hayFiltros = f.tipo !== 'todos' || f.categoria || f.cuenta || f.persona || busqueda.value;
+  const hayFiltros = f.tipo !== 'todos' || f.categoria || f.cuenta || f.persona || f.etiqueta || busqueda.value;
   const visibles = lista.slice(0, limite.value);
   // agrupadas por día, de lo más nuevo a lo más viejo
   const grupos: { dia: string; items: Movimiento[] }[] = [];
@@ -274,7 +292,14 @@ export function Movimientos() {
         {PERIODOS.map(([p, t]) => <button key={p} class={`pestana ${f.periodo === p ? 'activa' : ''}`} data-periodo={p} onClick={() => poner({ periodo: p, atras: 0 })}>{t}</button>)}
       </div>
 
-      {r && (
+      {f.periodo === 'rango' && (
+        <div class="barra" id="rango">
+          <label>Desde<input type="date" value={f.desde} max={f.hasta || undefined} onInput={e => poner({ desde: (e.target as HTMLInputElement).value })} /></label>
+          <label>Hasta<input type="date" value={f.hasta} min={f.desde || undefined} onInput={e => poner({ hasta: (e.target as HTMLInputElement).value })} /></label>
+        </div>
+      )}
+
+      {r && f.periodo !== 'rango' && (
         <div class="periodo" id="nav-periodo">
           <button class="chip" id="anterior" aria-label="Ver el periodo anterior" onClick={() => poner({ atras: f.atras + 1 })}><ChevronLeft size={16} />Anterior</button>
           <strong id="titulo-periodo">{tituloDelPeriodo(f.periodo, r.desde)}</strong>
@@ -292,13 +317,19 @@ export function Movimientos() {
         {selector('f-persona', 'Persona', 'Personas', 'persona', f.persona, 'persona')}
       </div>
 
+      {etiquetas.length > 0 && (
+        <div class="carrusel no-scrollbar" role="group" aria-label="Etiquetas">
+          {etiquetas.map(e => <button key={e.etiqueta} class="chip" aria-pressed={limpiar(f.etiqueta).replace(/^#/, '') === limpiar(e.etiqueta)} onClick={() => poner({ etiqueta: limpiar(f.etiqueta).replace(/^#/, '') === limpiar(e.etiqueta) ? '' : e.etiqueta })}>#{e.etiqueta} <span class="tabular-nums opacity-70">{e.n}</span></button>)}
+        </div>
+      )}
+
       <div class="barra">
         <div class="relative flex-1">
           <Search size={17} class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-tx2" />
           <input id="buscar" type="search" class="!pl-10" placeholder="Buscar" aria-label="Buscar" value={busqueda.value} onInput={e => { busqueda.value = (e.target as HTMLInputElement).value; limite.value = 60; }} />
         </div>
         <label class="check check-chip"><input type="checkbox" id="anulados" checked={verAnulados.value} onChange={e => { verAnulados.value = (e.target as HTMLInputElement).checked; }} /> anulados</label>
-        {hayFiltros && <button class="chip" id="limpiar" onClick={() => { busqueda.value = ''; poner({ tipo: 'todos', categoria: '', cuenta: '', persona: '' }); }}><SlidersHorizontal size={15} />Quitar filtros</button>}
+        {hayFiltros && <button class="chip" id="limpiar" onClick={() => { busqueda.value = ''; poner({ tipo: 'todos', categoria: '', cuenta: '', persona: '', etiqueta: '' }); }}><SlidersHorizontal size={15} />Quitar filtros</button>}
       </div>
 
       <div class="grid grid-cols-3 gap-2">
@@ -307,6 +338,12 @@ export function Movimientos() {
         <div class="tarjeta kpi"><div class="etiqueta flex items-center gap-1"><Scale size={13} class="text-info" />Balance</div><div class={`kpi-v ${ingresos - gastos < 0 ? 'mal' : 'bien'}`}><MontoAnimado valor={ingresos - gastos} /></div></div>
       </div>
       <p id="cuenta" class="sub !my-0 px-1">{lista.length} movimientos · Gastos {formatear(gastos)} · Ingresos {formatear(ingresos)}</p>
+      {lista.length > 0 && (
+        <div class="carrusel no-scrollbar" role="group" aria-label="Exportar lo que se ve">
+          <button class="chip" id="exportar-csv" onClick={() => descargar(`movimientos-${aLocal(ctx.ahora).slice(0, 10)}.csv`, movimientosACsv(lista, datos.cuentas), 'text/csv')}><Download size={15} />Exportar CSV</button>
+          <button class="chip" id="exportar-json" onClick={() => descargar(`movimientos-${aLocal(ctx.ahora).slice(0, 10)}.json`, movimientosAJson(lista, datos.cuentas), 'application/json')}><Download size={15} />Exportar JSON</button>
+        </div>
+      )}
 
       {gastos > 0 && (
         <section class="tarjeta" id="desglose" aria-label="Análisis de lo que se ve">
