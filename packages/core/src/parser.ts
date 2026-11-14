@@ -120,7 +120,21 @@ function cobroDelBanco(texto: string): string {
   return texto.replace(/\b4\s*(?:x|por)\s*(?:1000|mil)\b/gi, 'gravamen');
 }
 
+/**
+ * «almuerzo 60000 entre ana, luis y yo» es un gasto en partes iguales: se lee igual que «almuerzo 60000 pagué por ana y luis».
+ * Solo aplica si tú estás en la lista («yo» o «mí»); sin eso no se sabe si el gasto era tuyo y se deja como está.
+ */
+export function repartoEntre(texto: string): string {
+  const m = texto.match(/^(.*?\d[\d.,]*\s*(?:k|mil|lucas?)?)\s+entre\s+(.+)$/i);
+  if (!m) return texto;
+  const partes = m[2].split(/\s*,\s*|\s+y\s+/).map(s => s.trim()).filter(Boolean);
+  const nombres = partes.filter(s => !/^(yo|mi|mí)$/i.test(s));
+  if (nombres.length === partes.length || nombres.length === 0) return texto;
+  return `${m[1]} pagué por ${nombres.join(' y ')}`;
+}
+
 export function interpretar(texto: string, ctx: Contexto): Resultado {
+  texto = repartoEntre(texto);
   // una compra con varias líneas se lee como un solo gasto y deja el detalle en la nota
   const compra = compraConLineas(texto);
   const deTerceros = plataDeTerceros(texto) !== texto;
