@@ -3,7 +3,7 @@
  * liquidez contra deudas y la curva del ritmo de gasto del mes. Se dibujan con animación y respetan
  * `prefers-reduced-motion` (el CSS las apaga).
  */
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { formatear } from '../../../../../packages/core/src/index.ts';
 
 /** Una curva suave que pasa por los puntos (Catmull-Rom convertida a Bézier). */
@@ -136,6 +136,23 @@ export function BarrasPeriodo({ barras }: { barras: Barra[] }) {
         ))}
       </div>
       <div class="mt-1 flex justify-between text-[10px] text-tx2"><span>{barras[0]?.etiqueta}</span><span>{barras[barras.length - 1]?.etiqueta}</span></div>
+    </div>
+  );
+}
+
+/** Un arco tipo velocímetro: se llena según `pct` (0 a 100) y cambia de esmeralda a ámbar a coral al gastarse. */
+export function Arco({ pct, restante, alto = 120, children }: { pct: number; restante: boolean; alto?: number; children?: preact.ComponentChildren }) {
+  const [lleno, setLleno] = useState(0);
+  useEffect(() => { const id = requestAnimationFrame(() => setLleno(Math.min(100, Math.max(0, pct)))); return () => cancelAnimationFrame(id); }, [pct]);
+  const color = !restante ? 'var(--neg)' : pct > 50 ? 'var(--pos)' : pct > 20 ? 'var(--adv)' : 'var(--neg)';
+  return (
+    <div class="relative mx-auto w-full max-w-[16rem]" style={{ height: `${alto}px` }}>
+      <svg viewBox="0 0 180 100" class="absolute inset-0 h-full w-full" role="img" aria-label="Cuánto queda seguro para gastar hoy">
+        <path d="M 12 92 A 78 78 0 0 1 168 92" pathLength={100} fill="none" stroke="var(--elev)" stroke-width="14" stroke-linecap="round" />
+        <path d="M 12 92 A 78 78 0 0 1 168 92" pathLength={100} fill="none" stroke={color} stroke-width="14" stroke-linecap="round"
+          stroke-dasharray={`${lleno} 100`} style={{ transition: 'stroke-dasharray .9s cubic-bezier(.22,1,.36,1), stroke .4s' }} />
+      </svg>
+      <div class="absolute inset-x-0 bottom-0 flex flex-col items-center leading-tight">{children}</div>
     </div>
   );
 }

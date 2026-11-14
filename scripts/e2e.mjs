@@ -157,6 +157,12 @@ try {
     await abrirDeMas('Revisión del mes'); contiene(await pag.evaluate(() => document.body.innerText), 'Revisión del mes', 'revisión');
     await abrirDeMas('Ajustes'); contiene(await pag.evaluate(() => document.body.innerText), 'Estado del servidor', 'ajustes');
   });
+  await prueba('Saldos: el seguro para gastar hoy, y las pantallas de alcancías y pagos fijos', async () => {
+    await irA('Saldos'); contiene((await pag.evaluate(() => document.body.innerText)).toLowerCase(), 'seguro para gastar hoy', 'widget de saldos');
+    await abrirDeMas('Alcancías'); contiene((await pag.evaluate(() => document.body.innerText)).toLowerCase(), 'total apartado', 'alcancías');
+    await abrirDeMas('Pagos fijos'); contiene((await pag.evaluate(() => document.body.innerText)).toLowerCase(), 'falta por pagar', 'pagos fijos');
+    await abrirDeMas('Revisión del mes'); contiene((await pag.evaluate(() => document.body.innerText)).toLowerCase(), 'salud del mes', 'salud del mes');
+  });
   await prueba('ninguna pantalla se sale del ancho del celular', async () => {
     for (const n of ['Chat', 'Saldos', 'Movimientos', 'Resumen', 'Más']) { await irA(n); if (!(await sinDesborde())) throw new Error(`«${n}» se sale de 390 px`); }
   });

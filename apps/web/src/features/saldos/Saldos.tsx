@@ -3,14 +3,14 @@
  * tarjeta por cuenta con su color e ícono, y lo que te deben y debes.
  */
 import { useState } from 'preact/hooks';
-import { ArrowDownLeft, ArrowUpRight, HandCoins, Nfc, Scale } from 'lucide-preact';
+import { ArrowDownLeft, ArrowUpRight, CalendarClock, HandCoins, Nfc, PiggyBank, Scale, ShieldCheck } from 'lucide-preact';
 import {
-  aLocal, calcularAlertas, formatear, gastoPorCategoria, rangoPeriodo, resumenSaldos, totalIngresos,
+  aLocal, calcularAlertas, formatear, gastoPorCategoria, rangoPeriodo, resumenSaldos, seguroParaGastar, totalIngresos,
 } from '../../../../../packages/core/src/index.ts';
 import { quitarEmojis } from '../../lib/carta.ts';
 import { irA, prellenarChat } from '../../state/nav.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
-import { BarraApilada, Sparkline } from '../../components/charts/graficos.tsx';
+import { Arco, BarraApilada, Sparkline } from '../../components/charts/graficos.tsx';
 import { Insignia, visualDeCuenta } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
 
@@ -35,6 +35,9 @@ export function Saldos() {
     return resumenSaldos(datos.movimientos.filter(m => m.ocurridoEn <= fin), datos.cuentas, apertura).disponibleCop;
   });
   const cambio = evolucion[evolucion.length - 1] - evolucion[0];
+  const seguro = seguroParaGastar(datos, ctx.ahora);
+  const restaHoy = Math.max(0, seguro.porDia - seguro.gastadoHoy);
+  const pctHoy = seguro.porDia > 0 ? (restaHoy / seguro.porDia) * 100 : 0;
   const liquidez = Math.max(0, r.disponibleCop);
   const deuda = (v: { COP: number; USD: number }) => [v.COP && formatear(v.COP), v.USD && formatear(v.USD, 'USD')].filter(Boolean).join(' + ') || '$0';
   const cuentasEnDisponible = r.cuentas.filter(x => x.cuenta.enDisponible !== false && x.cuenta.moneda === 'COP').map(x => x.cuenta.nombre).join(' + ');
@@ -76,6 +79,29 @@ export function Saldos() {
               <div class="mt-0.5 text-lg font-bold"><MontoAnimado valor={salio} /></div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section class="tarjeta" aria-label="Seguro para gastar hoy">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="!m-0 flex items-center gap-1.5"><ShieldCheck size={14} />Seguro para gastar hoy</h3>
+          <span class="text-xs text-tx2">{seguro.dias} {seguro.dias === 1 ? 'día' : 'días'} de mes</span>
+        </div>
+        <div class="mt-3">
+          <Arco pct={pctHoy} restante={!seguro.enRojo && restaHoy > 0} alto={118}>
+            <b class="text-[1.7rem] font-extrabold tabular-nums"><MontoAnimado valor={restaHoy} /></b>
+            <span class="text-xs text-tx2">{seguro.enRojo ? 'Los compromisos ya cubren lo disponible' : `de ${formatear(seguro.porDia)} para hoy`}</span>
+          </Arco>
+        </div>
+        <dl class="mt-4 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1.5 text-sm">
+          <dt class="text-tx2">Disponible</dt><dd class="tabular-nums">{formatear(seguro.disponible)}</dd>
+          <dt class="text-tx2">Pagos fijos que faltan</dt><dd class="tabular-nums text-adv">-{formatear(seguro.fijos)}</dd>
+          <dt class="text-tx2">Apartado en alcancías</dt><dd class="tabular-nums text-info">-{formatear(seguro.apartado)}</dd>
+          <dt class="border-t border-white/10 pt-1.5 font-semibold">Libre este mes</dt><dd class="border-t border-white/10 pt-1.5 font-bold tabular-nums">{formatear(seguro.libre)}</dd>
+        </dl>
+        <div class="botones">
+          <button class="chip" onClick={() => irA('pagosfijos')}><CalendarClock size={16} />Pagos fijos</button>
+          <button class="chip" onClick={() => irA('alcancias')}><PiggyBank size={16} />Alcancías</button>
         </div>
       </section>
 

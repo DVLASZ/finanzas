@@ -3,16 +3,17 @@
  * escritura con dictado por voz (ondas mientras escucha) y los avisos con botón de arriba.
  * La lógica es la de siempre: el bot corre dentro de la app y solo se pide ayuda a la IA si no entendió.
  */
-import { ArrowUp, HardHat, HelpCircle, Mic, Store } from 'lucide-preact';
+import { ArrowUp, HardHat, HelpCircle, Mic, ScanLine, Store } from 'lucide-preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  atajosFrecuentes, calcularAlertas, hayTrabajadores, interpretar, normalizarDictado, procesar, vendeProductos, type Boton,
+  aLocal, atajosFrecuentes, calcularAlertas, formatear, fraseDeOCR, limpiar, hayTrabajadores, interpretar, normalizarDictado, procesar, vendeProductos, type Boton,
 } from '../../../../../packages/core/src/index.ts';
+import { leerComprobante } from '../../services/ocr.ts';
 import { app, atenderColaIA, encolarFraseIA, hayServidor, pedirAyudaIA, sincronizar } from '../../services/app.ts';
 import { escribir, leer } from '../../services/almacen.ts';
 import { parsearCarta, quitarEmojis } from '../../lib/carta.ts';
 import { celebrar, entrar } from '../../lib/efectos.ts';
-import { chatPrellenado } from '../../state/nav.ts';
+import { accionInicial, chatPrellenado, imagenCompartida } from '../../state/nav.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { vibrar } from '../../lib/haptico.ts';
 import { Ayuda, esAyuda, seEnvia } from './Ayuda.tsx';
@@ -77,6 +78,7 @@ export function Chat() {
   const [estadoVoz, setEstadoVoz] = useState('');
   const [pensando, setPensando] = useState(false);
   const enCurso = useRef(0);
+  const [escaneando, setEscaneando] = useState(false);
   const fin = useRef<HTMLDivElement>(null);
   const turno = useRef<Promise<void>>(Promise.resolve());
   const rec = useRef<Reconocimiento | null>(null);
@@ -98,6 +100,14 @@ export function Chat() {
         if (pre.enviar) { setTexto(''); void enviar({ texto: pre.texto }, pre.texto); }
       } else setTexto((await leer<string>('borrador')) ?? '');
       void revisarCola();
+      // lo que llegó desde fuera: un comprobante compartido o un acceso directo del ícono
+      const compartida = imagenCompartida.peek();
+      if (compartida) { imagenCompartida.value = null; void escanear(compartida); }
+      const accion = accionInicial.peek();
+      if (accion) {
+        accionInicial.value = null;
+        setTimeout(() => { if (accion === 'voz') alMicrofono(); else document.querySelector<HTMLInputElement>('#texto')?.focus(); }, 400);
+      }
     })();
     const ante = () => { void revisarCola(); };
     window.addEventListener('online', ante, { once: true });
@@ -151,6 +161,21 @@ export function Chat() {
       void sincronizar();
     }).finally(() => { enCurso.current--; setPensando(enCurso.current > 0); });
     return turno.current;
+  }
+
+  /** Lee un comprobante con la IA y deja la tarjeta lista para confirmar con un toque. */
+  async function escanear(foto: Blob) {
+    setEscaneando(true);
+    agregar({ de: 'yo', texto: 'Comprobante para leer' });
+    const { lectura, error } = await leerComprobante(foto);
+    setEscaneando(false);
+    if (!lectura) { agregar({ de: 'bot', texto: error ?? 'No pude leerlo.' }); return; }
+    const d = datosSignal.peek();
+    // si la categoría sugerida existe en esta instalación, va primero para que el bot la reconozca
+    const cat = d?.cuentas.find(c => c.tipo === 'categoria' && lectura.categoria && limpiar(c.nombre).includes(limpiar(lectura.categoria)));
+    const frase = `${cat ? limpiar(cat.nombre) + ' ' : ''}${fraseDeOCR(lectura, aLocal(new Date()).slice(0, 10))}`;
+    agregar({ de: 'bot', texto: `Leí: ${lectura.comercio || 'un pago'} por ${formatear(lectura.monto)}${lectura.fecha ? ' el ' + lectura.fecha : ''}. Revisa la tarjeta antes de confirmar.` });
+    mandar(frase);
   }
 
   const alPulsar = (b: Boton) => { if (b.id === 'ok') vibrar(); void enviar({ boton: b.id }, b.titulo.replace(/^[\p{Extended_Pictographic}️‍\s]+/u, '').trim() || b.titulo); };
@@ -222,6 +247,7 @@ export function Chat() {
       ))}
       <div class="chat flex flex-1 flex-col gap-2.5 overflow-y-auto p-4" id="chat">
         {burbujas.map((b, i) => <BurbujaVista key={`${i}-${b.texto.length}`} b={b} ultima={i === burbujas.length - 1} alPulsar={alPulsar} alEjemplo={alEjemplo} />)}
+        {escaneando && <div class="burbuja bot" role="status"><span class="sub">Leyendo el comprobante...</span></div>}
         {pensando && <div class="burbuja bot pensando" role="status" aria-label="Pensando"><span /><span /><span /></div>}
         <div ref={fin} />
       </div>
@@ -232,6 +258,8 @@ export function Chat() {
       <form id="form" class="entrada vidrio mx-3 mb-1 rounded-[1.4rem] p-2 ring-1 ring-anillo" onSubmit={alEnviar}>
         <input id="texto" type="text" autocomplete="off" autocapitalize="sentences" placeholder="Ej.: almuerzo 12000" aria-label="Escribe lo que pasó" class="!bg-transparent !shadow-none" value={texto}
           onInput={e => { const v = (e.target as HTMLInputElement).value; setTexto(v); void escribir('borrador', v); }} />
+        <input type="file" id="archivoEscanear" accept="image/*" capture="environment" hidden onChange={e => { const f = (e.target as HTMLInputElement).files?.[0]; (e.target as HTMLInputElement).value = ''; if (f) void escanear(f); }} />
+        <button type="button" id="escanear" class="secundario mic" aria-label="Leer un comprobante con la cámara" title="Leer comprobante" disabled={escaneando} onClick={() => document.querySelector<HTMLInputElement>('#archivoEscanear')?.click()}><ScanLine size={21} /></button>
         {Reconocedor && (
           <button type="button" id="mic" class={`secundario mic ${oyendo ? 'oyendo' : ''}`} aria-label={oyendo ? 'Dejar de escuchar' : 'Hablar'} aria-pressed={oyendo} onClick={alMicrofono}>
             {oyendo ? <span class="ondas" aria-hidden="true"><span /><span /><span /><span /><span /></span> : <Mic size={21} />}

@@ -6,12 +6,17 @@
 import { signal } from '@preact/signals';
 
 export type Pantalla = 'chat' | 'saldos' | 'movimientos' | 'resumen' | 'mas'
-  | 'deudas' | 'ajustes' | 'lista' | 'catalogo' | 'cuentas' | 'guia' | 'conciliar' | 'buzon' | 'trabajadores' | 'revision';
+  | 'alcancias' | 'pagosfijos' | 'deudas' | 'ajustes' | 'lista' | 'catalogo' | 'cuentas' | 'guia' | 'conciliar' | 'buzon' | 'trabajadores' | 'revision';
 
 /** Las pantallas que se abren desde «Más» y por eso llevan botón para volver. */
-export const INTERNAS: Pantalla[] = ['deudas', 'ajustes', 'lista', 'catalogo', 'cuentas', 'guia', 'conciliar', 'buzon', 'trabajadores', 'revision'];
+export const INTERNAS: Pantalla[] = ['alcancias', 'pagosfijos', 'deudas', 'ajustes', 'lista', 'catalogo', 'cuentas', 'guia', 'conciliar', 'buzon', 'trabajadores', 'revision'];
 
 export const pantalla = signal<Pantalla>('chat');
+
+/** Una imagen que llegó desde otra app con «Compartir» (el comprobante de Nequi, una captura): el chat la lee con la IA. */
+export const imagenCompartida = signal<Blob | null>(null);
+/** Lo que pidió un acceso directo del ícono («Nuevo gasto», «Dictar por voz»). Lo atiende el chat al abrir. */
+export const accionInicial = signal<'gasto' | 'voz' | null>(null);
 /** El movimiento cuyo detalle está abierto (el cajón que sube desde abajo). */
 export const detalle = signal<string | null>(null);
 

@@ -20,6 +20,7 @@ Por dónde empezar según lo que quieras hacer.
 ## Entender cómo está hecho
 
 - [ARQUITECTURA.md](ARQUITECTURA.md): las piezas y cómo se hablan.
+- [MOTOR-CONTABLE.md](MOTOR-CONTABLE.md): el camino de un mensaje y los módulos que calculan.
 - [MODELO-DATOS.md](MODELO-DATOS.md): la partida doble, las tablas y las reglas.
 
 ## Trabajar en el código

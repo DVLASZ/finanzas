@@ -12,6 +12,7 @@ import {
 import { esc } from '../../lib/carta.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { fechaAtras } from '../../lib/periodos.ts';
+import { TarjetaHormiga } from './Hormiga.tsx';
 import { Ritmo } from '../../components/charts/graficos.tsx';
 import { BarraAvance, Insignia, Vacio, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
@@ -227,6 +228,8 @@ export function Resumen() {
           <Ritmo ahora={ritmoAhora} antes={ritmoAntes} hastaDia={Math.min(diaHoy, ritmoAhora.length)} />
         </section>
       )}
+
+      <TarjetaHormiga movs={datos.movimientos} cuentas={datos.cuentas} desde={desde} hasta={hasta} dias={Math.max(1, Math.round((Date.parse(hasta.replace(' ', 'T') + 'Z') - Date.parse(desde.replace(' ', 'T') + 'Z')) / 86400000))} />
 
       <div class="grid gap-3 sm:grid-cols-2">
         <Comparativa nombre="Gastos contra el periodo anterior" ahora={total} antes={totalPrevio} bueno="baja" />

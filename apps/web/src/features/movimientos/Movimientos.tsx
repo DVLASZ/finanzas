@@ -3,33 +3,25 @@
  * la foto del recibo y el botón de anular. Los filtros se recuerdan entre visitas.
  */
 import { signal } from '@preact/signals';
-import { Ban, BarChart3, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
+import { Ban, BarChart3, ScanLine, Share2, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  conSubcategorias, describirDia, describirFecha, formatear, leerSubcategorias, limpiar, nombreMes, rangoPeriodo,
+  conSubcategorias, fraseDeOCR, describirDia, describirFecha, formatear, leerSubcategorias, limpiar, nombreMes, rangoPeriodo,
   type Cuenta, type Movimiento,
 } from '../../../../../packages/core/src/index.ts';
 import { claves, escribir, leer } from '../../services/almacen.ts';
 import { app, bajarFoto, borrarFotoEnServidor, sincronizar, subirFoto } from '../../services/app.ts';
 import { subirDesdeAbajo } from '../../lib/efectos.ts';
-import { abrirDetalle, atras, detalle } from '../../state/nav.ts';
+import { abrirDetalle, atras, detalle, irA, prellenarChat } from '../../state/nav.ts';
 import { ctx as contexto, datos as datosSignal, refrescar } from '../../state/store.ts';
+import { reducirFoto } from '../../lib/imagen.ts';
+import { compartirTarjeta, dibujarTarjetaDivision } from '../../lib/tarjetaDivision.ts';
+import { leerComprobante } from '../../services/ocr.ts';
 import { fechaAtras } from '../../lib/periodos.ts';
 import { BarrasPeriodo } from '../../components/charts/graficos.tsx';
 import { Esqueleto, Insignia, Vacio, visualDeMovimiento, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
-
-/** Baja la foto a 1000 px de lado largo y la guarda como JPEG: un recibo no necesita más y así pesa poco (unos 100 KB). */
-async function reducirFoto(archivo: File): Promise<Blob> {
-  const bmp = await createImageBitmap(archivo);
-  const escala = Math.min(1, 1000 / Math.max(bmp.width, bmp.height));
-  const lienzo = document.createElement('canvas');
-  lienzo.width = Math.round(bmp.width * escala);
-  lienzo.height = Math.round(bmp.height * escala);
-  lienzo.getContext('2d')!.drawImage(bmp, 0, 0, lienzo.width, lienzo.height);
-  return new Promise((ok, mal) => lienzo.toBlob(b => (b ? ok(b) : mal(new Error('no se pudo'))), 'image/jpeg', 0.7));
-}
 
 type Periodo = 'todo' | 'semana' | 'mes' | 'anio';
 type Tipo = 'todos' | 'gastos' | 'ingresos' | 'transferencias' | 'deudas';
@@ -86,6 +78,34 @@ function Detalle({ m }: { m: Movimiento }) {
   const hoja = useRef<HTMLDivElement>(null);
   const [foto, setFoto] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [lectura, setLectura] = useState('');
+  const [leyendo, setLeyendo] = useState(false);
+  // un gasto dividido entre varias personas: lo que debe cada una sale de los asientos de las personas
+  const filasDivision = m.tipo === 'compartido'
+    ? m.asientos.filter(a => a.moneda === 'COP' && a.monto > 0 && datos.cuentas.find(c => c.id === a.cuentaId)?.tipo === 'persona')
+        .map(a => ({ nombre: datos.cuentas.find(c => c.id === a.cuentaId)!.nombre, monto: a.monto }))
+    : [];
+  // el asiento de la categoría es solo la parte de quien pagó; el total suma lo que deben los demás
+  const tuParte = m.asientos.filter(a => a.moneda === 'COP' && a.monto > 0 && datos.cuentas.find(c => c.id === a.cuentaId)?.tipo === 'categoria').reduce((x, a) => x + a.monto, 0);
+  const totalGasto = tuParte + filasDivision.reduce((x, f) => x + f.monto, 0);
+  const compartir = async () => {
+    const blob = await dibujarTarjetaDivision({
+      concepto: m.descripcion, fecha: describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora), total: totalGasto, filas: filasDivision,
+      tuParte,
+    });
+    await compartirTarjeta(blob, 'gasto-compartido');
+  };
+  /** Lee la foto guardada con la IA y ofrece anotarla como gasto. */
+  const leerConIA = async () => {
+    setLeyendo(true); setLectura('');
+    const blob = await leer<Blob>(clave);
+    const r = blob ? await leerComprobante(blob) : { error: 'No encuentro la foto en este aparato.' };
+    setLeyendo(false);
+    if (!r.lectura) { setLectura(r.error ?? 'No pude leerlo.'); return; }
+    const l = r.lectura;
+    setLectura(`${l.comercio || 'Pago'} por ${formatear(l.monto)}${l.fecha ? ' el ' + l.fecha : ''}${l.categoria ? ' (' + l.categoria + ')' : ''}`);
+    prellenarChat(fraseDeOCR(l, new Date().toISOString().slice(0, 10)));
+  };
   const nombre = (id: string) => datos.cuentas.find(c => c.id === id)?.nombre ?? id;
   const clave = `recibo:${m.id}`;
   const claveSubida = `recibo-subido:${m.id}`;
@@ -147,7 +167,10 @@ function Detalle({ m }: { m: Movimiento }) {
             <button class="chip" id="quitarFoto" onClick={quitar}><Trash2 size={16} />Quitar la foto</button>
           </>}
         </div>
+        {lectura && <p class="callout !mt-3"><span class="callout-ico"><ScanLine size={16} /></span><span class="callout-txt">{lectura}. Dejé la frase lista en el chat para que la confirmes.<br /><button class="chip !min-h-10 mt-2" onClick={() => { atras(); setTimeout(() => irA('chat'), 80); }}>Ir al chat</button></span></p>}
         <div class="acciones">
+          {foto && <button class="secundario" id="leerFoto" disabled={leyendo} onClick={leerConIA}><ScanLine size={18} />{leyendo ? 'Leyendo...' : 'Leer con IA'}</button>}
+          {filasDivision.length > 0 && <button class="secundario" id="compartirDivision" onClick={compartir}><Share2 size={18} />Compartir cuentas</button>}
           <label class="secundario archivo"><Camera size={18} />Tomar foto<input type="file" id="fotoCamara" accept="image/*" capture="environment" hidden onChange={alElegir} /></label>
           <label class="secundario archivo"><ImagePlus size={18} />Subir imagen<input type="file" id="fotoArchivo" accept="image/*" hidden onChange={alElegir} /></label>
           {m.estado === 'ok' && <button class="peligro" id="anular" onClick={anular}><Ban size={18} />Anular</button>}

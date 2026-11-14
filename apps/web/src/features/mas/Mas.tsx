@@ -3,7 +3,7 @@
  * abren desde aquí. Las pantallas grandes de configuración siguen siendo las de siempre (HTML armado con
  * plantillas) montadas dentro de `VistaLegada`; llevan el mismo aspecto porque comparten las clases del CSS.
  */
-import { ArrowLeft, Info, BookOpen, ChevronRight, CircleHelp, ClipboardCheck, HandCoins, Inbox, Landmark, Settings, ShoppingBasket, Tags, Users, Package } from 'lucide-preact';
+import { ArrowLeft, CalendarClock, Info, PiggyBank, BookOpen, ChevronRight, CircleHelp, ClipboardCheck, HandCoins, Inbox, Landmark, Settings, ShoppingBasket, Tags, Users, Package } from 'lucide-preact';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { hayTrabajadores, vendeProductos } from '../../../../../packages/core/src/index.ts';
@@ -18,7 +18,9 @@ import { Insignia, T, iconoHtml, type Icono, type Visual } from '../../component
 import { Escalonado } from '../../components/ui/piezas.tsx';
 import { vistaAjustes } from '../ajustes/ajustes.ts';
 import { vistaDeudas } from '../deudas/deudas.ts';
-import { vistaRevision } from '../revision/revision.ts';
+import { Revision } from '../revision/Revision.tsx';
+import { Alcancias } from '../metas/Alcancias.tsx';
+import { PagosFijos } from '../recurrentes/PagosFijos.tsx';
 import { vistaTrabajadores } from '../trabajadores/trabajadores.ts';
 
 interface Entrada { id: Pantalla | 'ayuda'; nombre: string; detalle: string; Icono: Icono; tema: keyof typeof T; soloSiVende?: boolean; soloSiTrabajadores?: boolean }
@@ -30,6 +32,8 @@ const GRUPOS: Grupo[] = [
     { id: 'conciliar', nombre: 'Conciliar con el banco', detalle: 'Sube el extracto y ve qué falta', Icono: Landmark, tema: 'azul' },
   ] },
   { titulo: 'Gestión y catálogos', entradas: [
+    { id: 'alcancias', nombre: 'Alcancías', detalle: 'Metas de ahorro con avance', Icono: PiggyBank, tema: 'rosa' },
+    { id: 'pagosfijos', nombre: 'Pagos fijos', detalle: 'Arriendo, internet, cuotas', Icono: CalendarClock, tema: 'ambar' },
     { id: 'deudas', nombre: 'Deudas y préstamos', detalle: 'Quién te debe y a quién le debes', Icono: HandCoins, tema: 'ambar' },
     { id: 'cuentas', nombre: 'Categorías y personas', detalle: 'Crear, renombrar y poner topes', Icono: Tags, tema: 'violeta' },
     { id: 'lista', nombre: 'Lista de compras', detalle: 'Lo que falta comprar', Icono: ShoppingBasket, tema: 'rosa' },
@@ -127,7 +131,9 @@ export function Subvista({ pantalla }: { pantalla: Pantalla }) {
     conciliar: <VistaLegada dibujar={c => vistaConciliar(c, alChat)} />,
     buzon: <VistaLegada dibujar={c => vistaBuzon(c, alChat)} />,
     trabajadores: <VistaLegada repintar dibujar={vistaTrabajadores} />,
-    revision: <VistaLegada repintar dibujar={c => vistaRevision(c, alChat)} />,
+    revision: <Revision />,
+    alcancias: <Alcancias />,
+    pagosfijos: <PagosFijos />,
   };
   const e = TODAS.find(x => x.id === pantalla);
   return (

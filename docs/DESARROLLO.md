@@ -66,7 +66,7 @@ Una categoría nueva: `db/seed.sql`, `packages/core/src/semilla.ts` y las palabr
 
 Una cuenta o grupo nuevo para una plantilla: `packages/core/src/plantillas.ts`. Las bases ya publicadas no se enteran solas, hay que insertarlo con SQL.
 
-Una pantalla nueva: un componente en `apps/web/src/vistas/` que lee sus datos de `apps/web/src/estado/store.ts`, su nombre en `Pantalla` (`estado/nav.ts`) y, si se abre desde Más, su entrada y su caso en `vistas/Mas.tsx`. Las piezas que se repiten van en `apps/web/src/ui/`.
+Una pantalla nueva: una carpeta en `apps/web/src/features/` con su componente, que lee sus datos de `apps/web/src/state/store.ts`; su nombre en `Pantalla` (`state/nav.ts`) y, si se abre desde Más, su entrada y su caso en `features/mas/Mas.tsx`. Las piezas que se repiten van en `apps/web/src/components/ui/` y los gráficos en `components/charts/`.
 
 Un cambio de esquema: [MODELO-DATOS.md](MODELO-DATOS.md#cambiar-el-esquema).
 
