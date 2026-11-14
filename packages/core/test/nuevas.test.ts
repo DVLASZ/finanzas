@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { revisarMes, diasParaMeta, fraseDeOCR, gastosHormiga, leerMetas, leerRespuestaOCR, rangoPeriodo, seguroParaGastar } from '../src/index.ts';
+import { repartoEntre, revisarMes, diasParaMeta, fraseDeOCR, gastosHormiga, leerMetas, leerRespuestaOCR, rangoPeriodo, seguroParaGastar } from '../src/index.ts';
 import { AHORA, nuevoBot } from '../../../tests/ayudas.ts';
 
 async function guardar(bot: ReturnType<typeof nuevoBot>, texto: string) {
@@ -77,4 +77,16 @@ test('revisión: un tope superado y los anulados salen con su tipo para poder ac
   assert.equal(tope.categoriaId, 'cat:mecato');
   assert.match(tope.texto, /Superaste el tope de Mecato/);
   assert.ok(puntos.every(p => p.titulo && p.tipo));
+});
+
+test('«entre ana, luis y yo» reparte en partes iguales, igual que «pagué por»', async () => {
+  assert.equal(repartoEntre('almuerzo 60000 entre ana, luis y yo'), 'almuerzo 60000 pagué por ana y luis');
+  assert.equal(repartoEntre('almuerzo 60000 entre ana y luis'), 'almuerzo 60000 entre ana y luis');
+  const bot = nuevoBot();
+  bot.repo.aplicarPlantilla('personal', { personas: ['Ana', 'Luis'].map(nombre => ({ nombre, grupo: 'amigos' })) });
+  await guardar(bot, 'saldo inicial efectivo 500000');
+  await guardar(bot, 'almuerzo 60000 entre Ana, Luis y yo');
+  const d = await bot.repo.cargar();
+  const m = d.movimientos.filter(x => x.tipo === 'compartido').at(-1)!;
+  assert.deepEqual(m.asientos.map(a => a.monto).sort((x, y) => x - y), [-60000, 20000, 20000, 20000]);
 });

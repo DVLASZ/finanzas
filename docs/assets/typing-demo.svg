@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 250" width="820" height="250" role="img" aria-label="Ejemplos de frases que entiende el chat">
+  <title>Frases que entiende el chat</title>
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B0F19"/><stop offset="1" stop-color="#111827"/></linearGradient>
+    <linearGradient id="borde" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#38BDF8"/><stop offset=".5" stop-color="#10B981"/><stop offset="1" stop-color="#818CF8"/></linearGradient>
+    <linearGradient id="titulo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#38BDF8"/><stop offset=".55" stop-color="#10B981"/><stop offset="1" stop-color="#818CF8"/></linearGradient>
+    <radialGradient id="luz1" cx=".1" cy="1" r=".7"><stop offset="0" stop-color="#10B981" stop-opacity=".28"/><stop offset="1" stop-color="#10B981" stop-opacity="0"/></radialGradient>
+    <radialGradient id="luz2" cx=".95" cy="0" r=".7"><stop offset="0" stop-color="#38BDF8" stop-opacity=".25"/><stop offset="1" stop-color="#38BDF8" stop-opacity="0"/></radialGradient>
+    <radialGradient id="luz3" cx=".6" cy=".1" r=".5"><stop offset="0" stop-color="#818CF8" stop-opacity=".18"/><stop offset="1" stop-color="#818CF8" stop-opacity="0"/></radialGradient>
+  </defs>
+  <style>
+    @keyframes t0 { 0%, 0.000% { width: 0; animation-timing-function: steps(11, end); } 7.870%, 23.148% { width: 175.600px; } 23.158%, 100% { width: 0; } }
+    @keyframes r0 { 0%, 7.870% { opacity: 0; transform: translateY(6px); } 10.185%, 23.148% { opacity: 1; transform: none; } 23.158%, 100% { opacity: 0; } }
+    .t0 { animation: t0 21.6s linear infinite; }
+    .r0 { animation: r0 21.6s linear infinite; }
+    @keyframes t1 { 0%, 25.000% { width: 0; animation-timing-function: steps(18, end); } 32.870%, 48.148% { width: 284.800px; } 48.158%, 100% { width: 0; } }
+    @keyframes r1 { 0%, 32.870% { opacity: 0; transform: translateY(6px); } 35.185%, 48.148% { opacity: 1; transform: none; } 48.158%, 100% { opacity: 0; } }
+    .t1 { animation: t1 21.6s linear infinite; }
+    .r1 { animation: r1 21.6s linear infinite; }
+    @keyframes t2 { 0%, 50.000% { width: 0; animation-timing-function: steps(35, end); } 57.870%, 73.148% { width: 550.000px; } 73.158%, 100% { width: 0; } }
+    @keyframes r2 { 0%, 57.870% { opacity: 0; transform: translateY(6px); } 60.185%, 73.148% { opacity: 1; transform: none; } 73.158%, 100% { opacity: 0; } }
+    .t2 { animation: t2 21.6s linear infinite; }
+    .r2 { animation: r2 21.6s linear infinite; }
+    @keyframes t3 { 0%, 75.000% { width: 0; animation-timing-function: steps(16, end); } 82.870%, 98.148% { width: 253.600px; } 98.158%, 100% { width: 0; } }
+    @keyframes r3 { 0%, 82.870% { opacity: 0; transform: translateY(6px); } 85.185%, 98.148% { opacity: 1; transform: none; } 98.158%, 100% { opacity: 0; } }
+    .t3 { animation: t3 21.6s linear infinite; }
+    .r3 { animation: r3 21.6s linear infinite; }</style>
+  <rect width="820" height="250" rx="22" fill="url(#fondo)"/>
+  <rect width="820" height="250" rx="22" fill="url(#luz1)"/><rect width="820" height="250" rx="22" fill="url(#luz2)"/>
+  <rect x="1.5" y="1.5" width="817" height="247" rx="21" fill="none" stroke="url(#borde)" stroke-opacity=".5" stroke-width="2"/>
+  <g>
+    <circle cx="34" cy="32" r="6" fill="#F43F5E"/><circle cx="56" cy="32" r="6" fill="#F59E0B"/><circle cx="78" cy="32" r="6" fill="#10B981"/>
+    <text x="786" y="37" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#6B7A92" letter-spacing="1.5">CHAT</text>
+    <line x1="24" x2="796" y1="56" y2="56" stroke="#263249"/>
+  </g>
+  <rect x="26" y="84" width="768" height="74" rx="16" fill="#1B2538"/>
+  <text x="46" y="78" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#38BDF8" letter-spacing="1.5">TÚ ESCRIBES</text>
+  
+  <g>
+    <clipPath id="c0-46"><rect class="t0" x="46" y="98" width="0" height="38"/></clipPath>
+    <text x="46" y="128" clip-path="url(#c0-46)" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="26" fill="#F1F5FB" textLength="171.6" lengthAdjust="spacing">mecato 5000</text>
+    <text class="r0" x="46" y="196" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="19" fill="#10B981">Gasto · Mecato · $5.000 · Efectivo</text>
+  </g>
+  <g>
+    <clipPath id="c1-46"><rect class="t1" x="46" y="98" width="0" height="38"/></clipPath>
+    <text x="46" y="128" clip-path="url(#c1-46)" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="26" fill="#F1F5FB" textLength="280.8" lengthAdjust="spacing">presté 40000 a Ana</text>
+    <text class="r1" x="46" y="196" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="19" fill="#10B981">Préstamo · le prestas a Ana · $40.000</text>
+  </g>
+  <g>
+    <clipPath id="c2-46"><rect class="t2" x="46" y="98" width="0" height="38"/></clipPath>
+    <text x="46" y="128" clip-path="url(#c2-46)" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="26" fill="#F1F5FB" textLength="546" lengthAdjust="spacing">almuerzo 60000 entre Ana, Luis y yo</text>
+    <text class="r2" x="46" y="196" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="19" fill="#10B981">Compartido · tu parte $20.000 · ellos te deben $40.000</text>
+  </g>
+  <g>
+    <clipPath id="c3-46"><rect class="t3" x="46" y="98" width="0" height="38"/></clipPath>
+    <text x="46" y="128" clip-path="url(#c3-46)" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="26" fill="#F1F5FB" textLength="249.6" lengthAdjust="spacing">vendí 3 botellas</text>
+    <text class="r3" x="46" y="196" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="19" fill="#10B981">Venta · 3 botellas · con el precio de tu catálogo</text>
+  </g>
+  <text x="46" y="224" font-family="system-ui, sans-serif" font-size="13" fill="#6B7A92">El bot muestra lo que entendió, tú pulsas Confirmar y queda guardado.</text>
+</svg>

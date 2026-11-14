@@ -222,10 +222,11 @@ La primera anota lo que ella te mandó (en Deudas sale con el motivo). La segund
 ```
 pizza 9000 pagué por ivan 3000 y daniel 2500
 pizza 9000 pagué por ivan y daniel
+pizza 9000 entre ivan, daniel y yo
 ivan me pagó el almuerzo 6000
 ```
 
-En el primero tu parte es $3.500 y ellos te deben las suyas. En el segundo se divide en partes iguales entre los tres.
+En el primero tu parte es $3.500 y ellos te deben las suyas. En el segundo se divide en partes iguales entre los tres. El tercero dice lo mismo con otras palabras: funciona cuando tú estás en la lista («yo»).
 
 ## Eventos
 
