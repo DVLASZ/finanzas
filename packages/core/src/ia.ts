@@ -34,6 +34,7 @@ export function instruccionesIA(datos: Pick<Datos, 'cuentas' | 'config'>): strin
     '- Pagó una deuda: "pagué 54000 a Pedro". Le pagaron: "Ana me pagó 40000"',
     '- Pasar plata entre cuentas: "cambio 50000 efectivo a ' + otra + '"',
     '- Regalo: "le regalé 50000 a Jorge"',
+    '- Gasto repartido: "almuerzo 25000 pagué por marta 20000" (el gasto total y la parte de Marta) o "pizza 9000 entre ana, luis y yo". Todo el gasto va en UNA sola frase: "almuerzo 25000 pagué 20000 por marta" NO son dos movimientos, y "pagué 20000 por marta" dentro de un gasto no es pagar una deuda.',
   ];
   if (vendeProductos(datos)) l.push('- Venta: "vendí 3 botellas de jugo", "15 galletas a granel a Marta"');
   l.push(

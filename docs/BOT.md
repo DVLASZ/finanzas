@@ -223,10 +223,14 @@ La primera anota lo que ella te mandó (en Deudas sale con el motivo). La segund
 pizza 9000 pagué por ivan 3000 y daniel 2500
 pizza 9000 pagué por ivan y daniel
 pizza 9000 entre ivan, daniel y yo
+pizza 9000 pagué 3000 por ivan
+pizza 9000 por ivan 3000
+pizza 9000 3000 de ivan
+pizza 9000 ivan 3000
 ivan me pagó el almuerzo 6000
 ```
 
-En el primero tu parte es $3.500 y ellos te deben las suyas. En el segundo se divide en partes iguales entre los tres. El tercero dice lo mismo con otras palabras: funciona cuando tú estás en la lista («yo»).
+En el primero tu parte es $3.500 y ellos te deben las suyas. En el segundo se divide en partes iguales entre los tres. El tercero dice lo mismo con otras palabras: funciona cuando tú estás en la lista («yo»). Las cuatro siguientes son el primero dicho en otro orden, como sale al hablar: el gasto total y luego la parte de Ivan, con o sin «pagué», con «por» o con «de», o solo el nombre. Todas dejan el mismo resultado. Las formas sin «pagué ... por» solo se leen así si Ivan ya existe en tus personas. El dictado de Android escribe «25,000» con coma: se lee como 25000.
 
 ## Eventos
 
