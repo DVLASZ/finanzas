@@ -6,12 +6,15 @@ import { render } from 'preact';
 import { App } from './App.tsx';
 import { aplicar } from './apariencia.ts';
 import { app, iniciar, sincronizar } from './app.ts';
+import { activarGestoAtras, iniciarHistorial } from './estado/nav.ts';
 import { iniciarEstado } from './estado/store.ts';
 
 async function arrancar(): Promise<void> {
   aplicar();
   await iniciar();
   await iniciarEstado();
+  iniciarHistorial();
+  activarGestoAtras();
   render(<App />, document.getElementById('raiz')!);
 
   // Sincroniza al abrir, al recuperar la conexión, al volver a la app y cada minuto.

@@ -12,6 +12,7 @@ import {
 import { esc } from '../carta.ts';
 import { ctx as contexto, datos as datosSignal } from '../estado/store.ts';
 import { fechaAtras } from '../periodos.ts';
+import { Ritmo } from '../ui/graficos.tsx';
 import { BarraAvance, Insignia, Vacio, visualDeNombre } from '../ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../ui/piezas.tsx';
 
@@ -23,7 +24,10 @@ const COLORES = ['var(--info)', 'var(--acc)', 'var(--pos)', 'var(--adv)', 'var(-
 const titulo = (p: Periodo, desde: string) =>
   p === 'mes' ? `${nombreMes(desde)} ${desde.slice(0, 4)}` : p === 'anio' ? `Año ${desde.slice(0, 4)}` : `Semana del ${describirDia(desde.slice(0, 10))}`;
 
-interface Trozo { nombre: string; valor: number; color: string }
+interface Trozo { nombre: string; valor: number; color: string; previo: number }
+
+/** «+12 % que el periodo anterior» o «sin dato anterior». */
+const variacion = (v: number, previo: number): string => (previo > 0 ? `${v >= previo ? '+' : '-'}${Math.round((Math.abs(v - previo) / previo) * 100)} % que el anterior` : 'sin dato anterior');
 
 /** Dona en SVG. Cada trozo se puede tocar: el centro muestra su nombre, valor y porcentaje. */
 function Dona({ trozos, total }: { trozos: Trozo[]; total: number }) {
@@ -47,18 +51,19 @@ function Dona({ trozos, total }: { trozos: Trozo[]; total: number }) {
           return el;
         })}
         <g class="rotate-90" style={{ transformOrigin: '70px 70px' }} pointer-events="none">
-          <text x="70" y="66" text-anchor="middle" class="fill-tx2" style={{ fontSize: '8px' }}>{s ? s.nombre.slice(0, 16) : 'Gastos'}</text>
-          <text x="70" y="82" text-anchor="middle" class="fill-tx tabular-nums" style={{ fontSize: '12px', fontWeight: 700 }}>{formatear(s ? s.valor : total)}</text>
-          {s && <text x="70" y="94" text-anchor="middle" class="fill-tx2" style={{ fontSize: '8px' }}>{Math.round((s.valor / total) * 100)} %</text>}
+          <text x="70" y={s ? 58 : 66} text-anchor="middle" class="fill-tx2" style={{ fontSize: '8px' }}>{s ? s.nombre.slice(0, 16) : 'Gastos'}</text>
+          <text x="70" y={s ? 74 : 82} text-anchor="middle" class="fill-tx tabular-nums" style={{ fontSize: '12px', fontWeight: 700 }}>{formatear(s ? s.valor : total)}</text>
+          {s && <text x="70" y="86" text-anchor="middle" class="fill-tx2" style={{ fontSize: '8px' }}>{Math.round((s.valor / total) * 100)} % del total</text>}
+          {s && <text x="70" y="97" text-anchor="middle" class={s.previo > 0 && s.valor > s.previo ? 'fill-neg' : 'fill-pos'} style={{ fontSize: '7px', fontWeight: 600 }}>{variacion(s.valor, s.previo)}</text>}
         </g>
       </svg>
       <ul class="m-0 grid w-full list-none gap-1.5 p-0">
         {trozos.map((t, i) => (
           <li key={t.nombre}>
-            <button class={`flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition active:scale-[.98] ${sel === i ? 'bg-elev' : ''}`} onClick={() => setSel(sel === i ? null : i)}>
+            <button class={`flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm transition active:scale-[.98] ${sel === i ? 'bg-elev ring-1 ring-anillo' : ''}`} onClick={() => setSel(sel === i ? null : i)}>
               <span class="h-3 w-3 shrink-0 rounded-full" style={{ background: t.color }} />
               <span class="min-w-0 flex-1 truncate">{t.nombre}</span>
-              <span class="tabular-nums text-tx2">{Math.round((t.valor / total) * 100)} %</span>
+              <span class="tabular-nums text-tx2">{sel === i && t.previo > 0 ? variacion(t.valor, t.previo).replace(' que el anterior', '') : `${Math.round((t.valor / total) * 100)} %`}</span>
             </button>
           </li>
         ))}
@@ -118,11 +123,32 @@ export function Resumen() {
     return e ? { nombre: datos.cuentas.find(c => c.id === id)?.nombre ?? id, ...e } : null;
   }).filter((x): x is NonNullable<typeof x> => Boolean(x));
 
+  const previoPorId = new Map(gastoPorCategoria(datos.movimientos, datos.cuentas, previo.desde, previo.hasta).map(c => [c.cuenta.id, c.total]));
+  const previoDe = (g: (typeof grupos)[number]) => previoPorId.get(g.cuenta.id) ?? 0;
   // la dona muestra las cinco categorías más grandes y junta el resto
   const ordenadas = [...grupos].sort((x, y) => y.total - x.total);
-  const trozos: Trozo[] = ordenadas.slice(0, 6).map((g, i) => ({ nombre: g.cuenta.nombre, valor: g.total, color: COLORES[i] }));
+  const trozos: Trozo[] = ordenadas.slice(0, 6).map((g, i) => ({ nombre: g.cuenta.nombre, valor: g.total, color: COLORES[i], previo: previoDe(g) }));
   const resto = ordenadas.slice(6).reduce((s, g) => s + g.total, 0);
-  if (resto > 0) trozos.push({ nombre: 'Otras', valor: resto, color: COLORES[6] });
+  if (resto > 0) trozos.push({ nombre: 'Otras', valor: resto, color: COLORES[6], previo: ordenadas.slice(6).reduce((s, g) => s + previoDe(g), 0) });
+
+  // ritmo del mes: gasto acumulado día a día contra el mes anterior
+  const diaHoy = ctx.ahora.getDate();
+  const acumulado = (rango: { desde: string; hasta: string }): number[] => {
+    const dias = Number(new Date(Number(rango.desde.slice(0, 4)), Number(rango.desde.slice(5, 7)), 0).getDate());
+    let suma = 0;
+    return Array.from({ length: dias }, (_, i) => {
+      const d = `${rango.desde.slice(0, 8)}${String(i + 1).padStart(2, '0')}`;
+      const sig = new Date(Date.UTC(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, i + 2)).toISOString().slice(0, 10);
+      suma += gastoPorCategoria(datos.movimientos, datos.cuentas, `${d} 00:00:00`, `${sig} 00:00:00`).reduce((x, c) => x + c.total, 0);
+      return suma;
+    });
+  };
+  const verRitmo = p === 'mes' && a === 0;
+  const ritmoAhora = verRitmo ? acumulado({ desde, hasta }) : [];
+  const ritmoAntes = verRitmo ? acumulado(previo) : [];
+  const esperado = verRitmo ? ritmoAntes[Math.min(diaHoy, ritmoAntes.length) - 1] ?? 0 : 0;
+  const llevo = verRitmo ? ritmoAhora[Math.min(diaHoy, ritmoAhora.length) - 1] ?? 0 : 0;
+  const pctRitmo = esperado > 0 ? Math.round((Math.abs(llevo - esperado) / esperado) * 100) : null;
 
   const cambiar = (nuevo: Periodo) => { periodo.value = nuevo; atras.value = 0; };
 
@@ -189,6 +215,16 @@ export function Resumen() {
         <section class="tarjeta">
           <h3 class="!mt-0">Dónde se fue</h3>
           <Dona trozos={trozos} total={total} />
+        </section>
+      )}
+
+      {verRitmo && ritmoAhora.length > 0 && (
+        <section class="tarjeta">
+          <h3 class="!mt-0">Ritmo de gasto</h3>
+          <p class={`!mt-0 mb-2 text-sm font-semibold ${pctRitmo === null ? 'text-tx2' : llevo > esperado ? 'text-neg' : 'text-pos'}`}>
+            {pctRitmo === null ? 'Aún no hay un mes anterior con qué comparar.' : llevo === esperado ? 'Vas igual que tu ritmo habitual.' : `Vas un ${pctRitmo} % ${llevo > esperado ? 'por encima' : 'por debajo'} de tu ritmo habitual.`}
+          </p>
+          <Ritmo ahora={ritmoAhora} antes={ritmoAntes} hastaDia={Math.min(diaHoy, ritmoAhora.length)} />
         </section>
       )}
 

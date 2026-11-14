@@ -3,6 +3,7 @@
  * Los datos viven en `config` (lista_compras y catalogo), así se guardan sin conexión y se sincronizan
  * como todo lo demás. Para pedir un dato se usa el cuadro del navegador (prompt), igual que el PIN.
  */
+import { vibrar } from './haptico.ts';
 import { formatear, leerCatalogo, leerLista, presentacionDeTexto, type Catalogo, type Producto } from '../../../packages/core/src/index.ts';
 import { Package, ShoppingBasket } from 'lucide-preact';
 import { vacioHtml } from './ui/iconos.tsx';
@@ -43,6 +44,7 @@ export async function vistaLista(cont: HTMLElement): Promise<void> {
   cont.addEventListener('click', async e => {
     const b = (e.target as HTMLElement).closest<HTMLElement>('[data-comprado]');
     if (!b) return;
+    vibrar();
     await guardarConfig('lista_compras', JSON.stringify(lista.filter((_, i) => i !== Number(b.dataset.comprado))));
     await vistaLista(cont);
   });
