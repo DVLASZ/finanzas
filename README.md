@@ -157,7 +157,8 @@ Más detalle: [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) y [docs/MOTOR-CONTABL
 
 ## Despliegue en 3 pasos
 
-Necesitas Node 24 o superior y una cuenta gratuita de Cloudflare ([cómo crearla](docs/GUIA-CUENTAS.md)). Cada persona o negocio tiene su propia instalación: su Worker, su base D1 y su clave.
+> [!IMPORTANT]
+> Necesitas Node 24 o superior y una cuenta gratuita de Cloudflare ([cómo crearla](docs/GUIA-CUENTAS.md)). Cada persona o negocio tiene su propia instalación: su Worker, su base D1 y su clave.
 
 **1. Clonar, instalar y probar en local**
 
@@ -183,7 +184,8 @@ npm run instalar -- crear mi-app      # crea la D1, aplica el esquema y publica 
 npm run instalar -- publicar mi-app   # para publicar de nuevo después de cambiar algo
 ```
 
-El instalador genera `instalaciones/mi-app/wrangler.toml` con el identificador de tu base, crea la clave y el PIN y los guarda en `instalaciones/mi-app/acceso.txt` (esa carpeta no se sube a git). Después, abre la dirección que te da en el celular y sigue [docs/INICIO.md](docs/INICIO.md). Para probar la app extremo a extremo antes de publicar: `npm run e2e`.
+> [!NOTE]
+> El instalador genera `instalaciones/mi-app/wrangler.toml` con el identificador de tu base, crea la clave y el PIN y los guarda en `instalaciones/mi-app/acceso.txt` (esa carpeta no se sube a git). Después, abre la dirección que te da en el celular y sigue [docs/INICIO.md](docs/INICIO.md). Para probar la app extremo a extremo antes de publicar: `npm run e2e`.
 
 ## Cómo funcionan las ramas
 
@@ -194,6 +196,15 @@ El repositorio tiene tres ramas. Son la misma app con distinta plantilla de cuen
 | `main` | Una persona | Efectivo, monedas, Nequi, Daviplata y una cuenta en dólares; categorías de todos los días |
 | `familiar` | Una familia | Casa, campo y trabajadores; categorías y personas del hogar |
 | `empresa` | Un negocio u organización | Ventas con catálogo, insumos y socios |
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#111827', 'primaryTextColor': '#F1F5FB', 'primaryBorderColor': '#38BDF8', 'lineColor': '#10B981', 'secondaryColor': '#1B2538', 'tertiaryColor': '#090D16', 'fontFamily': 'system-ui'}}}%%
+flowchart LR
+  M["main<br/>personal"] -- "git merge main" --> F["familiar"]
+  M -- "git merge main" --> E["empresa"]
+  classDef rama fill:#111827,stroke:#38BDF8,color:#F1F5FB
+  class M,F,E rama
+```
 
 **Si solo quieres usar la app**, clona cualquiera: las tres ramas traen las tres plantillas y en `instalaciones/<nombre>.json` eliges la que quieras con el campo `plantilla`. La rama solo decide cuál viene por defecto (`variante.json`). Cada instalación tiene su propio Worker, su base y su clave, así que nada se mezcla.
 
@@ -212,4 +223,5 @@ MIT. Ver [LICENSE](LICENSE).
 
 ## Privacidad
 
-Este repositorio es solo código. Los datos personales, los respaldos, las claves y las instalaciones de cada persona están en `.gitignore` y no se suben. `npm run privacidad` lo vigila.
+> [!NOTE]
+> Este repositorio es solo código. Los datos personales, los respaldos, las claves y las instalaciones de cada persona están en `.gitignore` y no se suben. `npm run privacidad` lo vigila.

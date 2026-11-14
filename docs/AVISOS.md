@@ -1,3 +1,5 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Avisos en el celular
 
 La app puede avisarte en el celular, aunque esté cerrada, cuando hay algo que mirar. Es gratis y no pasa por WhatsApp ni por ningún servicio de pago.
@@ -42,7 +44,8 @@ Usa el estándar Web Push, sin librerías:
 - El servidor crea sus llaves la primera vez que hacen falta y las guarda en su propia base, en claves que empiezan por `secreto_`. Esas claves nunca viajan a la app.
 - El celular se suscribe con la llave pública. Su suscripción queda en el servidor (máximo 10 por instalación).
 - El aviso va cifrado para ese celular (RFC 8291) y firmado por el servidor (VAPID, RFC 8292). Quien lo transporta, Google o Mozilla, no puede leerlo.
-- Hay un solo cron del Worker, `0 13,23 * * *`, que corre a las 8 am y a las 6 pm en Colombia; por la hora se sabe cuál toca. Es uno solo porque la plan gratis de Cloudflare deja 5 crons por cuenta y hay tres apps. Los avisos al momento salen al sincronizar o al llegar algo por el buzón. Una suscripción que el servicio de avisos da por muerta (404 o 410) se borra sola. Si falla por otra razón, se conserva para mañana.
+> [!NOTE]
+> Hay un solo cron del Worker, `0 13,23 * * *`, que corre a las 8 am y a las 6 pm en Colombia; por la hora se sabe cuál toca. Es uno solo porque la plan gratis de Cloudflare deja 5 crons por cuenta y hay tres apps. Los avisos al momento salen al sincronizar o al llegar algo por el buzón. Una suscripción que el servicio de avisos da por muerta (404 o 410) se borra sola. Si falla por otra razón, se conserva para mañana.
 - El service worker (`apps/web/sw.js`) muestra la notificación y abre la app al tocarla.
 
 El código del servidor está en `apps/worker/src/push.ts` y quién manda qué y cuándo en `apps/worker/src/avisos.ts`. Las pruebas abren los avisos con un celular simulado hecho con el módulo crypto de Node, que es código distinto al del Worker. Lo que no se puede probar sin un celular real es que Chrome los muestre.

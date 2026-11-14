@@ -1,8 +1,23 @@
+[README](../README.md) · [Empezar](INICIO.md) · [El bot](BOT.md) · [Arquitectura](ARQUITECTURA.md) · [IA](IA.md) · [Desarrollo](DESARROLLO.md) · [Ramas](RAMAS.md) · [Todas las guías](README.md)
+
 # Copia de seguridad en la nube
 
-Cada domingo el servidor sube una copia de los datos de la instalación a un repositorio privado de GitHub. Va cifrada: sin la frase que tú eliges, el archivo no se puede leer ni en GitHub. Es gratis y queda fuera de Cloudflare, así que protege también si se pierde la cuenta.
+> [!NOTE]
+> Cada domingo el servidor sube una copia de los datos de la instalación a un repositorio privado de GitHub. Va cifrada: sin la frase que tú eliges, el archivo no se puede leer ni en GitHub. Es gratis y queda fuera de Cloudflare, así que protege también si se pierde la cuenta.
 
 Está apagada hasta que pongas las cuatro claves (`RESPALDO_TOKEN`, `RESPALDO_REPO`, `RESPALDO_CLAVE` y `RESPALDO_NOMBRE`). Cloudflare también guarda 30 días de historia de cada base (Time Travel), que cubre un error de hace unos días. Esto cubre lo demás.
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#111827', 'primaryTextColor': '#F1F5FB', 'primaryBorderColor': '#38BDF8', 'lineColor': '#10B981', 'secondaryColor': '#1B2538', 'tertiaryColor': '#090D16', 'fontFamily': 'system-ui'}}}%%
+flowchart LR
+  C["Cron del domingo"] --> D["Datos de la instalación"]
+  D --> K["Cifrado AES-GCM<br/>con tu frase"]
+  K --> G["Repositorio privado<br/>de GitHub"]
+  G --> A["npm run abrir-respaldo"]
+  A --> R["npm run restaurar<br/>SQL para una D1 nueva"]
+  classDef paso fill:#111827,stroke:#10B981,color:#F1F5FB
+  class C,D,K,G,A,R paso
+```
 
 ## Cómo activarla
 
@@ -31,7 +46,8 @@ $env:RESPALDO_CLAVE = "tu frase"
 npm run abrir-respaldo -- familia/2026-11-08.json.cifrado
 ```
 
-Queda un `.json` con las cuentas, los movimientos, las deudas y la configuración. Ese archivo ya no está cifrado: bórralo cuando termines. Está en una carpeta que git ignora si lo dejas dentro de `importacion/`.
+Queda un `.json` con las cuentas, los movimientos, las deudas y la configuración. > [!WARNING]
+> Ese archivo ya no está cifrado: bórralo cuando termines. Está en una carpeta que git ignora si lo dejas dentro de `importacion/`.
 
 ## Restaurar en una base nueva
 
@@ -54,7 +70,8 @@ npx wrangler d1 execute finanzas-familia-nueva --remote --file importacion/resta
 
 4. Apunta el Worker a la base nueva (el `database_id` en `instalaciones/familia/wrangler.toml`) y publica con `npm run instalar -- publicar familia --si`.
 
-Lo que NO vuelve con el respaldo: las fotos de recibos, las suscripciones de avisos (cada celular tiene que volver a activarlos) y los secretos (tokens), que se ponen otra vez con `wrangler secret put`.
+> [!NOTE]
+> Lo que no vuelve con el respaldo: las fotos de recibos, las suscripciones de avisos (cada celular tiene que volver a activarlos) y los secretos (tokens), que se ponen otra vez con `wrangler secret put`.
 
 ## Cómo está hecho
 
