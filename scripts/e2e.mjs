@@ -68,6 +68,11 @@ try {
   const sinDesborde = () => pag.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 
   await prueba('el chat da la bienvenida con los pasos', async () => contiene(await ultima(), 'Escribe como hablas', 'bienvenida'));
+  await prueba('la capa de componentes (Preact y signals) arranca y refleja el estado de la app', async () => {
+    const r = await pag.evaluate(() => { const el = document.querySelector('#raiz-preact'); return el ? { listo: el.dataset.listo, estado: el.dataset.estado, movs: Number(el.dataset.movimientos) } : null; });
+    if (!r) throw new Error('no existe #raiz-preact');
+    igual(r.listo, '1', 'montado'); igual(r.estado, 'local', 'estado de sincronización'); igual(r.movs, 0, 'movimientos al empezar');
+  });
   await prueba('dictado: elige la versión que el bot entiende y deja el texto para revisar', async () => {
     await pag.click('#mic'); await espera(400);
     igual(await pag.evaluate(() => document.querySelector('#texto').value), 'mecato 5500', 'texto dictado');
@@ -78,6 +83,12 @@ try {
     await escribir('saldo inicial efectivo 100000'); await pulsar('Confirmar');
     await escribir('mecato 5000'); contiene(await ultima(), 'Mecato', 'tarjeta');
     await pulsar('Confirmar'); contiene(await ultima(), 'GUARDADO', 'guardado');
+  });
+  await prueba('los signals se actualizan solos al guardar: sube el número de movimientos y de cambios por enviar', async () => {
+    await espera(400);
+    const r = await pag.evaluate(() => { const el = document.querySelector('#raiz-preact'); return { movs: Number(el.dataset.movimientos), pend: Number(el.dataset.pendientes) }; });
+    if (!(r.movs >= 2)) throw new Error('movimientos: ' + r.movs + ' (se esperaban al menos 2: el saldo inicial y el mecato)');
+    if (!(r.pend >= 2)) throw new Error('pendientes: ' + r.pend);
   });
   await prueba('una compra con varias líneas es un solo gasto', async () => {
     await escribir('compra: arroz 5000, sal 2000, 3 gaseosas a 2000'); contiene(await ultima(), '$13.000', 'total');

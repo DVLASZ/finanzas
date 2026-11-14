@@ -1,7 +1,7 @@
 // Compila la app web a apps/web/dist (lo que sirve el Worker o cualquier hosting estático).
 //
 //   - Empaqueta apps/web/src/main.ts (y el núcleo) en un solo app.js con esbuild.
-//   - Copia index.html, styles.css y manifest.
+//   - Compila Tailwind (CLI) y lo une a styles.css; copia index.html y manifest.
 //   - Escribe sw.js con una versión nueva (así los dispositivos se actualizan solos).
 //   - Genera los íconos (SVG y PNG) sin depender de ninguna imagen externa.
 //
@@ -10,6 +10,7 @@
 //      (así se compila la app de cada instalación con su nombre y el color de su ícono; ver instalar.mjs)
 
 import { build } from 'esbuild';
+import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,16 +34,27 @@ rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
 
 await build({
-  entryPoints: [join(web, 'src', 'main.ts')],
+  entryPoints: [join(web, 'src', 'main.tsx')],
   outfile: join(dist, 'app.js'),
   bundle: true,
   format: 'esm',
   target: 'es2022',
+  // Preact con JSX automático; lo que pida «react» se resuelve con preact/compat (así sirven las librerías hechas para React)
+  jsx: 'automatic',
+  jsxImportSource: 'preact',
+  alias: { react: 'preact/compat', 'react-dom': 'preact/compat' },
   minify: true,
   logLevel: 'info',
 });
 
-copyFileSync(join(web, 'styles.css'), join(dist, 'styles.css'));
+// Estilos: los de siempre (styles.css) más las utilidades de Tailwind que usan los componentes. Tailwind se corre
+// con su CLI (viene en node_modules, sin red) y solo escribe las clases que encuentra en apps/web/src.
+const tailwind = join(raiz, 'node_modules', '@tailwindcss', 'cli', 'dist', 'index.mjs');
+const salidaTailwind = join(dist, 'tailwind.css');
+const rt = spawnSync(process.execPath, [tailwind, '-i', join(web, 'estilos', 'tailwind.css'), '-o', salidaTailwind, '--minify'], { cwd: raiz, encoding: 'utf8' });
+if (rt.status !== 0) { console.error(rt.stdout + rt.stderr); process.exit(1); }
+writeFileSync(join(dist, 'styles.css'), readFileSync(join(web, 'styles.css'), 'utf8') + '\n' + readFileSync(salidaTailwind, 'utf8'));
+rmSync(salidaTailwind);
 // El nombre y el color de la app cambian por instalación (así se distinguen en el celular).
 writeFileSync(join(dist, 'index.html'), readFileSync(join(web, 'index.html'), 'utf8')
   .replace('data-plantilla="personal"', `data-plantilla="${plantillaApp}"`)

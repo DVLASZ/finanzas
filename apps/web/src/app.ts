@@ -20,11 +20,17 @@ export interface Ajustes {
   pinHash?: string;
 }
 
+/** Quienes quieren enterarse cuando cambian los datos, la cola o la sincronización (la capa reactiva de `estado/store.ts`). */
+const oyentes = new Set<() => void>();
+export const alCambiarElEstado = (f: () => void): (() => void) => { oyentes.add(f); return () => { oyentes.delete(f); }; };
+export const notificarCambio = (): void => { for (const f of oyentes) f(); };
+
 /** Copia local que persiste en el dispositivo después de cada cambio. */
 class RepoLocal extends MemoriaRepo {
   async persistir(): Promise<void> {
     await escribir('datos', this.datos);
     await escribir('pendiente', this.pendiente);
+    notificarCambio();
   }
   override async guardarMovimiento(m: Movimiento, c: Cuenta[], k: Compromiso[]) { await super.guardarMovimiento(m, c, k); await this.persistir(); }
   override async anularMovimiento(id: string, cuando: string) { await super.anularMovimiento(id, cuando); await this.persistir(); }
@@ -56,7 +62,7 @@ export async function iniciar(): Promise<void> {
   else app.local.aplicarPlantilla(document.documentElement.dataset.plantilla ?? 'personal');
   app.local.pendiente = (await leer<Pendiente | null>('pendiente')) ?? null;
   const cola = (await leer<Op[]>('cola')) ?? [];
-  app.repo = new RepoConCola(app.local, cola, () => { void escribir('cola', app.repo.cola); });
+  app.repo = new RepoConCola(app.local, cola, () => { void escribir('cola', app.repo.cola); notificarCambio(); });
   app.ajustes = (await leer<Ajustes>('ajustes')) ?? { url: '', token: '' };
   // Si la app se sirve desde el propio Worker, la dirección del servidor es la de la página.
   if (!app.ajustes.url && location.hostname.endsWith('.workers.dev')) app.ajustes.url = location.origin;
@@ -265,6 +271,7 @@ export async function sincronizar(): Promise<string> {
     return `No pude sincronizar: ${app.ultimoError}`;
   } finally {
     app.sincronizando = false;
+    notificarCambio();
   }
 }
 

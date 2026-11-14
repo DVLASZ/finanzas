@@ -6,7 +6,9 @@ El servidor de cada instalación, en un Cloudflare Worker. Tiene poca lógica: e
 
 | Archivo | Para qué |
 |---|---|
-| `src/index.ts` | Las rutas de la API, la tarea diaria de avisos y la ruta de la IA |
+| `src/index.ts` | La puerta de entrada: la tarea programada, la autorización y el reparto de las peticiones |
+| `src/comun.ts` | El entorno (`Env`), la respuesta JSON y la comparación de tokens |
+| `src/rutas/` | Un archivo por dominio: `sync` (datos, salud, sincronización), `fotos`, `push`, `ia`, `buzon` y `admin` (respaldo y borrados) |
 | `src/d1repo.ts` | El repositorio sobre la base D1: lee y guarda todo |
 | `src/push.ts` | Avisos al celular: llaves VAPID, cifrado y envío |
 | `wrangler.toml` | La configuración para publicar a mano una sola app |
