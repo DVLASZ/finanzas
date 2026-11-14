@@ -5,7 +5,7 @@ Este repositorio tiene tres ramas. Las tres son la misma app (mismo código, mis
 | Rama | Variante | Para qué sirve | Plantilla |
 |---|---|---|---|
 | `main` | App personal | Las finanzas de una persona: gastos, ingresos, deudas, ahorro y dólares | `personal` |
-| `app-2` | App familiar | Una casa con campo y trabajadores: jornales, reparaciones, alcancía de monedas, dos bancos | `familia` |
+| `familiar` | App familiar | Una casa con campo y trabajadores: jornales, reparaciones, alcancía de monedas, dos bancos | `familia` |
 | `empresa` | Negocio u organización | Un negocio pequeño entre varias personas: ventas con catálogo, insumos, impuestos, socios | `empresa` |
 
 El repositorio es solo la estructura vacía de cada variante. No trae datos, nombres, direcciones ni claves de nadie: cada instalación guarda lo suyo fuera de git (ver más abajo).
@@ -39,7 +39,7 @@ Funciones por variante:
 El código común se escribe en `main` y se pasa a las otras dos ramas. Así no hay que repetir ningún arreglo.
 
 ```bash
-git checkout app-2
+git checkout familiar
 git merge main
 git checkout empresa
 git merge main
