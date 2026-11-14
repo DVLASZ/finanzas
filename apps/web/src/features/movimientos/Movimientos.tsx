@@ -293,7 +293,7 @@ export function Movimientos() {
       <div class="barra">
         <div class="relative flex-1">
           <Search size={17} class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-tx2" />
-          <input id="buscar" type="search" class="!pl-10" placeholder="Buscar (concepto, #evento, lugar)" aria-label="Buscar" value={busqueda.value} onInput={e => { busqueda.value = (e.target as HTMLInputElement).value; limite.value = 60; }} />
+          <input id="buscar" type="search" class="!pl-10" placeholder="Buscar" aria-label="Buscar" value={busqueda.value} onInput={e => { busqueda.value = (e.target as HTMLInputElement).value; limite.value = 60; }} />
         </div>
         <label class="check check-chip"><input type="checkbox" id="anulados" checked={verAnulados.value} onChange={e => { verAnulados.value = (e.target as HTMLInputElement).checked; }} /> anulados</label>
         {hayFiltros && <button class="chip" id="limpiar" onClick={() => { busqueda.value = ''; poner({ tipo: 'todos', categoria: '', cuenta: '', persona: '' }); }}><SlidersHorizontal size={15} />Quitar filtros</button>}
