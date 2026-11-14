@@ -1,4 +1,4 @@
-// Comprueba que cada par de colores de apps/web/styles.css se pueda leer (AA: 4,5 a 1 para texto normal).
+// Comprueba que cada par de colores de apps/web/estilos/temas.css se pueda leer (AA: 4,5 a 1 para texto normal).
 // Lee las variables de cada piel y tema directamente del CSS, así no hay una segunda lista que se desactualice.
 // Uso: npm run contraste   (también corre dentro de `npm run check`)
 
@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'styles.css'), 'utf8');
+const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'estilos', 'temas.css'), 'utf8');
 
 const luz = h => {
   const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
@@ -23,6 +23,8 @@ const bloques = [...css.matchAll(/html((?:\[[^\]]+\])+)\s*\{([^}]*)\}/g)].map(m 
 const PARES = [
   ['tx', 'fondo'], ['tx', 'sup'], ['tx2', 'fondo'], ['tx2', 'sup'], ['tx2', 'elev'], ['sobre', 'marca'], ['marca', 'sup'], ['marca', 'fondo'],
   ['tx-marca-sup', 'marca-sup'], ['pos', 'sup'], ['neg', 'sup'], ['adv', 'sup'], ['pos', 'fondo'], ['neg', 'fondo'], ['tx', 'elev'],
+  // el botón principal es un degradado de marca a marca-2: el texto tiene que leerse sobre los dos extremos
+  ['sobre', 'marca-2'], ['info', 'sup'], ['acc', 'sup'], ['pos', 'elev'], ['neg', 'elev'], ['adv', 'elev'], ['info', 'fondo'], ['acc', 'fondo'],
 ];
 const combos = [['libro', 'claro', ''], ['libro', 'oscuro', ''], ['tierra', 'claro', ''], ['tierra', 'oscuro', ''], ['tierra', 'claro', 'azulado'], ['tierra', 'oscuro', 'azulado']];
 

@@ -1,10 +1,197 @@
 /*
- * Entrada de Tailwind. Por ahora solo se cargan el tema y las utilidades: el «preflight» (el reinicio de
- * estilos del navegador) se queda fuera para no cambiar las pantallas que todavía usan styles.css. Cuando
- * las vistas pasen a componentes se enciende.
+ * Entrada de Tailwind y vocabulario de componentes de la app.
+ *
+ *   1. Tailwind: tema, reinicio de estilos y utilidades, en capas.
+ *   2. Los colores de los temas (temas.css) se exponen como colores de Tailwind: bg-sup, text-tx2, ring-anillo...
+ *   3. Base: fondo con halos de color, tipografía de cifras, foco visible, movimiento reducido.
+ *   4. Componentes: lo que se repite en muchas pantallas (tarjetas de vidrio, botones, filas, formularios).
+ *      Las pantallas nuevas usan utilidades y estas clases; las que todavía arman HTML a mano (Ajustes, Categorías
+ *      y personas, Productos, Buzón, Conciliar, Primeros pasos) usan las mismas clases de siempre y se ven igual
+ *      de modernas sin tocar su lógica.
  */
+@layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities);
+@import "./temas.css";
 
 /* dónde buscar las clases que se usan */
 @source "../src";
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-sup: var(--sup);
+  --color-elev: var(--elev);
+  --color-tx: var(--tx);
+  --color-tx2: var(--tx2);
+  --color-bor: var(--bor);
+  --color-marca: var(--marca);
+  --color-marca-2: var(--marca-2);
+  --color-sobre: var(--sobre);
+  --color-marca-sup: var(--marca-sup);
+  --color-tx-marca-sup: var(--tx-marca-sup);
+  --color-pos: var(--pos);
+  --color-neg: var(--neg);
+  --color-adv: var(--adv);
+  --color-info: var(--info);
+  --color-acc: var(--acc);
+  --color-vidrio: var(--vidrio);
+  --color-anillo: var(--anillo);
+  --radius-tarjeta: var(--radio);
+  --radius-boton: var(--radio-b);
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@layer base {
+  html, body, #raiz { height: 100%; }
+  body {
+    margin: 0; background: var(--fondo); color: var(--tx);
+    font: 1rem/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-feature-settings: "tnum" 1, "cv11" 1;
+    -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  /* halos de color detrás de todo: dan profundidad sin recargar */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(60rem 36rem at 12% -8%, var(--halo-1), transparent 60%),
+      radial-gradient(48rem 30rem at 100% 8%, var(--halo-2), transparent 62%);
+  }
+  h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; margin: 0; }
+  h2 { font-size: 1.05rem; font-weight: 700; margin: 1.4rem 0 .55rem; letter-spacing: -.01em; }
+  h3 { font-size: .8rem; font-weight: 600; margin: 1.1rem 0 .45rem; color: var(--tx2); text-transform: uppercase; letter-spacing: .08em; }
+  code { background: var(--elev); padding: 0 .3em; border-radius: 6px; font-size: .9em; }
+  button, .archivo { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--marca); outline-offset: 2px; border-radius: 8px; }
+  [hidden] { display: none !important; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-thumb { background: var(--bor); border-radius: 8px; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+}
+
+@layer components {
+  /* ------------------------------------------------------------ superficies */
+  .tarjeta {
+    position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--sup) 100%, transparent), color-mix(in srgb, var(--sup) 92%, var(--fondo)));
+    border-radius: var(--radio); padding: .9rem 1.05rem;
+    box-shadow: 0 0 0 1px var(--anillo), 0 10px 30px -14px rgba(0, 0, 0, .45);
+  }
+  .tarjeta.tenue { opacity: .8; }
+  .tarjeta.grande { padding: 1.3rem 1.4rem; overflow: hidden; }
+  .vidrio { background: var(--vidrio); -webkit-backdrop-filter: blur(22px) saturate(1.4); backdrop-filter: blur(22px) saturate(1.4); }
+  .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .7rem; margin: .7rem 0; }
+  .etiqueta { font-size: .72rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--tx2); }
+  .monto { font-size: 1.3rem; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .monto.bien { color: var(--pos); } .monto.mal { color: var(--neg); }
+  .sub { font-size: .85rem; color: var(--tx2); overflow-wrap: anywhere; }
+  .vacio { color: var(--tx2); padding: 1rem 0; list-style: none; text-align: center; }
+  .alerta { padding: .75rem 1rem; border-radius: var(--radio-b); margin-bottom: .6rem; background: var(--sup); font-size: .92rem; box-shadow: 0 0 0 1px var(--anillo); border-left: 4px solid var(--info); }
+  .alerta.urgente { border-left-color: var(--neg); } .alerta.aviso { border-left-color: var(--adv); }
+  .alerta .botones { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .55rem; }
+
+  /* ------------------------------------------------------------ botones */
+  .primario, .secundario, .peligro, .chip {
+    min-height: var(--alto-btn); border-radius: var(--radio-b); padding: .45rem 1.05rem; border: 0; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: .45rem; font-weight: 600;
+    transition: transform .12s ease, box-shadow .2s ease, filter .2s ease, background .2s ease;
+  }
+  .primario:active, .secundario:active, .peligro:active, .chip:active { transform: scale(.96); }
+  .primario {
+    background: linear-gradient(135deg, var(--marca), var(--marca-2)); color: var(--sobre); font-weight: 700;
+    box-shadow: 0 8px 22px -8px var(--brillo), inset 0 1px 0 rgba(255, 255, 255, .25);
+  }
+  .primario:hover { filter: brightness(1.08); }
+  .secundario { background: var(--sup); color: var(--tx); box-shadow: 0 0 0 1px var(--anillo); }
+  .secundario:hover { background: var(--elev); }
+  .peligro { background: transparent; color: var(--neg); box-shadow: inset 0 0 0 1px var(--neg); }
+  .chip { min-height: 44px; background: var(--sup); color: var(--tx); border-radius: 999px; font-size: .9rem; white-space: nowrap; box-shadow: 0 0 0 1px var(--anillo); font-weight: 500; }
+  .chip:hover { background: var(--elev); }
+  .chip[aria-pressed="true"] { background: linear-gradient(135deg, var(--marca), var(--marca-2)); color: var(--sobre); font-weight: 700; box-shadow: 0 6px 18px -8px var(--brillo); }
+  .chip.inactivo, button:disabled { opacity: .45; cursor: default; }
+  .acciones { display: flex; flex-wrap: wrap; gap: .5rem; margin: .7rem 0; }
+  .botones { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .65rem; }
+  .botones .chip { flex: 1 1 auto; }
+  .opciones { display: flex; flex-wrap: wrap; gap: .45rem; }
+  .opciones button { min-height: 48px; padding: 0 1.05rem; border-radius: var(--radio-b); background: var(--sup); color: var(--tx); border: 0; box-shadow: 0 0 0 1px var(--anillo); }
+  .opciones button[aria-pressed="true"] { background: linear-gradient(135deg, var(--marca), var(--marca-2)); color: var(--sobre); font-weight: 700; }
+  .apariencia { display: grid; gap: .8rem; }
+
+  /* ------------------------------------------------------------ formularios */
+  input[type=text], input[type=url], input[type=password], input[type=search], input[type=number], input[type=date], textarea, select {
+    width: 100%; min-height: var(--alto-btn); padding: .55rem .85rem; border-radius: var(--radio-b); border: 0; background: var(--sup); color: var(--tx); font: inherit;
+    box-shadow: 0 0 0 1px var(--anillo); transition: box-shadow .2s ease;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 2px var(--marca), 0 0 0 6px var(--brillo); }
+  select { width: auto; padding-right: .5rem; }
+  label { display: block; margin: .65rem 0; font-size: .9rem; color: var(--tx2); }
+  label input { margin-top: .3rem; }
+  .check { display: flex; align-items: center; gap: .45rem; margin: 0; white-space: nowrap; }
+  .check input { width: auto; min-height: 0; box-shadow: none; accent-color: var(--marca); }
+  .barra { display: flex; gap: .6rem; align-items: center; margin-bottom: .55rem; }
+  .filtros { flex-wrap: wrap; } .filtros select { flex: 1 1 9rem; min-width: 0; }
+  .entrada { display: flex; gap: .5rem; align-items: center; }
+  .entrada input { flex: 1; }
+
+  /* ------------------------------------------------------------ listas */
+  .lista { list-style: none; margin: 0; padding: 0; background: var(--sup); border-radius: var(--radio); overflow: hidden; box-shadow: 0 0 0 1px var(--anillo); }
+  .fila { display: flex; justify-content: space-between; align-items: center; gap: .8rem; padding: .75rem 1rem; min-height: 58px; border-bottom: 1px solid var(--anillo); cursor: pointer; transition: background .15s ease; }
+  .fila:hover { background: var(--elev); }
+  .fila:last-child { border-bottom: 0; }
+  .fila.anulado { opacity: .5; text-decoration: line-through; }
+  .fila .titulo { font-weight: 600; overflow-wrap: anywhere; }
+  .etiq { font-size: .72rem; color: var(--tx2); font-weight: 500; padding: 0 .45rem; border-radius: 999px; background: var(--elev); }
+  .asientos { list-style: none; padding: 0; margin: .6rem 0; font-variant-numeric: tabular-nums; }
+  .asientos li { display: flex; justify-content: space-between; padding: .3rem 0; border-bottom: 1px dashed var(--bor); }
+  .pestanas { display: flex; gap: .4rem; padding: .3rem; border-radius: var(--radio-b); background: var(--elev); }
+  .pestana { flex: 1; min-height: 44px; border: 0; background: transparent; color: var(--tx2); border-radius: calc(var(--radio-b) - 3px); transition: background .2s, color .2s; font-weight: 600; }
+  .pestana.activa { background: var(--sup); color: var(--tx); box-shadow: 0 0 0 1px var(--anillo), 0 4px 12px -6px rgba(0, 0, 0, .4); }
+  .periodo { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: .7rem 0 .5rem; }
+  .periodo h2 { margin: 0; text-align: center; flex: 1; font-size: 1.05rem; }
+  .filtro-tipos { flex-wrap: wrap; margin: .5rem 0; background: transparent; padding: 0; }
+  .barra-fondo { display: block; background: var(--elev); border-radius: 999px; height: .7rem; overflow: hidden; }
+  .barra-relleno { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--marca), var(--marca-2)); }
+  .barra-relleno.aviso { background: var(--adv); } .barra-relleno.mal { background: var(--neg); }
+  .barra-fila { display: grid; grid-template-columns: 7.5rem 1fr auto; align-items: center; gap: .6rem; margin: .45rem 0; font-size: .9rem; }
+  .barra-valor { font-variant-numeric: tabular-nums; }
+  .desglose summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
+  dialog { border: 0; border-radius: var(--radio); background: var(--sup); color: var(--tx); max-width: min(92vw, 460px); width: 100%; box-shadow: 0 0 0 1px var(--anillo), 0 30px 80px -20px rgba(0, 0, 0, .6); }
+  dialog::backdrop { background: rgba(3, 6, 12, .6); backdrop-filter: blur(4px); }
+  .peligro-titulo { color: var(--neg); }
+  .volver { display: inline-flex; align-items: center; gap: .4rem; margin: 0 0 .7rem; min-height: var(--alto-btn); padding: .4rem 1.05rem .4rem .75rem; background: var(--sup); color: var(--tx); border: 0; box-shadow: 0 0 0 1px var(--anillo); border-radius: var(--radio-b); font-weight: 600; }
+  svg.i { width: 1.3em; height: 1.3em; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; vertical-align: -.28em; }
+
+  /* ------------------------------------------------------------ tarjeta «Entendí / Guardado» */
+  .burbuja { flex-shrink: 0; max-width: 90%; padding: .65rem .9rem; border-radius: var(--radio); overflow-wrap: anywhere; }
+  .burbuja.yo { align-self: flex-end; background: linear-gradient(135deg, var(--marca), var(--marca-2)); color: var(--sobre); border-bottom-right-radius: 6px; box-shadow: 0 10px 24px -12px var(--brillo); font-weight: 500; }
+  .burbuja.bot { align-self: flex-start; background: var(--sup); border-bottom-left-radius: 6px; box-shadow: 0 0 0 1px var(--anillo); }
+  .burbuja .texto { white-space: pre-wrap; }
+  .burbuja.carta { width: 94%; padding: 0; overflow: hidden; background: var(--sup); box-shadow: 0 0 0 1px var(--anillo), 0 18px 40px -18px rgba(0, 0, 0, .5); }
+  .carta-cab { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .55rem .95rem; font-size: .72rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+  .carta-cab.entendi { background: linear-gradient(90deg, color-mix(in srgb, var(--info) 26%, transparent), transparent); color: var(--info); }
+  .carta-cab.guardado { background: linear-gradient(90deg, color-mix(in srgb, var(--pos) 28%, transparent), transparent); color: var(--pos); }
+  .carta-cab .tipo { padding: .12rem .65rem; border-radius: 999px; background: var(--elev); color: var(--tx); letter-spacing: .02em; text-transform: none; font-size: .8rem; }
+  .carta-cuerpo { padding: .85rem .95rem .95rem; display: flex; flex-direction: column; gap: .6rem; }
+  .carta .monto-g { font-size: 2.5rem; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+  .carta .monto-g.gasto { color: var(--neg); } .carta .monto-g.ingreso { color: var(--pos); } .carta .monto-g.neutro { color: var(--tx); }
+  .carta .pildoras { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .carta .pildora { display: inline-flex; align-items: center; gap: .35rem; font-size: .84rem; padding: .22rem .7rem; border-radius: 999px; background: var(--elev); box-shadow: 0 0 0 1px var(--anillo); }
+  .carta .nota { display: flex; gap: .55rem; align-items: flex-start; padding: .55rem .7rem; border-radius: var(--radio-b); background: var(--elev); font-size: .92rem; overflow-wrap: anywhere; }
+  .carta .nota.aviso { background: color-mix(in srgb, var(--adv) 14%, var(--elev)); } .carta .nota.aviso svg { color: var(--adv); }
+  .carta .nota.pregunta { background: color-mix(in srgb, var(--marca) 14%, var(--elev)); font-weight: 600; } .carta .nota.pregunta svg { color: var(--marca); }
+  .carta .nota.ok svg { color: var(--pos); }
+  .carta .suelta { font-size: .92rem; color: var(--tx2); }
+  .carta .botones .chip { min-height: var(--alto-btn); border-radius: var(--radio-b); font-size: 1rem; }
+  .carta .botones .chip.principal { flex-basis: 100%; background: linear-gradient(135deg, var(--marca), var(--marca-2)); color: var(--sobre); font-weight: 700; box-shadow: 0 10px 26px -10px var(--brillo), inset 0 1px 0 rgba(255, 255, 255, .25); }
+  .carta .botones .chip.no { color: var(--neg); }
+  .botones .chip.principal { flex-basis: 100%; }
+
+  /* micrófono: ondas mientras escucha */
+  .mic { min-width: var(--alto-btn); padding: .45rem .7rem; }
+  .mic.oyendo { background: var(--neg); color: var(--sobre); box-shadow: 0 0 0 6px color-mix(in srgb, var(--neg) 28%, transparent); }
+  .ondas { display: inline-flex; align-items: center; gap: 2px; height: 20px; }
+  .ondas span { width: 3px; border-radius: 3px; background: currentColor; animation: onda 1s ease-in-out infinite; }
+  .ondas span:nth-child(1) { height: 8px; animation-delay: 0s; } .ondas span:nth-child(2) { height: 16px; animation-delay: .12s; }
+  .ondas span:nth-child(3) { height: 20px; animation-delay: .24s; } .ondas span:nth-child(4) { height: 14px; animation-delay: .36s; } .ondas span:nth-child(5) { height: 9px; animation-delay: .48s; }
+  @keyframes onda { 0%, 100% { transform: scaleY(.45); } 50% { transform: scaleY(1.1); } }
+
+}

@@ -1,0 +1,60 @@
+/*
+ * Temas de la app. Cuatro paletas con el mismo vocabulario de variables:
+ *
+ *   data-piel="libro"  + data-tema="oscuro"  Midnight Fintech: azul noche con acentos vivos (el principal)
+ *   data-piel="libro"  + data-tema="claro"   Fintech claro: blanco hielo con índigo
+ *   data-piel="tierra" + data-tema="oscuro"  Tierra editorial, de noche: café oscuro con ámbar
+ *   data-piel="tierra" + data-tema="claro"   Tierra editorial, de día: papel cálido con terracota
+ *
+ * Los atributos van en <html> (los pone apariencia.ts) junto con data-letra (normal | grande) y data-matiz
+ * (opcional). Los colores que se usan como texto o como fondo de texto van en hexadecimal de seis cifras:
+ * scripts/contraste.mjs los lee de aquí y exige AA (4,5 a 1). Lo demás (vidrio, anillos, degradados) puede
+ * usar rgba y degradados.
+ *
+ *   --fondo --sup --elev          fondos: página, tarjeta, elemento elevado
+ *   --tx --tx2 --bor              texto, texto suave, borde
+ *   --marca --marca-2 --sobre     color de acción (y el segundo tono de su degradado) y el texto sobre él
+ *   --marca-sup --tx-marca-sup    fondo suave de marca y su texto
+ *   --pos --neg --adv --info --acc  semánticos: ingreso o cuadre, gasto, alerta, cuentas, IA
+ */
+
+html[data-piel="libro"][data-tema="oscuro"] {
+  --fondo: #090d16; --sup: #111827; --elev: #1b2538; --tx: #f1f5fb; --tx2: #9ca9bf; --bor: #263249;
+  --marca: #38bdf8; --marca-2: #818cf8; --sobre: #04141f; --marca-sup: #12304a; --tx-marca-sup: #cfeafe;
+  --pos: #10b981; --neg: #fb7185; --adv: #f59e0b; --info: #38bdf8; --acc: #a5b4fc;
+  --vidrio: rgba(12, 18, 31, .72); --anillo: rgba(255, 255, 255, .10); --brillo: rgba(56, 189, 248, .22);
+  --halo-1: rgba(99, 102, 241, .28); --halo-2: rgba(16, 185, 129, .16);
+}
+html[data-piel="libro"][data-tema="claro"] {
+  --fondo: #f3f5fa; --sup: #ffffff; --elev: #e9edf5; --tx: #0b1220; --tx2: #4b5568; --bor: #d5dbe8;
+  --marca: #4f46e5; --marca-2: #0369a1; --sobre: #ffffff; --marca-sup: #e0e7ff; --tx-marca-sup: #312e81;
+  --pos: #047857; --neg: #be123c; --adv: #9f4a05; --info: #0369a1; --acc: #4f46e5;
+  --vidrio: rgba(255, 255, 255, .78); --anillo: rgba(15, 23, 42, .10); --brillo: rgba(79, 70, 229, .16);
+  --halo-1: rgba(99, 102, 241, .18); --halo-2: rgba(16, 185, 129, .12);
+}
+html[data-piel="tierra"][data-tema="oscuro"] {
+  --fondo: #17110c; --sup: #211812; --elev: #2c2118; --tx: #f5ebdd; --tx2: #bba791; --bor: #43332a;
+  --marca: #f0a06a; --marca-2: #f2c14e; --sobre: #2a1204; --marca-sup: #4a2812; --tx-marca-sup: #ffe3cf;
+  --pos: #8bd48b; --neg: #ff9b8a; --adv: #f2c14e; --info: #7cc4f0; --acc: #b79cf0;
+  --vidrio: rgba(29, 21, 15, .74); --anillo: rgba(255, 235, 210, .10); --brillo: rgba(240, 160, 106, .22);
+  --halo-1: rgba(240, 160, 106, .20); --halo-2: rgba(139, 212, 139, .12);
+}
+html[data-piel="tierra"][data-tema="claro"] {
+  --fondo: #f7f0e6; --sup: #fffbf5; --elev: #f0e4d2; --tx: #2a1d14; --tx2: #6a5546; --bor: #ddcbb2;
+  --marca: #9a3f18; --marca-2: #8a5300; --sobre: #ffffff; --marca-sup: #f6dcc6; --tx-marca-sup: #4a2410;
+  --pos: #2f6b2f; --neg: #a32a1b; --adv: #8a5300; --info: #1d5f8a; --acc: #6b3fa0;
+  --vidrio: rgba(255, 251, 245, .80); --anillo: rgba(90, 50, 20, .12); --brillo: rgba(154, 63, 24, .16);
+  --halo-1: rgba(154, 63, 24, .14); --halo-2: rgba(47, 107, 47, .10);
+}
+
+/* Matiz opcional sobre la piel tierra: verde azulado en vez de terracota */
+html[data-piel="tierra"][data-matiz="azulado"][data-tema="claro"] { --marca: #0f766e; --marca-2: #0369a1; --marca-sup: #d2efea; --sobre: #ffffff; --tx-marca-sup: #0b3b37; --brillo: rgba(15, 118, 110, .16); }
+html[data-piel="tierra"][data-matiz="azulado"][data-tema="oscuro"] { --marca: #2dd4bf; --marca-2: #38bdf8; --marca-sup: #0e403b; --sobre: #04201c; --tx-marca-sup: #cdf4ee; --brillo: rgba(45, 212, 191, .22); }
+
+/* Forma y tamaño. «libro» es más ceñido; «tierra», más redondo y con letra algo mayor */
+html[data-piel="libro"] { --base: 16px; --radio: 20px; --radio-b: 14px; --alto-btn: 48px; }
+html[data-piel="tierra"] { --base: 17px; --radio: 24px; --radio-b: 18px; --alto-btn: 54px; }
+html[data-letra="grande"] { --escala: 1.18; }
+html { font-size: calc(var(--base, 16px) * var(--escala, 1)); }
+html[data-tema="claro"] { color-scheme: light; }
+html[data-tema="oscuro"] { color-scheme: dark; }

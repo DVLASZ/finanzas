@@ -24,7 +24,7 @@ Cada instalación (una persona o un negocio) es un Worker, una base D1 y una cla
 | Carpeta | Qué tiene |
 |---|---|
 | `packages/core` | El cerebro. No depende de ninguna plataforma. |
-| `apps/web` | La app: pantallas, copia local en IndexedDB, sincronización, service worker. |
+| `apps/web` | La app: componentes de Preact con signals, estilos con Tailwind, copia local en IndexedDB, sincronización, service worker. |
 | `apps/worker` | El servidor: rutas de la API por dominio (`src/rutas/`), repositorio sobre D1, avisos y IA. |
 | `db` | Esquema, datos iniciales, diccionario de palabras y migraciones. |
 | `scripts` | Instalador, compilación de la web y herramientas. |

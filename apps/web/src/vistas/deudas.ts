@@ -1,4 +1,4 @@
-import { prellenarChat } from './chat.ts';
+import { prellenarChat } from '../estado/nav.ts';
 import { $ } from './dom.ts';
 import { deudasPorPersona, gruposDe, describirDia, formatear } from '../../../../packages/core/src/index.ts';
 import { leerTodo } from '../app.ts';

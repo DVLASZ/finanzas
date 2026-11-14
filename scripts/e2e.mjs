@@ -107,7 +107,7 @@ try {
     await pag.evaluate(() => [...document.querySelectorAll('button')].filter(b => b.innerText.includes('Pasar $7.000 de Efectivo a Monedas')).pop()?.click());
     await espera(800);
     if ((await ultima()).includes('Falta plata')) throw new Error('después de pasar la plata sigue el aviso');
-    contiene(await ultima(), 'TRANSFERENCIA', 'la tarjeta vuelve');
+    contiene(await ultima(), 'Transferencia', 'la tarjeta vuelve');
     await pulsar('Confirmar'); contiene(await ultima(), 'GUARDADO', 'guardado');
   });
   await prueba('una cuenta en negativo avisa en Saldos y el botón lleva al chat con el conteo listo', async () => {
@@ -146,7 +146,8 @@ try {
   });
   await prueba('resumen: categorías, informe y comparación', async () => {
     await irA('Resumen'); const t = await pag.evaluate(() => document.body.innerText);
-    contiene(t, 'Por categoría', 'resumen'); contiene(t, 'Informe para imprimir', 'botón del informe');
+    // los títulos de sección van en mayúsculas por estilo: se compara sin distinguir
+    contiene(t.toLowerCase(), 'por categoría', 'resumen'); contiene(t, 'Informe para imprimir', 'botón del informe');
   });
   await prueba('Más: categorías y personas, primeros pasos, buzón y conciliar abren', async () => {
     await abrirDeMas('Categorías y personas'); contiene(await pag.evaluate(() => document.body.innerText), 'Restaurante', 'subcategoría creada en el chat');
