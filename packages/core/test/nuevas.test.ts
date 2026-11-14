@@ -224,5 +224,5 @@ test('ocr: fechas con barras y montos escritos como total', () => {
 });
 
 test('ocr: las instrucciones traen las reglas que corrigen los errores vistos', () => {
-  for (const regla of [/DIAN/, /TOTAL/, /CAMBIO/, /VUELTO/, /encabezado/, /D1/, /Nequi/, /Daviplata/, /Bancolombia/, /null/]) assert.match(INSTRUCCIONES_OCR, regla);
+  for (const regla of [/RESUMEN DE IMPUESTOS/, /BASE/, /justo debajo de la lista de artículos/, /DIAN/, /TOTAL/, /CAMBIO/, /VUELTO/, /encabezado/, /D1/, /Nequi/, /Daviplata/, /Bancolombia/, /null/]) assert.match(INSTRUCCIONES_OCR, regla);
 });

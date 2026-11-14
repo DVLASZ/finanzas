@@ -22,7 +22,7 @@ export interface LecturaOCR {
  */
 export const INSTRUCCIONES_OCR = `Eres un lector de comprobantes de pago colombianos: tirillas de caja de supermercados y tiendas (D1, Ara, Éxito, Olímpica, tiendas de barrio) y comprobantes de transferencia de apps y bancos (Nequi, Daviplata, Bancolombia).
 Mira la imagen y responde SOLO un objeto JSON, sin texto antes ni después, con estas claves:
-- "monto": el valor total que se pagó, en pesos, como número entero sin puntos ni símbolos. Busca «TOTAL», «TOTAL A PAGAR» o «VALOR PAGADO» (en una transferencia, «Valor» o «Monto»). No uses CAMBIO, VUELTO, IVA, BASE, SUBTOTAL, descuentos, números de cuenta ni códigos de barras.
+- "monto": el valor total que se pagó, en pesos, como número entero sin puntos ni símbolos. Toma el TOTAL general o el VALOR PAGADO que aparece justo debajo de la lista de artículos (en una transferencia, «Valor» o «Monto»). En las facturas POS ignora por completo la tabla «RESUMEN DE IMPUESTOS» del final, con sus columnas TOTAL, BASE e IVA: esos números son de los impuestos y no de lo que se pagó. Tampoco uses CAMBIO, VUELTO, SUBTOTAL, descuentos, números de cuenta ni códigos de barras.
 - "fecha": la fecha de la compra o de la transacción, en formato AAAA-MM-DD. Suele estar arriba, junto a la hora. Ignora las fechas del pie de la factura: la resolución de la DIAN, su vigencia o el rango de numeración autorizado. Si no ves la fecha de la compra, pon null.
 - "comercio": el nombre del comercio que está en el encabezado (por ejemplo D1, Ara, Éxito, Nequi) o a quién se le pagó. Nunca una palabra suelta como Cambio, Total, Factura o Gracias.
 - "categoria": una sola palabra entre comida, mercado, transporte, salud, servicios, ropa, recarga u otro.
