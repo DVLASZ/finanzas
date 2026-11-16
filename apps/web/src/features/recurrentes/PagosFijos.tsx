@@ -77,7 +77,7 @@ export function PagosFijos() {
                     <div class="sub flex items-center gap-1">{hecho ? <><Check size={13} class="text-pos" />Pagado {periodoDe(r)}</> : toca ? <><Clock size={13} class="text-adv" />Toca {periodoDe(r)} · {describirFrecuencia(r)}</> : <>{describirFrecuencia(r).replace(/^./, c => c.toUpperCase())}</>}</div></div>
                 </div>
                 <div class="text-right"><div class="monto">{formatear(r.monto)}</div>
-                  {!hecho && <button class="chip !min-h-10 mt-1" onClick={() => registrar(r.frase)}>Registrar</button>}
+                  {!hecho && <button class="chip !min-h-10 mt-1" onClick={() => registrar(r.frase)}>Registrar pago ahora</button>}
                 </div>
               </li>
             );

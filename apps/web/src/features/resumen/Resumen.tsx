@@ -13,6 +13,7 @@ import { esc } from '../../lib/carta.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { fechaAtras } from '../../lib/periodos.ts';
 import { TarjetaHormiga } from './Hormiga.tsx';
+import { ComparativaMes } from './ComparativaMes.tsx';
 import { Ritmo } from '../../components/charts/graficos.tsx';
 import { BarraAvance, Insignia, Vacio, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
@@ -235,6 +236,8 @@ export function Resumen() {
           <Dona trozos={trozos} total={total} />
         </section>
       )}
+
+      {verRitmo && <ComparativaMes datos={datos} ahora={ctx.ahora} />}
 
       {verRitmo && ritmoAhora.length > 0 && (
         <section class="tarjeta">

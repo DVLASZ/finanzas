@@ -9,6 +9,7 @@ import { enBarra, irA, pantalla, type Pantalla } from './state/nav.ts';
 import { conServidor, datos, estadoSync, pendientes } from './state/store.ts';
 import { entrarPantalla } from './lib/efectos.ts';
 import { HojaSelector } from './components/ui/Selector.tsx';
+import { Confirmacion } from './components/ui/Confirmacion.tsx';
 import { Chat } from './features/chat/Chat.tsx';
 import { Saldos } from './features/saldos/Saldos.tsx';
 import { Movimientos } from './features/movimientos/Movimientos.tsx';
@@ -117,6 +118,7 @@ export function App() {
       <div aria-hidden="true" class="fixed inset-x-0 bottom-0 z-30 h-[calc(env(safe-area-inset-bottom)+.7rem)] bg-fondo lg:hidden" />
       <Barra />
       <HojaSelector />
+      <Confirmacion />
     </div>
   );
 }

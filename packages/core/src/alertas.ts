@@ -7,13 +7,14 @@ import { formatear } from './dinero.ts';
 import { ejemploDeSaldos } from './entidades.ts';
 import { aLocal, describirDia, nombreMes, rangoPeriodo } from './fechas.ts';
 import { describirFrecuencia, periodoDe, recurrentesPendientes } from './recurrentes.ts';
+import { comparativaMensual, textoProyeccion } from './comparativa.ts';
 import type { Datos } from './repo.ts';
 
 export interface Alerta {
   nivel: 'urgente' | 'aviso' | 'info';
   texto: string;
   /** Para saber de qué alerta se trata sin leer el texto (los avisos al celular saltan la del saldo inicial). */
-  id?: 'saldo-inicial' | 'saldo-negativo' | 'cierre-dia' | 'resumen-mes' | 'resumen-semana';
+  id?: 'saldo-inicial' | 'saldo-negativo' | 'cierre-dia' | 'resumen-mes' | 'resumen-semana' | 'proyeccion';
   /** Botones que la app muestra con la alerta. `enviar`: el texto se manda solo al chat (queda una tarjeta por confirmar); si no, solo se deja escrito. */
   acciones?: { titulo: string; texto: string; enviar?: boolean }[];
 }
@@ -91,6 +92,13 @@ export function calcularAlertas(d: Datos, ahora: Date): Alerta[] {
   // Gastos que se repiten cada mes y todavía no se han anotado
   for (const r of recurrentesPendientes(d.config, d.movimientos, hoy)) {
     res.push({ nivel: 'aviso', texto: `${periodoDe(r).replace(/^./, c => c.toUpperCase())} toca ${r.concepto} (${formatear(r.monto)}, ${describirFrecuencia(r)}). Anótalo así: «${r.frase}».` });
+  }
+
+  // Proyección del mes: si a este ritmo se gasta bastante más que el mes pasado, se avisa (pasados diez días del mes)
+  {
+    const c = comparativaMensual(d, ahora);
+    const t = textoProyeccion(c);
+    if (t && c.dia >= 10 && (c.proyeccionVsMesAnterior ?? 0) >= 15) res.push({ id: 'proyeccion', nivel: 'aviso', texto: t });
   }
 
   // Topes mensuales

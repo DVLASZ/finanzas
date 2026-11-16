@@ -25,7 +25,8 @@
     "e2e:celular": "node scripts/celular.mjs",
     "privacidad": "node scripts/privacidad.mjs",
     "capturas": "node scripts/capturas.mjs",
-    "e2e:letra": "node scripts/letra-grande.mjs"
+    "e2e:letra": "node scripts/letra-grande.mjs",
+    "e2e:variantes": "node scripts/e2e-variantes.mjs"
   },
   "dependencies": {
     "@preact/signals": "^2.11.4",
