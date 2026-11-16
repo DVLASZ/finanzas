@@ -1,20 +1,24 @@
 /**
- * La respuesta de «ayuda» como una guía visual: un bloque por tema, un ícono por cada tipo de ejemplo y los
- * ejemplos como botones. Al tocar uno, se escribe en el cuadro del chat; las consultas («saldo», «deudas»)
- * se envían directo.
+ * La ayuda como un asistente por temas: primero una pregunta corta y los temas como botones; solo al tocar uno se
+ * despliegan sus ejemplos (con un ícono por tipo), y se puede volver a los temas. Los ejemplos salen del texto que
+ * devuelve el bot, así siguen las cuentas de cada instalación; los temas que el bot no menciona (pagos fijos, metas)
+ * llevan ejemplos propios, los mismos de docs/BOT.md. Al tocar un ejemplo se escribe en el cuadro del chat; las
+ * consultas («saldo», «deudas») se envían directo.
  */
 import {
-  ArrowLeftRight, ArrowUpRight, Banknote, BarChart3, Bus, CalendarDays, DollarSign, HandCoins, Info, Receipt, Scale, ShoppingBasket, Sparkles,
-  Store, Tag, TrendingUp, Users, Undo2,
+  ArrowLeft, ArrowLeftRight, ArrowUpRight, Banknote, BarChart3, Bus, CalendarClock, CalendarDays, DollarSign, HandCoins, Info, Pencil, Receipt,
+  ScanLine, Scale, ShoppingBasket, Sparkles, Store, Tag, Target, TrendingUp, Undo2, Users,
 } from 'lucide-preact';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { quitarEmojis } from '../../lib/carta.ts';
+import { entrar } from '../../lib/efectos.ts';
 import { Insignia, T, type Icono, type Visual } from '../../components/ui/iconos.tsx';
 
 /** El texto que devuelve el bot para «ayuda» (empieza siempre igual). */
 export const esAyuda = (t: string): boolean => t.startsWith('👋 Cuéntame');
 
 /** Estos ejemplos no llevan monto: se envían al tocarlos. Los demás se escriben en el cuadro para completarlos. */
-const CONSULTAS = new Set(['saldo', 'deudas', 'semana', 'mes', 'últimos', 'ultimos', 'lista', 'deshacer', 'ayuda']);
+const CONSULTAS = new Set(['saldo', 'deudas', 'semana', 'mes', 'últimos', 'ultimos', 'lista', 'deshacer', 'ayuda', 'editar último', 'editar ultimo']);
 export const seEnvia = (ejemplo: string): boolean => CONSULTAS.has(ejemplo.trim().toLowerCase());
 
 type Parte = { texto: string } | { ejemplo: string };
@@ -45,8 +49,10 @@ function visualDe(linea: string): Visual {
   if (/dólares|usd/.test(t)) return v(DollarSign, 'lima');
   if (/arqueo|cuadre/.test(t)) return v(Scale, 'azul');
   if (/pasar plata|cambio \d/.test(t)) return v(ArrowLeftRight, 'azul');
+  if (/cada mes|cada quincena|cada lunes/.test(t)) return v(CalendarClock, 'ambar');
+  if (/meta|ahorré|saqué/.test(t)) return v(Target, 'esmeralda');
   if (/otro día|ayer/.test(t)) return v(CalendarDays, 'ambar');
-  if (/deshacer|equivoc/.test(t)) return v(Undo2, 'coral');
+  if (/deshacer|equivoc|editar/.test(t)) return v(Undo2, 'coral');
   if (/presté|prestaron|pagué|pagaron|debía|le debo/.test(t)) return v(HandCoins, 'ambar');
   if (/me llegó|ingreso/.test(t)) return v(TrendingUp, 'esmeralda');
   if (/comprar|lista/.test(t)) return v(ShoppingBasket, 'rosa');
@@ -54,44 +60,83 @@ function visualDe(linea: string): Visual {
   return v(Receipt, 'coral');
 }
 
-interface Bloque { titulo: string; lineas: string[]; notas: string[] }
+interface Tema { id: string; titulo: string; Icono: Icono; tono: keyof typeof T; lineas: string[]; nota?: string; escaner?: boolean }
 
-function leer(texto: string): { intro: string; bloques: Bloque[] } {
-  const grupos = quitarEmojis(texto).split(/\n\s*\n/).map(g => g.split('\n'));
-  const intro = grupos[0][0];
-  const bloques: Bloque[] = [];
-  grupos.forEach((g, i) => {
-    const lineas = g.filter(l => l.startsWith('•'));
-    const otras = g.filter(l => !l.startsWith('•') && !(i === 0 && l === intro));
-    if (lineas.length) bloques.push({ titulo: i === 0 ? 'Anotar' : otras[0]?.replace(/:$/, '') ?? '', lineas, notas: [] });
-    else if (otras.length) bloques.push({ titulo: '', lineas: [], notas: otras });
-  });
-  return { intro, bloques };
+/** Reparte las líneas de la ayuda del bot por tema y agrega los temas con ejemplos propios. */
+export function temasDe(texto: string): Tema[] {
+  const lineas = quitarEmojis(texto).split('\n').map(l => l.trim());
+  const puntos = lineas.filter(l => l.startsWith('•'));
+  const nota = lineas.find(l => /^Si te equivocas/.test(l));
+  const dividir = (re: RegExp) => puntos.filter(l => re.test(l.toLowerCase()));
+  const prestamos = dividir(/presté|prestaron|pagué|pagaron|debía|le debo/);
+  const compartidos = dividir(/entre varios|#/);
+  const saldos = dividir(/«saldo»|«semana»|arqueo|cambio|dólares|usd/);
+  const aparte = new Set([...prestamos, ...compartidos, ...saldos]);
+  return [
+    { id: 'anotar', titulo: 'Anotar gastos e ingresos', Icono: Receipt, tono: 'coral', lineas: puntos.filter(l => !aparte.has(l)) },
+    { id: 'deudas', titulo: 'Préstamos y deudas', Icono: HandCoins, tono: 'ambar', lineas: [...prestamos, '• Ver quién te debe y a quién le debes: «deudas»'] },
+    { id: 'compartidos', titulo: 'Compartidos', Icono: Users, tono: 'violeta', lineas: compartidos },
+    {
+      id: 'fijos', titulo: 'Pagos fijos y metas', Icono: CalendarClock, tono: 'esmeralda',
+      lineas: ['• Un pago que se repite: «cada mes el 5 internet 60000»', '• Una meta de ahorro: «meta moto 2000000»', '• Apartar para la meta: «ahorré 50000 para moto»'],
+      nota: 'Los pagos fijos te avisan cuando toca pagarlos, y quedan como un botón en el chat.',
+    },
+    { id: 'escanear', titulo: 'Escanear recibos', Icono: ScanLine, tono: 'cian', lineas: [], escaner: true, nota: 'Toca el botón del escáner junto al micrófono, toma la foto o elige una de la galería, y yo dejo la tarjeta lista para que la confirmes.' },
+    {
+      id: 'editar', titulo: 'Editar o anular', Icono: Pencil, tono: 'rosa',
+      lineas: ['• Anular lo último: «deshacer»', '• Corregir lo último: «editar último»'],
+      nota: nota ?? 'Si te equivocas, escribe «deshacer». Nada se borra: lo que deshaces queda marcado como anulado.',
+    },
+    { id: 'saldos', titulo: 'Saldos y cuadres', Icono: Scale, tono: 'azul', lineas: saldos },
+  ].filter(t => t.lineas.length || t.escaner);
 }
 
 export function Ayuda({ texto, alElegir }: { texto: string; alElegir: (ejemplo: string) => void }) {
-  const { intro, bloques } = leer(texto);
+  const temas = temasDe(texto);
+  const [abierto, setAbierto] = useState<string | null>(null);
+  const tema = temas.find(t => t.id === abierto);
+  const cuerpo = useRef<HTMLDivElement>(null);
+  const chips = useRef<HTMLDivElement>(null);
+  useEffect(() => { const el = tema ? cuerpo.current : chips.current; if (el) entrar(el); }, [abierto]);
+
   return (
     <div class="ayuda">
       <div class="ayuda-cab"><Sparkles size={18} /><b>Guía rápida</b></div>
-      <p class="sub !m-0 px-0.5">{intro.replace(/:$/, '.')} Toca un ejemplo para usarlo.</p>
-      {bloques.map((b, i) => b.lineas.length ? (
-        <section key={i} class="ayuda-bloque">
-          {b.titulo && <h4>{b.titulo}</h4>}
-          {b.lineas.map(l => (
-            <div key={l} class="ayuda-fila">
-              <Insignia v={visualDe(l)} tam={34} />
-              <div class="ayuda-partes">
-                {partir(l).map((p, j) => 'ejemplo' in p
-                  ? <button key={j} type="button" class="ejemplo" data-ejemplo={p.ejemplo} onClick={() => alElegir(p.ejemplo)}>{p.ejemplo}<ArrowUpRight size={14} aria-hidden="true" /></button>
-                  : <span key={j} class="ayuda-texto">{p.texto}</span>)}
-              </div>
-            </div>
+      {!tema && <>
+        <p class="sub !m-0 px-0.5">Cuéntame lo que pasó, como se lo contarías a alguien. ¿Sobre qué quieres saber?</p>
+        <div ref={chips} class="ayuda-temas" id="ayuda-temas">
+          {temas.map((t, i) => (
+            <button key={t.id} type="button" class="chip ayuda-tema" data-tema={t.id} style={{ animationDelay: `${i * 45}ms` }} onClick={() => setAbierto(t.id)}>
+              <Insignia v={{ Icono: t.Icono, ...T[t.tono] }} tam={28} redondo />{t.titulo}
+            </button>
           ))}
-        </section>
-      ) : (
-        <div key={i} class="callout"><span class="callout-ico"><Info size={16} /></span><span class="callout-txt">{b.notas.join(' ')}</span></div>
-      ))}
+        </div>
+      </>}
+      {tema && (
+        <div ref={cuerpo} class="ayuda-detalle" id="ayuda-detalle" data-tema={tema.id}>
+          <div class="flex items-center gap-2">
+            <button type="button" class="chip !min-h-9 !px-3" id="ayuda-volver" aria-label="Volver a los temas" onClick={() => setAbierto(null)}><ArrowLeft size={16} />Temas</button>
+            <h4 class="!m-0 min-w-0 flex-1 text-[.95rem] font-bold">{tema.titulo}</h4>
+          </div>
+          {tema.lineas.length > 0 && (
+            <section class="ayuda-bloque">
+              <p class="sub !m-0">Toca un ejemplo para usarlo.</p>
+              {tema.lineas.map(l => (
+                <div key={l} class="ayuda-fila">
+                  <Insignia v={visualDe(l)} tam={34} />
+                  <div class="ayuda-partes">
+                    {partir(l).map((p, j) => 'ejemplo' in p
+                      ? <button key={j} type="button" class="ejemplo" data-ejemplo={p.ejemplo} onClick={() => alElegir(p.ejemplo)}>{p.ejemplo}<ArrowUpRight size={14} aria-hidden="true" /></button>
+                      : <span key={j} class="ayuda-texto">{p.texto}</span>)}
+                  </div>
+                </div>
+              ))}
+            </section>
+          )}
+          {tema.nota && <div class="callout"><span class="callout-ico"><Info size={16} /></span><span class="callout-txt">{tema.nota}</span></div>}
+          {tema.escaner && <button type="button" class="primario self-start" id="ayuda-escanear" onClick={() => document.querySelector<HTMLButtonElement>('#escanear')?.click()}><ScanLine size={18} />Abrir el escáner</button>}
+        </div>
+      )}
     </div>
   );
 }

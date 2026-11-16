@@ -41,30 +41,38 @@ for (const [piel, tema, matiz] of combos) {
     if (r < 4.5) { console.log(`NO LLEGA ${piel}/${tema}${matiz ? '/' + matiz : ''}: --${a} ${v[a]} sobre --${b} ${v[b]} = ${r.toFixed(2)}`); mal++; }
   }
 }
-// Los brillos del fondo (estilos/tailwind.css) se mezclan con el fondo del tema. Se toma el peor caso: cada color de brillo
-// con su intensidad máxima. El texto tiene que seguir leyéndose sobre esa mezcla, y también sobre las tarjetas, que llevan
-// encima un tinte suave de la marca.
+// El fondo es una aurora: brillos de color (estilos/tailwind.css, --c-*) sobre el fondo del tema, a su intensidad máxima. Se toma el peor
+// caso: cada color con la intensidad más alta, sin contar el desenfoque. El texto que va directo sobre el fondo tiene que leerse sobre
+// esa mezcla. Lo que va dentro de tarjetas, burbujas y hojas es vidrio: la superficie con --cristal-a de opacidad sobre esa misma
+// mezcla (más un tinte de la marca), y ahí también tienen que leerse el texto y los colores de estado.
 const tw = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'estilos', 'tailwind.css'), 'utf8');
-const brillos = [...new Set([...tw.matchAll(/--(?:sec|glow-[abc]):\s*(#[0-9a-f]{6})/g)].map(m => m[1]))];
-const intensidad = { oscuro: Number(/data-tema="oscuro"\]\s*\{\s*--glow-i:\s*(\d+)%/.exec(tw)?.[1] ?? 0) / 100, claro: Number(/data-tema="claro"\]\s*\{\s*--glow-i:\s*(\d+)%/.exec(tw)?.[1] ?? 0) / 100 };
+const colores = bloque => Object.values(Object.fromEntries([...bloque.matchAll(/--c-([a-z]+):\s*(#[0-9a-f]{6})/g)].map(m => [m[1], m[2]])));
+const bloqueOscuro = /\n  html \{([^}]*--c-cian[^}]*)\}/.exec(tw)?.[1] ?? '';
+const bloqueClaro = /html\[data-tema="claro"\]\s*\{([^}]*--c-[^}]*)\}/.exec(tw)?.[1] ?? '';
+const brillos = { oscuro: colores(bloqueOscuro), claro: colores(bloqueClaro) };
+const num = (re, def = 0) => Number(re.exec(tw)?.[1] ?? def) / 100;
+const intensidad = { oscuro: Math.max(num(/data-tema="oscuro"\]\s*\{\s*--glow-i:\s*(\d+)%/), num(/data-tema="oscuro"\]\s*\{[^}]*--glow-j:\s*(\d+)%/)), claro: Math.max(num(/data-tema="claro"\]\s*\{\s*--glow-i:\s*(\d+)%/), num(/data-tema="claro"\]\s*\{[^}]*--glow-j:\s*(\d+)%/)) };
+const cristal = { oscuro: num(/--cristal-a:\s*(\d+)%/), claro: num(/data-tema="claro"\][^}]*--cristal-a:\s*(\d+)%/) };
 const mezclar = (base, color, t) => '#' + [1, 3, 5].map(i => Math.round(parseInt(base.slice(i, i + 2), 16) * (1 - t) + parseInt(color.slice(i, i + 2), 16) * t).toString(16).padStart(2, '0')).join('');
-if (!brillos.length || !intensidad.oscuro || !intensidad.claro) { console.log('FALTAN los brillos del fondo o su intensidad en tailwind.css'); mal++; }
+for (const tema of ['oscuro', 'claro']) {
+  if (!brillos[tema].length || !intensidad[tema] || !cristal[tema]) { console.log(`FALTAN los colores, la intensidad o la opacidad de vidrio del fondo (${tema}) en tailwind.css`); mal++; }
+}
 for (const [piel, tema, matiz] of combos) {
   const v = {};
   for (const b of bloques) { const x = b.sel; if (x.piel === piel && x.tema === tema && (!x.matiz || x.matiz === matiz)) Object.assign(v, b.vars); }
   const t = intensidad[tema];
-  for (const brillo of brillos) {
+  for (const brillo of brillos[tema]) {
     const fondo = mezclar(v.fondo, brillo, t);
     for (const texto of ['tx', 'tx2']) {
       const r = razon(v[texto], fondo);
       if (r < 4.5) { console.log(`NO LLEGA ${piel}/${tema}: --${texto} sobre el brillo ${brillo} = ${r.toFixed(2)}`); mal++; }
     }
-  }
-  // tarjeta: superficie con un 9 % de marca y un 7 % de marca-2 encima (peor caso, sumados)
-  const tarjeta = mezclar(mezclar(v.sup, v.marca, 0.09), v['marca-2'], 0.07);
-  for (const texto of ['tx', 'tx2']) {
-    const r = razon(v[texto], tarjeta);
-    if (r < 4.5) { console.log(`NO LLEGA ${piel}/${tema}: --${texto} sobre la tarjeta con tinte = ${r.toFixed(2)}`); mal++; }
+    // vidrio: la superficie semiopaca sobre el brillo, con el tinte de la marca (9 % y 7 %, peor caso sumados)
+    const vidrio = mezclar(mezclar(mezclar(fondo, v.sup, cristal[tema]), v.marca, 0.09), v['marca-2'], 0.07);
+    for (const texto of ['tx', 'tx2', 'pos', 'neg', 'adv', 'info']) {
+      const r = razon(v[texto], vidrio);
+      if (r < 4.5) { console.log(`NO LLEGA ${piel}/${tema}: --${texto} sobre el vidrio con el brillo ${brillo} = ${r.toFixed(2)}`); mal++; }
+    }
   }
 }
 console.log(mal ? `\n${mal} par(es) de colores no se leen bien.` : 'OK   Todos los pares de colores llegan a AA (4,5 a 1).');

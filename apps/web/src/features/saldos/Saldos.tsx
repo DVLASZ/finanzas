@@ -41,6 +41,9 @@ export function Saldos() {
   const pctHoy = seguro.porDia > 0 ? (restaHoy / seguro.porDia) * 100 : 0;
   const liquidez = Math.max(0, r.disponibleCop);
   const deuda = (v: { COP: number; USD: number }) => [v.COP && formatear(v.COP), v.USD && formatear(v.USD, 'USD')].filter(Boolean).join(' + ') || '$0';
+  const PALETA = ['var(--info)', 'var(--pos)', 'var(--adv)', 'var(--acc)', 'var(--marca)'];
+  const repartidas = r.cuentas.filter(x => x.cuenta.enDisponible !== false && x.cuenta.moneda === 'COP' && x.cuenta.id !== 'monedas' && x.saldo > 0);
+  const mayor = Math.max(1, ...r.cuentas.filter(x => x.cuenta.moneda === 'COP').map(x => Math.abs(x.saldo)));
   const cuentasEnDisponible = r.cuentas.filter(x => x.cuenta.enDisponible !== false && x.cuenta.moneda === 'COP').map(x => x.cuenta.nombre).join(' + ');
 
   return (
@@ -106,6 +109,13 @@ export function Saldos() {
         </div>
       </section>
 
+      {repartidas.length > 1 && (
+        <section class="tarjeta" id="reparto" aria-label="Dónde está tu plata">
+          <div class="etiqueta mb-2.5">Dónde está tu plata</div>
+          <BarraApilada tramos={repartidas.map((x, i) => ({ nombre: x.cuenta.nombre, valor: x.saldo, color: PALETA[i % PALETA.length] }))} />
+        </section>
+      )}
+
       <Escalonado class="grid grid-cols-2 gap-3">
         {r.cuentas.map(({ cuenta, saldo }) => {
           const aparte = cuenta.id === 'monedas' || cuenta.enDisponible === false;
@@ -116,6 +126,7 @@ export function Saldos() {
               <div class="mb-2"><Insignia v={visual} tam={40} /></div>
               <div class="etiqueta">{nombre}</div>
               <div class={`mt-0.5 text-[1.25rem] font-bold ${saldo < 0 ? 'text-neg' : ''}`}><MontoAnimado valor={saldo} moneda={cuenta.moneda} /></div>
+              {cuenta.moneda === 'COP' && <div class={`mini-barra mt-2 ${saldo < 0 ? 'neg' : ''}`} aria-hidden="true"><span style={{ width: `${Math.max(saldo !== 0 ? 4 : 0, Math.round((Math.abs(saldo) / mayor) * 100))}%` }} /></div>}
             </div>
           );
         })}

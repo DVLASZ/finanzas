@@ -247,14 +247,70 @@ try {
     await clic('#cerrar');
     contiene(await pag.evaluate(() => document.querySelector('#lista').innerText), '$6.000', 'la lista muestra el monto nuevo');
   });
-  await prueba('chat: los botones rápidos mandan lo que más se repite y dejan la tarjeta por confirmar', async () => {
-    await irA('Chat');
-    for (let i = 0; i < 2; i++) { await escribir('mecato 3500'); await pulsar('Confirmar'); }
-    await irA('Saldos'); await irA('Chat'); await espera(400);
-    igual(await pag.evaluate(() => Boolean(document.querySelector('.atajos [data-atajo="mecato 3500"]'))), true, 'aparece el botón de lo que se repite');
-    await pag.evaluate(() => document.querySelector('.atajos [data-atajo="mecato 3500"]').click()); await espera(900);
+  await prueba('chat: la barra no trae botones inventados (nada de «Pasaje» con monto), solo Ayuda y el +', async () => {
+    await irA('Chat'); await espera(400);
+    // los pagos fijos que ya tocan sí salen solos (llevan monto y cuenta reales); lo demás lo arma la persona
+    const botones = await pag.evaluate(() => [...document.querySelectorAll('.atajos [data-atajo]:not([data-tipo="fijo"])')].map(b => b.dataset.atajo));
+    igual(botones.join(','), 'ayuda', 'solo el botón de Ayuda');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#atajo-mas'))), true, 'el + para armar los propios');
+  });
+  await prueba('atajos propios: plantilla deja el texto escrito, frase arma la tarjeta; se ordenan, se ocultan y se quitan', async () => {
+    const clicEn = sel => pag.evaluate(x => document.querySelector(x)?.click(), sel);
+    await clicEn('#atajo-mas'); await espera(500);
+    await clicEn('#at-nuevo'); await espera(300);
+    await pag.type('#at-frase', 'recarga nequi'); await espera(100);
+    igual(await pag.evaluate(() => document.querySelector('#at-modo-plantilla').getAttribute('aria-pressed')), 'true', 'sin monto es plantilla');
+    await clicEn('#at-guardar'); await espera(300);
+    await clicEn('#at-nuevo'); await espera(300);
+    await pag.type('#at-frase', 'mecato 3500 efectivo'); await espera(100);
+    igual(await pag.evaluate(() => document.querySelector('#at-modo-frase').getAttribute('aria-pressed')), 'true', 'con monto es frase');
+    await clicEn('#at-guardar'); await espera(300);
+    contiene(await pag.evaluate(() => document.querySelector('#at-lista').innerText), 'Mecato efectivo', 'la etiqueta sale de la frase sin el monto');
+    await pag.evaluate(() => document.querySelector('[aria-label="Subir Mecato efectivo"]')?.click()); await espera(200);
+    igual(await pag.evaluate(() => document.querySelector('#at-lista .fila').innerText.includes('Mecato efectivo')), true, 'subir cambia el orden');
+    await clicEn('#at-cerrar'); await espera(400);
+    // plantilla: queda escrita en el cuadro, sin enviar
+    await clicEn('[data-atajo="recarga nequi"]'); await espera(300);
+    igual(await pag.evaluate(() => document.querySelector('#texto').value), 'recarga nequi ', 'la plantilla queda escrita para ponerle el monto');
+    await pag.$eval('#texto', e => { e.value = ''; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    // frase completa: sale la tarjeta por confirmar
+    await clicEn('[data-atajo="mecato 3500 efectivo"]'); await espera(900);
     contiene(await ultima(), 'Gasto', 'la tarjeta de ese gasto');
-    await pulsar('Cancelar');
+    await pulsar('Confirmar');
+    // ocultar la barra y volver a mostrarla
+    await clicEn('#atajo-mas'); await espera(400); await clicEn('#at-mostrar'); await clicEn('#at-cerrar'); await espera(400);
+    igual(await pag.evaluate(() => document.querySelectorAll('.atajos [data-atajo]').length), 0, 'barra oculta');
+    await clicEn('#atajos-mostrar'); await espera(400);
+    igual(await pag.evaluate(() => document.querySelectorAll('.atajos [data-atajo]').length > 0), true, 'barra visible otra vez');
+    // quitar uno con confirmación
+    await clicEn('#atajo-mas'); await espera(400);
+    await pag.evaluate(() => document.querySelector('[aria-label="Quitar Recarga nequi"]')?.click()); await espera(400);
+    await clicEn('#dialogo-aceptar'); await espera(400);
+    igual(await pag.evaluate(() => document.querySelector('#at-lista').innerText.includes('Recarga nequi')), false, 'se quitó');
+    await clicEn('#at-cerrar'); await espera(300);
+  });
+  await prueba('ayuda: primero pregunta el tema y solo al tocar uno muestra sus ejemplos', async () => {
+    await irA('Chat');
+    await pag.evaluate(() => document.querySelector('[data-atajo="ayuda"]')?.click()); await espera(900);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#ayuda-temas'))), true, 'salen los temas');
+    igual(await pag.evaluate(() => document.querySelectorAll('.ayuda-tema').length >= 5), true, 'al menos cinco temas');
+    igual(await pag.evaluate(() => document.querySelectorAll('.ejemplo').length), 0, 'todavía no hay ejemplos');
+    contiene((await ultima()).toLowerCase(), 'sobre qué quieres saber', 'la pregunta');
+    await pag.evaluate(() => document.querySelector('[data-tema="deudas"]')?.click()); await espera(600);
+    contiene(await pag.evaluate(() => document.querySelector('#ayuda-detalle').innerText.toLowerCase()), 'presté', 'ejemplos de préstamos');
+    igual(await pag.evaluate(() => document.querySelectorAll('.ejemplo').length > 0), true, 'ejemplos para tocar');
+    await pag.evaluate(() => document.querySelector('#ayuda-volver')?.click()); await espera(400);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#ayuda-temas'))), true, 'se vuelve a los temas');
+  });
+  await prueba('chat: la cabecera viva muestra lo disponible, 7 días de barras y se pliega', async () => {
+    await irA('Chat'); await espera(500);
+    igual(await pag.evaluate(() => document.querySelectorAll('#pulso .pulso-dia').length), 7, 'siete días');
+    igual(await pag.evaluate(() => ['bien', 'cerca', 'tope'].includes(document.querySelector('#pulso').dataset.estado)), true, 'estado del ritmo');
+    contiene(await pag.evaluate(() => document.querySelector('#pulso').innerText), '$', 'muestra montos');
+    await pag.evaluate(() => document.querySelector('#pulso-alternar')?.click()); await espera(300);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#pulso-cuerpo'))), false, 'plegada');
+    await pag.evaluate(() => document.querySelector('#pulso-alternar')?.click()); await espera(300);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#pulso-cuerpo'))), true, 'desplegada');
   });
   await prueba('resumen: compara cada categoría con el mes pasado', async () => {
     await irA('Resumen'); await espera(700);

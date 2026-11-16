@@ -348,6 +348,12 @@ export function Movimientos() {
         <div class="tarjeta kpi"><div class="etiqueta flex items-center gap-1"><TrendingDown size={13} class="text-neg" />Gastos</div><div class="kpi-v mal"><MontoAnimado valor={gastos} /></div></div>
         <div class="tarjeta kpi"><div class="etiqueta flex items-center gap-1"><Scale size={13} class="text-info" />Balance</div><div class={`kpi-v ${ingresos - gastos < 0 ? 'mal' : 'bien'}`}><MontoAnimado valor={ingresos - gastos} /></div></div>
       </div>
+      {(ingresos > 0 || gastos > 0) && (
+        <div class="flujo" id="flujo" role="img" aria-label={`De cada 100 pesos que se movieron, ${Math.round((ingresos / (ingresos + gastos)) * 100)} fueron ingresos y ${Math.round((gastos / (ingresos + gastos)) * 100)} gastos`}>
+          <span class="flujo-in" style={{ flexGrow: ingresos, flexBasis: 0 }} />
+          <span class="flujo-out" style={{ flexGrow: gastos, flexBasis: 0 }} />
+        </div>
+      )}
       <p id="cuenta" class="sub !my-0 px-1">{lista.length} movimientos · Gastos {formatear(gastos)} · Ingresos {formatear(ingresos)}</p>
       {lista.length > 0 && (
         <div class="carrusel no-scrollbar" role="group" aria-label="Exportar lo que se ve">
