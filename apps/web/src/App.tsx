@@ -11,6 +11,7 @@ import { entrarPantalla } from './lib/efectos.ts';
 import { HojaSelector } from './components/ui/Selector.tsx';
 import { Confirmacion } from './components/ui/Confirmacion.tsx';
 import { Dialogo } from './components/ui/Dialogo.tsx';
+import { EditorAtajos } from './features/chat/EditorAtajos.tsx';
 import { Chat } from './features/chat/Chat.tsx';
 import { Saldos } from './features/saldos/Saldos.tsx';
 import { Movimientos } from './features/movimientos/Movimientos.tsx';
@@ -118,10 +119,11 @@ export function App() {
     <div id="raiz-preact" data-listo="1" data-estado={estadoSync.value} data-pendientes={pendientes.value} data-movimientos={datos.value?.movimientos.length ?? 0} class="marco flex h-[100dvh] flex-col lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)]">
       <Cabecera />
       <Contenido />
-      <div aria-hidden="true" class="fixed inset-x-0 bottom-0 z-30 h-[calc(env(safe-area-inset-bottom)+.7rem)] bg-fondo lg:hidden" />
+      <div aria-hidden="true" class="fixed inset-x-0 bottom-0 z-30 h-[calc(env(safe-area-inset-bottom)+.7rem)] bg-vidrio backdrop-blur-xl lg:hidden" />
       <Barra />
       <HojaSelector />
       <Confirmacion />
+      <EditorAtajos />
       <Dialogo />
     </div>
   );

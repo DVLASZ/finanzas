@@ -6,6 +6,13 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-16
 
+- Los botones rápidos del chat los armas tú. Se fueron los que salían solos con montos y medios de pago inventados («Pasaje», «Recarga»). Ahora la barra trae Ayuda, los pagos fijos que ya tocan y un + para crear los tuyos desde el chat o desde Ajustes. Cada uno es una plantilla (deja el texto escrito para ponerle el monto y la cuenta) o una frase completa (arma la tarjeta para confirmar). Se pueden editar, subir, bajar, quitar y ocultar toda la barra. Se guardan en el celular, no en el servidor.
+- Ayuda por temas: al tocar Ayuda el bot pregunta de qué quieres saber y muestra botones (anotar, préstamos y deudas, compartidos, pagos fijos y metas, escanear recibos, editar o anular, saldos y cuadres). Los ejemplos de un tema salen solo al tocarlo, y hay un botón para volver a los temas.
+- Cabecera viva en el Chat: lo disponible, las barras del gasto de los últimos 7 días y el ritmo del día (verde, ámbar o coral). Se pliega y se acuerda de cómo la dejaste. Las cuentas están en `packages/core/src/pulso.ts`.
+- Más movimiento en el chat: las burbujas entran una tras otra, la tarjeta que espera tu confirmación late con un halo, el monto cuenta hasta su valor y el escáner muestra una línea de luz mientras lee.
+- Saldos y Movimientos con más gráficas: la barra de dónde está tu plata y una barrita en cada cuenta, y la barra de ingresos contra gastos de lo que se ve.
+- El fondo ahora es una aurora que se mueve despacio (respeta «reducir movimiento»), con colores más profundos y más fuertes. Tarjetas, burbujas y hojas son de vidrio: superficie semiopaca con desenfoque, así el texto se lee aunque el fondo tenga color. `npm run contraste` ahora mide el texto sobre ese vidrio con el peor de los brillos.
+
 - Se acabaron los cuadros del navegador («...workers.dev dice»): anular, borrar, pedir el PIN, renombrar y todo lo demás sale ahora en un cuadro de la app, con el tema, un ícono de advertencia, animación y botones que se acomodan con letra grande.
 - Fondo con más vida: una malla de brillos de color y una trama de puntos. El brillo de arriba cambia de color con la sección, y los otros tres dependen de la variante (azul y esmeralda en la personal, violeta en la familiar, ámbar en la de empresa). `npm run contraste` ahora revisa también el texto sobre esos brillos.
 

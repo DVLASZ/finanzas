@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  aplicarDuplicado, atajosRapidos, calcularAlertas, calcularSaldos, comparativaMensual, deLocal, previsualizarDuplicado, saldoDe, textoProyeccion,
+  aplicarDuplicado, atajosRapidos, estadoRitmo, gastoDiario, limpiarAtajos, modoSugerido, moverAtajo, sugerenciasAtajos, calcularAlertas, calcularSaldos, comparativaMensual, deLocal, previsualizarDuplicado, saldoDe, textoProyeccion,
 } from '../src/index.ts';
 import { AHORA, nuevoBot } from '../../../tests/ayudas.ts';
 
@@ -17,28 +17,42 @@ const saldoDeCuenta = async (bot: ReturnType<typeof nuevoBot>, cuenta: string) =
 
 // ---------------------------------------------------------------- botones rápidos del chat
 
-test('botones rápidos: lo que se repite, sin duplicados, y el pago fijo que ya toca va primero', async () => {
+test('botones rápidos: solo los pagos fijos que ya tocan; nada inventado por plantilla ni por costumbre', async () => {
   const bot = nuevoBot();
   await guardar(bot, 'saldo inicial efectivo 500000', deLocal('2026-10-01 08:00:00'));
   for (const d of ['02', '05', '09']) await guardar(bot, 'mecato 2000', deLocal(`2026-10-${d} 10:00:00`));
-  await guardar(bot, 'almuerzo 12000', deLocal('2026-10-10 13:00:00'));
+  assert.deepEqual(atajosRapidos(await bot.repo.cargar(), AHORA), [], 'sin pagos fijos no hay botones: ni «pasaje» ni lo que se repite');
   await bot.di('cada mes el 20 internet 60000', AHORA); await bot.pulsa('ok', AHORA);
-  const datos = await bot.repo.cargar();
-  const r = atajosRapidos(datos, AHORA);
-  assert.equal(r[0].tipo, 'fijo', 'el pago fijo que ya toca primero');
+  const r = atajosRapidos(await bot.repo.cargar(), AHORA);
+  assert.equal(r.length, 1);
+  assert.equal(r[0].tipo, 'fijo');
   assert.equal(r[0].frase, 'internet 60000');
-  assert.ok(r.some(x => x.tipo === 'frecuente' && x.frase === 'mecato 2000'));
-  assert.equal(new Set(r.map(x => x.frase)).size, r.length, 'sin repetidos');
-  assert.ok(r.length <= 8);
 });
 
-test('botones rápidos: con poco historial muestra lo último que anotaste y los atajos de la app', async () => {
+test('atajos del usuario: se limpian, se ordenan y se sugieren desde lo que repites', async () => {
+  const lista = limpiarAtajos([
+    { id: 'a', etiqueta: '', frase: 'recarga nequi 20000', modo: 'frase' },
+    { id: 'b', etiqueta: 'Mecato', frase: 'mecato ', modo: 'plantilla' },
+    { frase: '   ' }, 7, null,
+    { frase: 'x'.repeat(200), etiqueta: 'y'.repeat(60), modo: 'raro' },
+  ]);
+  assert.equal(lista.length, 3, 'lo roto se descarta');
+  assert.equal(lista[0].etiqueta, 'Recarga nequi', 'sin etiqueta se usa la frase sin el monto');
+  assert.equal(lista[1].frase, 'mecato', 'se recorta');
+  assert.equal(lista[2].frase.length, 80);
+  assert.equal(lista[2].etiqueta.length, 24);
+  assert.equal(lista[2].modo, 'frase', 'un modo desconocido cae en frase');
+  assert.equal(modoSugerido('recarga nequi'), 'plantilla');
+  assert.equal(modoSugerido('mecato 3000'), 'frase');
+  assert.deepEqual(limpiarAtajos('no es lista'), []);
+  assert.deepEqual(moverAtajo(lista, 0, 1).map(x => x.id), [lista[1].id, 'a', lista[2].id]);
+  assert.equal(moverAtajo(lista, 0, -1), lista, 'el primero no sube más');
   const bot = nuevoBot();
-  await guardar(bot, 'saldo inicial efectivo 100000');
-  await guardar(bot, 'almuerzo 12000');
-  const r = atajosRapidos(await bot.repo.cargar(), AHORA);
-  assert.ok(r.some(x => x.tipo === 'reciente' && x.frase === 'almuerzo 12000'));
-  assert.ok(r.some(x => x.tipo === 'atajo' && x.frase === 'pasaje'), 'el atajo «pasaje» de la plantilla trae su monto');
+  await guardar(bot, 'saldo inicial efectivo 500000', deLocal('2026-10-01 08:00:00'));
+  for (const d of ['02', '05']) await guardar(bot, 'mecato 2000', deLocal(`2026-10-${d} 10:00:00`));
+  const datos = await bot.repo.cargar();
+  assert.deepEqual(sugerenciasAtajos(datos.movimientos, AHORA, []), ['mecato 2000']);
+  assert.deepEqual(sugerenciasAtajos(datos.movimientos, AHORA, [{ id: 'z', etiqueta: 'Mecato', frase: 'Mecato 2000', modo: 'frase' }]), [], 'no repite lo que ya es atajo');
 });
 
 // ---------------------------------------------------------------- comparativa y proyección
@@ -126,4 +140,24 @@ test('duplicar: avisa si la cuenta no alcanza y no deja duplicar lo que arrastra
   assert.ok(!p.ok && /chat/.test(p.motivo));
   const apertura = (await bot.repo.cargar()).movimientos.find(x => x.tipo === 'apertura')!;
   assert.ok(!previsualizarDuplicado(await bot.repo.cargar(), AHORA, apertura.id).ok);
+});
+
+// ---------------------------------------------------------------- pulso del chat
+
+test('pulso: gasto de los últimos 7 días y el color del ritmo (verde, ámbar, coral)', async () => {
+  const d = await conDosMeses();
+  const dias = gastoDiario(d, AHORA, 7); // lunes 19 de octubre
+  assert.equal(dias.length, 7);
+  assert.equal(dias[6].fecha, '2026-10-19');
+  assert.equal(dias[6].diaSemana, 1, 'el 19 de octubre de 2026 es lunes');
+  assert.equal(dias[4].fecha, '2026-10-17');
+  assert.deepEqual(gastoDiario(d, deLocal('2026-10-15 20:00:00'), 3).map(x => x.total), [0, 0, 20000], 'el 15 sí cuenta; el 8 queda fuera de los tres días');
+  const seguro = { disponible: 100000, fijos: 0, apartado: 0, libre: 100000, dias: 10, porDia: 10000, gastadoHoy: 2000, enRojo: false };
+  assert.equal(estadoRitmo(seguro, { proyeccionVsMesAnterior: null }).estado, 'bien');
+  assert.equal(estadoRitmo({ ...seguro, gastadoHoy: 8500 }, { proyeccionVsMesAnterior: -5 }).estado, 'cerca');
+  assert.equal(estadoRitmo(seguro, { proyeccionVsMesAnterior: 20 }).estado, 'cerca', 'el mes va 20 % arriba');
+  const tope = estadoRitmo({ ...seguro, gastadoHoy: 12000 }, { proyeccionVsMesAnterior: 0 });
+  assert.equal(tope.estado, 'tope');
+  assert.match(tope.texto, /\$2\.000/);
+  assert.equal(estadoRitmo({ ...seguro, enRojo: true }, { proyeccionVsMesAnterior: null }).estado, 'tope');
 });

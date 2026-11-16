@@ -141,6 +141,22 @@ try {
 
     const pantallas = [
       ['Chat', async () => { await irA('Chat'); }],
+      ['Chat: ayuda por tema', async () => {
+        await irA('Chat');
+        await pag.evaluate(() => document.querySelector('#ayuda-detalle') || document.querySelector('[data-tema="deudas"]')?.click()); await espera(500); await escalar();
+      }],
+      ['Chat: pulso plegado', async () => {
+        await irA('Chat');
+        await pag.evaluate(() => { if (document.querySelector('#pulso-cuerpo')) document.querySelector('#pulso-alternar')?.click(); }); await espera(400); await escalar();
+        await pag.evaluate(() => { if (!document.querySelector('#pulso-cuerpo')) document.querySelector('#pulso-alternar')?.click(); }); await espera(300);
+      }],
+      ['Atajos: editor', async () => {
+        await irA('Chat');
+        await pag.evaluate(() => document.querySelector('#atajo-mas')?.click()); await espera(500);
+        await pag.evaluate(() => document.querySelector('#at-nuevo')?.click()); await espera(300);
+        await pag.type('#at-frase', 'recarga nequi para el celular de mi familia'); await escalar();
+        await pag.evaluate(() => document.querySelector('#at-guardar')?.click()); await espera(300); await escalar();
+      }],
       ['Saldos', async () => { await irA('Saldos'); await espera(900); await escalar(); }],
       ['Movimientos', async () => { await irA('Movimientos'); await espera(600); await escalar(); }],
       ['Movimientos: detalle', async () => { await irA('Movimientos'); await pag.evaluate(() => document.querySelector('#lista .fila')?.click()); await espera(700); await escalar(); }],
@@ -197,7 +213,8 @@ try {
       try { await ir(); } catch (e) { console.log(`  ${nombre}: no pude abrirla (${e.message})`); continue; }
       const h = await pag.evaluate(EN_PAGINA.revisar);
       if (capturas) await pag.screenshot({ path: join(capturas, `x${escala}-${nombre.replace(/[^a-z0-9]+/gi, '-')}.png`) });
-      await pag.evaluate(() => { for (const id of ['dialogo', 'duplicar', 'editar']) document.querySelector('#' + id)?.remove(); });
+      await pag.evaluate(() => { document.querySelector('#at-cerrar')?.click(); document.querySelector('#ayuda-volver')?.click(); for (const id of ['dialogo', 'duplicar', 'editar']) document.querySelector('#' + id)?.remove(); });
+      await espera(200);
       total += h.length;
       console.log(h.length ? `  ${nombre}: ${h.length} problema(s)` : `  ${nombre}: bien`);
       const vistos = new Set();

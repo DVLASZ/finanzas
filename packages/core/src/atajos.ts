@@ -33,38 +33,71 @@ export interface AtajoRapido {
   frase: string;
   /** Lo que dice el botón. */
   etiqueta: string;
-  /** De dónde sale: un pago fijo que ya toca, algo que se repite, un atajo de la app o lo último que anotaste. */
-  tipo: 'fijo' | 'frecuente' | 'atajo' | 'reciente';
+  tipo: 'fijo';
 }
 
 /**
- * Los botones rápidos del chat, de lo más urgente a lo más cómodo: primero los pagos fijos que ya tocan, luego lo que
- * se repite, luego los atajos de la app (el pasaje con su monto) y, si hay pocos, lo último que anotaste.
+ * Los botones que la app pone sola: solo los pagos fijos que ya tocan, porque esos sí llevan monto y cuenta reales.
+ * Todo lo demás lo arma cada persona (atajos de usuario, abajo): una plantilla de montos inventados estorba cuando el
+ * pasaje cambia o se paga con Nequi.
  */
-export function atajosRapidos(datos: Pick<Datos, 'movimientos' | 'config' | 'atajos'>, ahora: Date, max = 8): AtajoRapido[] {
-  const res: AtajoRapido[] = [];
-  const vistos = new Set<string>();
-  const agregar = (a: AtajoRapido) => {
-    const k = limpiar(a.frase);
-    if (!k || vistos.has(k) || res.length >= max) return;
-    vistos.add(k); res.push(a);
-  };
-  for (const r of recurrentesPendientes(datos.config, datos.movimientos, aLocal(ahora))) {
-    agregar({ frase: r.frase, etiqueta: `${r.concepto} ${formatear(r.monto)}`, tipo: 'fijo' });
+export function atajosRapidos(datos: Pick<Datos, 'movimientos' | 'config'>, ahora: Date, max = 4): AtajoRapido[] {
+  return recurrentesPendientes(datos.config, datos.movimientos, aLocal(ahora)).slice(0, max)
+    .map(r => ({ frase: r.frase, etiqueta: `${r.concepto} ${formatear(r.monto)}`, tipo: 'fijo' as const }));
+}
+
+/**
+ * Un atajo que arma la persona. En modo «plantilla» al tocarlo el texto queda escrito en el cuadro para ponerle el monto
+ * y la cuenta de verdad; en modo «frase» ya trae todo y se arma directo la tarjeta por confirmar.
+ */
+export interface AtajoUsuario {
+  id: string;
+  etiqueta: string;
+  frase: string;
+  modo: 'plantilla' | 'frase';
+}
+
+export const MAX_ATAJOS = 12;
+
+/** Lo que se guardó en el dispositivo, sin fiarse de su forma: descarta lo roto y recorta lo largo. */
+export function limpiarAtajos(x: unknown): AtajoUsuario[] {
+  if (!Array.isArray(x)) return [];
+  const res: AtajoUsuario[] = [];
+  for (const a of x) {
+    if (!a || typeof a !== 'object') continue;
+    const { id, etiqueta, frase, modo } = a as Record<string, unknown>;
+    if (typeof frase !== 'string' || !frase.trim()) continue;
+    const f = frase.trim().slice(0, 80);
+    res.push({
+      id: typeof id === 'string' && id ? id : `a${res.length}-${f.length}`,
+      etiqueta: (typeof etiqueta === 'string' && etiqueta.trim() ? etiqueta.trim() : etiquetaDe(f)).slice(0, 24),
+      frase: f,
+      modo: modo === 'plantilla' ? 'plantilla' : 'frase',
+    });
   }
-  for (const f of atajosFrecuentes(datos.movimientos, ahora, 6)) agregar({ frase: f, etiqueta: f, tipo: 'frecuente' });
-  for (const a of datos.atajos.filter(x => x.monto && x.moneda === 'COP').slice(0, 3)) {
-    agregar({ frase: a.palabra, etiqueta: `${a.concepto} ${formatear(a.monto!)}`, tipo: 'atajo' });
-  }
-  if (res.length < 4) {
-    // lo último que anotaste, sin repetir
-    const recientes = [...datos.movimientos].filter(m => m.estado === 'ok' && m.origen !== 'excel' && (m.tipo === 'gasto' || m.tipo === 'ingreso'))
-      .sort((a, b) => b.ocurridoEn.localeCompare(a.ocurridoEn));
-    for (const m of recientes) {
-      const t = m.mensajeOriginal?.trim();
-      if (t && t.length <= 40 && !t.includes('\n') && /\d/.test(t) && !/\b(ayer|antier|hace|el \d)/i.test(t)) agregar({ frase: t, etiqueta: t, tipo: 'reciente' });
-      if (res.length >= 4) break;
-    }
-  }
-  return res;
+  return res.slice(0, MAX_ATAJOS);
+}
+
+/** La etiqueta por defecto: lo escrito sin el monto, con mayúscula inicial («recarga nequi 20000» da «Recarga nequi»). */
+export function etiquetaDe(frase: string): string {
+  const t = frase.replace(/\$?\d[\d.,]*\s*(mil|k)?/gi, '').replace(/\s+/g, ' ').trim() || frase.trim();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/** Sin monto es una plantilla (se completa a mano); con monto es una frase lista. */
+export const modoSugerido = (frase: string): AtajoUsuario['modo'] => (/\d/.test(frase) ? 'frase' : 'plantilla');
+
+/** Cambia de lugar un atajo (dir -1 sube, 1 baja). Devuelve una lista nueva. */
+export function moverAtajo(lista: AtajoUsuario[], i: number, dir: -1 | 1): AtajoUsuario[] {
+  const j = i + dir;
+  if (i < 0 || j < 0 || i >= lista.length || j >= lista.length) return lista;
+  const nueva = [...lista];
+  [nueva[i], nueva[j]] = [nueva[j], nueva[i]];
+  return nueva;
+}
+
+/** Lo que más repites y todavía no es un atajo: para agregarlo con un toque desde el editor. */
+export function sugerenciasAtajos(movs: Movimiento[], ahora: Date, existentes: AtajoUsuario[], max = 4): string[] {
+  const hay = new Set(existentes.map(a => limpiar(a.frase)));
+  return atajosFrecuentes(movs, ahora, 12).filter(f => !hay.has(limpiar(f))).slice(0, max);
 }

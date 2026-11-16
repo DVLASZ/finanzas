@@ -28,7 +28,7 @@ html[data-piel="libro"][data-tema="oscuro"] {
 html[data-piel="libro"][data-tema="claro"] {
   --fondo: #f3f5fa; --sup: #ffffff; --elev: #e9edf5; --tx: #0b1220; --tx2: #4b5568; --bor: #d5dbe8;
   --marca: #4f46e5; --marca-2: #0369a1; --sobre: #ffffff; --marca-sup: #e0e7ff; --tx-marca-sup: #312e81;
-  --pos: #047857; --neg: #be123c; --adv: #9f4a05; --info: #0369a1; --acc: #4f46e5;
+  --pos: #065f46; --neg: #be123c; --adv: #9f4a05; --info: #02598b; --acc: #4f46e5;
   --vidrio: rgba(255, 255, 255, .78); --anillo: rgba(15, 23, 42, .10); --brillo: rgba(79, 70, 229, .16);
   --halo-1: rgba(99, 102, 241, .18); --halo-2: rgba(16, 185, 129, .12);
 }
