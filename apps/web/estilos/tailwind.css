@@ -344,4 +344,68 @@
   .campo-edicion .etiqueta { margin-bottom: .3rem; }
   .campo-edicion .select-btn { width: 100%; }
   .periodo > .chip, .filtro-tipos > .chip { white-space: normal; text-align: center; line-height: 1.15; padding-block: .35rem; }
+
+  /* ------------------------------------------------------------ color y profundidad
+     Todo con color-mix sobre las variables del tema: sigue cualquier tema y sube el brillo sin tocar el contraste del texto */
+  .tarjeta {
+    background-image:
+      radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--marca) 9%, transparent), transparent 55%),
+      radial-gradient(90% 80% at 100% 100%, color-mix(in srgb, var(--marca-2) 7%, transparent), transparent 60%),
+      linear-gradient(180deg, var(--sup), color-mix(in srgb, var(--sup) 92%, var(--fondo)));
+  }
+  .tarjeta.realce {
+    background-image:
+      radial-gradient(130% 100% at 0% 0%, color-mix(in srgb, var(--marca) 16%, transparent), transparent 58%),
+      radial-gradient(100% 90% at 100% 100%, color-mix(in srgb, var(--pos) 11%, transparent), transparent 62%),
+      linear-gradient(180deg, var(--sup), color-mix(in srgb, var(--sup) 92%, var(--fondo)));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 35%, var(--anillo)), 0 14px 36px -16px var(--brillo);
+  }
+  .pestana.activa { box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 40%, var(--anillo)), 0 6px 18px -8px var(--brillo); }
+  .tema-card[aria-pressed="true"], .opciones button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--marca), 0 10px 26px -10px var(--brillo); }
+  nav#nav > span[aria-hidden] { box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 35%, var(--anillo)), 0 6px 20px -8px var(--brillo); }
+  .atajo-fijo { box-shadow: 0 0 0 1px color-mix(in srgb, var(--adv) 55%, var(--anillo)); background: color-mix(in srgb, var(--adv) 10%, var(--sup)); }
+  .etiq { background: color-mix(in srgb, var(--marca) 12%, var(--elev)); }
+  .insig-tope { background: color-mix(in srgb, var(--marca) 8%, var(--elev)); }
+
+  /* variación contra el mes pasado: subir el gasto es lo malo (coral), bajarlo es lo bueno (verde) */
+  .var-chip { display: inline-flex; align-items: center; gap: .2rem; flex: none; padding: .2rem .6rem; border-radius: 999px; font-size: .78rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .var-sube { color: var(--neg); background: color-mix(in srgb, var(--neg) 15%, var(--sup)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--neg) 30%, transparent); }
+  .var-baja { color: var(--pos); background: color-mix(in srgb, var(--pos) 15%, var(--sup)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--pos) 30%, transparent); }
+  .var-igual, .var-nueva { color: var(--tx2); background: var(--elev); }
+
+  /* ------------------------------------------------------------ movimiento
+     Las hojas suben y se difuminan; los pasos de una edición entran uno tras otro; la palomita se dibuja sola.
+     Todo se apaga con prefers-reduced-motion (la regla global de arriba lo fuerza a cero). */
+  #editar > div, #duplicar > div, #detalle > div { animation: hoja-sube .38s cubic-bezier(.22, 1, .36, 1) both; }
+  #editar, #duplicar, #detalle { animation: velo-entra .25s ease both; }
+  @keyframes hoja-sube { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
+  @keyframes velo-entra { from { opacity: 0; } to { opacity: 1; } }
+  #paso-resumen > *, #paso-formulario > *, #paso-confirmar > * { animation: entra .4s cubic-bezier(.22, 1, .36, 1) both; }
+  #paso-resumen > :nth-child(2), #paso-formulario > :nth-child(2), #paso-confirmar > :nth-child(2) { animation-delay: .05s; }
+  #paso-resumen > :nth-child(3), #paso-formulario > :nth-child(3), #paso-confirmar > :nth-child(3) { animation-delay: .1s; }
+  #paso-resumen > :nth-child(4), #paso-formulario > :nth-child(4) { animation-delay: .15s; }
+  #paso-resumen > :nth-child(n+5), #paso-formulario > :nth-child(n+5) { animation-delay: .2s; }
+  #r-cambios .fila, #r-saldos .fila { animation: entra .35s cubic-bezier(.22, 1, .36, 1) both; }
+  #r-cambios .fila:nth-child(2), #r-saldos .fila:nth-child(2) { animation-delay: .06s; }
+  #r-cambios .fila:nth-child(3), #r-saldos .fila:nth-child(3) { animation-delay: .12s; }
+  #r-cambios .fila:nth-child(n+4), #r-saldos .fila:nth-child(n+4) { animation-delay: .18s; }
+  #r-saldos .fila b:last-of-type { animation: late .6s ease .35s both; }
+  @keyframes late { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
+
+  .confirmacion { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; pointer-events: none; }
+  .confirmacion-caja {
+    display: grid; justify-items: center; gap: .4rem; padding: 1.1rem 1.6rem 1rem; border-radius: 1.6rem; color: var(--pos); font-weight: 700;
+    background: color-mix(in srgb, var(--sup) 88%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--pos) 40%, var(--anillo)), 0 24px 60px -18px rgba(0, 0, 0, .55), 0 0 40px -10px color-mix(in srgb, var(--pos) 45%, transparent);
+    animation: conf-entra 1.5s cubic-bezier(.22, 1, .36, 1) both;
+  }
+  .confirmacion-caja span { color: var(--tx); font-size: .95rem; }
+  .conf-aro { stroke-dasharray: 145; stroke-dashoffset: 145; animation: trazar .55s ease .05s forwards; }
+  .conf-palomita { stroke-dasharray: 40; stroke-dashoffset: 40; animation: trazar .4s ease .45s forwards; }
+  @keyframes conf-entra { 0% { opacity: 0; transform: scale(.7); } 18% { opacity: 1; transform: scale(1.04); } 28% { transform: scale(1); } 82% { opacity: 1; } 100% { opacity: 0; transform: scale(.98) translateY(6px); } }
+  @media (prefers-reduced-motion: reduce) { .conf-aro, .conf-palomita { stroke-dashoffset: 0 !important; } .confirmacion-caja { animation: none !important; } }
+  /* la fila «Anterior · mes · Siguiente» que no cabe (letra normal con el texto del sistema grande): el título sube y los botones se reparten */
+  .periodo.apretado { flex-wrap: wrap; }
+  .periodo.apretado > :nth-child(2) { flex: 1 1 100%; order: -1; text-align: center; }
+  .periodo.apretado > .chip { flex: 1 1 0; min-width: 0; padding-inline: .6rem; }
 }

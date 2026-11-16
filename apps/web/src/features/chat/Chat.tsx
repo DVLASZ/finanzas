@@ -3,10 +3,10 @@
  * escritura con dictado por voz (ondas mientras escucha) y los avisos con botón de arriba.
  * La lógica es la de siempre: el bot corre dentro de la app y solo se pide ayuda a la IA si no entendió.
  */
-import { ArrowUp, Camera, HardHat, HelpCircle, Images, Mic, ScanLine, Store } from 'lucide-preact';
+import { ArrowUp, CalendarClock, Camera, HardHat, HelpCircle, Images, Mic, ScanLine, Store } from 'lucide-preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  aLocal, atajosFrecuentes, calcularAlertas, formatear, fraseDeOCR, limpiar, hayTrabajadores, interpretar, normalizarDictado, procesar, vendeProductos, type Boton,
+  aLocal, atajosRapidos, calcularAlertas, formatear, fraseDeOCR, limpiar, hayTrabajadores, interpretar, normalizarDictado, procesar, vendeProductos, type Boton,
 } from '../../../../../packages/core/src/index.ts';
 import { leerComprobante } from '../../services/ocr.ts';
 import { app, hayServidor } from '../../services/estado.ts';
@@ -237,7 +237,7 @@ export function Chat() {
   };
 
   const avisos = datos && ctx ? calcularAlertas(datos, ctx.ahora).filter(a => a.acciones?.length && (a.id === 'cierre-dia' || a.id === 'saldo-negativo')) : [];
-  const frecuentes = datos && ctx ? atajosFrecuentes(datos.movimientos, ctx.ahora) : [];
+  const rapidos = datos && ctx ? atajosRapidos(datos, ctx.ahora) : [];
   const fijos: { orden: string; etiqueta: string; Icono: Icono; tema: keyof typeof T }[] = [{ orden: 'ayuda', etiqueta: 'Ayuda', Icono: HelpCircle, tema: 'coral' }];
   if (ctx && vendeProductos(ctx)) fijos.push({ orden: 'ventas', etiqueta: 'Ventas', Icono: Store, tema: 'cian' });
   if (datos && hayTrabajadores(datos.cuentas, datos.movimientos)) fijos.push({ orden: 'jornales', etiqueta: 'Jornales', Icono: HardHat, tema: 'lima' });
@@ -265,7 +265,11 @@ export function Chat() {
       </div>
       <div class="atajos -mb-1 flex gap-2 overflow-x-auto px-4 pb-2 pt-1 [scrollbar-width:none]">
         {fijos.map(({ orden, etiqueta, Icono, tema }) => <button key={orden} class="chip atajo shrink-0" data-atajo={orden} onClick={() => mandar(orden)}><Insignia v={{ Icono, ...T[tema] }} tam={26} redondo />{etiqueta}</button>)}
-        {frecuentes.map(f => <button key={f} class="chip atajo shrink-0" data-atajo={f} onClick={() => mandar(f)}><Insignia v={visualDeNombre(f)} tam={26} redondo />{f}</button>)}
+        {rapidos.map(a => (
+          <button key={a.frase} class={`chip atajo shrink-0 ${a.tipo === 'fijo' ? 'atajo-fijo' : ''}`} data-atajo={a.frase} data-tipo={a.tipo} title={a.tipo === 'fijo' ? 'Pago fijo que ya toca' : undefined} onClick={() => mandar(a.frase)}>
+            <Insignia v={a.tipo === 'fijo' ? { Icono: CalendarClock, ...T.ambar } : visualDeNombre(a.frase)} tam={26} redondo />{a.etiqueta}
+          </button>
+        ))}
       </div>
       <form id="form" class="entrada vidrio mx-3 mb-1 rounded-[1.4rem] p-2 ring-1 ring-anillo" onSubmit={alEnviar}>
         <input id="texto" type="text" autocomplete="off" autocapitalize="sentences" placeholder="Ej.: mecato 5000" aria-label="Escribe lo que pasó" class="!bg-transparent !shadow-none" value={texto}

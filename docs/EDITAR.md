@@ -14,6 +14,14 @@ flowchart LR
   class A,B,C,D,E paso
 ```
 
+## Duplicar
+
+Junto a Editar y Anular está **Duplicar**: crea un movimiento nuevo, igual a este pero con la fecha de hoy, para repetir un gasto o una compra sin escribirla otra vez. Antes de guardar muestra cómo quedaría y avisa si una cuenta no alcanza. El original no cambia. Solo se duplican los gastos, ingresos y transferencias; un préstamo, una deuda o un gasto compartido arrastran a otras personas y ahí es mejor escribirlo en el chat.
+
+## Historial
+
+El detalle de cada movimiento dice cuándo se anotó y, si se editó, cuándo fue la última vez.
+
 ## Qué se puede cambiar
 
 | Tipo de movimiento | Qué deja cambiar |

@@ -6,6 +6,13 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-15
 
+- Botones rápidos en el chat, sobre el cuadro de texto: los pagos fijos que ya tocan, lo que más se repite, los atajos de la app (el pasaje con su monto) y lo último que anotaste. Un toque deja la tarjeta lista para confirmar.
+- Resumen: cada categoría contra el mismo tramo del mes pasado (+15 %, -20 %) y una proyección de cómo cierra el mes. Si a ese ritmo se gasta 15 % o más que el mes pasado, hay una alerta pasados diez días.
+- Duplicar un movimiento desde su detalle, y el detalle dice cuándo se anotó y cuándo se editó. Ver [EDITAR.md](EDITAR.md).
+- Pagos fijos y Deudas: «Registrar pago ahora» o «Registrar abono ahora» deja la tarjeta lista para confirmar, sin escribir la frase.
+- Diseño: degradados suaves en las tarjetas, brillos en lo activo, hojas que suben con difuminado, pasos de la edición que entran uno tras otro y una palomita que se dibuja al guardar. Todo se apaga con «reducir movimiento».
+- Letra grande: la fila «Anterior, mes, Siguiente» baja a dos líneas cuando no cabe, también con letra normal y texto del sistema grande. Nuevo `npm run e2e:variantes`.
+
 - Editar un movimiento ya guardado desde Movimientos, con dos confirmaciones y una comparación de antes y después. Ver [EDITAR.md](EDITAR.md). El movimiento se reemplaza (no queda uno anulado) y guarda `editado_en`. Migración nueva: `0006_editado_en.sql`.
 
 - Letra grande en celulares angostos: las filas bajan la cifra a la línea siguiente en vez de partir las palabras, las pestañas y los filtros de Movimientos se acomodan en varias líneas, el cuadro de texto del chat deja los botones debajo, las cifras grandes (el disponible, los totales) se achican para caber enteras y la barra de abajo usa «Movim.» cuando «Movimientos» no cabe. Nuevo `npm run e2e:letra`.

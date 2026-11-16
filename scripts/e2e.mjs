@@ -245,6 +245,34 @@ try {
     await clic('#cerrar');
     contiene(await pag.evaluate(() => document.querySelector('#lista').innerText), '$6.000', 'la lista muestra el monto nuevo');
   });
+  await prueba('chat: los botones rápidos mandan lo que más se repite y dejan la tarjeta por confirmar', async () => {
+    await irA('Chat');
+    for (let i = 0; i < 2; i++) { await escribir('mecato 3500'); await pulsar('Confirmar'); }
+    await irA('Saldos'); await irA('Chat'); await espera(400);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('.atajos [data-atajo="mecato 3500"]'))), true, 'aparece el botón de lo que se repite');
+    await pag.evaluate(() => document.querySelector('.atajos [data-atajo="mecato 3500"]').click()); await espera(900);
+    contiene(await ultima(), 'Gasto', 'la tarjeta de ese gasto');
+    await pulsar('Cancelar');
+  });
+  await prueba('resumen: compara cada categoría con el mes pasado', async () => {
+    await irA('Resumen'); await espera(700);
+    const t = (await pag.evaluate(() => document.body.innerText)).toLowerCase();
+    contiene(t, 'contra el mes pasado', 'la tarjeta de comparativa');
+    igual(await pag.evaluate(() => document.querySelectorAll('#contra-mes-pasado .var-chip').length > 0), true, 'hay una variación por categoría');
+  });
+  await prueba('duplicar: crea otro movimiento con la fecha de hoy y muestra la palomita', async () => {
+    await irA('Movimientos'); await espera(500);
+    const filas = () => pag.evaluate(() => document.querySelectorAll('#lista .fila').length);
+    const antes = await filas();
+    await pag.evaluate(() => [...document.querySelectorAll('#lista .fila')].find(f => f.innerText.includes('3.500'))?.click()); await espera(500);
+    igual(await pag.evaluate(() => /Anotado/.test(document.querySelector('#historial-mov')?.innerText ?? '')), true, 'el detalle dice cuándo se anotó');
+    await pag.evaluate(() => document.querySelector('#duplicar-mov').click()); await espera(500);
+    contiene((await pag.evaluate(() => document.querySelector('#d-resumen')?.innerText ?? '')), '$3.500', 'resumen del duplicado');
+    await pag.evaluate(() => document.querySelector('#d-confirmar').click()); await espera(500);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('.confirmacion'))), true, 'palomita de confirmación');
+    await espera(1500);
+    igual(await filas(), antes + 1, 'una fila más');
+  });
   await prueba('editar: el saldo inicial no se puede editar y lo explica', async () => {
     await irA('Movimientos'); await pag.evaluate(() => document.querySelector('[data-periodo="todo"]').click()); await espera(400);
     const hay = await pag.evaluate(() => { const f = [...document.querySelectorAll('#lista .fila')].find(x => /saldo inicial/i.test(x.innerText)); f?.click(); return Boolean(f); });
