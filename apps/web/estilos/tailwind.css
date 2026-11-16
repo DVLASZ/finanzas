@@ -52,12 +52,34 @@
     -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
   }
-  /* halos de color detrás de todo: dan profundidad sin recargar */
+  /*
+   * El fondo: una malla de cuatro brillos de color y una trama de puntos que se desvanece hacia abajo. El brillo de
+   * arriba a la izquierda cambia con la sección (chat, saldos, movimientos, resumen, más) y se desliza de un color al
+   * otro; los otros tres son de la variante (personal, familiar, empresa). Son tintes suaves: el texto sigue en AA.
+   */
+  @property --sec { syntax: '<color>'; inherits: true; initial-value: #38bdf8; }
+  html { --sec: #38bdf8; --glow-a: #38bdf8; --glow-b: #818cf8; --glow-c: #10b981; transition: --sec .7s ease; }
+  html[data-plantilla="familia"] { --glow-a: #a78bfa; --glow-b: #818cf8; --glow-c: #f0abfc; }
+  html[data-plantilla="empresa"] { --glow-a: #f59e0b; --glow-b: #fbbf24; --glow-c: #38bdf8; }
+  html[data-seccion="chat"] { --sec: #38bdf8; }
+  html[data-seccion="saldos"] { --sec: #10b981; }
+  html[data-seccion="movimientos"] { --sec: #818cf8; }
+  html[data-seccion="resumen"] { --sec: #f59e0b; }
+  html[data-seccion="mas"] { --sec: #a78bfa; }
+  html[data-tema="oscuro"] { --glow-i: 24%; --glow-j: 16%; --punto: rgba(255, 255, 255, .05); }
+  html[data-tema="claro"] { --glow-i: 18%; --glow-j: 12%; --punto: rgba(60, 40, 20, .055); }
   body::before {
-    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
     background:
-      radial-gradient(60rem 36rem at 12% -8%, var(--halo-1), transparent 60%),
-      radial-gradient(48rem 30rem at 100% 8%, var(--halo-2), transparent 62%);
+      radial-gradient(58rem 34rem at 8% -6%, color-mix(in srgb, var(--sec) var(--glow-i, 22%), transparent), transparent 62%),
+      radial-gradient(46rem 30rem at 104% 4%, color-mix(in srgb, var(--glow-b) var(--glow-i, 22%), transparent), transparent 64%),
+      radial-gradient(52rem 34rem at 102% 106%, color-mix(in srgb, var(--glow-c) var(--glow-j, 15%), transparent), transparent 62%),
+      radial-gradient(44rem 30rem at -6% 100%, color-mix(in srgb, var(--glow-a) var(--glow-j, 15%), transparent), transparent 64%);
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image: radial-gradient(var(--punto, rgba(255, 255, 255, .05)) 1px, transparent 1.3px); background-size: 22px 22px;
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 62%); mask-image: linear-gradient(180deg, #000 0%, transparent 62%);
   }
   h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; margin: 0; }
   h2 { font-size: 1.05rem; font-weight: 700; margin: 1.4rem 0 .55rem; letter-spacing: -.01em; }
@@ -96,12 +118,12 @@
   .alerta .botones { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .55rem; }
 
   /* ------------------------------------------------------------ botones */
-  .primario, .secundario, .peligro, .chip {
+  .primario, .secundario, .peligro, .peligro-lleno, .chip {
     min-height: var(--alto-btn); border-radius: var(--radio-b); padding: .45rem 1.05rem; border: 0; cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center; gap: .45rem; font-weight: 600;
     transition: transform .12s ease, box-shadow .2s ease, filter .2s ease, background .2s ease;
   }
-  .primario:active, .secundario:active, .peligro:active, .chip:active { transform: scale(.96); }
+  .primario:active, .secundario:active, .peligro:active, .peligro-lleno:active, .chip:active { transform: scale(.96); }
   .primario {
     background: linear-gradient(135deg, var(--marca), var(--marca-2)); color: var(--sobre); font-weight: 700;
     box-shadow: 0 8px 22px -8px var(--brillo), inset 0 1px 0 rgba(255, 255, 255, .25);
@@ -408,4 +430,19 @@
   .periodo.apretado { flex-wrap: wrap; }
   .periodo.apretado > :nth-child(2) { flex: 1 1 100%; order: -1; text-align: center; }
   .periodo.apretado > .chip { flex: 1 1 0; min-width: 0; padding-inline: .6rem; }
+
+  /* ------------------------------------------------------------ bordes luminosos y diálogos */
+  .tarjeta { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--sec, var(--marca)) 32%, transparent), 0 0 0 1px var(--anillo), 0 10px 30px -14px rgba(0, 0, 0, .45); }
+  header.vidrio { border-bottom: 1px solid color-mix(in srgb, var(--sec, var(--marca)) 38%, transparent); }
+  nav#nav { box-shadow: 0 18px 50px -14px rgba(0, 0, 0, .55), 0 0 0 1px color-mix(in srgb, var(--sec, var(--marca)) 30%, var(--anillo)); }
+
+  .peligro-lleno { background: linear-gradient(135deg, var(--neg), color-mix(in srgb, var(--neg) 72%, var(--adv))); color: var(--sobre); font-weight: 700; box-shadow: 0 8px 22px -8px color-mix(in srgb, var(--neg) 60%, transparent), inset 0 1px 0 rgba(255, 255, 255, .25); }
+  .peligro-lleno:hover { filter: brightness(1.07); }
+  #dialogo { animation: velo-entra .2s ease both; }
+  .dialogo-hoja { animation: dialogo-entra .34s cubic-bezier(.22, 1, .36, 1) both; box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 28%, var(--anillo)), 0 -20px 60px -20px rgba(0, 0, 0, .6), 0 0 46px -18px var(--brillo); }
+  .dialogo-hoja.dialogo-peligro { box-shadow: 0 0 0 1px color-mix(in srgb, var(--neg) 45%, var(--anillo)), 0 -20px 60px -20px rgba(0, 0, 0, .6), 0 0 50px -16px color-mix(in srgb, var(--neg) 55%, transparent); }
+  .dialogo-icono { animation: dialogo-pop .5s cubic-bezier(.34, 1.56, .64, 1) .1s both; }
+  .dialogo-hoja .acciones > * { flex: 1 1 9rem; }
+  @keyframes dialogo-entra { from { opacity: 0; transform: translateY(34px) scale(.97); } to { opacity: 1; transform: none; } }
+  @keyframes dialogo-pop { from { opacity: 0; transform: scale(.4) rotate(-12deg); } to { opacity: 1; transform: none; } }
 }

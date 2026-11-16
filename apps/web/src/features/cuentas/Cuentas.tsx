@@ -10,6 +10,7 @@ import { aMinor, formatear, gruposDe, hallarMontos, leerSubcategorias, limpiar, 
 import { Selector } from '../../components/ui/Selector.tsx';
 import { Insignia, Vacio, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { Cargando, Nota } from '../../components/ui/piezas.tsx';
+import { avisar, confirmar, pedir } from '../../components/ui/Dialogo.tsx';
 import { app } from '../../services/estado.ts';
 import { guardarCambio } from '../../state/acciones.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
@@ -49,7 +50,7 @@ export function Cuentas() {
     e.preventDefault();
     const nombre = nueva.trim().slice(0, 40);
     if (!nombre) return;
-    if (categorias.some(c => limpiar(c.nombre) === limpiar(nombre))) { alert('Ya tienes una categoría con ese nombre.'); return; }
+    if (categorias.some(c => limpiar(c.nombre) === limpiar(nombre))) { await avisar({ titulo: 'Ya tienes una categoría con ese nombre', tono: 'peligro' }); return; }
     const id = idLibre('cat:', nombre, datos.cuentas);
     await guardarCambio(async () => {
       await app.repo.guardarCuenta({ id, nombre, clave: limpiar(nombre), tipo: 'categoria', moneda: 'COP' });
@@ -59,20 +60,20 @@ export function Cuentas() {
   };
 
   const renombrar = async (c: Cuenta) => {
-    const nombre = prompt(`Nuevo nombre para «${c.nombre}»:`, c.nombre)?.trim().slice(0, 40);
+    const nombre = (await pedir({ titulo: `Nuevo nombre para «${c.nombre}»`, valor: c.nombre, aceptar: 'Guardar' }))?.trim().slice(0, 40);
     if (!nombre || nombre === c.nombre) return;
-    if (datos.cuentas.some(x => x.id !== c.id && x.tipo === c.tipo && limpiar(x.nombre) === limpiar(nombre))) { alert('Ya hay uno con ese nombre.'); return; }
+    if (datos.cuentas.some(x => x.id !== c.id && x.tipo === c.tipo && limpiar(x.nombre) === limpiar(nombre))) { await avisar({ titulo: 'Ya hay uno con ese nombre', tono: 'peligro' }); return; }
     await guardarCambio(() => app.repo.guardarCuenta({ ...c, nombre, clave: limpiar(nombre) }));
   };
   const ponerTope = async (c: Cuenta) => {
-    const t = prompt(`Tope mensual para ${c.nombre} (déjalo vacío para quitarlo):`, datos.presupuestos[c.id] ? String(datos.presupuestos[c.id]) : '');
+    const t = await pedir({ titulo: `Tope mensual para ${c.nombre}`, texto: 'Déjalo vacío para quitarlo.', valor: datos.presupuestos[c.id] ? String(datos.presupuestos[c.id]) : '', tipo: 'numero', aceptar: 'Guardar' });
     if (t === null) return;
     const m = hallarMontos(t)[0];
-    if (t.trim() && (!m || !(m.valor > 0) || m.valor > 2_000_000_000)) { alert('No entendí ese monto. Ejemplo: 60000'); return; }
+    if (t.trim() && (!m || !(m.valor > 0) || m.valor > 2_000_000_000)) { await avisar({ titulo: 'No entendí ese monto', texto: 'Ejemplo: 60000', tono: 'peligro' }); return; }
     await guardarCambio(() => app.repo.setPresupuesto(c.id, t.trim() ? aMinor(m.valor, 'COP') : null));
   };
   const editarApodos = async (p: Cuenta) => {
-    const t = prompt(`Cómo le dices a ${p.nombre}, aparte de su nombre. Separa con comas (déjalo vacío para quitarlos):`, (apodos[p.id] ?? []).join(', '));
+    const t = await pedir({ titulo: `Apodos de ${p.nombre}`, texto: 'Cómo le dices, aparte de su nombre. Sepáralos con comas; vacío los quita.', valor: (apodos[p.id] ?? []).join(', '), aceptar: 'Guardar' });
     if (t === null) return;
     const lista = t.split(',').map(x => limpiar(x)).filter(Boolean).slice(0, 10);
     const nuevos = { ...apodos };

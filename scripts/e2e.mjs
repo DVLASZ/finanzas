@@ -38,7 +38,9 @@ try {
   if (celular) await (await pag.createCDPSession()).send('Storage.clearDataForOrigin', { origin: `http://localhost:${PUERTO}`, storageTypes: 'all' });
   const errores = [];
   pag.on('pageerror', e => errores.push(e.message));
-  pag.on('dialog', d => void d.dismiss());
+  // los cuadros del navegador (alert, confirm, prompt) no deberían salir nunca: la app tiene los suyos
+  let nativos = 0;
+  pag.on('dialog', d => { nativos++; void d.dismiss(); });
   if (!celular) await pag.setViewport({ width: 390, height: 800, isMobile: true, hasTouch: true });
   // un micrófono de mentira (el de verdad necesita internet y una persona hablando): oye dos versiones
   await pag.evaluateOnNewDocument(() => {
@@ -300,6 +302,40 @@ try {
   await prueba('ninguna pantalla se sale del ancho del celular', async () => {
     for (const n of ['Chat', 'Saldos', 'Movimientos', 'Resumen', 'Más']) { await irA(n); if (!(await sinDesborde())) throw new Error(`«${n}» se sale de 390 px`); }
   });
+  await prueba('anular y pedir el PIN: salen los cuadros de la app, con Cancelar y Sí, anular', async () => {
+    const hay = sel => pag.evaluate(s => Boolean(document.querySelector(s)), sel);
+    const clic = async sel => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, sel); if (!ok) throw new Error(`no hay ${sel}`); await espera(500); };
+    await irA('Chat'); await escribir('mecato 1234'); await pulsar('Confirmar');
+    await irA('Movimientos'); await espera(500);
+    const filas = () => pag.evaluate(() => [...document.querySelectorAll('#lista .fila')].filter(f => f.innerText.includes('1.234')).length);
+    igual(await filas(), 1, 'el movimiento está en la lista');
+    await pag.evaluate(() => [...document.querySelectorAll('#lista .fila')].find(f => f.innerText.includes('1.234'))?.click()); await espera(500);
+    await clic('#anular');
+    igual(await hay('#dialogo'), true, 'sale el cuadro de la app');
+    contiene((await pag.evaluate(() => document.querySelector('#dialogo').innerText)).toLowerCase(), '¿anular', 'pregunta');
+    contiene(await pag.evaluate(() => document.querySelector('#dialogo-aceptar').innerText), 'Sí, anular', 'botón de aceptar');
+    await clic('#dialogo-cancelar');
+    igual(await hay('#dialogo'), false, 'Cancelar lo cierra');
+    igual(await hay('#detalle'), true, 'y el detalle sigue abierto');
+    igual(await filas(), 1, 'sin anular nada');
+    await clic('#anular'); await clic('#dialogo-aceptar'); await espera(500);
+    igual(await hay('#detalle'), false, 'al anular se cierra el detalle');
+    igual(await filas(), 0, 'el movimiento anulado ya no sale en la lista');
+    // el PIN se pide en un cuadro con la clave escondida
+    await abrirDeMas('Ajustes');
+    await pag.evaluate(() => [...document.querySelectorAll('button')].find(b => /Crear PIN|Cambiar PIN/.test(b.innerText))?.click()); await espera(500);
+    if (!(await hay('#dialogo'))) { await pag.evaluate(() => document.querySelector('#dialogo-cancelar')?.click()); }
+    igual(await pag.evaluate(() => document.querySelector('#dialogo input')?.type), 'password', 'el PIN no se ve al escribirlo');
+    await pag.type('#dialogo input', '1234'); await pag.keyboard.press('Enter'); await espera(500);
+    contiene(await pag.evaluate(() => document.body.innerText), 'Cambiar PIN', 'quedó guardado el PIN');
+    // un PIN mal escrito avisa con otro cuadro
+    await pag.evaluate(() => [...document.querySelectorAll('button')].find(b => /Cambiar PIN/.test(b.innerText))?.click()); await espera(400);
+    await pag.type('#dialogo input', '9999'); await pag.keyboard.press('Enter'); await espera(500);
+    contiene((await pag.evaluate(() => document.querySelector('#dialogo')?.innerText ?? '')).toLowerCase(), 'pin incorrecto', 'aviso propio');
+    await clic('#dialogo-aceptar');
+    igual(await hay('#dialogo'), false, 'Entendido lo cierra');
+  });
+  await prueba('ningún cuadro del navegador salió en toda la visita', async () => igual(nativos, 0, 'cuadros nativos'));
   await prueba('sin errores de JavaScript en toda la visita', async () => igual(errores.join(' | '), '', 'errores'));
 } finally {
   if (celular) { for (const p of await navegador.pages()) if (p.url().startsWith(`http://localhost:${PUERTO}`)) await p.close().catch(() => {}); await navegador.disconnect(); } else await navegador.close();

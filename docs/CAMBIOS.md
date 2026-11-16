@@ -4,6 +4,11 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-16
+
+- Se acabaron los cuadros del navegador («...workers.dev dice»): anular, borrar, pedir el PIN, renombrar y todo lo demás sale ahora en un cuadro de la app, con el tema, un ícono de advertencia, animación y botones que se acomodan con letra grande.
+- Fondo con más vida: una malla de brillos de color y una trama de puntos. El brillo de arriba cambia de color con la sección, y los otros tres dependen de la variante (azul y esmeralda en la personal, violeta en la familiar, ámbar en la de empresa). `npm run contraste` ahora revisa también el texto sobre esos brillos.
+
 ## 2026-11-15
 
 - Botones rápidos en el chat, sobre el cuadro de texto: los pagos fijos que ya tocan, lo que más se repite, los atajos de la app (el pasaje con su monto) y lo último que anotaste. Un toque deja la tarjeta lista para confirmar.
