@@ -24,6 +24,7 @@ import { fechaAtras } from '../../lib/periodos.ts';
 import { BarrasPeriodo } from '../../components/charts/graficos.tsx';
 import { Esqueleto, Insignia, Vacio, visualDeCuenta, visualDeMovimiento, visualDeNombre, visualDePersona } from '../../components/ui/iconos.tsx';
 import { Selector } from '../../components/ui/Selector.tsx';
+import { avisar, confirmar } from '../../components/ui/Dialogo.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
 import { EditarMovimiento, editandoId } from './EditarMovimiento.tsx';
 import { DuplicarMovimiento, duplicandoId } from './DuplicarMovimiento.tsx';
@@ -161,7 +162,7 @@ function Detalle({ m }: { m: Movimiento }) {
       await escribir(clave, await reducirFoto(archivo));
       await escribir(claveSubida, undefined); // verRecibo la sube si hay internet
       await verRecibo();
-    } catch { alert('No pude leer esa imagen.'); }
+    } catch { await avisar({ titulo: 'No pude leer esa imagen', texto: 'Prueba con otra foto.', tono: 'peligro' }); }
   };
   const quitar = async () => {
     await escribir(clave, undefined); await escribir(claveSubida, undefined);
@@ -169,8 +170,13 @@ function Detalle({ m }: { m: Movimiento }) {
     await verRecibo();
   };
   const anular = async () => {
-    const aviso = esArqueo(m) ? `¿Anular este arqueo? Deja de contar y no aparece más en los listados.` : `¿Anular «${m.descripcion}»? No se borra: queda marcado como anulado.`;
-    if (!confirm(aviso)) return;
+    const arqueo = esArqueo(m);
+    const quiere = await confirmar({
+      titulo: arqueo ? '¿Anular este arqueo?' : `¿Anular «${m.descripcion}»?`,
+      texto: arqueo ? 'Deja de contar y no aparece más en los listados.' : 'No se borra: queda marcado como anulado y los saldos vuelven a como estaban.',
+      aceptar: 'Sí, anular', cancelar: 'Cancelar', peligro: true,
+    });
+    if (!quiere) return;
     await app.repo.anularMovimiento(m.id, aLocal(new Date()));
     atras();
     void sincronizar();

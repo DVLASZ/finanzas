@@ -7,6 +7,7 @@ import { Package } from 'lucide-preact';
 import { aLocal, conConteo, existenciasDe, formatear, leerCatalogo, presentacionDeTexto, type Catalogo as CatalogoDatos, type Producto } from '../../../../../packages/core/src/index.ts';
 import { Vacio } from '../../components/ui/iconos.tsx';
 import { Cargando, Nota } from '../../components/ui/piezas.tsx';
+import { avisar, confirmar, pedir } from '../../components/ui/Dialogo.tsx';
 import { app } from '../../services/estado.ts';
 import { guardarCambio } from '../../state/acciones.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
@@ -14,11 +15,11 @@ import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 const idDe = (nombre: string): string =>
   nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'producto';
 
-function pedirPresentaciones(): Producto['presentaciones'] | null {
-  const t = prompt('Presentaciones y precios, separadas por coma.\nEjemplo: granel=500, paquete de 4=3000, paquete de 10=6000');
+async function pedirPresentaciones(): Promise<Producto['presentaciones'] | null> {
+  const t = await pedir({ titulo: 'Presentaciones y precios', texto: 'Sepáralas con comas. Ejemplo: granel=500, paquete de 4=3000, paquete de 10=6000', placeholder: 'granel=500, paquete de 10=6000', aceptar: 'Agregar' });
   if (t === null) return null;
   const lista = t.split(',').map(x => presentacionDeTexto(x)).filter((x): x is NonNullable<typeof x> => x !== null);
-  if (!lista.length) { alert('No entendí. Escríbelas así: granel=500, paquete de 10=6000'); return null; }
+  if (!lista.length) { await avisar({ titulo: 'No entendí las presentaciones', texto: 'Escríbelas así: granel=500, paquete de 10=6000', tono: 'peligro' }); return null; }
   return lista;
 }
 
@@ -31,32 +32,34 @@ export function Catalogo() {
   const guardar = (c: CatalogoDatos) => guardarCambio(() => app.repo.setConfig('catalogo', JSON.stringify(c)));
 
   const nuevoProducto = async () => {
-    const nombre = (prompt('Nombre del producto (por ejemplo: Galletas):') ?? '').trim();
+    const nombre = ((await pedir({ titulo: 'Nombre del producto', texto: 'Por ejemplo: Galletas.', aceptar: 'Siguiente' })) ?? '').trim();
     if (!nombre) return;
-    const presentaciones = pedirPresentaciones();
+    const presentaciones = await pedirPresentaciones();
     if (!presentaciones) return;
     const id = idDe(nombre);
     await guardar({ productos: [...cat.productos.filter(p => p.id !== id), { id, nombre, alias: [], presentaciones }] });
   };
   const quitar = async (p: Producto) => {
-    if (confirm(`¿Quitar «${p.nombre}» del catálogo? Las ventas ya guardadas no cambian.`)) await guardar({ productos: cat.productos.filter(x => x !== p) });
+    if (await confirmar({ titulo: `¿Quitar «${p.nombre}» del catálogo?`, texto: 'Las ventas ya guardadas no cambian.', aceptar: 'Sí, quitar', peligro: true })) await guardar({ productos: cat.productos.filter(x => x !== p) });
   };
   const agregarPresentacion = async (i: number) => {
-    const nuevas = pedirPresentaciones();
+    const nuevas = await pedirPresentaciones();
     if (nuevas) await guardar({ productos: cat.productos.map((p, a) => (a === i ? { ...p, presentaciones: [...p.presentaciones, ...nuevas] } : p)) });
   };
   /** Dice cuántas unidades hay (o cuántas llegaron, con `sumar`). Desde ese momento las ventas las van restando. */
   const contar = async (p: Producto, sumar: boolean) => {
     const quedan = existenciasDe(p, datos.movimientos) ?? 0;
-    const t = prompt(sumar ? `¿Cuántas unidades de «${p.nombre}» llegaron?` : `¿Cuántas unidades de «${p.nombre}» tienes ahora?`, sumar ? '' : String(quedan));
+    const t = await pedir({ titulo: sumar ? `¿Cuántas unidades de «${p.nombre}» llegaron?` : `¿Cuántas unidades de «${p.nombre}» tienes ahora?`, valor: sumar ? '' : String(quedan), tipo: 'numero', aceptar: 'Guardar' });
     if (t === null) return;
     const n = Math.round(Number(t.replace(/\D/g, '')));
-    if (!t.trim() || !Number.isFinite(n) || n < 0 || n > 1_000_000) { alert('No entendí ese número.'); return; }
+    if (!t.trim() || !Number.isFinite(n) || n < 0 || n > 1_000_000) { await avisar({ titulo: 'No entendí ese número', tono: 'peligro' }); return; }
     await guardar(conConteo(cat, p, sumar ? quedan + n : n, aLocal(ctx.ahora)));
   };
   const cambiarPrecio = async (i: number, j: number) => {
     const pres = cat.productos[i].presentaciones[j];
-    const nuevo = presentacionDeTexto(`${pres.nombre}=${prompt(`Nuevo precio de «${pres.nombre}»:`, String(pres.precio)) ?? ''}`);
+    const t = await pedir({ titulo: `Nuevo precio de «${pres.nombre}»`, valor: String(pres.precio), tipo: 'numero', aceptar: 'Guardar' });
+    if (t === null) return;
+    const nuevo = presentacionDeTexto(`${pres.nombre}=${t}`);
     if (nuevo) await guardar({ productos: cat.productos.map((p, a) => (a === i ? { ...p, presentaciones: p.presentaciones.map((x, b) => (b === j ? { ...x, precio: nuevo.precio } : x)) } : p)) });
   };
 

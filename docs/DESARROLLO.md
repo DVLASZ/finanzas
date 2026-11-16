@@ -31,6 +31,7 @@
 - Node borra los tipos sin compilar, así que no se usan `enum`, `namespace` ni parámetros-propiedad en constructores, y los imports llevan la extensión `.ts`. `tsconfig.json` lo vigila con `erasableSyntaxOnly`.
 - `packages/core` no importa nada de Cloudflare ni del navegador. Cada plataforma se conecta por la interfaz `Repo`.
 - El dinero va en enteros y las fechas son la hora de Colombia como texto.
+- Nada de `alert`, `confirm` ni `prompt`: salen con el cuadro del navegador y rompen el diseño. Se usan `confirmar`, `avisar` y `pedir` de `components/ui/Dialogo.tsx`, que siguen el tema y la letra grande. Una prueba lo vigila.
 - Los commits van a nombre de quien los hace, en español, cortos y en minúscula.
 - Nada de datos personales ni secretos en git. Mira `.gitignore`.
 - Los textos de la documentación se escriben como habla una persona: sin emojis, sin flechas, sin frases de folleto.

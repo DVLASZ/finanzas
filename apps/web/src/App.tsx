@@ -10,6 +10,7 @@ import { conServidor, datos, estadoSync, pendientes } from './state/store.ts';
 import { entrarPantalla } from './lib/efectos.ts';
 import { HojaSelector } from './components/ui/Selector.tsx';
 import { Confirmacion } from './components/ui/Confirmacion.tsx';
+import { Dialogo } from './components/ui/Dialogo.tsx';
 import { Chat } from './features/chat/Chat.tsx';
 import { Saldos } from './features/saldos/Saldos.tsx';
 import { Movimientos } from './features/movimientos/Movimientos.tsx';
@@ -95,6 +96,8 @@ function Contenido() {
   const ref = useRef<HTMLDivElement>(null);
   const p = pantalla.value;
   useEffect(() => { if (ref.current) { ref.current.parentElement?.scrollTo(0, 0); entrarPantalla(ref.current); } }, [p]);
+  // el fondo cambia de color suavemente según la sección (ver estilos: html[data-seccion])
+  useEffect(() => { document.documentElement.dataset.seccion = enBarra(p); }, [p]);
   const interna = enBarra(p) === 'mas' && p !== 'mas';
   return (
     <main id="contenido" aria-live="polite" class={`contenido mx-auto w-full flex-1 overflow-y-auto overscroll-contain ${p === 'chat' ? 'flex max-w-3xl flex-col overflow-hidden pb-[calc(env(safe-area-inset-bottom)+5.3rem)] lg:pb-0' : 'max-w-3xl px-4 pb-32 pt-4 lg:pb-8'} lg:col-start-2 lg:row-start-2 lg:max-w-none`}>
@@ -119,6 +122,7 @@ export function App() {
       <Barra />
       <HojaSelector />
       <Confirmacion />
+      <Dialogo />
     </div>
   );
 }

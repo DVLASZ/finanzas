@@ -41,5 +41,31 @@ for (const [piel, tema, matiz] of combos) {
     if (r < 4.5) { console.log(`NO LLEGA ${piel}/${tema}${matiz ? '/' + matiz : ''}: --${a} ${v[a]} sobre --${b} ${v[b]} = ${r.toFixed(2)}`); mal++; }
   }
 }
+// Los brillos del fondo (estilos/tailwind.css) se mezclan con el fondo del tema. Se toma el peor caso: cada color de brillo
+// con su intensidad máxima. El texto tiene que seguir leyéndose sobre esa mezcla, y también sobre las tarjetas, que llevan
+// encima un tinte suave de la marca.
+const tw = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'estilos', 'tailwind.css'), 'utf8');
+const brillos = [...new Set([...tw.matchAll(/--(?:sec|glow-[abc]):\s*(#[0-9a-f]{6})/g)].map(m => m[1]))];
+const intensidad = { oscuro: Number(/data-tema="oscuro"\]\s*\{\s*--glow-i:\s*(\d+)%/.exec(tw)?.[1] ?? 0) / 100, claro: Number(/data-tema="claro"\]\s*\{\s*--glow-i:\s*(\d+)%/.exec(tw)?.[1] ?? 0) / 100 };
+const mezclar = (base, color, t) => '#' + [1, 3, 5].map(i => Math.round(parseInt(base.slice(i, i + 2), 16) * (1 - t) + parseInt(color.slice(i, i + 2), 16) * t).toString(16).padStart(2, '0')).join('');
+if (!brillos.length || !intensidad.oscuro || !intensidad.claro) { console.log('FALTAN los brillos del fondo o su intensidad en tailwind.css'); mal++; }
+for (const [piel, tema, matiz] of combos) {
+  const v = {};
+  for (const b of bloques) { const x = b.sel; if (x.piel === piel && x.tema === tema && (!x.matiz || x.matiz === matiz)) Object.assign(v, b.vars); }
+  const t = intensidad[tema];
+  for (const brillo of brillos) {
+    const fondo = mezclar(v.fondo, brillo, t);
+    for (const texto of ['tx', 'tx2']) {
+      const r = razon(v[texto], fondo);
+      if (r < 4.5) { console.log(`NO LLEGA ${piel}/${tema}: --${texto} sobre el brillo ${brillo} = ${r.toFixed(2)}`); mal++; }
+    }
+  }
+  // tarjeta: superficie con un 9 % de marca y un 7 % de marca-2 encima (peor caso, sumados)
+  const tarjeta = mezclar(mezclar(v.sup, v.marca, 0.09), v['marca-2'], 0.07);
+  for (const texto of ['tx', 'tx2']) {
+    const r = razon(v[texto], tarjeta);
+    if (r < 4.5) { console.log(`NO LLEGA ${piel}/${tema}: --${texto} sobre la tarjeta con tinte = ${r.toFixed(2)}`); mal++; }
+  }
+}
 console.log(mal ? `\n${mal} par(es) de colores no se leen bien.` : 'OK   Todos los pares de colores llegan a AA (4,5 a 1).');
 process.exit(mal ? 1 : 0);
