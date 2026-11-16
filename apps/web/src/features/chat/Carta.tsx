@@ -9,6 +9,7 @@ import { estadoPresupuesto, formatear, rangoPeriodo, resumenSaldos, type Boton }
 import { sentidoDelMonto, sinEmoji, type DatosCarta, type NotaCarta } from '../../lib/carta.ts';
 import { ctx, datos as datosSignal } from '../../state/store.ts';
 import { BarraAvance, Insignia, visualDeCuenta, visualDeNombre } from '../../components/ui/iconos.tsx';
+import { MontoAnimado } from '../../components/ui/piezas.tsx';
 import { entrar } from '../../lib/efectos.ts';
 
 const ES_FECHA = /^(hoy|ayer|anteayer|lun|mar|mié|jue|vie|sáb|dom|\d{1,2} (ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic))/i;
@@ -82,6 +83,8 @@ export function Carta({ datos, hijos, impacto = false }: { datos: DatosCarta; hi
   const monto = useRef<HTMLDivElement>(null);
   useEffect(() => { if (monto.current && datos.guardado) entrar(monto.current); }, [datos.guardado]);
   const sentido = sentidoDelMonto(datos);
+  // un monto en pesos «llega» contando; los demás (dólares, rangos) se muestran tal cual
+  const pesos = /^\$\d{1,3}(\.\d{3})*$/.test(datos.monto ?? '') ? Number((datos.monto ?? '').replace(/\D/g, '')) : 0;
   const info = impacto && datos.guardado ? calcularImpacto(datos.pildoras) : null;
   // lo que dice la tarjeta de impacto no se repite en las notas de texto
   const notas = info ? datos.notas.filter(n => !(info.cat && n.texto.startsWith(`${info.cat.nombre}: llevas`)) && !(info.cta && n.texto.startsWith(`${info.cta.nombre}: `))) : datos.notas;
@@ -92,7 +95,7 @@ export function Carta({ datos, hijos, impacto = false }: { datos: DatosCarta; hi
         <span class="tipo">{datos.tipo}</span>
       </div>
       <div class="carta-cuerpo">
-        {datos.monto && <div ref={monto} class={`monto-g ${sentido}`}>{datos.monto}</div>}
+        {datos.monto && <div ref={monto} class={`monto-g ${sentido}`}>{pesos ? <MontoAnimado valor={pesos} /> : datos.monto}</div>}
         {datos.pildoras.length > 0 && <div class="pildoras">{datos.pildoras.map(p => <Pildora key={p} texto={p} />)}</div>}
         {notas.map((n, i) => <Nota key={i} n={n} />)}
         {info && <Impacto info={info} />}

@@ -14,6 +14,7 @@ import { hash, pinCorrecto } from '../../services/seguridad.ts';
 import { leerSalud } from '../../services/servidor.ts';
 import { sincronizar } from '../../services/sincronizacion.ts';
 import { refrescar, datos as datosSignal, pendientes } from '../../state/store.ts';
+import { editorAtajos } from '../../state/atajos.ts';
 import { Apariencia } from './Apariencia.tsx';
 
 /** Pide el PIN (o avisa que hay que crearlo). Devuelve true si se puede continuar. */
@@ -168,6 +169,10 @@ export function Ajustes() {
     <div class="pb-10">
       <h2 style={{ marginTop: 0 }}>Letra y colores</h2>
       <Apariencia />
+
+      <h2>Botones rápidos del chat</h2>
+      <p class="sub">Los botones de arriba del cuadro de escribir los armas tú: plantillas para completar o frases listas. También puedes ocultar la barra.</p>
+      <div class="acciones"><button class="secundario" id="editar-atajos" onClick={() => { editorAtajos.value = true; }}>Editar mis botones</button></div>
 
       <h2>Conexión con el servidor</h2>
       <Nota>

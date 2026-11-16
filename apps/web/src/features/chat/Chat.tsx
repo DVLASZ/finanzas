@@ -3,7 +3,7 @@
  * escritura con dictado por voz (ondas mientras escucha) y los avisos con botón de arriba.
  * La lógica es la de siempre: el bot corre dentro de la app y solo se pide ayuda a la IA si no entendió.
  */
-import { ArrowUp, CalendarClock, Camera, HardHat, HelpCircle, Images, Mic, ScanLine, Store } from 'lucide-preact';
+import { ArrowUp, CalendarClock, Camera, HardHat, HelpCircle, Images, Mic, Plus, ScanLine, SlidersHorizontal, Store } from 'lucide-preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   aLocal, atajosRapidos, calcularAlertas, formatear, fraseDeOCR, limpiar, hayTrabajadores, interpretar, normalizarDictado, procesar, vendeProductos, type Boton,
@@ -14,11 +14,13 @@ import { atenderColaIA, encolarFraseIA, pedirAyudaIA } from '../../services/ia.t
 import { sincronizar } from '../../services/sincronizacion.ts';
 import { escribir, leer } from '../../services/almacen.ts';
 import { parsearCarta, quitarEmojis } from '../../lib/carta.ts';
-import { celebrar, entrar } from '../../lib/efectos.ts';
+import { celebrar } from '../../lib/efectos.ts';
 import { accionInicial, chatPrellenado, imagenCompartida } from '../../state/nav.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
+import { atajosUsuario, barraOculta, cargarAtajos, editorAtajos, ocultarBarra } from '../../state/atajos.ts';
 import { vibrar } from '../../lib/haptico.ts';
 import { Ayuda, esAyuda, seEnvia } from './Ayuda.tsx';
+import { PulsoChat } from './PulsoChat.tsx';
 import { BotonesBot, Carta } from './Carta.tsx';
 import { Insignia, T, visualDeNombre, type Icono } from '../../components/ui/iconos.tsx';
 import { abrirOpciones } from '../../components/ui/Selector.tsx';
@@ -63,14 +65,15 @@ function mereceConfeti(textos: string[]): boolean {
   return /Deuda con .* saldada/.test(t) || (/Contar la plata/.test(t) && /\(cuadra\)|tienes \$[\d.]+ \(cuadra/.test(t)) || /\(100 %\)/.test(t) || /Llegaste a la meta/.test(t);
 }
 
-function BurbujaVista({ b, ultima, alPulsar, alEjemplo }: { b: Burbuja; ultima: boolean; alPulsar: (x: Boton) => void; alEjemplo: (e: string) => void }) {
+/** Las últimas burbujas entran una tras otra al abrir el chat; una burbuja nueva entra sola. `orden` es su lugar contando desde el final. */
+function BurbujaVista({ b, ultima, orden, alPulsar, alEjemplo }: { b: Burbuja; ultima: boolean; orden: number; alPulsar: (x: Boton) => void; alEjemplo: (e: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => { if (ref.current && ultima) entrar(ref.current); }, []);
+  const estilo = { '--i': Math.max(0, 5 - orden) } as Record<string, number>;
   const carta = b.de === 'bot' ? parsearCarta(b.texto) : null;
   const botones = b.botones?.length ? <BotonesBot botones={b.botones} activo={ultima} alPulsar={alPulsar} dentroDeCarta={Boolean(carta)} /> : null;
-  if (b.de === 'bot' && esAyuda(b.texto)) return <div ref={ref} class="burbuja bot guia"><Ayuda texto={b.texto} alElegir={alEjemplo} /></div>;
-  if (carta) return <div ref={ref} class="burbuja bot carta"><Carta datos={carta} hijos={botones} impacto={ultima} /></div>;
-  return <div ref={ref} class={`burbuja ${b.de}`}><div class="texto">{quitarEmojis(b.texto)}</div>{botones}</div>;
+  if (b.de === 'bot' && esAyuda(b.texto)) return <div ref={ref} style={estilo} class="burbuja bot guia"><Ayuda texto={b.texto} alElegir={alEjemplo} /></div>;
+  if (carta) return <div ref={ref} style={estilo} class={`burbuja bot carta ${ultima && b.botones?.length ? 'activa' : ''}`}><Carta datos={carta} hijos={botones} impacto={ultima} /></div>;
+  return <div ref={ref} style={estilo} class={`burbuja ${b.de}`}><div class="texto">{quitarEmojis(b.texto)}</div>{botones}</div>;
 }
 
 export function Chat() {
@@ -93,6 +96,7 @@ export function Chat() {
 
   // al abrir: lo que había en el chat y el borrador que se estaba escribiendo
   useEffect(() => {
+    void cargarAtajos();
     void (async () => {
       const guardadas = (await leer<Burbuja[]>('chat')) ?? [];
       poner(guardadas.length ? guardadas : [{ de: 'bot', texto: BIENVENIDA }]);
@@ -197,6 +201,16 @@ export function Chat() {
     document.querySelector<HTMLInputElement>('#texto')?.focus();
   };
 
+  /** Un atajo propio: la plantilla deja el texto en el cuadro para ponerle monto y cuenta; la frase completa arma la tarjeta. */
+  const alAtajo = (a: { frase: string; modo: 'plantilla' | 'frase' }) => {
+    if (a.modo === 'frase') { mandar(a.frase); return; }
+    const t = `${a.frase.trim()} `;
+    setTexto(t); void escribir('borrador', t);
+    const campo = document.querySelector<HTMLInputElement>('#texto');
+    campo?.focus();
+    requestAnimationFrame(() => campo?.setSelectionRange(t.length, t.length));
+  };
+
   const alEnviar = (e: Event) => {
     e.preventDefault();
     const t = texto.trim();
@@ -238,6 +252,8 @@ export function Chat() {
 
   const avisos = datos && ctx ? calcularAlertas(datos, ctx.ahora).filter(a => a.acciones?.length && (a.id === 'cierre-dia' || a.id === 'saldo-negativo')) : [];
   const rapidos = datos && ctx ? atajosRapidos(datos, ctx.ahora) : [];
+  const propios = atajosUsuario.value;
+  const oculta = barraOculta.value;
   const fijos: { orden: string; etiqueta: string; Icono: Icono; tema: keyof typeof T }[] = [{ orden: 'ayuda', etiqueta: 'Ayuda', Icono: HelpCircle, tema: 'coral' }];
   if (ctx && vendeProductos(ctx)) fijos.push({ orden: 'ventas', etiqueta: 'Ventas', Icono: Store, tema: 'cian' });
   if (datos && hayTrabajadores(datos.cuentas, datos.movimientos)) fijos.push({ orden: 'jornales', etiqueta: 'Jornales', Icono: HardHat, tema: 'lima' });
@@ -257,20 +273,33 @@ export function Chat() {
           <div class="botones">{a.acciones!.map((x, j) => <button key={j} class="chip" data-aviso={`${i}.${j}`} onClick={() => alAviso(i, j)}>{x.titulo}</button>)}</div>
         </div>
       ))}
+      <PulsoChat />
       <div class="chat flex flex-1 flex-col gap-2.5 overflow-y-auto p-4" id="chat">
-        {burbujas.map((b, i) => <BurbujaVista key={`${i}-${b.texto.length}`} b={b} ultima={i === burbujas.length - 1} alPulsar={alPulsar} alEjemplo={alEjemplo} />)}
+        {burbujas.map((b, i) => <BurbujaVista key={`${i}-${b.texto.length}`} b={b} ultima={i === burbujas.length - 1} orden={burbujas.length - 1 - i} alPulsar={alPulsar} alEjemplo={alEjemplo} />)}
         {escaneando && <div class="burbuja bot" role="status"><span class="sub">Leyendo el comprobante...</span></div>}
         {pensando && <div class="burbuja bot pensando" role="status" aria-label="Pensando"><span /><span /><span /></div>}
         <div ref={fin} />
       </div>
-      <div class="atajos -mb-1 flex gap-2 overflow-x-auto px-4 pb-2 pt-1 [scrollbar-width:none]">
-        {fijos.map(({ orden, etiqueta, Icono, tema }) => <button key={orden} class="chip atajo shrink-0" data-atajo={orden} onClick={() => mandar(orden)}><Insignia v={{ Icono, ...T[tema] }} tam={26} redondo />{etiqueta}</button>)}
-        {rapidos.map(a => (
-          <button key={a.frase} class={`chip atajo shrink-0 ${a.tipo === 'fijo' ? 'atajo-fijo' : ''}`} data-atajo={a.frase} data-tipo={a.tipo} title={a.tipo === 'fijo' ? 'Pago fijo que ya toca' : undefined} onClick={() => mandar(a.frase)}>
-            <Insignia v={a.tipo === 'fijo' ? { Icono: CalendarClock, ...T.ambar } : visualDeNombre(a.frase)} tam={26} redondo />{a.etiqueta}
-          </button>
-        ))}
-      </div>
+      {oculta ? (
+        <div class="atajos -mb-1 flex px-4 pb-2 pt-1">
+          <button class="chip atajo shrink-0" id="atajos-mostrar" onClick={() => ocultarBarra(false)}><SlidersHorizontal size={16} />Mostrar atajos</button>
+        </div>
+      ) : (
+        <div class="atajos -mb-1 flex gap-2 overflow-x-auto px-4 pb-2 pt-1 [scrollbar-width:none]">
+          {fijos.map(({ orden, etiqueta, Icono, tema }) => <button key={orden} class="chip atajo shrink-0" data-atajo={orden} onClick={() => mandar(orden)}><Insignia v={{ Icono, ...T[tema] }} tam={26} redondo />{etiqueta}</button>)}
+          {rapidos.map(a => (
+            <button key={a.frase} class="chip atajo atajo-fijo shrink-0" data-atajo={a.frase} data-tipo={a.tipo} title="Pago fijo que ya toca" onClick={() => mandar(a.frase)}>
+              <Insignia v={{ Icono: CalendarClock, ...T.ambar }} tam={26} redondo />{a.etiqueta}
+            </button>
+          ))}
+          {propios.map(a => (
+            <button key={a.id} class="chip atajo shrink-0" data-atajo={a.frase} data-tipo={a.modo} onClick={() => alAtajo(a)}>
+              <Insignia v={visualDeNombre(a.frase)} tam={26} redondo />{a.etiqueta}
+            </button>
+          ))}
+          <button class="chip atajo shrink-0" id="atajo-mas" aria-label="Agregar o cambiar mis botones rápidos" title="Mis botones rápidos" onClick={() => { editorAtajos.value = true; }}><Plus size={18} /></button>
+        </div>
+      )}
       <form id="form" class="entrada vidrio mx-3 mb-1 rounded-[1.4rem] p-2 ring-1 ring-anillo" onSubmit={alEnviar}>
         <input id="texto" type="text" autocomplete="off" autocapitalize="sentences" placeholder="Ej.: mecato 5000" aria-label="Escribe lo que pasó" class="!bg-transparent !shadow-none" value={texto}
           onInput={e => { const v = (e.target as HTMLInputElement).value; setTexto(v); void escribir('borrador', v); }} />
@@ -278,7 +307,7 @@ export function Chat() {
         <input type="file" id="archivoEscanear" accept="image/*" hidden onChange={alElegirImagen} />
         <input type="file" id="fotoEscanear" accept="image/*" capture="environment" hidden onChange={alElegirImagen} />
         <div class="ml-auto flex items-center gap-2">
-        <button type="button" id="escanear" class="secundario mic" aria-label="Leer un comprobante: cámara o galería" title="Leer comprobante" disabled={escaneando}
+        <button type="button" id="escanear" class={`secundario mic ${escaneando ? 'escaneando' : ''}`} aria-label="Leer un comprobante: cámara o galería" title="Leer comprobante" disabled={escaneando}
           onClick={e => abrirOpciones('Leer un comprobante', [
             { valor: 'camara', etiqueta: 'Tomar una foto', visual: { Icono: Camera, ...T.cian } },
             { valor: 'galeria', etiqueta: 'Elegir de la galería', visual: { Icono: Images, ...T.violeta } },
