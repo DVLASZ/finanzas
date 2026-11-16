@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { excelDeDatos, type Movimiento } from '../../../../../packages/core/src/index.ts';
 import { Cargando, Nota } from '../../components/ui/piezas.tsx';
+import { avisar, confirmar, pedir } from '../../components/ui/Dialogo.tsx';
 import { escribir, leer, vaciar } from '../../services/almacen.ts';
 import { activarAvisos, apagarAvisos, avisosActivados, probarAvisos } from '../../services/avisos.ts';
 import { app, guardarAjustes, hayServidor, leerTodo, limpiarRechazados } from '../../services/estado.ts';
@@ -18,12 +19,12 @@ import { Apariencia } from './Apariencia.tsx';
 /** Pide el PIN (o avisa que hay que crearlo). Devuelve true si se puede continuar. */
 async function pedirPin(motivo: string): Promise<boolean> {
   if (!app.ajustes.pinHash) {
-    alert('Primero crea un PIN en Ajustes, sección Seguridad. Protege las acciones que borran datos.');
+    await avisar({ titulo: 'Primero crea un PIN', texto: 'En Ajustes, sección Seguridad. El PIN protege las acciones que borran datos.', tono: 'peligro' });
     return false;
   }
-  const pin = prompt(`${motivo}\nEscribe tu PIN:`);
+  const pin = await pedir({ titulo: 'Escribe tu PIN', texto: motivo, tipo: 'clave', aceptar: 'Continuar' });
   if (pin === null) return false;
-  if (!(await pinCorrecto(pin))) { alert('PIN incorrecto.'); return false; }
+  if (!(await pinCorrecto(pin))) { await avisar({ titulo: 'PIN incorrecto', texto: 'No se hizo nada.', tono: 'peligro' }); return false; }
   return true;
 }
 
@@ -34,17 +35,17 @@ function BotonPeligro({ texto, motivo, frase, ruta, local }: { texto: string; mo
   const [espera, setEspera] = useState(0);
   const ejecutar = async () => {
     if (!(await pedirPin(motivo))) return;
-    if (prompt(`Para confirmar escribe exactamente:\n${frase}`) !== frase) { alert('La frase no coincide. No se borró nada.'); return; }
+    if ((await pedir({ titulo: 'Para confirmar, escribe esta frase', texto: frase, placeholder: frase, aceptar: 'Continuar' })) !== frase) { await avisar({ titulo: 'La frase no coincide', texto: 'No se borró nada.', tono: 'peligro' }); return; }
     for (let n = 5; n > 0; n--) { setEspera(n); await esperar(1000); }
     setEspera(0);
-    if (!confirm('Última oportunidad: esto no se puede deshacer. ¿Continuar?')) return;
+    if (!(await confirmar({ titulo: 'Última oportunidad', texto: 'Esto no se puede deshacer. ¿Continuar?', aceptar: 'Sí, borrar', peligro: true }))) return;
     if (hayServidor()) {
-      const pin = prompt('PIN del servidor (PIN_BORRADO) si lo configuraste, o deja vacío:') ?? '';
+      const pin = (await pedir({ titulo: 'PIN del servidor', texto: 'El PIN_BORRADO, si lo configuraste. Si no, déjalo vacío.', tipo: 'clave', aceptar: 'Continuar' })) ?? '';
       const r = await fetch(`${urlBase()}${ruta}`, { method: 'POST', headers: cabeceraJson(), body: JSON.stringify({ pin, confirmacion: frase }) });
-      if (!r.ok) { alert(`El servidor no lo permitió (${r.status}). No se borró nada.`); return; }
+      if (!r.ok) { await avisar({ titulo: `El servidor no lo permitió (${r.status})`, texto: 'No se borró nada.', tono: 'peligro' }); return; }
     }
     await local();
-    alert('Listo.');
+    await avisar({ titulo: 'Listo', tono: 'info' });
     await refrescar();
   };
   return <button class="peligro" disabled={espera > 0} onClick={() => void ejecutar()}>{espera > 0 ? `Borrar ahora (${espera})` : texto}</button>;
@@ -80,8 +81,9 @@ export function Ajustes() {
   };
   const cambiarPin = async () => {
     if (app.ajustes.pinHash && !(await pedirPin('Para cambiar el PIN'))) return;
-    const nuevo = prompt('Nuevo PIN (4 a 8 dígitos):') ?? '';
-    if (!/^\d{4,8}$/.test(nuevo)) { alert('El PIN debe tener entre 4 y 8 dígitos.'); return; }
+    const nuevo = (await pedir({ titulo: 'Nuevo PIN', texto: 'De 4 a 8 dígitos.', tipo: 'clave', aceptar: 'Guardar PIN' })) ?? '';
+    if (!nuevo) return;
+    if (!/^\d{4,8}$/.test(nuevo)) { await avisar({ titulo: 'El PIN debe tener entre 4 y 8 dígitos', tono: 'peligro' }); return; }
     await guardarAjustes({ ...app.ajustes, pinHash: await hash(nuevo) });
     otra();
   };

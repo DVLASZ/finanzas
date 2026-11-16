@@ -66,9 +66,9 @@ export function Saldos() {
           <div data-ajusta class="mt-1 text-[2.6rem] font-extrabold leading-none tracking-tight"><MontoAnimado valor={r.disponibleCop} /></div>
           <div class="mt-2 text-[.8rem] opacity-85">{cuentasEnDisponible} · sin las monedas{r.cuentas.some(x => x.cuenta.moneda === 'USD') ? ' ni los dólares' : ''}</div>
           <div class="-mx-1 mt-3"><Sparkline valores={evolucion} etiquetas={etiquetasEvolucion} claro /></div>
-          <div class="mb-3 flex items-center justify-between text-xs">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
             <span class="opacity-90">{cambio === 0 ? 'Sin cambios' : `${cambio > 0 ? '+' : '-'}${formatear(Math.abs(cambio))}`} en {dias} días</span>
-            <span class="flex gap-1">{([14, 30] as const).map(n => <button key={n} class={`rounded-full px-2.5 py-1 font-semibold transition active:scale-95 ${dias === n ? 'bg-white/30' : 'bg-black/10'}`} aria-pressed={dias === n} onClick={() => setDias(n)}>{n} d</button>)}</span>
+            <span class="flex shrink-0 gap-1 whitespace-nowrap">{([14, 30] as const).map(n => <button key={n} class={`rounded-full px-2.5 py-1 font-semibold transition active:scale-95 ${dias === n ? 'bg-white/30' : 'bg-black/10'}`} aria-pressed={dias === n} onClick={() => setDias(n)}>{n} d</button>)}</span>
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div class="rounded-2xl bg-black/15 px-3 py-2 backdrop-blur-sm">

@@ -10,6 +10,7 @@ import {
   filtrarMovimientos, movimientosACsv, nombreMes, rangoPeriodo, resumenEnTexto, totalApartado, totalIngresos,
 } from '../../../../../packages/core/src/index.ts';
 import { esc } from '../../lib/carta.ts';
+import { avisar } from '../../components/ui/Dialogo.tsx';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { fechaAtras } from '../../lib/periodos.ts';
 import { TarjetaHormiga } from './Hormiga.tsx';
@@ -190,7 +191,7 @@ export function Resumen() {
       ${fuentes.length ? `<h2>Ingresos por fuente</h2><table><tr><th>Fuente</th><th>Valor</th><th>%</th></tr>${fuentes.map(x => fila(x.cuenta.nombre, formatear(x.total), ingresos ? `${Math.round((x.total / ingresos) * 100)} %` : '')).join('')}</table>` : ''}
     </body></html>`;
     const w = window.open('', '_blank');
-    if (!w) { alert('El navegador bloqueó la ventana. Permite las ventanas emergentes para esta página.'); return; }
+    if (!w) { void avisar({ titulo: 'El navegador bloqueó la ventana', texto: 'Permite las ventanas emergentes para esta página y vuelve a intentarlo.', tono: 'peligro' }); return; }
     w.document.write(html);
     w.document.close();
     w.focus();

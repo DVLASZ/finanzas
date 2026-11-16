@@ -7,6 +7,7 @@ import { CalendarCheck, Minus, PartyPopper, PiggyBank, Plus, Sparkles, Trash2 } 
 import { useEffect, useState } from 'preact/hooks';
 import { aLocal, diasParaMeta, formatear, hallarMontos, leerMetas, limpiar, type Meta } from '../../../../../packages/core/src/index.ts';
 import { BarraAvance, Insignia, Vacio, T } from '../../components/ui/iconos.tsx';
+import { confirmar } from '../../components/ui/Dialogo.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
 import { celebrar } from '../../lib/efectos.ts';
 import { vibrar } from '../../lib/haptico.ts';
@@ -78,7 +79,7 @@ function Tarjeta({ meta, indice, metas, hoy }: { meta: Meta; indice: number; met
         <input type="text" inputMode="numeric" placeholder="Monto" aria-label={`Monto para ${meta.nombre}`} value={monto} onInput={e => setMonto((e.target as HTMLInputElement).value)} class="!min-h-11 !min-w-0 flex-1 basis-28" />
         <button class="primario !min-h-11 !px-3" aria-label={`Apartar para ${meta.nombre}`} onClick={() => { void mover(metas, meta.nombre, valor(), 1, hoy); setMonto(''); }}><Plus size={18} />Apartar</button>
         <button class="secundario !min-h-11 !px-3" aria-label={`Sacar de ${meta.nombre}`} onClick={() => { void mover(metas, meta.nombre, valor(), -1, hoy); setMonto(''); }}><Minus size={18} /></button>
-        <button class="secundario !min-h-11 !px-3 text-neg" aria-label={`Quitar ${meta.nombre}`} onClick={() => { if (confirm(`¿Quitar la alcancía «${meta.nombre}»? La plata sigue en tus cuentas.`)) void guardarMetas(metas.filter(m => m !== meta)); }}><Trash2 size={17} /></button>
+        <button class="secundario !min-h-11 !px-3 text-neg" aria-label={`Quitar ${meta.nombre}`} onClick={() => { void confirmar({ titulo: `¿Quitar la alcancía «${meta.nombre}»?`, texto: 'La plata sigue en tus cuentas.', aceptar: 'Sí, quitar', peligro: true }).then(si => { if (si) void guardarMetas(metas.filter(m => m !== meta)); }); }}><Trash2 size={17} /></button>
       </div>
     </article>
   );

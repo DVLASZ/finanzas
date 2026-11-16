@@ -105,7 +105,8 @@ try {
     const pag = await navegador.newPage();
     // el Redmi Note 14: la app instalada ocupa el alto de la pantalla menos la barra de estado y los botones de abajo
     await pag.setViewport({ width: 393, height: 790, deviceScaleFactor: 2.75, isMobile: true, hasTouch: true });
-    pag.on('dialog', d => void d.dismiss());
+    let nativos = 0;
+    pag.on('dialog', d => { nativos++; void d.dismiss(); });
     const errores = [];
     pag.on('pageerror', e => errores.push(e.message));
     await pag.goto(`http://localhost:${PUERTO}/`, { waitUntil: 'networkidle0' });
@@ -159,6 +160,18 @@ try {
         await espera(600); await escalar();
         await pag.evaluate(() => document.querySelector('#duplicar-mov')?.click()); await espera(500); await escalar();
       }],
+      ['Diálogo: anular', async () => {
+        await pag.evaluate(() => { for (const id of ['editar', 'duplicar', 'dialogo']) document.querySelector('#' + id)?.remove(); });
+        await irA('Movimientos');
+        await pag.evaluate(() => { const f = [...document.querySelectorAll('#lista .fila')].find(x => /carne|transporte|jornal|botellas/i.test(x.innerText)); f?.click(); });
+        await espera(600); await escalar();
+        await pag.evaluate(() => document.querySelector('#anular')?.click()); await espera(600); await escalar();
+      }],
+      ['Diálogo: PIN', async () => {
+        await pag.evaluate(() => { for (const id of ['editar', 'duplicar', 'dialogo', 'detalle']) document.querySelector('#' + id)?.remove(); });
+        await abrirDeMas('Ajustes');
+        await pag.evaluate(() => [...document.querySelectorAll('button')].find(b => /Crear PIN|Cambiar PIN/.test(b.innerText))?.click()); await espera(600); await escalar();
+      }],
       ['Más', async () => { await irA('Más'); }],
       ['Deudas y préstamos', async () => abrirDeMas('Deudas y préstamos')],
       ['Categorías y personas', async () => abrirDeMas('Categorías y personas')],
@@ -181,14 +194,16 @@ try {
     }
     console.log(`\n=== ${instalacion}: texto x${escala} (letra de la app: ${await pag.evaluate(() => document.documentElement.dataset.letra)}) ===`);
     for (const [nombre, ir] of pantallas) {
-      try { await ir(); await pag.evaluate(() => document.querySelector('#duplicar')?.remove()); } catch (e) { console.log(`  ${nombre}: no pude abrirla (${e.message})`); continue; }
+      try { await ir(); } catch (e) { console.log(`  ${nombre}: no pude abrirla (${e.message})`); continue; }
       const h = await pag.evaluate(EN_PAGINA.revisar);
       if (capturas) await pag.screenshot({ path: join(capturas, `x${escala}-${nombre.replace(/[^a-z0-9]+/gi, '-')}.png`) });
+      await pag.evaluate(() => { for (const id of ['dialogo', 'duplicar', 'editar']) document.querySelector('#' + id)?.remove(); });
       total += h.length;
       console.log(h.length ? `  ${nombre}: ${h.length} problema(s)` : `  ${nombre}: bien`);
       const vistos = new Set();
       for (const x of h) { const k = `${x.tipo}|${x.el}`; if (vistos.has(k) || vistos.size >= 8) continue; vistos.add(k); console.log(`      ${x.tipo}: ${x.el} «${x.texto}» ${x.dato}`); }
     }
+    if (nativos) { total++; console.log(`  salieron ${nativos} cuadro(s) del navegador`); }
     if (errores.length) { total++; console.log('  errores de JavaScript:', errores.join(' | ')); }
     await pag.close();
   }
