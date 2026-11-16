@@ -3,7 +3,7 @@
  * la foto del recibo y el botón de anular. Los filtros se recuerdan entre visitas.
  */
 import { signal } from '@preact/signals';
-import { Ban, BarChart3, Download, ScanLine, Share2, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
+import { Ban, BarChart3, Download, Pencil, ScanLine, Share2, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
@@ -25,6 +25,7 @@ import { BarrasPeriodo } from '../../components/charts/graficos.tsx';
 import { Esqueleto, Insignia, Vacio, visualDeCuenta, visualDeMovimiento, visualDeNombre, visualDePersona } from '../../components/ui/iconos.tsx';
 import { Selector } from '../../components/ui/Selector.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
+import { EditarMovimiento, editandoId } from './EditarMovimiento.tsx';
 
 type Periodo = 'todo' | 'semana' | 'mes' | 'anio' | 'rango';
 type Tipo = 'todos' | 'gastos' | 'ingresos' | 'transferencias' | 'deudas';
@@ -183,6 +184,7 @@ function Detalle({ m }: { m: Movimiento }) {
         <h3 class="!mt-0">{m.descripcion}</h3>
         <p class="sub">{describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora)} · {m.tipo} · {m.origen}{m.estado === 'anulado' ? ' · ANULADO' : ''}</p>
         {m.mensajeOriginal && <p class="sub">Escribiste: «{m.mensajeOriginal}»</p>}
+        {m.editadoEn && <p class="sub" id="editado-en">Editado {describirFecha(m.editadoEn, ctx.ahora)}</p>}
         <ul class="asientos">
           {m.asientos.map((a, i) => <li key={i}><span>{nombre(a.cuentaId)}</span><span class="tabular-nums">{formatear(a.monto, a.moneda)}</span></li>)}
         </ul>
@@ -199,6 +201,7 @@ function Detalle({ m }: { m: Movimiento }) {
           {filasDivision.length > 0 && <button class="secundario" id="compartirDivision" onClick={compartir}><Share2 size={18} />Compartir cuentas</button>}
           <label class="secundario archivo"><Camera size={18} />Tomar foto<input type="file" id="fotoCamara" accept="image/*" capture="environment" hidden onChange={alElegir} /></label>
           <label class="secundario archivo"><ImagePlus size={18} />Subir imagen<input type="file" id="fotoArchivo" accept="image/*" hidden onChange={alElegir} /></label>
+          {m.estado === 'ok' && <button class="secundario" id="editar-mov" onClick={() => { editandoId.value = m.id; }}><Pencil size={18} />Editar</button>}
           {m.estado === 'ok' && <button class="peligro" id="anular" onClick={anular}><Ban size={18} />{esArqueo(m) ? 'Anular arqueo' : 'Anular'}</button>}
           <button class="secundario" id="cerrar" onClick={atras}><X size={18} />Cerrar</button>
         </div>
@@ -396,6 +399,7 @@ export function Movimientos() {
       </ul>
       {lista.length > limite.value && <button class="secundario" id="mas" onClick={() => { limite.value += 60; }}>Ver más</button>}
       {abierta && <Detalle m={abierta} />}
+      <EditarMovimiento />
     </div>
   );
 }

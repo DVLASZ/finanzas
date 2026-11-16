@@ -340,5 +340,8 @@
   nav#nav button > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   nav#nav.apretada .lbl-largo.tiene-corto { position: absolute; visibility: hidden; }
   nav#nav.apretada .lbl-corto { display: inline; }
+  .campo-edicion { margin: .75rem 0; }
+  .campo-edicion .etiqueta { margin-bottom: .3rem; }
+  .campo-edicion .select-btn { width: 100%; }
   .periodo > .chip, .filtro-tipos > .chip { white-space: normal; text-align: center; line-height: 1.15; padding-block: .35rem; }
 }

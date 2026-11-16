@@ -64,7 +64,8 @@ CREATE TABLE movimientos (
   ref_importacion  TEXT UNIQUE,                  -- 'FEB!F5': evita importar dos veces
   creado_en        TEXT NOT NULL DEFAULT (datetime('now','-5 hours')),
   actualizado_en   TEXT NOT NULL DEFAULT (datetime('now','-5 hours')),
-  cambio_en        TEXT                          -- hora del servidor del último cambio (sincronización parcial)
+  cambio_en        TEXT,                         -- hora del servidor del último cambio (sincronización parcial)
+  editado_en       TEXT                          -- cuándo se editó por última vez desde el detalle (NULL: nunca)
 );
 CREATE INDEX idx_mov_fecha    ON movimientos (ocurrido_en);
 CREATE INDEX idx_mov_etiqueta ON movimientos (etiqueta);

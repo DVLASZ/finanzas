@@ -115,6 +115,13 @@ try {
     const escribir = async t => { await pag.type('#texto', t); await pag.keyboard.press('Enter'); await espera(700); await escalar(); };
     const pulsar = async titulo => { await pag.evaluate(t => [...document.querySelectorAll('button')].filter(x => x.innerText.trim() === t).pop()?.click(), titulo); await espera(700); await escalar(); };
     const irA = async n => { await pag.evaluate(x => [...document.querySelectorAll('nav button')].find(b => b.getAttribute('aria-label') === x || b.innerText.trim() === x)?.click(), n); await espera(500); await escalar(); };
+    const abrirEdicion = async () => {
+      await pag.evaluate(() => document.querySelector('#editar')?.remove());
+      await irA('Movimientos');
+      await pag.evaluate(() => { const f = [...document.querySelectorAll('#lista .fila')].find(x => /carne|transporte|jornal|botellas/i.test(x.innerText)); f?.click(); });
+      await espera(600); await escalar();
+      await pag.evaluate(() => document.querySelector('#editar-mov')?.click()); await espera(500); await escalar();
+    };
     const abrirDeMas = async n => { await irA('Más'); await pag.evaluate(x => [...document.querySelectorAll('button')].find(b => b.innerText.includes(x))?.click(), n); await espera(700); await escalar(); };
 
     // datos de ejemplo con textos largos, como los de la vida real
@@ -137,6 +144,14 @@ try {
       ['Movimientos', async () => { await irA('Movimientos'); await espera(600); await escalar(); }],
       ['Movimientos: detalle', async () => { await irA('Movimientos'); await pag.evaluate(() => document.querySelector('#lista .fila')?.click()); await espera(700); await escalar(); }],
       ['Resumen', async () => { await irA('Resumen'); await espera(900); await escalar(); }],
+      ['Editar: confirmar', async () => { await abrirEdicion(); }],
+      ['Editar: formulario', async () => { await abrirEdicion(); await pag.evaluate(() => document.querySelector('#editar-si')?.click()); await espera(500); await escalar(); }],
+      ['Editar: resumen', async () => {
+        await abrirEdicion(); await pag.evaluate(() => document.querySelector('#editar-si')?.click()); await espera(500);
+        await pag.$eval('#e-concepto', e => e.select()); await pag.type('#e-concepto', 'Compra de insumos para la finca con nombre largo'); await escalar();
+        await pag.evaluate(() => document.querySelector('#e-monto') && (document.querySelector('#e-monto').focus())); await pag.keyboard.type('9');
+        await pag.evaluate(() => document.querySelector('#e-guardar')?.click()); await espera(500); await escalar();
+      }],
       ['Más', async () => { await irA('Más'); }],
       ['Deudas y préstamos', async () => abrirDeMas('Deudas y préstamos')],
       ['Categorías y personas', async () => abrirDeMas('Categorías y personas')],

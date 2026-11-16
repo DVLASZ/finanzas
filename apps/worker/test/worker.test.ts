@@ -400,3 +400,46 @@ test('ocr: si no se lee un monto responde 422, cuenta contra el tope diario y re
   await new D1Repo(apagada.DB).setConfig('ia', '0');
   assert.equal((await peticion(apagada, '/api/ocr', { imagen: FOTO })).status, 403);
 });
+
+// ---------------------------------------------------------------- editar un movimiento (op «editar»)
+
+test('api: editar reemplaza el movimiento y sus asientos juntos, marca editado_en y llega a los otros aparatos', async () => {
+  const env = entorno();
+  const h = movimientoDePrueba('almuerzo 12000 nequi');
+  await peticion(env, '/api/sync', { ops: [{ op: 'guardar', movimiento: h.movimiento, cuentasNuevas: h.cuentasNuevas, compromisos: h.compromisos }] });
+  const base = (await (await peticion(env, '/api/sync', { ops: [] })).json()) as { servidorEn: string; datos: Datos };
+  // la hora «de la última sincronización» de otro aparato: se vuelve a pedir solo lo que cambió desde entonces
+  const ctx = contextoDe(base.datos, AHORA);
+  const editado = movimientoDePrueba('almuerzo 15000 efectivo');
+  const nuevo: Movimiento = { ...h.movimiento, descripcion: 'Almuerzo con Ana', asientos: editado.movimiento.asientos, editadoEn: '2026-10-19 16:00:00' };
+  void ctx;
+  const r = (await (await peticion(env, '/api/sync', { ops: [{ op: 'editar', movimiento: nuevo, cuentasNuevas: [] }] })).json()) as { datos: Datos; rechazadas?: unknown[] };
+  assert.equal(r.rechazadas?.length ?? 0, 0);
+  const m = r.datos.movimientos.find(x => x.id === h.movimiento.id)!;
+  assert.equal(r.datos.movimientos.length, 1, 'sigue siendo un solo movimiento');
+  assert.equal(m.descripcion, 'Almuerzo con Ana');
+  assert.equal(m.editadoEn, '2026-10-19 16:00:00');
+  assert.equal(m.asientos.reduce((s, a) => s + a.monto, 0), 0, 'suma cero');
+  assert.deepEqual(m.asientos.map(a => a.cuentaId).sort(), editado.movimiento.asientos.map(a => a.cuentaId).sort());
+  // repetir la misma edición es inofensivo
+  const otra = (await (await peticion(env, '/api/sync', { ops: [{ op: 'editar', movimiento: nuevo, cuentasNuevas: [] }] })).json()) as { datos: Datos; rechazadas?: unknown[] };
+  assert.equal(otra.rechazadas?.length ?? 0, 0);
+  assert.equal(otra.datos.movimientos[0].asientos.length, nuevo.asientos.length, 'no se duplicaron los asientos');
+  // los cambios parciales traen el movimiento editado
+  const parcial = (await (await peticion(env, '/api/sync', { ops: [], desde: base.servidorEn, generacion: base.datos.config.generacion ?? '0' })).json()) as { datos: Datos; parcial?: boolean };
+  assert.ok(!parcial.parcial || parcial.datos.movimientos.some(x => x.id === h.movimiento.id && x.descripcion === 'Almuerzo con Ana'));
+});
+
+test('api: editar rechaza lo que no existe, lo anulado y asientos que no suman cero', async () => {
+  const env = entorno();
+  const h = movimientoDePrueba('almuerzo 12000 nequi');
+  await peticion(env, '/api/sync', { ops: [{ op: 'guardar', movimiento: h.movimiento, cuentasNuevas: h.cuentasNuevas, compromisos: h.compromisos }] });
+  const torcido: Movimiento = { ...h.movimiento, asientos: [{ cuentaId: 'nequi', monto: -100, moneda: 'COP' }, { cuentaId: 'cat:comida', monto: 90, moneda: 'COP' }] };
+  const noExiste: Movimiento = { ...h.movimiento, id: 'no-existe' };
+  const r1 = (await (await peticion(env, '/api/sync', { ops: [{ op: 'editar', movimiento: torcido, cuentasNuevas: [] }, { op: 'editar', movimiento: noExiste, cuentasNuevas: [] }] })).json()) as { rechazadas?: { indice: number }[]; datos: Datos };
+  assert.deepEqual(r1.rechazadas?.map(x => x.indice), [0, 1]);
+  assert.deepEqual(r1.datos.movimientos[0].asientos, h.movimiento.asientos, 'la partida torcida no se guardó');
+  await peticion(env, '/api/sync', { ops: [{ op: 'anular', id: h.movimiento.id, cuando: '2026-10-19 17:00:00' }] });
+  const r2 = (await (await peticion(env, '/api/sync', { ops: [{ op: 'editar', movimiento: { ...h.movimiento, descripcion: 'x' }, cuentasNuevas: [] }] })).json()) as { rechazadas?: unknown[] };
+  assert.equal(r2.rechazadas?.length, 1, 'no se edita lo anulado');
+});

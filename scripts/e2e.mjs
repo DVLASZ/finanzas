@@ -212,6 +212,50 @@ try {
     igual(await pag.evaluate(() => document.querySelectorAll('#rango input[type=date]').length), 2, 'dos fechas');
     await pag.evaluate(() => document.querySelector('[data-periodo="mes"]').click()); await espera(300);
   });
+  await prueba('editar un movimiento: confirmar, cambiar el monto, ver antes y después y guardar', async () => {
+    const texto = () => pag.evaluate(() => document.body.innerText);
+    const clic = async sel => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, sel); if (!ok) throw new Error(`no hay ${sel}`); await espera(450); };
+    await irA('Chat'); await escribir('almuerzo 4500'); await pulsar('Confirmar');
+    await irA('Movimientos'); await espera(500);
+    const abrirFila = () => pag.evaluate(() => [...document.querySelectorAll('#lista .fila')].find(f => f.innerText.includes('4.500'))?.click());
+    await abrirFila(); await espera(500);
+    await clic('#editar-mov');
+    contiene((await texto()).toLowerCase(), '¿seguro que quieres editar este movimiento?', 'primer filtro');
+    // «No, volver» cierra sin abrir el formulario
+    await clic('#editar-no');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#editar'))), false, 'se cerró');
+    await clic('#editar-mov');
+    await clic('#editar-si');
+    igual(await pag.evaluate(() => document.querySelector('#e-guardar').disabled), true, 'sin cambios no se puede guardar');
+    await pag.$eval('#e-monto', e => e.select()); await pag.type('#e-monto', '6000'); await espera(300);
+    await pag.$eval('#e-concepto', e => e.select()); await pag.type('#e-concepto', 'Almuerzo con Ana'); await espera(300);
+    await clic('#e-guardar');
+    const resumen = await texto();
+    contiene(resumen.toLowerCase(), 'esto es lo que cambia', 'segundo filtro');
+    contiene(resumen, 'Antes:', 'antes'); contiene(resumen, 'Después:', 'después');
+    contiene(resumen, '$4.500', 'monto anterior'); contiene(resumen, '$6.000', 'monto nuevo');
+    contiene(resumen.toLowerCase(), 'cómo quedan los saldos', 'saldos');
+    await clic('#r-volver');
+    igual(await pag.evaluate(() => document.querySelector('#e-monto').value), '6000', 'volver conserva lo escrito');
+    await clic('#e-guardar');
+    await clic('#r-confirmar');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#editar'))), false, 'se cerró al guardar');
+    contiene(await texto(), 'Editado', 'queda constancia en el detalle');
+    contiene(await texto(), 'Almuerzo con Ana', 'el concepto nuevo');
+    await clic('#cerrar');
+    contiene(await pag.evaluate(() => document.querySelector('#lista').innerText), '$6.000', 'la lista muestra el monto nuevo');
+  });
+  await prueba('editar: el saldo inicial no se puede editar y lo explica', async () => {
+    await irA('Movimientos'); await pag.evaluate(() => document.querySelector('[data-periodo="todo"]').click()); await espera(400);
+    const hay = await pag.evaluate(() => { const f = [...document.querySelectorAll('#lista .fila')].find(x => /saldo inicial/i.test(x.innerText)); f?.click(); return Boolean(f); });
+    if (!hay) { await pag.evaluate(() => document.querySelector('[data-periodo="mes"]').click()); return; }
+    await espera(500);
+    await pag.evaluate(() => document.querySelector('#editar-mov').click()); await espera(500);
+    contiene((await pag.evaluate(() => document.body.innerText)).toLowerCase(), 'no se puede editar', 'explica');
+    await pag.evaluate(() => document.querySelector('#editar-no').click()); await espera(300);
+    await pag.evaluate(() => document.querySelector('#cerrar')?.click()); await espera(300);
+    await pag.evaluate(() => document.querySelector('[data-periodo="mes"]').click()); await espera(300);
+  });
   await prueba('gráficos: tocar la curva de saldo muestra el día y el valor', async () => {
     await irA('Saldos'); await espera(700);
     const caja = await pag.evaluate(() => { const r = document.querySelector('svg[aria-label^="Evolución del saldo"]')?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; });

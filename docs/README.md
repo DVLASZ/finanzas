@@ -6,6 +6,7 @@ Por dónde empezar según lo que quieras hacer.
 
 - [INICIO.md](INICIO.md): de cero a la app instalada en el celular.
 - [BOT.md](BOT.md): cómo escribirle al bot, con todos los casos.
+- [EDITAR.md](EDITAR.md): corregir un movimiento ya guardado, con doble confirmación.
 - [INSTALACIONES.md](INSTALACIONES.md): las plantillas, el aspecto y qué cambia entre una app y otra.
 - [AVISOS.md](AVISOS.md), [IA.md](IA.md) y [EXPORTAR.md](EXPORTAR.md): los avisos al celular, la ayuda de la IA y el Excel.
 

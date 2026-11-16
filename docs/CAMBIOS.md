@@ -6,6 +6,8 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-15
 
+- Editar un movimiento ya guardado desde Movimientos, con dos confirmaciones y una comparación de antes y después. Ver [EDITAR.md](EDITAR.md). El movimiento se reemplaza (no queda uno anulado) y guarda `editado_en`. Migración nueva: `0006_editado_en.sql`.
+
 - Letra grande en celulares angostos: las filas bajan la cifra a la línea siguiente en vez de partir las palabras, las pestañas y los filtros de Movimientos se acomodan en varias líneas, el cuadro de texto del chat deja los botones debajo, las cifras grandes (el disponible, los totales) se achican para caber enteras y la barra de abajo usa «Movim.» cuando «Movimientos» no cabe. Nuevo `npm run e2e:letra`.
 
 ## 2026-11-14

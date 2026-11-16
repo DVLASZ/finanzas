@@ -21,10 +21,10 @@ export function sqlDeRespaldo(d: Datos): string {
     ].join(', ')});`);
   }
   for (const m of d.movimientos) {
-    l.push(`INSERT OR REPLACE INTO movimientos (id, ocurrido_en, sin_hora, tipo, descripcion, etiqueta, nota, lugar_desde, lugar_hasta, origen, mensaje_original, propuesta, compromiso_id, estado, anulado_en, creado_en, actualizado_en, cambio_en) VALUES (${[
+    l.push(`INSERT OR REPLACE INTO movimientos (id, ocurrido_en, sin_hora, tipo, descripcion, etiqueta, nota, lugar_desde, lugar_hasta, origen, mensaje_original, propuesta, compromiso_id, estado, anulado_en, creado_en, actualizado_en, cambio_en, editado_en) VALUES (${[
       q(m.id), q(m.ocurridoEn), m.sinHora ? 1 : 0, q(m.tipo), q(m.descripcion), q(m.etiqueta ?? null), q(m.nota ?? null),
       q(m.lugarDesde ?? null), q(m.lugarHasta ?? null), q(m.origen), q(m.mensajeOriginal ?? null),
-      q(m.propuesta ? JSON.stringify(m.propuesta) : null), q(m.compromisoId ?? null), q(m.estado), q(m.anuladoEn ?? null), q(m.creadoEn), q(m.creadoEn), q(m.creadoEn),
+      q(m.propuesta ? JSON.stringify(m.propuesta) : null), q(m.compromisoId ?? null), q(m.estado), q(m.anuladoEn ?? null), q(m.creadoEn), q(m.creadoEn), q(m.creadoEn), q(m.editadoEn ?? null),
     ].join(', ')});`);
     for (const a of m.asientos) l.push(`INSERT INTO asientos (movimiento_id, cuenta_id, monto, moneda) VALUES (${q(m.id)}, ${q(a.cuentaId)}, ${a.monto}, ${q(a.moneda)});`);
   }
