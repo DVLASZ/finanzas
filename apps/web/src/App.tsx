@@ -3,7 +3,7 @@
  * flotante con un indicador que se desliza entre las cinco secciones. En pantalla ancha la barra pasa a un lado.
  */
 import { BarChart3, Check, MessageCircle, MoreHorizontal, Moon, Receipt, Sun, WalletCards, WifiOff } from 'lucide-preact';
-import { useEffect, useRef } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { actual, alternarTema } from './state/apariencia.ts';
 import { enBarra, irA, pantalla, type Pantalla } from './state/nav.ts';
 import { conServidor, datos, estadoSync, pendientes } from './state/store.ts';
@@ -16,10 +16,10 @@ import { Resumen } from './features/resumen/Resumen.tsx';
 import { Mas, Subvista } from './features/mas/Mas.tsx';
 import { signal } from '@preact/signals';
 
-const BARRA: { id: Pantalla; nombre: string; Icono: typeof MessageCircle }[] = [
+const BARRA: { id: Pantalla; nombre: string; corto?: string; Icono: typeof MessageCircle }[] = [
   { id: 'chat', nombre: 'Chat', Icono: MessageCircle },
   { id: 'saldos', nombre: 'Saldos', Icono: WalletCards },
-  { id: 'movimientos', nombre: 'Movimientos', Icono: Receipt },
+  { id: 'movimientos', nombre: 'Movimientos', corto: 'Movim.', Icono: Receipt },
   { id: 'resumen', nombre: 'Resumen', Icono: BarChart3 },
   { id: 'mas', nombre: 'Más', Icono: MoreHorizontal },
 ];
@@ -61,15 +61,29 @@ function Cabecera() {
 
 function Barra() {
   const activa = enBarra(pantalla.value);
+  const nav = useRef<HTMLElement>(null);
+  // con letra muy grande «Movimientos» pisa a la pestaña de al lado: se mide y, si no cabe, se usa la forma corta
+  const [apretada, setApretada] = useState(false);
+  useEffect(() => {
+    const medir = () => {
+      const botones = [...(nav.current?.querySelectorAll<HTMLElement>('button') ?? [])];
+      setApretada(!botones.every(b => { const l = b.querySelector<HTMLElement>('.lbl-largo'); return !l || l.scrollWidth <= b.clientWidth - 4; }));
+    };
+    medir();
+    void document.fonts?.ready.then(medir);
+    window.addEventListener('resize', medir);
+    window.addEventListener('apariencia', medir);
+    return () => { window.removeEventListener('resize', medir); window.removeEventListener('apariencia', medir); };
+  }, []);
   const i = Math.max(0, BARRA.findIndex(b => b.id === activa));
   return (
-    <nav id="nav" aria-label="Secciones" class="vidrio fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+.6rem)] z-40 mx-auto flex max-w-md rounded-[1.6rem] p-1.5 shadow-[0_18px_50px_-14px_rgba(0,0,0,.55)] ring-1 ring-anillo lg:static lg:col-start-1 lg:row-start-2 lg:m-0 lg:max-w-none lg:flex-col lg:gap-1 lg:rounded-none lg:bg-transparent lg:p-3 lg:shadow-none lg:ring-0 lg:backdrop-blur-none">
+    <nav ref={nav} id="nav" aria-label="Secciones" class={`${apretada ? 'apretada ' : ''}vidrio fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+.6rem)] z-40 mx-auto flex max-w-md rounded-[1.6rem] p-1.5 shadow-[0_18px_50px_-14px_rgba(0,0,0,.55)] ring-1 ring-anillo lg:static lg:col-start-1 lg:row-start-2 lg:m-0 lg:max-w-none lg:flex-col lg:gap-1 lg:rounded-none lg:bg-transparent lg:p-3 lg:shadow-none lg:ring-0 lg:backdrop-blur-none`}>
       <span aria-hidden="true" class="pointer-events-none absolute bottom-1.5 left-1.5 top-1.5 w-[calc((100%-.75rem)/5)] rounded-[1.2rem] bg-marca-sup ring-1 ring-anillo transition-transform duration-[380ms] ease-[cubic-bezier(.22,1.2,.36,1)] lg:hidden" style={{ transform: `translateX(${i * 100}%)` }} />
-      {BARRA.map(({ id, nombre, Icono }) => (
+      {BARRA.map(({ id, nombre, corto, Icono }) => (
         <button key={id} data-p={id} aria-label={nombre} aria-current={id === activa ? 'page' : undefined} onClick={() => irA(id)}
           class={`relative z-10 flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-[1.2rem] text-[.7rem] font-semibold transition-colors active:scale-95 lg:min-h-12 lg:flex-none lg:flex-row lg:justify-start lg:gap-3 lg:px-4 lg:text-base ${id === activa ? 'text-tx-marca-sup lg:bg-marca-sup' : 'text-tx2 hover:text-tx'}`}>
           <Icono size={22} strokeWidth={id === activa ? 2.3 : 1.8} />
-          <span>{nombre}</span>
+          <span class={`lbl-largo ${corto ? 'tiene-corto' : ''}`}>{nombre}</span>{corto && <span class="lbl-corto" aria-hidden="true">{corto}</span>}
         </button>
       ))}
     </nav>

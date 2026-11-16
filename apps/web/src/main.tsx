@@ -9,6 +9,7 @@ import { app, iniciar } from './services/estado.ts';
 import { sincronizar } from './services/sincronizacion.ts';
 import { accionInicial, activarGestoAtras, imagenCompartida, irA, iniciarHistorial } from './state/nav.ts';
 import { iniciarEstado } from './state/store.ts';
+import { iniciarAjusteDeTexto } from './lib/ajustarTexto.ts';
 
 /**
  * Lo que trae la dirección con la que se abrió la app: un acceso directo del ícono («?accion=gasto|voz|saldos») o una
@@ -37,6 +38,7 @@ async function arrancar(): Promise<void> {
   await atenderEntradas();
   activarGestoAtras();
   render(<App />, document.getElementById('raiz')!);
+  iniciarAjusteDeTexto(document.getElementById('raiz')!);
 
   // Sincroniza al abrir, al recuperar la conexión, al volver a la app y cada minuto.
   // Los componentes se pintan solos cuando cambian los datos, no hay que redibujar a mano.
