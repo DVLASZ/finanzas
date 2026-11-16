@@ -63,7 +63,7 @@ export function Saldos() {
         <div class="pointer-events-none absolute -bottom-16 left-8 h-40 w-40 rounded-full bg-black/10 blur-2xl" />
         <div class="relative">
           <div class="flex items-center justify-between"><div class="text-xs font-semibold uppercase tracking-[.09em] opacity-85">Disponible</div><Nfc size={22} class="opacity-80" /></div>
-          <div class="mt-1 text-[2.6rem] font-extrabold leading-none tracking-tight"><MontoAnimado valor={r.disponibleCop} /></div>
+          <div data-ajusta class="mt-1 text-[2.6rem] font-extrabold leading-none tracking-tight"><MontoAnimado valor={r.disponibleCop} /></div>
           <div class="mt-2 text-[.8rem] opacity-85">{cuentasEnDisponible} · sin las monedas{r.cuentas.some(x => x.cuenta.moneda === 'USD') ? ' ni los dólares' : ''}</div>
           <div class="-mx-1 mt-3"><Sparkline valores={evolucion} etiquetas={etiquetasEvolucion} claro /></div>
           <div class="mb-3 flex items-center justify-between text-xs">
@@ -73,11 +73,11 @@ export function Saldos() {
           <div class="grid grid-cols-2 gap-2">
             <div class="rounded-2xl bg-black/15 px-3 py-2 backdrop-blur-sm">
               <div class="flex items-center gap-1 text-[.7rem] font-semibold uppercase tracking-wider opacity-85"><ArrowDownLeft size={14} />Entró este mes</div>
-              <div class="mt-0.5 text-lg font-bold"><MontoAnimado valor={entro} /></div>
+              <div data-ajusta class="mt-0.5 text-lg font-bold"><MontoAnimado valor={entro} /></div>
             </div>
             <div class="rounded-2xl bg-black/15 px-3 py-2 backdrop-blur-sm">
               <div class="flex items-center gap-1 text-[.7rem] font-semibold uppercase tracking-wider opacity-85"><ArrowUpRight size={14} />Salió este mes</div>
-              <div class="mt-0.5 text-lg font-bold"><MontoAnimado valor={salio} /></div>
+              <div data-ajusta class="mt-0.5 text-lg font-bold"><MontoAnimado valor={salio} /></div>
             </div>
           </div>
         </div>

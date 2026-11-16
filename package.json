@@ -24,7 +24,8 @@
     "restaurar": "node scripts/restaurar.mjs",
     "e2e:celular": "node scripts/celular.mjs",
     "privacidad": "node scripts/privacidad.mjs",
-    "capturas": "node scripts/capturas.mjs"
+    "capturas": "node scripts/capturas.mjs",
+    "e2e:letra": "node scripts/letra-grande.mjs"
   },
   "dependencies": {
     "@preact/signals": "^2.11.4",

@@ -67,15 +67,15 @@ function Tarjeta({ meta, indice, metas, hoy }: { meta: Meta; indice: number; met
         <b class="text-lg tabular-nums">{pct} %</b>
       </div>
       <div class="relative mt-3"><BarraAvance porcentaje={pct} alto={12} /></div>
-      <div class="relative mt-2 flex items-baseline justify-between text-sm">
+      <div class="relative mt-2 flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
         <span class="font-semibold tabular-nums"><MontoAnimado valor={meta.apartado} /></span>
         <span class="text-tx2 tabular-nums">de {formatear(meta.meta)}</span>
       </div>
       <p class="relative !mb-0 mt-2 flex items-center gap-1.5 text-xs text-tx2">
         {lograda ? <><Sparkles size={13} class="text-pos" />Meta cumplida</> : cuando ? <><CalendarCheck size={13} class="text-info" />Al ritmo de los últimos 60 días, llegas hacia el {cuando}</> : <><CalendarCheck size={13} />Aparta seguido y te digo cuándo llegas</>}
       </p>
-      <div class="relative mt-3 flex items-center gap-2">
-        <input type="text" inputMode="numeric" placeholder="Monto" aria-label={`Monto para ${meta.nombre}`} value={monto} onInput={e => setMonto((e.target as HTMLInputElement).value)} class="!min-h-11" />
+      <div class="relative mt-3 flex flex-wrap items-center gap-2">
+        <input type="text" inputMode="numeric" placeholder="Monto" aria-label={`Monto para ${meta.nombre}`} value={monto} onInput={e => setMonto((e.target as HTMLInputElement).value)} class="!min-h-11 !min-w-0 flex-1 basis-28" />
         <button class="primario !min-h-11 !px-3" aria-label={`Apartar para ${meta.nombre}`} onClick={() => { void mover(metas, meta.nombre, valor(), 1, hoy); setMonto(''); }}><Plus size={18} />Apartar</button>
         <button class="secundario !min-h-11 !px-3" aria-label={`Sacar de ${meta.nombre}`} onClick={() => { void mover(metas, meta.nombre, valor(), -1, hoy); setMonto(''); }}><Minus size={18} /></button>
         <button class="secundario !min-h-11 !px-3 text-neg" aria-label={`Quitar ${meta.nombre}`} onClick={() => { if (confirm(`¿Quitar la alcancía «${meta.nombre}»? La plata sigue en tus cuentas.`)) void guardarMetas(metas.filter(m => m !== meta)); }}><Trash2 size={17} /></button>

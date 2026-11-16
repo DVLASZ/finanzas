@@ -309,4 +309,36 @@
   .barra > label { flex: 1 1 9rem; min-width: 0; }
   .vacio-caja { transition: opacity .3s ease; }
   .carrusel .chip { transition: background .2s ease, color .2s ease, box-shadow .2s ease, transform .12s ease; }
+
+  /*
+   * Letra grande: la letra de la app (x1,18) se suma a la del sistema, que Chrome en Android aplica al texto y no a las
+   * cajas. Por eso las filas no fijan anchos: lo que no cabe en una línea baja a la siguiente en vez de partir las palabras
+   * o salirse de la tarjeta.
+   */
+  .fila:not(:has(> .acciones)) { flex-wrap: wrap; row-gap: .35rem; }
+  .fila:not(:has(> .acciones)) > :first-child { flex: 1 1 11rem; min-width: 0; }
+  .fila:not(:has(> .acciones)) > :last-child:not(:first-child) { flex: 0 0 auto; margin-left: auto; max-width: 100%; text-align: right; }
+  .ficha-cab { flex-wrap: wrap; }
+  .ficha-cab > .cuerpo { flex: 1 1 9rem; }
+  .pestanas { flex-wrap: wrap; }
+  .pestana { flex: 1 1 auto; padding-inline: .6rem; }
+  .barra { flex-wrap: wrap; }
+  .barra > .relative { flex: 1 1 12rem; min-width: 10rem; }
+  .filtros { grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); }
+  .filtros > :first-child { grid-column: 1 / -1; }
+  .form-nueva { grid-template-columns: minmax(0, 1fr); }
+  .form-nueva .fila2 { flex-wrap: wrap; }
+  .form-nueva .fila2 > * { min-width: 0; }
+  .form-nueva .fila2 > .select-btn, .form-nueva .fila2 > input { flex: 1 1 9rem; }
+  .entrada { flex-wrap: wrap; }
+  .entrada > input[type=text] { flex: 1 1 11rem; min-width: 11rem; }
+  .kpis { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); }
+  .kpi-v { white-space: normal; overflow-wrap: anywhere; }
+  .etiqueta { overflow-wrap: anywhere; }
+  .lbl-corto { display: none; }
+  nav#nav button { min-width: 0; padding-inline: .1rem; }
+  nav#nav button > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  nav#nav.apretada .lbl-largo.tiene-corto { position: absolute; visibility: hidden; }
+  nav#nav.apretada .lbl-corto { display: inline; }
+  .periodo > .chip, .filtro-tipos > .chip { white-space: normal; text-align: center; line-height: 1.15; padding-block: .35rem; }
 }

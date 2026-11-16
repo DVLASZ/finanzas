@@ -20,6 +20,7 @@
 | `npm run guia -- <plantilla>` | Arma la guía de usuario de una app con sus cuentas y categorías (queda en `docs-privado/`) |
 | `npm run abrir-respaldo -- <archivo>` | Abre un respaldo cifrado de la nube (ver [RESPALDO.md](RESPALDO.md)) |
 | `npm run e2e` | Abre la app en tu Chrome y recorre las pantallas como una persona (19 pruebas en tamaño de celular; en el celular real son 18, porque subir una imagen desde un archivo solo corre en PC). No va en `check` porque necesita Chrome |
+| `npm run e2e:letra` | Revisa que nada se desborde con letra grande en un celular angosto (393 px, como el Redmi Note 14), con varias escalas de texto. `ESCALAS=1,1.3` y `INSTALACION=personal` ajustan la prueba |
 | `npm run salud` | Pregunta a cada instalación publicada cómo va: movimientos, último movimiento, avisos, IA |
 
 ## Convenciones

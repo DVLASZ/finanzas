@@ -19,7 +19,13 @@ export function MontoAnimado({ valor, moneda = 'COP', class: clase = '' }: { val
     if (desde === valor) return;
     return contar(valor, setMostrado);
   }, [valor]);
-  return <span class={`tabular-nums ${clase}`}>{formatear(mostrado, moneda)}</span>;
+  // el valor final, invisible, reserva el ancho: la cifra no cambia de tamaño ni de sitio mientras cuenta
+  return (
+    <span class={`tabular-nums inline-grid ${clase}`}>
+      <span class="invisible col-start-1 row-start-1" aria-hidden="true">{formatear(valor, moneda)}</span>
+      <span class="col-start-1 row-start-1">{formatear(mostrado, moneda)}</span>
+    </span>
+  );
 }
 
 /** Hijos que entran uno tras otro (efecto escalonado). */
