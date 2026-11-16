@@ -44,6 +44,11 @@ export interface Repo {
   cargar(): Promise<Datos>;
   guardarMovimiento(m: Movimiento, cuentasNuevas: Cuenta[], compromisos: Compromiso[]): Promise<void>;
   anularMovimiento(id: string, cuando: string): Promise<void>;
+  /**
+   * Reemplaza un movimiento que ya existe (mismo id): sus datos y sus asientos, de una sola vez. Si no existe o está
+   * anulado, lanza: no se edita lo anulado.
+   */
+  editarMovimiento(m: Movimiento, cuentasNuevas: Cuenta[]): Promise<void>;
   actualizarCompromisos(cs: Compromiso[]): Promise<void>;
   guardarAprendido(palabra: string, valor: Aprendido): Promise<void>;
   setPresupuesto(categoriaId: string, monto: number | null): Promise<void>;
@@ -97,6 +102,15 @@ export class MemoriaRepo implements Repo {
   }
 
   async cargar(): Promise<Datos> { return structuredClone(this.datos); }
+
+  async editarMovimiento(m: Movimiento, cuentasNuevas: Cuenta[]): Promise<void> {
+    const i = this.datos.movimientos.findIndex(x => x.id === m.id);
+    if (i < 0 || this.datos.movimientos[i].estado !== 'ok') throw new Error('Ese movimiento no existe o está anulado.');
+    for (const c of cuentasNuevas) if (!this.datos.cuentas.some(x => x.id === c.id)) this.datos.cuentas.push(c);
+    // el estado, el id y la fecha de creación no cambian con una edición
+    const anterior = this.datos.movimientos[i];
+    this.datos.movimientos[i] = structuredClone({ ...m, id: anterior.id, creadoEn: anterior.creadoEn, estado: 'ok' as const, anuladoEn: null });
+  }
 
   async guardarMovimiento(m: Movimiento, cuentasNuevas: Cuenta[], compromisos: Compromiso[]): Promise<void> {
     if (this.datos.movimientos.some(x => x.id === m.id)) return; // idempotente, igual que en D1

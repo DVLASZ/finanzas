@@ -36,3 +36,4 @@ export * from './ocr.ts';
 export * from './reparto.ts';
 export * from './exportarPlano.ts';
 export * from './filtros.ts';
+export * from './edicion.ts';

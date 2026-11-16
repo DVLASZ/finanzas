@@ -60,7 +60,7 @@ export class D1Repo implements Repo {
       lugarDesde: nulo(r.lugar_desde), lugarHasta: nulo(r.lugar_hasta), origen: txt(r.origen) as Movimiento['origen'],
       mensajeOriginal: nulo(r.mensaje_original), propuesta: r.propuesta ? JSON.parse(txt(r.propuesta)) : undefined,
       compromisoId: nulo(r.compromiso_id), estado: txt(r.estado) as Movimiento['estado'], anuladoEn: nulo(r.anulado_en),
-      creadoEn: txt(r.creado_en), asientos: asientosPorMov.get(txt(r.id)) ?? [],
+      creadoEn: txt(r.creado_en), editadoEn: nulo(r.editado_en), asientos: asientosPorMov.get(txt(r.id)) ?? [],
     }));
     const compromisos: Compromiso[] = co.map(r => ({
       id: txt(r.id), personaId: txt(r.persona_id), direccion: txt(r.direccion) as Compromiso['direccion'],
@@ -104,6 +104,32 @@ export class D1Repo implements Repo {
       m.propuesta ? JSON.stringify(m.propuesta) : null, m.compromisoId ?? null, m.estado, m.anuladoEn ?? null,
       m.creadoEn, m.creadoEn,
     ));
+    for (const a of m.asientos) {
+      s.push(p('INSERT INTO asientos (movimiento_id, cuenta_id, monto, moneda) VALUES (?,?,?,?)', m.id, a.cuentaId, a.monto, a.moneda));
+    }
+    await this.db.batch(s);
+  }
+
+  /**
+   * Reemplaza un movimiento y sus asientos en un solo lote: o cambia todo o no cambia nada, así la partida doble no
+   * queda a medias. Lanza si no existe o está anulado. Cambia `cambio_en` para que los demás aparatos lo reciban.
+   */
+  async editarMovimiento(m: Movimiento, cuentasNuevas: Cuenta[]): Promise<void> {
+    const ya = await this.db.prepare("SELECT estado FROM movimientos WHERE id = ?").bind(m.id).first<{ estado: string }>();
+    if (!ya || ya.estado !== 'ok') throw new Error('Ese movimiento no existe o está anulado.');
+    const p = (sql: string, ...v: unknown[]) => this.db.prepare(sql).bind(...v);
+    const s: D1Stmt[] = [];
+    for (const c of cuentasNuevas) {
+      s.push(p('INSERT OR IGNORE INTO cuentas (id, nombre, clave, tipo, moneda, grupo, fijo, en_disponible) VALUES (?,?,?,?,?,?,?,?)',
+        c.id, c.nombre, c.clave, c.tipo, c.moneda, c.grupo ?? null, c.fijo ? 1 : 0, c.enDisponible === false ? 0 : 1));
+    }
+    s.push(p(
+      `UPDATE movimientos SET ocurrido_en = ?, sin_hora = ?, descripcion = ?, etiqueta = ?, nota = ?, lugar_desde = ?, lugar_hasta = ?,
+         propuesta = ?, editado_en = ?, actualizado_en = ?, cambio_en = datetime('now','-5 hours') WHERE id = ? AND estado = 'ok'`,
+      m.ocurridoEn, m.sinHora ? 1 : 0, m.descripcion, m.etiqueta ?? null, m.nota ?? null, m.lugarDesde ?? null, m.lugarHasta ?? null,
+      m.propuesta ? JSON.stringify(m.propuesta) : null, m.editadoEn ?? null, m.editadoEn ?? m.creadoEn, m.id,
+    ));
+    s.push(p('DELETE FROM asientos WHERE movimiento_id = ?', m.id));
     for (const a of m.asientos) {
       s.push(p('INSERT INTO asientos (movimiento_id, cuenta_id, monto, moneda) VALUES (?,?,?,?)', m.id, a.cuentaId, a.monto, a.moneda));
     }
