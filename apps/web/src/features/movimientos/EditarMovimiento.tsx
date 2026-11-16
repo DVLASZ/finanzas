@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   aLocal, capacidadesDeEdicion, describirFecha, formatear, hallarMontos, previsualizarEdicion, aplicarEdicion, type CambiosEdicion, type CampoEditable, type Movimiento, type Propuesta,
 } from '../../../../../packages/core/src/index.ts';
+import { mostrarConfirmacion } from '../../components/ui/Confirmacion.tsx';
 import { Selector } from '../../components/ui/Selector.tsx';
 import { subirDesdeAbajo } from '../../lib/efectos.ts';
 import { app } from '../../services/estado.ts';
@@ -121,6 +122,7 @@ export function EditarMovimiento() {
     try {
       await guardarCambio(async () => { await aplicarEdicion(app.repo, new Date(), m.id, cambios); });
       cerrar();
+      mostrarConfirmacion('Cambios guardados');
     } catch (e) {
       setError((e as Error).message);
       setPaso('formulario');

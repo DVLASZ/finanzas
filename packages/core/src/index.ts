@@ -37,3 +37,5 @@ export * from './reparto.ts';
 export * from './exportarPlano.ts';
 export * from './filtros.ts';
 export * from './edicion.ts';
+export * from './comparativa.ts';
+export * from './duplicar.ts';

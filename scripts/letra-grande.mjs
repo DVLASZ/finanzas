@@ -152,6 +152,13 @@ try {
         await pag.evaluate(() => document.querySelector('#e-monto') && (document.querySelector('#e-monto').focus())); await pag.keyboard.type('9');
         await pag.evaluate(() => document.querySelector('#e-guardar')?.click()); await espera(500); await escalar();
       }],
+      ['Duplicar', async () => {
+        await pag.evaluate(() => { document.querySelector('#editar')?.remove(); document.querySelector('#duplicar')?.remove(); });
+        await irA('Movimientos');
+        await pag.evaluate(() => { const f = [...document.querySelectorAll('#lista .fila')].find(x => /carne|transporte|jornal|botellas/i.test(x.innerText)); f?.click(); });
+        await espera(600); await escalar();
+        await pag.evaluate(() => document.querySelector('#duplicar-mov')?.click()); await espera(500); await escalar();
+      }],
       ['Más', async () => { await irA('Más'); }],
       ['Deudas y préstamos', async () => abrirDeMas('Deudas y préstamos')],
       ['Categorías y personas', async () => abrirDeMas('Categorías y personas')],
@@ -165,9 +172,16 @@ try {
       ['Ajustes', async () => abrirDeMas('Ajustes')],
       ['Primeros pasos', async () => abrirDeMas('Primeros pasos')],
     ];
-    console.log(`\n=== texto x${escala} (letra de la app: ${await pag.evaluate(() => document.documentElement.dataset.letra)}) ===`);
+    // lo que cada variante tenga en el menú «Más» y no esté arriba (Productos y precios en la de empresa, por ejemplo)
+    await irA('Más');
+    const delMenu = await pag.evaluate(() => [...document.querySelectorAll('[data-ir]')].map(b => b.querySelector('b')?.innerText.trim() ?? '').filter(Boolean));
+    for (const n of delMenu) {
+      if (n === 'Ayuda' || pantallas.some(([p]) => n.includes(p) || p.includes(n))) continue;
+      pantallas.push([n, async () => abrirDeMas(n)]);
+    }
+    console.log(`\n=== ${instalacion}: texto x${escala} (letra de la app: ${await pag.evaluate(() => document.documentElement.dataset.letra)}) ===`);
     for (const [nombre, ir] of pantallas) {
-      try { await ir(); } catch (e) { console.log(`  ${nombre}: no pude abrirla (${e.message})`); continue; }
+      try { await ir(); await pag.evaluate(() => document.querySelector('#duplicar')?.remove()); } catch (e) { console.log(`  ${nombre}: no pude abrirla (${e.message})`); continue; }
       const h = await pag.evaluate(EN_PAGINA.revisar);
       if (capturas) await pag.screenshot({ path: join(capturas, `x${escala}-${nombre.replace(/[^a-z0-9]+/gi, '-')}.png`) });
       total += h.length;

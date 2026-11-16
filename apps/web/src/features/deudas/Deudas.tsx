@@ -20,7 +20,8 @@ export function Deudas() {
   const deOtros = lista.filter(d => d.deOtros > 0);
   const porCobrar = teDeben.filter(d => d.moneda === 'COP').reduce((s, d) => s + d.saldo, 0);
   const porPagar = debes.filter(d => d.moneda === 'COP').reduce((s, d) => s - d.saldo - d.deOtros, 0);
-  const anotar = (frase: string) => { prellenarChat(frase); irA('chat'); };
+  // la tarjeta queda lista para confirmar: no hay que redactar nada
+  const anotar = (frase: string) => { prellenarChat(frase, true); irA('chat'); };
   const personas = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`;
 
   const Fila = ({ d }: { d: Deuda }) => {
@@ -28,7 +29,8 @@ export function Deudas() {
     const motivo = d.compromisos[0]?.motivo;
     const esDeuda = d.saldo < 0;
     const monto = formatear(Math.abs(d.saldo) - (esDeuda ? d.deOtros : 0), d.moneda);
-    const accion = esDeuda ? `pagué ${monto.replace('US$', '').replace('$', '')}${d.moneda === 'USD' ? ' usd' : ''} a ${d.persona.nombre} ` : `${d.persona.nombre} me pagó `;
+    const valor = (Math.abs(d.saldo) - (esDeuda ? d.deOtros : 0)) / (d.moneda === 'USD' ? 100 : 1);
+    const accion = esDeuda ? `pagué ${valor}${d.moneda === 'USD' ? ' usd' : ''} a ${d.persona.nombre}` : `${d.persona.nombre} me pagó ${valor}${d.moneda === 'USD' ? ' usd' : ''}`;
     return (
       <li class="fila">
         <div class="flex min-w-0 items-center gap-3">
@@ -41,7 +43,7 @@ export function Deudas() {
         </div>
         <div>
           <div class={`monto ${esDeuda ? 'mal' : 'bien'}`}>{monto}</div>
-          <button class="chip" onClick={() => anotar(accion)}>{esDeuda ? 'Registrar pago' : 'Registrar cobro'}</button>
+          <button class="chip" onClick={() => anotar(accion)}>{esDeuda ? 'Registrar pago ahora' : 'Registrar abono ahora'}</button>
         </div>
       </li>
     );
