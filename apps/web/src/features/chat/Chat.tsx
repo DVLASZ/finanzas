@@ -273,6 +273,7 @@ export function Chat() {
         {/* Android no ofrece cámara y galería en la misma lista: con «capture» solo abre la cámara y sin él solo la galería. Por eso hay dos entradas y una hoja que pregunta cuál. */}
         <input type="file" id="archivoEscanear" accept="image/*" hidden onChange={alElegirImagen} />
         <input type="file" id="fotoEscanear" accept="image/*" capture="environment" hidden onChange={alElegirImagen} />
+        <div class="ml-auto flex items-center gap-2">
         <button type="button" id="escanear" class="secundario mic" aria-label="Leer un comprobante: cámara o galería" title="Leer comprobante" disabled={escaneando}
           onClick={e => abrirOpciones('Leer un comprobante', [
             { valor: 'camara', etiqueta: 'Tomar una foto', visual: { Icono: Camera, ...T.cian } },
@@ -284,6 +285,7 @@ export function Chat() {
           </button>
         )}
         <button type="submit" class="primario !min-h-11 !w-11 !rounded-full !p-0" aria-label="Enviar" title="Enviar"><ArrowUp size={22} strokeWidth={2.4} /></button>
+        </div>
       </form>
       <div id="vozEstado" class={`sub px-5 ${estadoVoz ? 'pb-1 pt-1' : 'h-0'}`} role="status" aria-live="polite">{estadoVoz}</div>
     </>

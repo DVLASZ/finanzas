@@ -8,7 +8,8 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 
-const dist = join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'dist');
+// DIST sirve otra carpeta (por ejemplo la app compilada de una instalación): DIST=instalaciones/mama/dist
+const dist = process.env.DIST ? normalize(process.env.DIST) : join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'dist');
 const puerto = Number(process.env.PORT ?? 5173);
 const tipos = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
