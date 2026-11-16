@@ -43,6 +43,8 @@ export async function sincronizar(): Promise<string> {
     app.ultimoSync = servidorEn;
     app.ultimoError = null;
     await escribir('ultimoSync', servidorEn);
+    // una edición que el servidor no aceptó deja la copia local distinta de la del servidor: la próxima vez se trae todo
+    if (rechazadas?.some(x => enviadas[x.indice]?.op === 'editar')) await escribir('copia_completa', false);
     if (rechazadas?.length) {
       // Una operación que el servidor no acepta no puede trabar las demás: se guarda aparte para que se vea.
       const describir = (o: Op | undefined): string => !o ? 'cambio' : o.op === 'guardar' ? `${o.movimiento.descripcion} ${o.movimiento.ocurridoEn.slice(0, 10)}` : o.op;

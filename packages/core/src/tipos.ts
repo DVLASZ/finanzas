@@ -73,6 +73,8 @@ export interface Movimiento {
   estado: 'ok' | 'anulado';
   anuladoEn?: string | null;
   creadoEn: string;
+  /** Cuándo se editó por última vez desde el detalle del movimiento (hora local). Si falta, nunca se editó. */
+  editadoEn?: string | null;
   asientos: Asiento[];
 }
 

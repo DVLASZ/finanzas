@@ -34,6 +34,7 @@ class RepoLocal extends MemoriaRepo {
   }
   override async guardarMovimiento(m: Movimiento, c: Cuenta[], k: Compromiso[]) { await super.guardarMovimiento(m, c, k); await this.persistir(); }
   override async anularMovimiento(id: string, cuando: string) { await super.anularMovimiento(id, cuando); await this.persistir(); }
+  override async editarMovimiento(m: Movimiento, c: Cuenta[]) { await super.editarMovimiento(m, c); await this.persistir(); }
   override async actualizarCompromisos(cs: Compromiso[]) { await super.actualizarCompromisos(cs); await this.persistir(); }
   override async guardarAprendido(p: string, v: Parameters<MemoriaRepo['guardarAprendido']>[1]) { await super.guardarAprendido(p, v); await this.persistir(); }
   override async setPresupuesto(c: string, m: number | null) { await super.setPresupuesto(c, m); await this.persistir(); }

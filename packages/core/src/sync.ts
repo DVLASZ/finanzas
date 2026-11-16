@@ -13,6 +13,8 @@ import { DECIMALES, type Aprendido, type Compromiso, type Cuenta, type Movimient
 export type Op =
   | { op: 'guardar'; movimiento: Movimiento; cuentasNuevas: Cuenta[]; compromisos: Compromiso[] }
   | { op: 'anular'; id: string; cuando: string }
+  /** Reemplaza un movimiento ya guardado (mismo id): sus datos y sus asientos, juntos. */
+  | { op: 'editar'; movimiento: Movimiento; cuentasNuevas: Cuenta[] }
   | { op: 'compromisos'; lista: Compromiso[] }
   | { op: 'aprendido'; palabra: string; valor: Aprendido }
   | { op: 'presupuesto'; categoriaId: string; monto: number | null }
@@ -74,6 +76,17 @@ export function validarOp(op: unknown): string | null {
         try { validarAsientos(m.asientos); } catch (e) { return (e as Error).message; }
         break;
       }
+      case 'editar': {
+        const m = o.movimiento as Movimiento | undefined;
+        if (!m || !esTexto(m.id) || !esTexto(m.ocurridoEn) || !Array.isArray(m.asientos) || !Array.isArray(o.cuentasNuevas)) return 'Edición mal formada';
+        if (!esTexto(m.tipo) || typeof m.descripcion !== 'string' || !m.descripcion.trim() || m.descripcion.length > 200) return 'Edición mal formada';
+        if (m.editadoEn != null && typeof m.editadoEn !== 'string') return 'Edición mal formada';
+        for (const a of m.asientos) {
+          if (!a || !esTexto(a.cuentaId) || !(a.moneda in DECIMALES)) return 'Asiento mal formado';
+        }
+        try { validarAsientos(m.asientos); } catch (e) { return (e as Error).message; }
+        break;
+      }
       case 'anular': if (!esTexto(o.id) || !esTexto(o.cuando)) return 'Anulación mal formada'; break;
       case 'compromisos': if (!Array.isArray(o.lista)) return 'Compromisos mal formados'; break;
       case 'aprendido': if (!esTexto(o.palabra) || !o.valor || typeof o.valor !== 'object') return 'Palabra aprendida mal formada'; break;
@@ -108,6 +121,7 @@ export async function aplicarOps(repo: Repo, ops: Op[]): Promise<Rechazo[]> {
     try {
       switch (o.op) {
         case 'guardar': await repo.guardarMovimiento(o.movimiento, o.cuentasNuevas, o.compromisos); break;
+        case 'editar': await repo.editarMovimiento(o.movimiento, o.cuentasNuevas); break;
         case 'anular': await repo.anularMovimiento(o.id, o.cuando); break;
         case 'compromisos': await repo.actualizarCompromisos(o.lista); break;
         case 'aprendido': await repo.guardarAprendido(o.palabra, o.valor); break;
@@ -161,6 +175,11 @@ export class RepoConCola implements Repo {
   async guardarMovimiento(m: Movimiento, cuentasNuevas: Cuenta[], compromisos: Compromiso[]) {
     await this.base.guardarMovimiento(m, cuentasNuevas, compromisos);
     this.cola.push({ op: 'guardar', movimiento: m, cuentasNuevas, compromisos });
+    this.alCambiar();
+  }
+  async editarMovimiento(m: Movimiento, cuentasNuevas: Cuenta[]) {
+    await this.base.editarMovimiento(m, cuentasNuevas);
+    this.cola.push({ op: 'editar', movimiento: m, cuentasNuevas });
     this.alCambiar();
   }
   async anularMovimiento(id: string, cuando: string) {
