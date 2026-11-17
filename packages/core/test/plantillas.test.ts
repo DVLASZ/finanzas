@@ -116,7 +116,7 @@ test('familia: los grupos de las personas son los de la casa, familia directa, f
   const s = await b.di('le regalé 50000 a Jorge');
   assert.deepEqual(
     s[0].botones?.filter(x => x.id.startsWith('resp:')).map(x => x.titulo),
-    ['Los de la casa', 'Familia directa', 'Familiares', 'Compañeros de trabajo', 'Empresa', 'Amigos', 'Trabajadores', 'No es una persona'],
+    ['Los de la casa', 'Familia directa', 'Familiares', 'Compañeros de trabajo', 'Empresa', 'Amigos', 'Trabajadores', 'Es un apodo de...', 'No es una persona'],
   );
 });
 
@@ -131,7 +131,7 @@ test('empresa: efectivo, monedas y «En otras cuentas», sus categorías y sus g
   const t = textoDe(await b.di('63000 botellas'));
   assert.match(t, /Gasto · Insumos · \$63\.000/);
   const s = await b.di('le regalé 20000 a Rosa');
-  assert.deepEqual(s[0].botones?.filter(x => x.id.startsWith('resp:')).map(x => x.titulo), ['Socios', 'Clientes', 'Proveedores', 'Otros', 'No es una persona']);
+  assert.deepEqual(s[0].botones?.filter(x => x.id.startsWith('resp:')).map(x => x.titulo), ['Socios', 'Clientes', 'Proveedores', 'Otros', 'Es un apodo de...', 'No es una persona']);
 });
 
 test('empresa: el impuesto de cámara de comercio cae en su categoría', async () => {

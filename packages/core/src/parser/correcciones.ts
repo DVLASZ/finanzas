@@ -3,7 +3,7 @@ import { error, type Faltante, type Propuesta } from './tipos.ts';
 import { listaCategorias, tramosDe } from './comun.ts';
 import { leerPago } from './pago.ts';
 import { gasto, ingreso, transferencia } from './movimientos.ts';
-import { NO_ES_PERSONA, ROLES, aplicarRol, faltanteGrupo } from './personas.ts';
+import { ES_APODO, NO_ES_PERSONA, ROLES, aplicarRol, faltanteGrupo } from './personas.ts';
 import { hallarMontos, aMinor } from '../dinero.ts';
 import { borrarTramos, categoriaPorNombre, gruposDe, hallarCuentas } from '../entidades.ts';
 import { hallarFecha } from '../fechas.ts';
@@ -53,9 +53,28 @@ export function resolverFaltante(
       sig.faltantes = sig.faltantes.filter(x => x.campo !== 'rol' && x.campo !== 'cobro');
       return { propuesta: sig };
     }
+    // «Es un apodo de...»: se pregunta de quién y, al confirmar, el nombre queda como apodo de esa persona
+    if (t === limpiar(ES_APODO) || /^es un apodo/.test(t)) {
+      const conocidas = ctx.cuentas.filter(c => c.tipo === 'persona').map(c => c.nombre).slice(0, 12);
+      if (!conocidas.length) return { error: 'Todavía no conozco a nadie a quien ponerle ese apodo. Elige un grupo.' };
+      sig.faltantes.unshift({ campo: 'apodo', dato: f.dato, pregunta: `¿De quién es apodo «${f.dato}»?`, opciones: conocidas });
+      return { propuesta: sig };
+    }
     const g = gruposDe(ctx).find(x => limpiar(x.nombre) === t);
     if (!g) return { error: `Elige una opción: ${(f.opciones ?? []).join(' · ')}.` };
     sig.grupoPersona = g.id;
+    return { propuesta: sig };
+  }
+  if (f.campo === 'apodo') {
+    const dato = f.dato ?? '';
+    const persona = ctx.cuentas.find(c => c.tipo === 'persona' && (limpiar(c.nombre) === t || c.clave === t));
+    if (!persona) return { error: `Elige una opción: ${(f.opciones ?? []).join(' · ')}.` };
+    const cambiar = (n: string) => (limpiar(n) === limpiar(dato) ? persona.nombre : n);
+    if (sig.persona) sig.persona = cambiar(sig.persona);
+    if (sig.personas) sig.personas = sig.personas.map(x => ({ ...x, nombre: cambiar(x.nombre) }));
+    sig.concepto = sig.concepto.replace(titulo(dato), persona.nombre);
+    sig.pedirGrupo = false;
+    sig.apodoNuevo = { apodo: limpiar(dato), personaId: persona.id };
     return { propuesta: sig };
   }
   if (f.campo === 'cobro') {

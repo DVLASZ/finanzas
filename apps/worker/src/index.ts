@@ -18,7 +18,7 @@
  */
 import { D1Repo } from './d1repo.ts';
 import { respaldarEnGitHub } from './respaldo.ts';
-import { avisarAlCelular as avisarDeVerdad, avisarFotos, mandarAviso } from './avisos.ts';
+import { avisarAlCelular as avisarDeVerdad, avisarFotos, avisarRecordatorio, mandarAviso } from './avisos.ts';
 import { json, tokenValido, type Contexto, type Env, type Ruta } from './comun.ts';
 import { rutaAdmin } from './rutas/admin.ts';
 import { buzonPublico, rutaBuzon } from './rutas/buzon.ts';
@@ -41,12 +41,16 @@ const RUTAS: Ruta[] = [rutaSync, rutaBuzon, rutaAdmin, rutaPush, rutaIA, rutaOCR
 export default {
   async scheduled(_evento: unknown, env: Env): Promise<void> {
     const repo = new D1Repo(env.DB);
-    // Un solo cron corre dos veces al día (13:00 y 23:00 UTC = 8 am y 6 pm en Colombia): la plan gratis
-    // de Cloudflare deja 5 crons por cuenta y hay tres apps. Por la hora se sabe cuál toca.
-    if (new Date().getUTCHours() >= 18) {
-      await avisarDeVerdad(repo, new Date(), 'tarde');
+    // Un solo cron corre cada media hora (la plan gratis de Cloudflare deja 5 crons por cuenta y hay tres apps). Por la hora se
+    // sabe qué toca: 13:00 UTC = 8 am y 23:00 UTC = 6 pm en Colombia; el recordatorio de la noche va a la hora que cada quien eligió.
+    const ahora = new Date();
+    try { await avisarRecordatorio(repo, ahora); } catch (e) { console.error('recordatorio:', (e as Error).message); }
+    if (ahora.getUTCMinutes() >= 30) return;
+    if (ahora.getUTCHours() === 23) {
+      await avisarDeVerdad(repo, ahora, 'tarde');
       return;
     }
+    if (ahora.getUTCHours() !== 13) return;
     await avisarDeVerdad(repo, new Date(), 'manana');
     try { await avisarFotos(repo); } catch (e) { console.error('avisos:', (e as Error).message); }
     // los domingos, la copia de seguridad en la nube (si está activada); si falla, se avisa al celular

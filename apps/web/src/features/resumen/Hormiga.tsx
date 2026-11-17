@@ -3,7 +3,8 @@
  * y los tres conceptos por donde más se va la plata.
  */
 import { Bug } from 'lucide-preact';
-import { formatear, gastosHormiga, TOPE_HORMIGA, VECES_HORMIGA, type Cuenta, type Movimiento } from '../../../../../packages/core/src/index.ts';
+import { gastosHormiga, TOPE_HORMIGA, VECES_HORMIGA, type Cuenta, type Movimiento } from '../../../../../packages/core/src/index.ts';
+import { formatear } from '../../lib/formatear.ts';
 import { Insignia, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
 

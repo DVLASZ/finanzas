@@ -18,6 +18,9 @@ if (!chrome) { console.error('No encuentro Chrome. Pon su ruta en CHROME_PATH.')
 const instalacion = process.env.INSTALACION ?? 'mama';
 const escalas = (process.env.ESCALAS ?? '1,1.15,1.3').split(',').map(Number);
 const capturas = process.env.CAPTURAS;
+// los temas que se revisan (piel:tema). Por defecto los cuatro de siempre; TEMAS=todos suma las tres atmósferas nuevas
+const TODOS = 'libro:oscuro,libro:claro,tierra:oscuro,tierra:claro,esmeralda:oscuro,esmeralda:claro,oceano:oscuro,oceano:claro,atardecer:oscuro,atardecer:claro';
+const temas = (process.env.TEMAS === 'todos' ? TODOS : process.env.TEMAS ?? 'libro:oscuro,libro:claro,tierra:oscuro,tierra:claro').split(',').map(x => x.split(':'));
 if (capturas) mkdirSync(capturas, { recursive: true });
 
 const prep = spawnSync('npm', ['run', 'instalar', '--', 'preparar', instalacion], { cwd: raiz, encoding: 'utf8', shell: true });
@@ -111,6 +114,8 @@ try {
     pag.on('pageerror', e => errores.push(e.message));
     await pag.goto(`http://localhost:${PUERTO}/`, { waitUntil: 'networkidle0' });
     await espera(600);
+    // la app arranca con los montos ocultos: se muestran para revisar el ancho de las cifras de verdad
+    await pag.evaluate(() => { if (document.documentElement.dataset.privado === '1') document.querySelector('#ojo')?.click(); });
     const escalar = () => pag.evaluate(EN_PAGINA.escalar, escala);
 
     const escribir = async t => { await pag.type('#texto', t); await pag.keyboard.press('Enter'); await espera(700); await escalar(); };
@@ -144,11 +149,6 @@ try {
       ['Chat: ayuda por tema', async () => {
         await irA('Chat');
         await pag.evaluate(() => document.querySelector('#ayuda-detalle') || document.querySelector('[data-tema="deudas"]')?.click()); await espera(500); await escalar();
-      }],
-      ['Chat: pulso plegado', async () => {
-        await irA('Chat');
-        await pag.evaluate(() => { if (document.querySelector('#pulso-cuerpo')) document.querySelector('#pulso-alternar')?.click(); }); await espera(400); await escalar();
-        await pag.evaluate(() => { if (!document.querySelector('#pulso-cuerpo')) document.querySelector('#pulso-alternar')?.click(); }); await espera(300);
       }],
       ['Atajos: editor', async () => {
         await irA('Chat');
@@ -208,17 +208,21 @@ try {
       if (n === 'Ayuda' || pantallas.some(([p]) => n.includes(p) || p.includes(n))) continue;
       pantallas.push([n, async () => abrirDeMas(n)]);
     }
-    console.log(`\n=== ${instalacion}: texto x${escala} (letra de la app: ${await pag.evaluate(() => document.documentElement.dataset.letra)}) ===`);
+    for (const [piel, tema] of temas) {
+    await pag.evaluate((p, t) => { document.documentElement.dataset.piel = p; document.documentElement.dataset.tema = t; window.dispatchEvent(new Event('apariencia')); }, piel, tema);
+    await espera(300);
+    console.log(`\n=== ${instalacion}: texto x${escala}, tema ${piel} ${tema} (letra de la app: ${await pag.evaluate(() => document.documentElement.dataset.letra)}) ===`);
     for (const [nombre, ir] of pantallas) {
       try { await ir(); } catch (e) { console.log(`  ${nombre}: no pude abrirla (${e.message})`); continue; }
       const h = await pag.evaluate(EN_PAGINA.revisar);
-      if (capturas) await pag.screenshot({ path: join(capturas, `x${escala}-${nombre.replace(/[^a-z0-9]+/gi, '-')}.png`) });
+      if (capturas) await pag.screenshot({ path: join(capturas, `x${escala}-${piel}-${tema}-${nombre.replace(/[^a-z0-9]+/gi, '-')}.png`) });
       await pag.evaluate(() => { document.querySelector('#at-cerrar')?.click(); document.querySelector('#ayuda-volver')?.click(); for (const id of ['dialogo', 'duplicar', 'editar']) document.querySelector('#' + id)?.remove(); });
       await espera(200);
       total += h.length;
       console.log(h.length ? `  ${nombre}: ${h.length} problema(s)` : `  ${nombre}: bien`);
       const vistos = new Set();
       for (const x of h) { const k = `${x.tipo}|${x.el}`; if (vistos.has(k) || vistos.size >= 8) continue; vistos.add(k); console.log(`      ${x.tipo}: ${x.el} «${x.texto}» ${x.dato}`); }
+    }
     }
     if (nativos) { total++; console.log(`  salieron ${nativos} cuadro(s) del navegador`); }
     if (errores.length) { total++; console.log('  errores de JavaScript:', errores.join(' | ')); }

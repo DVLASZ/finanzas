@@ -15,8 +15,9 @@ import { aLocal, deLocal, describirDia, indiceMes, nombreMes } from './fechas.ts
 import { billetesSugeridos } from './efectivo.ts';
 import {
   alertaPresupuesto, pagoDe, resumenGuardado, sacaEfectivo, tarjeta, textoAyuda, textoCategoria, textoDeudas,
-  textoEvento, textoResumen, textoSaldo, textoUltimos, textoVentas,
+  textoEvento, textoResumen, textoSaldo, textoSaldoDe, textoUltimos, textoVentas,
 } from './mensajes.ts';
+import { textoPresupuestoSemana } from './presupuesto.ts';
 import { textoJornales } from './trabajadores.ts';
 import { textoRevision } from './revision.ts';
 import { aplicarCambio, interpretar, resolverFaltante, type Propuesta } from './parser.ts';
@@ -417,6 +418,12 @@ class Motor {
     if (p.reemplazaId) await this.repo.anularMovimiento(p.reemplazaId, aLocal(this.ctx.ahora));
     await this.repo.guardarMovimiento(hecho.movimiento, hecho.cuentasNuevas, hecho.compromisos);
     if (p.propuesta.tipo === 'apertura') await this.repo.setConfig('fecha_apertura', p.propuesta.ocurridoEn);
+    const ap = p.propuesta.apodoNuevo;
+    if (ap) {
+      const actuales = JSON.parse(this.datos.config.apodos_personas ?? '{}') as Record<string, string[]>;
+      const lista = new Set([...(actuales[ap.personaId] ?? []), ap.apodo]);
+      await this.repo.setConfig('apodos_personas', JSON.stringify({ ...actuales, [ap.personaId]: [...lista] }));
+    }
     await this.repo.guardarPendiente(null);
 
     // Con lo guardado: cierra deudas ya pagadas, calcula saldo y alerta de tope
@@ -549,6 +556,8 @@ class Motor {
       case 'semana': return [{ texto: textoResumen('semana', movimientos, this.ctx) }];
       case 'mes': return [{ texto: textoResumen('mes', movimientos, this.ctx) }];
       case 'anio': return [{ texto: textoResumen('anio', movimientos, this.ctx) }];
+      case 'saldo_cuenta': return [{ texto: textoSaldoDe(arg ?? '', movimientos, this.ctx) }];
+      case 'presupuesto_semana': return [{ texto: textoPresupuestoSemana(this.datos, this.ctx.ahora) }];
       case 'deudas': return [{ texto: textoDeudas(movimientos, compromisos, this.ctx) }];
       case 'ultimos': return [{ texto: textoUltimos(movimientos, this.ctx) }];
       case 'ayuda': return [{ texto: textoAyuda(this.ctx) }];

@@ -42,6 +42,10 @@ try {
   const irA = async nombre => { await pag.evaluate(n => [...document.querySelectorAll('nav button')].find(b => b.innerText.trim() === n)?.click(), nombre); await espera(1900); };
   const foto = async nombre => { await pag.evaluate(() => document.querySelector('#contenido')?.scrollTo(0, 0)); await pag.screenshot({ path: join(salida, nombre + '.png') }); console.log('  ' + nombre + '.png'); };
 
+  // la app arranca con los montos escondidos: se muestran para la foto
+  await pag.evaluate(() => { if (document.documentElement.dataset.privado === '1') document.querySelector('#ojo')?.click(); });
+  const tema = async (piel, t) => { await pag.evaluate((p, x) => { document.documentElement.dataset.piel = p; document.documentElement.dataset.tema = x; window.dispatchEvent(new Event('apariencia')); }, piel, t); await espera(500); };
+
   // los datos de ejemplo: nombres y cifras inventados
   await anotar('saldo inicial efectivo 85000 nequi 240000 dolares 45 usd hace 14 días');
   await anotar('ingreso 900000 trabajo hace 12 días');
@@ -73,10 +77,24 @@ try {
   await pag.evaluate(() => document.querySelector('[data-ir=deudas]')?.click());
   await espera(1500);
   await foto('deudas');
+  await irA('Resumen');
+  await pag.evaluate(() => document.querySelector('#mapa-calor')?.scrollIntoView({ block: 'start' }));
+  await espera(900);
+  await pag.screenshot({ path: join(salida, 'calor.png') }); console.log('  calor');
   await irA('Chat');
+  await pag.evaluate(() => document.querySelector('[data-atajo="ayuda"]')?.click());
+  await espera(900);
+  await pag.evaluate(() => document.querySelector('[data-tema="inicio"]')?.click());
+  await espera(700);
+  await foto('ayuda');
+  await pag.evaluate(() => document.querySelector('#ayuda-volver')?.click());
   await escribir('almuerzo 18500 nequi');
   await espera(700);
   await foto('chat');
+  // las atmósferas nuevas
+  await tema('oceano', 'oscuro'); await irA('Saldos'); await foto('tema-oceano');
+  await tema('atardecer', 'oscuro'); await irA('Resumen'); await foto('tema-atardecer');
+  await tema('esmeralda', 'claro'); await irA('Chat'); await foto('tema-esmeralda');
 } finally {
   await navegador.close();
   servidor.kill();

@@ -59,7 +59,7 @@ binding = "ASSETS"
 run_worker_first = ["/api/*"]
 
 [triggers]
-crons = ["0 13,23 * * *"]
+crons = ["0,30 * * * *"]
 
 [ai]
 binding = "AI"
