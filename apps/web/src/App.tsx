@@ -40,6 +40,16 @@ function Estado() {
     : sinRed ? (p ? `Sin internet · ${p} sin enviar` : 'Sin internet')
     : e === 'sincronizando' ? 'Sincronizando'
     : p ? `${p} sin enviar` : 'Todo guardado';
+  // todo en orden (guardado, o solo en este aparato): un indicador chiquito, para que la cabecera quepa siempre en una fila.
+  // El texto largo queda para cuando algo pasa: sincronizando, sin internet, cambios sin enviar.
+  const tranquilo = !sinRed && ((e === 'local' && !conServidor.value) || (e === 'ok' && !p));
+  if (tranquilo) {
+    return (
+      <span id="estado" class={`estado grid h-8 w-8 shrink-0 place-items-center rounded-full ${e === 'ok' ? 'text-pos bg-pos/12' : 'text-tx2 bg-elev'}`} role="img" aria-label={texto} title={texto}>
+        {e === 'ok' ? <Check size={15} /> : <span class="h-2 w-2 rounded-full bg-current" />}
+      </span>
+    );
+  }
   const tono = e === 'ok' && !sinRed ? 'text-pos bg-pos/12' : e === 'local' ? 'text-tx2 bg-elev' : 'text-adv bg-adv/12';
   return (
     <span id="estado" class={`estado inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${tono}`}>
