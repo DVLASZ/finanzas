@@ -55,6 +55,15 @@ export function Catalogo() {
     if (!t.trim() || !Number.isFinite(n) || n < 0 || n > 1_000_000) { await avisar({ titulo: 'No entendí ese número', tono: 'peligro' }); return; }
     await guardar(conConteo(cat, p, sumar ? quedan + n : n, aLocal(ctx.ahora)));
   };
+  /** El mínimo: de ahí para abajo el producto sale en las alertas y en el corte de turno. 0 lo quita. */
+  const fijarMinimo = async (i: number) => {
+    const p = cat.productos[i];
+    const t = await pedir({ titulo: `Stock mínimo de «${p.nombre}»`, texto: 'Cuando queden tantas unidades o menos, te aviso. Escribe 0 para quitarlo.', valor: String(p.minimo ?? ''), tipo: 'numero', aceptar: 'Guardar' });
+    if (t === null) return;
+    const n = Math.round(Number(t.replace(/\D/g, '')));
+    if (!t.trim() || !Number.isFinite(n) || n < 0 || n > 1_000_000) { await avisar({ titulo: 'No entendí ese número', tono: 'peligro' }); return; }
+    await guardar({ ...cat, productos: cat.productos.map((x, k) => (k === i ? { ...x, minimo: n || undefined } : x)) });
+  };
   const cambiarPrecio = async (i: number, j: number) => {
     const pres = cat.productos[i].presentaciones[j];
     const t = await pedir({ titulo: `Nuevo precio de «${pres.nombre}»`, valor: String(pres.precio), tipo: 'numero', aceptar: 'Guardar' });
@@ -80,6 +89,7 @@ export function Catalogo() {
             <button class="secundario" onClick={() => void agregarPresentacion(i)}>Agregar presentación</button>
             <button class="secundario" onClick={() => void contar(p, false)}>{quedan(p) === null ? 'Llevar existencias' : 'Contar de nuevo'}</button>
             {quedan(p) !== null && <button class="secundario" onClick={() => void contar(p, true)}>Llegó mercancía</button>}
+            {quedan(p) !== null && <button class="secundario" data-minimo={p.nombre} onClick={() => void fijarMinimo(i)}>{p.minimo ? `Mínimo: ${p.minimo}` : 'Stock mínimo'}</button>}
           </div>
         </section>
       )) : <Vacio Icono={Package} titulo="Todavía no hay productos" detalle="Agrégalos para poder vender desde el chat." tono="cian" />}

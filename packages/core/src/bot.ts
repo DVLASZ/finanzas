@@ -18,12 +18,13 @@ import {
   textoEvento, textoResumen, textoSaldo, textoSaldoDe, textoUltimos, textoVentas,
 } from './mensajes.ts';
 import { textoPresupuestoSemana } from './presupuesto.ts';
+import { corteDeTurno, textoCorte } from './operacion.ts';
 import { textoJornales } from './trabajadores.ts';
 import { textoRevision } from './revision.ts';
 import { aplicarCambio, interpretar, resolverFaltante, type Propuesta } from './parser.ts';
 import { hallarMontos, aMinor, formatear } from './dinero.ts';
 import { contextoDe, type Datos, type Pendiente, type Repo } from './repo.ts';
-import { dividirLinea } from './lineas.ts';
+import { dividirLinea, MAX_MOVIMIENTOS_POR_MENSAJE } from './lineas.ts';
 import { descendientes, leerSubcategorias, MAX_NIVELES, puedeIrDentro } from './subcategorias.ts';
 import { leerMetas, textoAvance, textoMetas, type Meta } from './metas.ts';
 import { describirFrecuencia, leerRecurrentes, type Frecuencia, type Recurrente } from './recurrentes.ts';
@@ -128,6 +129,7 @@ class Motor {
 
   async alPulsar(id: string): Promise<Salida[]> {
     if (id === 'ok') return this.confirmar();
+    if (id === 'okall') return this.confirmarTodos();
     if (id === 'cubrir') return this.cubrirFalta();
     if (id.startsWith('cuad:')) return this.cuadrarConPersona(id.slice(5));
     if (id === 'no') {
@@ -283,6 +285,23 @@ class Motor {
   }
 
   /** Guarda la tarjeta pendiente y la muestra. */
+  /**
+   * «Confirmar los N» de un mensaje con varios movimientos: guarda el de la tarjeta y los que siguen mientras se entiendan
+   * del todo. Se detiene en el primero que tenga una pregunta, un aviso o plata que no alcanza, y lo deja como tarjeta.
+   */
+  private async confirmarTodos(): Promise<Salida[]> {
+    const guardados: Salida[] = [];
+    for (let i = 0; i < MAX_MOVIMIENTOS_POR_MENSAJE; i++) {
+      const r = await this.confirmar();
+      const [guardado, ...resto] = r;
+      const sigue = resto[resto.length - 1];
+      const limpia = sigue?.botones?.some(b => b.id === 'ok') && !/⚠️|❓/.test(sigue.texto);
+      if (!sigue || !limpia || !this.pend) return [...guardados, guardado, ...resto];
+      guardados.push(guardado);
+    }
+    return guardados;
+  }
+
   private async mostrar(p: Pendiente): Promise<Salida[]> {
     p.id ??= crypto.randomUUID();
     const cerrado = this.avisoSiCerrado(p.propuesta.ocurridoEn, p.propuesta.concepto || 'Ese movimiento');
@@ -294,6 +313,7 @@ class Motor {
     const pierde = this.avisarSegundoSaldoInicial(p);
     this.avisarExistencias(p);
     await this.repo.guardarPendiente(p);
+    this.pend = p;
     const texto = tarjeta(p.propuesta, this.ctx, saldos);
     const prefijo = p.reemplazaId ? '✏️ Editando un movimiento guardado (si cancelas queda el original).\n' : '';
     if (p.propuesta.faltantes.length) {
@@ -316,7 +336,9 @@ class Motor {
       ];
       return [{ texto: prefijo + texto, botones }];
     }
-    return [{ texto: prefijo + texto, botones: [...BOTONES_TARJETA, ...this.atajosDePago(p.propuesta)] }];
+    // en un mensaje con varios movimientos, un botón para guardarlos todos de una vez
+    const todos: Boton[] = p.siguientes?.length ? [{ id: 'okall', titulo: `✅ Confirmar los ${p.siguientes.length + 1}` }] : [];
+    return [{ texto: prefijo + texto, botones: [...todos, ...BOTONES_TARJETA, ...this.atajosDePago(p.propuesta)] }];
   }
 
   /** Una venta de un producto que lleva cuenta de existencias avisa si no alcanzan o si quedan pocas. */
@@ -425,6 +447,7 @@ class Motor {
       await this.repo.setConfig('apodos_personas', JSON.stringify({ ...actuales, [ap.personaId]: [...lista] }));
     }
     await this.repo.guardarPendiente(null);
+    this.pend = null;
 
     // Con lo guardado: cierra deudas ya pagadas, calcula saldo y alerta de tope
     const d2 = await this.repo.cargar();
@@ -557,6 +580,7 @@ class Motor {
       case 'mes': return [{ texto: textoResumen('mes', movimientos, this.ctx) }];
       case 'anio': return [{ texto: textoResumen('anio', movimientos, this.ctx) }];
       case 'saldo_cuenta': return [{ texto: textoSaldoDe(arg ?? '', movimientos, this.ctx) }];
+      case 'corte': return [{ texto: textoCorte(corteDeTurno(this.datos, this.ctx.ahora, arg === 'semana' ? 'semana' : 'dia')) }];
       case 'presupuesto_semana': return [{ texto: textoPresupuestoSemana(this.datos, this.ctx.ahora) }];
       case 'deudas': return [{ texto: textoDeudas(movimientos, compromisos, this.ctx) }];
       case 'ultimos': return [{ texto: textoUltimos(movimientos, this.ctx) }];
@@ -687,7 +711,8 @@ class Motor {
     const m = hallarMontos(monto ?? '')[0];
     if (!nombre?.trim() || !m || !(m.valor > 0) || m.valor > 2_000_000_000) return [{ texto: 'No entendí. Ejemplo: «meta moto 2000000».' }];
     const metas = leerMetas(this.datos.config);
-    const nueva: Meta = { nombre: titulo(nombre.trim()), meta: aMinor(m.valor, 'COP'), apartado: metas.find(x => limpiar(x.nombre) === limpiar(nombre))?.apartado ?? 0 };
+    const previa = metas.find(x => limpiar(x.nombre) === limpiar(nombre));
+    const nueva: Meta = { nombre: titulo(nombre.trim()), meta: aMinor(m.valor, 'COP'), apartado: previa?.apartado ?? 0, ...(previa?.aportes ? { aportes: previa.aportes } : {}), ...(previa?.fecha ? { fecha: previa.fecha } : {}) };
     await this.repo.setConfig('metas', JSON.stringify([...metas.filter(x => limpiar(x.nombre) !== limpiar(nombre)), nueva].slice(0, 20)));
     return [{ texto: `🎯 Meta ${nueva.nombre}: ${formatear(nueva.meta)}. Para apartar: «ahorré 50000 para ${limpiar(nombre)}».` }];
   }

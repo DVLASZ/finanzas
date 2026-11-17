@@ -5,7 +5,7 @@
 import { signal } from '@preact/signals';
 import { CalendarCheck, Minus, PartyPopper, PiggyBank, Plus, Sparkles, Trash2 } from 'lucide-preact';
 import { useEffect, useState } from 'preact/hooks';
-import { aLocal, diasParaMeta, formatear, hallarMontos, leerMetas, limpiar, type Meta } from '../../../../../packages/core/src/index.ts';
+import { aLocal, cuotaSemanal, diasParaMeta, formatear, hallarMontos, leerMetas, limpiar, type Meta } from '../../../../../packages/core/src/index.ts';
 import { BarraAvance, Insignia, Vacio, T } from '../../components/ui/iconos.tsx';
 import { confirmar } from '../../components/ui/Dialogo.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
@@ -51,6 +51,7 @@ function Tarjeta({ meta, indice, metas, hoy }: { meta: Meta; indice: number; met
   const lograda = meta.apartado >= meta.meta;
   const tema = T[COLORES[indice % COLORES.length]];
   const dias = diasParaMeta(meta, hoy);
+  const cuota = cuotaSemanal(meta, hoy);
   const cuando = dias === null ? null : new Date(Date.parse(hoy + 'T12:00:00Z') + dias * 86400000).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
   // el confeti suena una sola vez por meta lograda
@@ -75,6 +76,21 @@ function Tarjeta({ meta, indice, metas, hoy }: { meta: Meta; indice: number; met
       <p class="relative !mb-0 mt-2 flex items-center gap-1.5 text-xs text-tx2">
         {lograda ? <><Sparkles size={13} class="text-pos" />Meta cumplida</> : cuando ? <><CalendarCheck size={13} class="text-info" />Al ritmo de los últimos 60 días, llegas hacia el {cuando}</> : <><CalendarCheck size={13} />Aparta seguido y te digo cuándo llegas</>}
       </p>
+      {!lograda && (
+        <div class="relative mt-2 grid gap-1.5" data-cuota={meta.nombre}>
+          <label class="!m-0 flex flex-wrap items-center gap-2 text-xs">Fecha objetivo (opcional)
+            <input type="date" class="!min-h-9 !w-auto !py-1" aria-label={`Fecha objetivo de ${meta.nombre}`} value={meta.fecha ?? ''} min={hoy}
+              onChange={e => { const v = (e.target as HTMLInputElement).value; meta.fecha = v || undefined; void guardarMetas(metas); }} />
+          </label>
+          {cuota && !cuota.vencida && (
+            <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span>Para llegar a tiempo, aparta <b class="tabular-nums">{formatear(cuota.porSemana)}</b> por semana ({cuota.semanas} {cuota.semanas === 1 ? 'semana' : 'semanas'}).</span>
+              <button class="chip" data-apartar-cuota={meta.nombre} onClick={() => void mover(metas, meta.nombre, cuota.porSemana, 1, hoy)}><Plus size={16} />Apartar la cuota de esta semana</button>
+            </div>
+          )}
+          {cuota?.vencida && <span class="text-xs text-adv">La fecha ya pasó: elige otra o aparta lo que falta.</span>}
+        </div>
+      )}
       <div class="relative mt-3 flex flex-wrap items-center gap-2">
         <input type="text" inputMode="numeric" placeholder="Monto" aria-label={`Monto para ${meta.nombre}`} value={monto} onInput={e => setMonto((e.target as HTMLInputElement).value)} class="!min-h-11 !min-w-0 flex-1 basis-28" />
         <button class="primario !min-h-11 !px-3" aria-label={`Apartar para ${meta.nombre}`} onClick={() => { void mover(metas, meta.nombre, valor(), 1, hoy); setMonto(''); }}><Plus size={18} />Apartar</button>

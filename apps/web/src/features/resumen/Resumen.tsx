@@ -22,7 +22,8 @@ import { BarraAvance, Insignia, Vacio, visualDeNombre } from '../../components/u
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
 import { BarrasMeses, MapaCalor } from '../../components/charts/Calendario.tsx';
 import { PresupuestoSemana } from '../saldos/PresupuestoSemana.tsx';
-import { aLocal as aLocalHoy, gastoDelMes, ingresosGastosPorMes } from '../../../../../packages/core/src/index.ts';
+import { BotonesCorte, HojaCorte } from './CorteTurno.tsx';
+import { vendeProductos, aLocal as aLocalHoy, gastoDelMes, ingresosGastosPorMes } from '../../../../../packages/core/src/index.ts';
 
 type Periodo = 'semana' | 'mes' | 'anio';
 const periodo = signal<Periodo>('mes');
@@ -224,6 +225,7 @@ export function Resumen() {
       </Escalonado>
 
       {a === 0 && <PresupuestoSemana />}
+      {vendeProductos(ctx) && <><BotonesCorte /><HojaCorte /></>}
 
       {topes.length > 0 && (
         <section class="tarjeta space-y-3">

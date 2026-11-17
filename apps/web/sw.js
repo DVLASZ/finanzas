@@ -9,7 +9,7 @@
  */
 const VERSION = '__VERSION__';
 const CACHE = `finanzas-${VERSION}`;
-const ARCHIVOS = ['./', './index.html', './app.js', './styles.css', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
+const ARCHIVOS = ['./', './index.html', './app.js', './tema.js', './styles.css', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', evento => {
   evento.waitUntil(caches.open(CACHE).then(c => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));

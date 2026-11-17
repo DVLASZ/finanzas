@@ -160,6 +160,20 @@ try {
         await irA('Chat');
         await pag.evaluate(() => document.querySelector('#ayuda-detalle') || document.querySelector('[data-tema="deudas"]')?.click()); await espera(500); await escalar();
       }],
+      ['Saldos: contador de billetes', async () => {
+        await irA('Saldos'); await espera(700);
+        await pag.evaluate(() => document.querySelector('#cuadre-rapido')?.click()); await espera(500);
+        await pag.evaluate(() => { for (const b of document.querySelectorAll('[data-mas]')) { b.click(); b.click(); } }); await espera(200); await escalar();
+      }],
+      ['Resumen: corte de turno', async () => {
+        await irA('Resumen'); await espera(700);
+        const hay = await pag.evaluate(() => Boolean(document.querySelector('#corte-dia')));
+        if (hay) { await pag.evaluate(() => document.querySelector('#corte-dia').click()); await espera(500); }
+        await escalar();
+      }],
+      ['Chat: barra de deshacer', async () => {
+        await irA('Chat'); await escribir('mecato 1111'); await pulsar('Confirmar'); await espera(300); await escalar();
+      }],
       ['Atajos: editor', async () => {
         await irA('Chat');
         await pag.evaluate(() => document.querySelector('#atajo-mas')?.click()); await espera(500);
@@ -226,7 +240,7 @@ try {
       try { await ir(); } catch (e) { console.log(`  ${nombre}: no pude abrirla (${e.message})`); continue; }
       const h = await pag.evaluate(EN_PAGINA.revisar);
       if (capturas) await pag.screenshot({ path: join(capturas, `x${escala}-${piel}-${tema}-${nombre.replace(/[^a-z0-9]+/gi, '-')}.png`) });
-      await pag.evaluate(() => { document.querySelector('#at-cerrar')?.click(); document.querySelector('#ayuda-volver')?.click(); for (const id of ['dialogo', 'duplicar', 'editar']) document.querySelector('#' + id)?.remove(); });
+      await pag.evaluate(() => { document.querySelector('#at-cerrar')?.click(); document.querySelector('#ayuda-volver')?.click(); document.querySelector('#contador-cancelar')?.click(); document.querySelector('#corte-cerrar')?.click(); for (const id of ['dialogo', 'duplicar', 'editar']) document.querySelector('#' + id)?.remove(); });
       await espera(200);
       total += h.length;
       console.log(h.length ? `  ${nombre}: ${h.length} problema(s)` : `  ${nombre}: bien`);

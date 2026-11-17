@@ -9,6 +9,7 @@ import { app, iniciar } from './services/estado.ts';
 import { sincronizar } from './services/sincronizacion.ts';
 import { accionInicial, activarGestoAtras, imagenCompartida, irA, iniciarHistorial } from './state/nav.ts';
 import { iniciarMascara } from './state/privacidad.ts';
+import { iniciarBloqueo } from './state/bloqueo.ts';
 import { iniciarEstado } from './state/store.ts';
 import { iniciarAjusteDeTexto } from './lib/ajustarTexto.ts';
 
@@ -41,6 +42,7 @@ async function arrancar(): Promise<void> {
   render(<App />, document.getElementById('raiz')!);
   iniciarAjusteDeTexto(document.getElementById('raiz')!);
   iniciarMascara(document.body);
+  void iniciarBloqueo();
 
   // Sincroniza al abrir, al recuperar la conexión, al volver a la app y cada minuto.
   // Los componentes se pintan solos cuando cambian los datos, no hay que redibujar a mano.

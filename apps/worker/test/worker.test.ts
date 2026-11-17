@@ -138,6 +138,23 @@ test('api: anular un préstamo desde la app anula también su deuda en D1', asyn
   assert.deepEqual(cs.map(c => c.estado), ['anulada']);
 });
 
+test('api: restaurar una anulación en D1 devuelve el movimiento y reactiva su deuda; el cambio llega a los demás aparatos', async () => {
+  const env = entorno();
+  const h = movimientoDePrueba('presté 40k a ivan nequi');
+  await peticion(env, '/api/sync', { ops: [
+    { op: 'guardar', movimiento: h.movimiento, cuentasNuevas: h.cuentasNuevas, compromisos: h.compromisos },
+    { op: 'anular', id: h.movimiento.id, cuando: '2026-10-19 16:00:00' },
+  ] });
+  const r = await peticion(env, '/api/sync', { ops: [{ op: 'restaurar', id: h.movimiento.id, cuando: '2026-10-19 16:00:05' }] });
+  assert.equal(r.status, 200);
+  const d = await new D1Repo(env.DB).cargar();
+  assert.equal(d.movimientos.find(m => m.id === h.movimiento.id)?.estado, 'ok');
+  assert.equal(d.movimientos.find(m => m.id === h.movimiento.id)?.anuladoEn ?? null, null);
+  assert.deepEqual(d.compromisos.map(c => c.estado), ['activa']);
+  const mala = await peticion(env, '/api/sync', { ops: [{ op: 'restaurar', id: '', cuando: '' }] });
+  assert.equal(((await mala.json()) as { rechazadas?: unknown[] }).rechazadas?.length ?? 1, 1, 'una restauración mal formada se rechaza');
+});
+
 test('api: el borrado definitivo exige PIN y frase de confirmación', async () => {
   const env = entorno();
   const h = movimientoDePrueba('pizza 12000');

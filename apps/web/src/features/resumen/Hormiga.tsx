@@ -12,6 +12,8 @@ export function TarjetaHormiga({ movs, cuentas, desde, hasta, dias }: { movs: Mo
   const h = gastosHormiga(movs, cuentas, desde, hasta, dias);
   if (h.top.length === 0) return null;
   const max = Math.max(1, ...h.top.map(x => x.total));
+  // lo mismo medido por mes, para compararlo con el sueldo o el arriendo
+  const alMes = Math.round((h.total / Math.max(1, dias)) * 30);
   return (
     <section class="tarjeta relative overflow-hidden" aria-label="Gastos hormiga">
       <div class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-amber-400/20 blur-2xl" />
@@ -20,7 +22,7 @@ export function TarjetaHormiga({ movs, cuentas, desde, hasta, dias }: { movs: Mo
         <h3 class="!m-0">Gastos hormiga</h3>
       </div>
       <div class="relative mt-3 grid grid-cols-2 gap-3">
-        <div><div class="etiqueta">En este periodo</div><div class="monto mal mt-0.5"><MontoAnimado valor={h.total} /></div><div class="sub">{h.compras} compras chicas</div></div>
+        <div><div class="etiqueta">En este periodo</div><div class="monto mal mt-0.5"><MontoAnimado valor={h.total} /></div><div class="sub">{h.compras} compras chicas · al mes ≈ <b class="text-tx">{formatear(alMes)}</b></div></div>
         <div><div class="etiqueta">Al año serían</div><div class="monto mt-0.5" style={{ color: 'var(--adv)' }}><MontoAnimado valor={h.proyeccionAnual} /></div><div class="sub">si sigues igual</div></div>
       </div>
       <ul class="relative m-0 mt-4 grid list-none gap-2.5 p-0">

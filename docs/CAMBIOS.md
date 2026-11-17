@@ -4,6 +4,26 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-17
+
+Seguridad (detalle en `SECURITY.md`):
+- El Worker pone cabeceras de seguridad en todas las respuestas, con una política de contenido sin scripts en línea (el tema inicial pasó a `tema.js`). El servidor de pruebas usa las mismas cabeceras y `e2e` falla si la política bloquea algo.
+- Comparación de tokens que no revela el largo, bloqueo tras 8 tokens equivocados y topes de peticiones por minuto (con un tope aparte para la IA).
+- PIN con PBKDF2 y espera creciente tras equivocarse; bloqueo automático opcional (al pasar a segundo plano o tras 2 o 5 minutos).
+- Respaldo con contraseña (PBKDF2 + AES-GCM) y restauración de ambos formatos.
+- Actividad reciente en Ajustes. `npm run seguridad` dentro de `npm run check`.
+
+Registro sin fricción:
+- Una frase con varios movimientos («ayer pagué 15 mil de almuerzo y hoy entraron 80 mil a Nequi») se corta sola y trae «Confirmar los N». «Entraron» y «llegaron» con plata se leen como ingreso.
+- «Pegar alerta»: lee notificaciones de Nequi, Bancolombia y Banco de Bogotá con reglas, sin IA.
+- Mini-contador de billetes en el cuadre rápido del efectivo.
+- Barra de «Deshacer» de ocho segundos al guardar, editar, duplicar o anular. Para deshacer una anulación nació la operación `restaurar`.
+
+Inteligencia y control:
+- Proyección de liquidez a 30 días con aviso si una cuenta no alcanza para un pago fijo.
+- Metas con fecha objetivo: cuota semanal sugerida y botón para apartarla. Los gastos hormiga muestran también su equivalente por mes.
+- Apps que venden: stock mínimo por producto (alerta y corte), y corte de turno del día o la semana para compartir o imprimir; en el chat, `corte`.
+
 ## 2026-11-16 (segunda tanda)
 
 - Revisé el retiro de modelos de Workers AI del 20 de noviembre: la app usa Llama 3.3 70B para el texto y Llama 3.2 11B Vision para los comprobantes, y ninguno está en la lista. Los probé contra el Worker publicado y respondieron bien. El detalle y los reemplazos recomendados quedaron en `docs/IA.md`.
