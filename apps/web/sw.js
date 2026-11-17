@@ -32,7 +32,7 @@ self.addEventListener('push', evento => {
 
 self.addEventListener('notificationclick', evento => {
   evento.notification.close();
-  evento.waitUntil(self.clients.matchAll({ type: 'window' }).then(ventanas => (ventanas[0] ? ventanas[0].focus() : self.clients.openWindow('./'))));
+  evento.waitUntil(self.clients.matchAll({ type: 'window' }).then(ventanas => (ventanas[0] ? ventanas[0].focus() : self.clients.openWindow('./?accion=gasto'))));
 });
 
 self.addEventListener('fetch', evento => {

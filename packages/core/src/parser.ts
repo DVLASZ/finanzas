@@ -93,7 +93,12 @@ function detectarComando(t: string): { comando: Comando; arg?: string } | null {
   if (m && !/\d/.test(t)) return { comando: 'lista_agregar', arg: m[1].trim() };
   m = t.match(/^(?:ya )?(?:compre|compramos|tache|tacha|quita|quitar|saca|sacar)(?: de la lista)?\s+([a-z ,y]+)$/);
   if (m && !/\d/.test(t)) return { comando: 'lista_quitar', arg: m[1].trim() };
-  m = t.match(/^(?:cuanto llevo en|gastos? en|cuanto gaste en) ([a-z ]+)$/);
+  // preguntas como se dicen: «¿quién me debe plata?», «¿cuánto hay en nequi?», «¿cuánto puedo gastar esta semana?»
+  if (/^(?:quien|quienes) me deben?(?: plata| algo| dinero)?$/.test(t)) return { comando: 'deudas' };
+  if (/^(?:cuanto (?:puedo|podria) gastar(?: esta semana| en la semana| por semana| a la semana)?|presupuesto(?: de la| de esta)? semana)$/.test(t)) return { comando: 'presupuesto_semana' };
+  const deCuenta = t.match(/^(?:cuanto (?:hay|tengo|me queda|queda|plata hay)|saldo)(?: de| en) (?:la |el )?([a-z ]+)$/);
+  if (deCuenta) return { comando: 'saldo_cuenta', arg: deCuenta[1].trim() };
+  m = t.match(/^(?:cuanto (?:llevo gastado|llevo|he gastado|gaste)|gastos?) en ([a-z ]+?)(?: (?:este mes|en el mes|del mes|esta semana|en la semana|hoy))?$/);
   if (m) return { comando: 'categoria', arg: m[1].trim() };
   m = t.match(/^(?:evento |etiqueta )?#([a-z0-9-]+)$/) ?? t.match(/^(?:evento|etiqueta) ([a-z0-9-]+)$/);
   if (m) return { comando: 'evento', arg: m[1] };

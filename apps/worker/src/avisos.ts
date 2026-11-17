@@ -5,11 +5,12 @@
  *   tarde (6 pm)    cierre del día (¿la billetera tiene lo que dice la app?) y cuentas en negativo
  *   al momento      un tope que acaba de llegar al 80 % o al 100 %, y un giro que llega por el buzón
  *   los domingos    si el respaldo en la nube falla
+ *   de noche        «¿Anotaste los gastos de hoy?», a la hora que cada quien elige (solo si hoy no anotó nada)
  *
  * Cada aviso se manda a todos los celulares suscritos. Lo que ya no existe (404 o 410) se borra de la lista.
  */
 import {
-  aLocal, calcularAlertas, estadoPresupuesto, formatear, leerMetas, rangoPeriodo, type Datos, type Op,
+  aLocal, calcularAlertas, estadoPresupuesto, formatear, leerMetas, rangoPeriodo, tocaRecordar, type Datos, type Op,
 } from '../../../packages/core/src/index.ts';
 import { crearLlavesVapid, enviarAviso, type LlavesVapid, type Suscripcion } from './push.ts';
 import type { D1Repo } from './d1repo.ts';
@@ -58,6 +59,14 @@ export async function avisarAlCelular(
     ? (alertas.some(a => a.id === 'saldo-negativo') ? 'Una cuenta quedó en negativo' : 'Cuenta la billetera')
     : alertas.length === 1 ? 'Un aviso de tus finanzas' : `${alertas.length} avisos de tus finanzas`;
   return mandarAviso(repo, { titulo, cuerpo: alertas.slice(0, 2).map(a => a.texto).join(' ') });
+}
+
+/** El recordatorio de la noche: se manda en la media hora elegida si hoy no se anotó nada. Devuelve si salió. */
+export async function avisarRecordatorio(repo: D1Repo, ahora: Date): Promise<boolean> {
+  const datos = await repo.cargar();
+  if (!tocaRecordar(datos.config.recordatorio, datos.movimientos, ahora)) return false;
+  const r = await mandarAviso(repo, { titulo: '¿Anotaste los gastos de hoy?', cuerpo: 'Tómate un minuto y deja el día al día. Toca para abrir el chat.' });
+  return r.enviados > 0;
 }
 
 /**

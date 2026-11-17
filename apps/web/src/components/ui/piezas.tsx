@@ -7,6 +7,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { formatear, type Moneda } from '../../../../../packages/core/src/index.ts';
 import { contar, entrar } from '../../lib/efectos.ts';
+import { montosOcultos, PUNTOS } from '../../state/privacidad.ts';
 
 /** Un monto que «llega» contando desde cero cuando aparece y cuando cambia. */
 export function MontoAnimado({ valor, moneda = 'COP', class: clase = '' }: { valor: number; moneda?: Moneda; class?: string }) {
@@ -19,6 +20,7 @@ export function MontoAnimado({ valor, moneda = 'COP', class: clase = '' }: { val
     if (desde === valor) return;
     return contar(valor, setMostrado);
   }, [valor]);
+  if (montosOcultos.value) return <span class={`tabular-nums ${clase}`} data-oculto="1" aria-label="Monto oculto">{PUNTOS}</span>;
   // el valor final, invisible, reserva el ancho: la cifra no cambia de tamaño ni de sitio mientras cuenta
   return (
     <span class={`tabular-nums inline-grid ${clase}`}>

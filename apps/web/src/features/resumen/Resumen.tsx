@@ -6,9 +6,11 @@ import { signal } from '@preact/signals';
 import { Receipt, ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, FileText, Minus, Share2, PiggyBank, Scale, TrendingDown, TrendingUp } from 'lucide-preact';
 import { useState } from 'preact/hooks';
 import {
-  agruparCategorias, aLocal, describirDia, estadoPresupuesto, formatear, gastoPorCategoria, ingresosPorFuente, leerMetas,
+  agruparCategorias, aLocal, describirDia, estadoPresupuesto, gastoPorCategoria, ingresosPorFuente, leerMetas,
   filtrarMovimientos, movimientosACsv, nombreMes, rangoPeriodo, resumenEnTexto, totalApartado, totalIngresos,
 } from '../../../../../packages/core/src/index.ts';
+import { formatear } from '../../lib/formatear.ts';
+import { formatear as formatearReal } from '../../../../../packages/core/src/index.ts';
 import { esc } from '../../lib/carta.ts';
 import { avisar } from '../../components/ui/Dialogo.tsx';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
@@ -18,6 +20,9 @@ import { ComparativaMes } from './ComparativaMes.tsx';
 import { Ritmo } from '../../components/charts/graficos.tsx';
 import { BarraAvance, Insignia, Vacio, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
+import { BarrasMeses, MapaCalor } from '../../components/charts/Calendario.tsx';
+import { PresupuestoSemana } from '../saldos/PresupuestoSemana.tsx';
+import { aLocal as aLocalHoy, gastoDelMes, ingresosGastosPorMes } from '../../../../../packages/core/src/index.ts';
 
 type Periodo = 'semana' | 'mes' | 'anio';
 const periodo = signal<Periodo>('mes');
@@ -185,10 +190,10 @@ export function Resumen() {
     const fila = (x: string, y: string, z = '') => `<tr><td>${esc(x)}</td><td style="text-align:right">${esc(y)}</td><td style="text-align:right">${esc(z)}</td></tr>`;
     const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Informe ${esc(t)}</title><style>body{font-family:system-ui,sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;color:#222}h1{margin-bottom:.2rem}table{width:100%;border-collapse:collapse;margin:.5rem 0 1.5rem}td,th{padding:.35rem .5rem;border-bottom:1px solid #ccc;text-align:left}th:not(:first-child){text-align:right}.total td{font-weight:700;border-top:2px solid #222}p.sub{color:#555;margin-top:0}</style></head><body>
       <h1>Informe: ${esc(t)}</h1><p class="sub">Hecho el ${esc(describirDia(aLocal(ctx.ahora).slice(0, 10)))}</p>
-      <h2>Resumen</h2><table>${fila('Ingresos', formatear(ingresos))}${fila('Gastos', formatear(total))}<tr class="total"><td>Balance</td><td style="text-align:right">${esc(formatear(ingresos - total))}</td><td></td></tr></table>
-      ${cats.length ? `<h2>Gastos por categoría</h2><table><tr><th>Categoría</th><th>Valor</th><th>%</th></tr>${cats.map(c => fila(c.cuenta.nombre, formatear(c.total), total ? `${Math.round((c.total / total) * 100)} %` : '')).join('')}<tr class="total"><td>Total</td><td style="text-align:right">${esc(formatear(total))}</td><td></td></tr></table>` : ''}
-      ${meses.length > 1 ? `<h2>Mes por mes</h2><table><tr><th>Mes</th><th>Ingresos</th><th>Gastos</th></tr>${meses.map(m => fila(m.mes, formatear(m.ing), formatear(m.gas))).join('')}</table>` : ''}
-      ${fuentes.length ? `<h2>Ingresos por fuente</h2><table><tr><th>Fuente</th><th>Valor</th><th>%</th></tr>${fuentes.map(x => fila(x.cuenta.nombre, formatear(x.total), ingresos ? `${Math.round((x.total / ingresos) * 100)} %` : '')).join('')}</table>` : ''}
+      <h2>Resumen</h2><table>${fila('Ingresos', formatearReal(ingresos))}${fila('Gastos', formatearReal(total))}<tr class="total"><td>Balance</td><td style="text-align:right">${esc(formatearReal(ingresos - total))}</td><td></td></tr></table>
+      ${cats.length ? `<h2>Gastos por categoría</h2><table><tr><th>Categoría</th><th>Valor</th><th>%</th></tr>${cats.map(c => fila(c.cuenta.nombre, formatearReal(c.total), total ? `${Math.round((c.total / total) * 100)} %` : '')).join('')}<tr class="total"><td>Total</td><td style="text-align:right">${esc(formatearReal(total))}</td><td></td></tr></table>` : ''}
+      ${meses.length > 1 ? `<h2>Mes por mes</h2><table><tr><th>Mes</th><th>Ingresos</th><th>Gastos</th></tr>${meses.map(m => fila(m.mes, formatearReal(m.ing), formatearReal(m.gas))).join('')}</table>` : ''}
+      ${fuentes.length ? `<h2>Ingresos por fuente</h2><table><tr><th>Fuente</th><th>Valor</th><th>%</th></tr>${fuentes.map(x => fila(x.cuenta.nombre, formatearReal(x.total), ingresos ? `${Math.round((x.total / ingresos) * 100)} %` : '')).join('')}</table>` : ''}
     </body></html>`;
     const w = window.open('', '_blank');
     if (!w) { void avisar({ titulo: 'El navegador bloqueó la ventana', texto: 'Permite las ventanas emergentes para esta página y vuelve a intentarlo.', tono: 'peligro' }); return; }
@@ -198,6 +203,8 @@ export function Resumen() {
     setTimeout(() => w.print(), 300);
   };
 
+  // el mapa de calor es del mes que se está viendo (o del actual si se mira una semana o un año)
+  const mesCalor = p === 'mes' ? desde.slice(0, 7) : aLocalHoy(ctx.ahora).slice(0, 7);
   return (
     <div class="space-y-3">
       <div class="pestanas" role="tablist">
@@ -215,6 +222,8 @@ export function Resumen() {
         {ingresos > 0 && <div class="tarjeta"><div class="etiqueta flex items-center gap-1"><Scale size={14} />Balance</div><div class={`monto mt-0.5 ${ingresos - total < 0 ? 'mal' : 'bien'}`}><MontoAnimado valor={ingresos - total} /></div></div>}
         {ingresos > 0 && p !== 'semana' && <div class="tarjeta"><div class="etiqueta flex items-center gap-1"><PiggyBank size={14} />Meta de ahorro ({meta}%)</div><div class="monto mt-0.5"><MontoAnimado valor={Math.round((ingresos * meta) / 100)} /></div></div>}
       </Escalonado>
+
+      {a === 0 && <PresupuestoSemana />}
 
       {topes.length > 0 && (
         <section class="tarjeta space-y-3">
@@ -237,6 +246,16 @@ export function Resumen() {
           <Dona trozos={trozos} total={total} />
         </section>
       )}
+
+      <section class="tarjeta" id="mapa-calor">
+        <h3 class="!mt-0">Calor del mes: día por día</h3>
+        <MapaCalor dias={gastoDelMes(datos, Number(mesCalor.slice(0, 4)), Number(mesCalor.slice(5, 7)))} hoy={aLocalHoy(ctx.ahora).slice(0, 10)} />
+      </section>
+
+      <section class="tarjeta" id="seis-meses">
+        <h3 class="!mt-0">Ingresos y gastos: seis meses</h3>
+        <BarrasMeses meses={ingresosGastosPorMes(datos, ctx.ahora, 6)} />
+      </section>
 
       {verRitmo && <ComparativaMes datos={datos} ahora={ctx.ahora} />}
 

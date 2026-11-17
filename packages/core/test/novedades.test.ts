@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  aplicarDuplicado, atajosRapidos, estadoRitmo, gastoDiario, limpiarAtajos, modoSugerido, moverAtajo, sugerenciasAtajos, calcularAlertas, calcularSaldos, comparativaMensual, deLocal, previsualizarDuplicado, saldoDe, textoProyeccion,
+  aplicarDuplicado, atajosRapidos, gastoDelMes, gastoDiario, horaDeRecordatorio, ingresosGastosPorMes, limpiarAtajos, tocaRecordar, modoSugerido, moverAtajo, sugerenciasAtajos, calcularAlertas, calcularSaldos, comparativaMensual, deLocal, previsualizarDuplicado, saldoDe, textoProyeccion,
 } from '../src/index.ts';
 import { AHORA, nuevoBot } from '../../../tests/ayudas.ts';
 
@@ -144,7 +144,7 @@ test('duplicar: avisa si la cuenta no alcanza y no deja duplicar lo que arrastra
 
 // ---------------------------------------------------------------- pulso del chat
 
-test('pulso: gasto de los últimos 7 días y el color del ritmo (verde, ámbar, coral)', async () => {
+test('pulso: gasto de los últimos días', async () => {
   const d = await conDosMeses();
   const dias = gastoDiario(d, AHORA, 7); // lunes 19 de octubre
   assert.equal(dias.length, 7);
@@ -152,12 +152,37 @@ test('pulso: gasto de los últimos 7 días y el color del ritmo (verde, ámbar, 
   assert.equal(dias[6].diaSemana, 1, 'el 19 de octubre de 2026 es lunes');
   assert.equal(dias[4].fecha, '2026-10-17');
   assert.deepEqual(gastoDiario(d, deLocal('2026-10-15 20:00:00'), 3).map(x => x.total), [0, 0, 20000], 'el 15 sí cuenta; el 8 queda fuera de los tres días');
-  const seguro = { disponible: 100000, fijos: 0, apartado: 0, libre: 100000, dias: 10, porDia: 10000, gastadoHoy: 2000, enRojo: false };
-  assert.equal(estadoRitmo(seguro, { proyeccionVsMesAnterior: null }).estado, 'bien');
-  assert.equal(estadoRitmo({ ...seguro, gastadoHoy: 8500 }, { proyeccionVsMesAnterior: -5 }).estado, 'cerca');
-  assert.equal(estadoRitmo(seguro, { proyeccionVsMesAnterior: 20 }).estado, 'cerca', 'el mes va 20 % arriba');
-  const tope = estadoRitmo({ ...seguro, gastadoHoy: 12000 }, { proyeccionVsMesAnterior: 0 });
-  assert.equal(tope.estado, 'tope');
-  assert.match(tope.texto, /\$2\.000/);
-  assert.equal(estadoRitmo({ ...seguro, enRojo: true }, { proyeccionVsMesAnterior: null }).estado, 'tope');
+});
+
+test('mapa de calor y barras de seis meses: los días y los meses salen completos', async () => {
+  const d = await conDosMeses();
+  const octubre = gastoDelMes(d, 2026, 10);
+  assert.equal(octubre.length, 31);
+  assert.equal(octubre[7].total, 115000, 'el 8');
+  assert.equal(octubre[14].total, 20000, 'el 15');
+  assert.equal(octubre[0].diaSemana, 4, 'el 1 de octubre de 2026 es jueves');
+  assert.equal(gastoDelMes(d, 2026, 2).length, 28);
+  const meses = ingresosGastosPorMes(d, AHORA, 6);
+  assert.equal(meses.length, 6);
+  assert.equal(meses[5].mes, '2026-10');
+  assert.equal(meses[0].mes, '2026-05');
+  assert.equal(meses[5].gastos, 135000);
+  assert.equal(meses[4].gastos, 1140000, 'septiembre: 100.000 + 40.000 + 1.000.000');
+  assert.equal(meses[5].ingresos, 0);
+});
+
+// ---------------------------------------------------------------- recordatorio de la noche
+
+test('recordatorio: solo en la media hora elegida y si hoy no se anotó nada', async () => {
+  const bot = nuevoBot();
+  await guardar(bot, 'saldo inicial efectivo 100000', deLocal('2026-10-18 08:00:00'));
+  const d = await bot.repo.cargar();
+  assert.equal(horaDeRecordatorio('20:30'), '20:30');
+  assert.equal(horaDeRecordatorio('20:15'), null, 'solo en punto o y media');
+  assert.equal(horaDeRecordatorio(''), null);
+  assert.equal(tocaRecordar('20:30', d.movimientos, deLocal('2026-10-19 20:31:00')), true);
+  assert.equal(tocaRecordar('20:30', d.movimientos, deLocal('2026-10-19 20:10:00')), false, 'otra media hora');
+  assert.equal(tocaRecordar(undefined, d.movimientos, deLocal('2026-10-19 20:31:00')), false, 'apagado');
+  await guardar(bot, 'almuerzo 12000', deLocal('2026-10-19 13:00:00'));
+  assert.equal(tocaRecordar('20:30', (await bot.repo.cargar()).movimientos, deLocal('2026-10-19 20:31:00')), false, 'ya anotó hoy');
 });

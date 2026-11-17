@@ -20,7 +20,7 @@ run_worker_first = ["/api/*"]
 
 # Avisos diarios al celular (8 de la mañana en Colombia)
 [triggers]
-crons = ["0 13,23 * * *"]
+crons = ["0,30 * * * *"]
 
 # Workers AI (gratis): ayuda a entender frases que las reglas no entienden
 [ai]

@@ -5,14 +5,19 @@
 import { useState } from 'preact/hooks';
 import { ArrowDownLeft, ArrowUpRight, CalendarClock, HandCoins, Nfc, PiggyBank, Scale, ShieldCheck } from 'lucide-preact';
 import {
-  aLocal, calcularAlertas, describirDia, formatear, gastoPorCategoria, rangoPeriodo, resumenSaldos, seguroParaGastar, totalIngresos,
+  aLocal, calcularAlertas, describirDia, gastoPorCategoria, rangoPeriodo, resumenSaldos, seguroParaGastar, totalIngresos,
 } from '../../../../../packages/core/src/index.ts';
+import { formatear } from '../../lib/formatear.ts';
+import { formatear as formatearReal } from '../../../../../packages/core/src/index.ts';
 import { quitarEmojis } from '../../lib/carta.ts';
 import { irA, prellenarChat } from '../../state/nav.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { Arco, BarraApilada, Sparkline } from '../../components/charts/graficos.tsx';
 import { Insignia, visualDeCuenta } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
+import { PresupuestoSemana } from './PresupuestoSemana.tsx';
+import { avisar, confirmar, pedir } from '../../components/ui/Dialogo.tsx';
+import { verMonto, verTexto } from '../../state/privacidad.ts';
 
 export function Saldos() {
   const [dias, setDias] = useState<14 | 30>(14);
@@ -40,7 +45,26 @@ export function Saldos() {
   const restaHoy = Math.max(0, seguro.porDia - seguro.gastadoHoy);
   const pctHoy = seguro.porDia > 0 ? (restaHoy / seguro.porDia) * 100 : 0;
   const liquidez = Math.max(0, r.disponibleCop);
-  const deuda = (v: { COP: number; USD: number }) => [v.COP && formatear(v.COP), v.USD && formatear(v.USD, 'USD')].filter(Boolean).join(' + ') || '$0';
+  /** Cuadre rápido: cuentas cuánto efectivo tienes y la app compara con lo anotado. Si falta, ofrece anotar el gasto que no se anotó. */
+  const cuadrarEfectivo = async () => {
+    const texto = await pedir({ titulo: '¿Cuánto efectivo tienes hoy?', texto: 'Cuenta lo que hay en tu billetera y escribe el total.', tipo: 'numero', aceptar: 'Cuadrar' });
+    if (texto === null) return;
+    const real = Number(texto.replace(/\D/g, ''));
+    if (!texto.trim() || !Number.isFinite(real)) { await avisar({ titulo: 'Escribe solo el total, por ejemplo 85000', tono: 'peligro' }); return; }
+    const anotado = r.cuentas.find(x => x.cuenta.id === 'efectivo')?.saldo ?? 0;
+    const falta = anotado - real;
+    if (falta === 0) { await avisar({ titulo: 'Tu efectivo cuadra', texto: 'Lo que tienes es justo lo que está anotado.', tono: 'info' }); return; }
+    if (falta > 0) {
+      if (await confirmar({ titulo: `Te faltan ${formatearReal(falta)}`, texto: 'Tienes menos efectivo del que está anotado. ¿Anoto «Gastos varios sin anotar» por esa diferencia para que cuadre?', aceptar: 'Sí, anotarlo' })) {
+        prellenarChat(`otros ${falta} efectivo gastos varios sin anotar`, true); irA('chat');
+      }
+      return;
+    }
+    if (await confirmar({ titulo: `Te sobran ${formatearReal(-falta)}`, texto: 'Tienes más efectivo del que está anotado. ¿Hago un arqueo con lo que contaste? Queda como un ajuste, sin borrar nada.', aceptar: 'Sí, ajustar' })) {
+      prellenarChat(`arqueo efectivo ${real}`, true); irA('chat');
+    }
+  };
+  const deuda = (v: { COP: number; USD: number }) => [v.COP && formatear(v.COP), v.USD && formatear(v.USD, 'USD')].filter(Boolean).join(' + ') || formatear(0);
   const PALETA = ['var(--info)', 'var(--pos)', 'var(--adv)', 'var(--acc)', 'var(--marca)'];
   const repartidas = r.cuentas.filter(x => x.cuenta.enDisponible !== false && x.cuenta.moneda === 'COP' && x.cuenta.id !== 'monedas' && x.saldo > 0);
   const mayor = Math.max(1, ...r.cuentas.filter(x => x.cuenta.moneda === 'COP').map(x => Math.abs(x.saldo)));
@@ -50,7 +74,7 @@ export function Saldos() {
     <div class="space-y-3">
       {alertas.map((a, i) => (
         <div key={i} class={`alerta ${a.nivel === 'urgente' ? 'urgente' : a.nivel === 'aviso' ? 'aviso' : ''}`}>
-          {quitarEmojis(a.texto)}
+          {verTexto(quitarEmojis(a.texto))}
           {a.acciones?.length ? (
             <div class="botones">{a.acciones.map((x, j) => (
               <button key={j} class="chip" data-aviso={`${i}.${j}`} onClick={() => { prellenarChat(x.texto, x.enviar); irA('chat'); }}>{x.titulo}</button>
@@ -116,6 +140,10 @@ export function Saldos() {
         </section>
       )}
 
+      <PresupuestoSemana />
+
+      <button class="secundario w-full" id="cuadre-rapido" onClick={() => void cuadrarEfectivo()}><Scale size={18} />Actualizar efectivo que tengo hoy</button>
+
       <Escalonado class="grid grid-cols-2 gap-3">
         {r.cuentas.map(({ cuenta, saldo }) => {
           const aparte = cuenta.id === 'monedas' || cuenta.enDisponible === false;
@@ -133,7 +161,7 @@ export function Saldos() {
       </Escalonado>
 
       <section class="tarjeta !p-0 overflow-hidden" aria-label="Lo que te deben y lo que debes">
-        <div class="p-4 pb-1"><div class="etiqueta mb-2.5">Liquidez contra deudas</div><BarraApilada tramos={[{ nombre: 'Disponible', valor: liquidez, color: 'var(--pos)' }, { nombre: 'Te deben', valor: Math.abs(r.teDeben.COP), color: 'var(--info)' }, { nombre: 'Debes', valor: Math.abs(r.debes.COP), color: 'var(--neg)' }]} /></div>
+        <div class="p-4 pb-1"><div class="etiqueta mb-0.5">Salud patrimonial</div><div class="sub !mt-0 mb-2.5">Liquidez inmediata, por cobrar y por pagar. Neto: <b class="text-tx">{verMonto(formatear(liquidez + Math.abs(r.teDeben.COP) - Math.abs(r.debes.COP)))}</b></div><BarraApilada tramos={[{ nombre: 'Liquidez inmediata', valor: liquidez, color: 'var(--pos)' }, { nombre: 'Por cobrar', valor: Math.abs(r.teDeben.COP), color: 'var(--info)' }, { nombre: 'Por pagar', valor: Math.abs(r.debes.COP), color: 'var(--neg)' }]} /></div>
         <div class="grid grid-cols-2 divide-x divide-white/10">
           <div class="p-4"><div class="etiqueta flex items-center gap-1.5"><span class="grid h-6 w-6 place-items-center rounded-lg bg-pos/15 text-pos"><HandCoins size={14} /></span>Te deben</div><div class="monto bien mt-1.5">{deuda(r.teDeben)}</div></div>
           <div class="p-4"><div class="etiqueta flex items-center gap-1.5"><span class="grid h-6 w-6 place-items-center rounded-lg bg-neg/15 text-neg"><Scale size={14} /></span>Debes</div><div class="monto mal mt-1.5">{deuda(r.debes)}</div></div>

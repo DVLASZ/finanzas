@@ -1,13 +1,10 @@
 /**
- * El «pulso» de la parte de arriba del chat: cuánto se gastó cada uno de los últimos días y cómo va el ritmo del día y
- * del mes. Son cuentas sobre lo que ya hay en pantalla (el gasto por día, lo seguro para hoy y la comparativa del mes),
- * sin guardar nada.
+ * El gasto de cada día: sirve para las barras de los últimos días y para el mapa de calor del mes. Es una cuenta sobre
+ * lo que ya hay en pantalla, sin guardar nada.
  */
-import { gastoPorCategoria } from './consultas.ts';
+import { gastoPorCategoria, totalIngresos } from './consultas.ts';
 import { aLocal } from './fechas.ts';
 import type { Datos } from './repo.ts';
-import type { ComparativaMensual } from './comparativa.ts';
-import type { SeguroHoy } from './seguro.ts';
 
 export interface GastoDia {
   /** 'YYYY-MM-DD' */
@@ -28,24 +25,39 @@ export function gastoDiario(datos: Pick<Datos, 'movimientos' | 'cuentas'>, ahora
   });
 }
 
-export type EstadoRitmo = 'bien' | 'cerca' | 'tope';
+/** El gasto de cada día de un mes (mes de 1 a 12), para el mapa de calor. Los días que aún no llegan salen en cero. */
+export function gastoDelMes(datos: Pick<Datos, 'movimientos' | 'cuentas'>, anio: number, mes: number): GastoDia[] {
+  const n = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
+  const p2 = (x: number) => String(x).padStart(2, '0');
+  return Array.from({ length: n }, (_, k) => {
+    const fecha = `${anio}-${p2(mes)}-${p2(k + 1)}`;
+    const sig = new Date(Date.UTC(anio, mes - 1, k + 2)).toISOString().slice(0, 10);
+    const total = gastoPorCategoria(datos.movimientos, datos.cuentas, `${fecha} 00:00:00`, `${sig} 00:00:00`).reduce((s, x) => s + x.total, 0);
+    return { fecha, diaSemana: new Date(`${fecha}T12:00:00Z`).getUTCDay(), total };
+  });
+}
 
-/** Pasado este porcentaje sobre el mes anterior, el ritmo del mes preocupa. */
-const MARGEN_MES = 15;
-/** Desde esta parte de lo seguro para hoy ya estás cerca del tope. */
-const CERCA_DEL_TOPE = 0.8;
+export interface MesIngresosGastos {
+  /** 'YYYY-MM' */
+  mes: string;
+  ingresos: number;
+  gastos: number;
+}
 
-/**
- * Verde si vas bien, ámbar si te acercas al tope de hoy (o el mes va 15 % por encima del pasado) y coral si ya lo pasaste
- * o los compromisos se comen lo disponible. Sin límite de hoy no inventa alarmas.
- */
-export function estadoRitmo(seguro: SeguroHoy, comparativa: Pick<ComparativaMensual, 'proyeccionVsMesAnterior'>): { estado: EstadoRitmo; texto: string } {
-  const peso = (n: number) => `$${Math.round(n).toLocaleString('es-CO')}`;
-  const mes = comparativa.proyeccionVsMesAnterior;
-  if (seguro.enRojo) return { estado: 'tope', texto: 'Tus pagos fijos y metas ya cubren todo lo disponible.' };
-  if (seguro.porDia > 0 && seguro.gastadoHoy > seguro.porDia) return { estado: 'tope', texto: `Hoy pasaste lo seguro por ${peso(seguro.gastadoHoy - seguro.porDia)}.` };
-  if (seguro.porDia > 0 && seguro.gastadoHoy >= seguro.porDia * CERCA_DEL_TOPE) return { estado: 'cerca', texto: `Ya llevas ${peso(seguro.gastadoHoy)} de ${peso(seguro.porDia)} seguros para hoy.` };
-  if (mes !== null && mes >= MARGEN_MES) return { estado: 'cerca', texto: `A este ritmo cerrarías el mes ${mes} % por encima del pasado.` };
-  if (seguro.porDia <= 0) return { estado: 'bien', texto: 'Aún no hay con qué calcular lo seguro para hoy.' };
-  return { estado: 'bien', texto: `Vas bien: te quedan ${peso(seguro.porDia - seguro.gastadoHoy)} seguros para hoy.` };
+/** Ingresos y gastos de cada uno de los últimos `n` meses (el actual al final): el ahorro neto es la diferencia. */
+export function ingresosGastosPorMes(datos: Pick<Datos, 'movimientos' | 'cuentas'>, ahora: Date, n = 6): MesIngresosGastos[] {
+  const hoy = aLocal(ahora);
+  const anio = Number(hoy.slice(0, 4)), mes = Number(hoy.slice(5, 7));
+  const p2 = (x: number) => String(x).padStart(2, '0');
+  return Array.from({ length: n }, (_, k) => {
+    const d = new Date(Date.UTC(anio, mes - 1 - (n - 1 - k), 1));
+    const sig = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
+    const desde = `${d.getUTCFullYear()}-${p2(d.getUTCMonth() + 1)}-01 00:00:00`;
+    const hasta = `${sig.getUTCFullYear()}-${p2(sig.getUTCMonth() + 1)}-01 00:00:00`;
+    return {
+      mes: desde.slice(0, 7),
+      ingresos: totalIngresos(datos.movimientos, datos.cuentas, desde, hasta),
+      gastos: gastoPorCategoria(datos.movimientos, datos.cuentas, desde, hasta).reduce((s, x) => s + x.total, 0),
+    };
+  });
 }

@@ -13,8 +13,11 @@ import { cabeceraJson, urlBase } from '../../services/http.ts';
 import { hash, pinCorrecto } from '../../services/seguridad.ts';
 import { leerSalud } from '../../services/servidor.ts';
 import { sincronizar } from '../../services/sincronizacion.ts';
+import { guardarCambio } from '../../state/acciones.ts';
 import { refrescar, datos as datosSignal, pendientes } from '../../state/store.ts';
 import { editorAtajos } from '../../state/atajos.ts';
+import { Selector } from '../../components/ui/Selector.tsx';
+import { ponerSonidos, sonidos } from '../../lib/sonido.ts';
 import { Apariencia } from './Apariencia.tsx';
 
 /** Pide el PIN (o avisa que hay que crearlo). Devuelve true si se puede continuar. */
@@ -51,6 +54,11 @@ function BotonPeligro({ texto, motivo, frase, ruta, local }: { texto: string; mo
   };
   return <button class="peligro" disabled={espera > 0} onClick={() => void ejecutar()}>{espera > 0 ? `Borrar ahora (${espera})` : texto}</button>;
 }
+
+/** Las horas del recordatorio: en punto y y media, de 7 a 10 de la noche. */
+const HORAS_RECORDATORIO = [{ valor: '', etiqueta: 'Apagado' }, ...[19, 20, 21, 22].flatMap(h => ['00', '30'].map(m => ({
+  valor: `${h}:${m}`, etiqueta: `${h - 12}:${m} pm`,
+})))];
 
 export function Ajustes() {
   const datos = datosSignal.value;
@@ -190,6 +198,15 @@ export function Ajustes() {
         <ul class="lista">{app.rechazados.map(x => <li key={`${x.cuando}${x.que}`} class="fila"><div><div class="titulo">{x.que}</div><div class="sub">{x.motivo}</div></div></li>)}</ul>
         <div class="acciones"><button class="secundario" onClick={() => void limpiarRechazados().then(otra)}>Borrar esta lista</button></div>
       </>}
+
+      <h2>Sonido y recordatorio</h2>
+      <label class="check-chip check !my-2"><input type="checkbox" id="sonidos" checked={sonidos.value} onChange={e => ponerSonidos((e.target as HTMLInputElement).checked)} />Sonido suave al confirmar y al leer un comprobante</label>
+      <p class="sub">Va apagado. No suena si tu teléfono pidió menos movimiento. La vibración corta es aparte y sigue igual.</p>
+      <div class="mt-2 max-w-sm">
+        <Selector id="recordatorio" etiqueta="Recordatorio nocturno" valor={datos.config.recordatorio ?? ''} opciones={HORAS_RECORDATORIO}
+          alCambiar={v => void guardarCambio(() => app.repo.setConfig('recordatorio', v))} />
+      </div>
+      <p class="sub">Un aviso a esa hora que pregunta «¿Anotaste los gastos de hoy?» y abre el chat. Solo llega si hoy no anotaste nada y si activaste los avisos aquí abajo.</p>
 
       <h2>Avisos en este celular</h2>
       <Nota>Te aviso cada mañana si una deuda está por vencer, si pasas un tope de gasto o si llevas varios días sin anotar nada.</Nota>

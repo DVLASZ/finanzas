@@ -19,8 +19,9 @@ import { accionInicial, chatPrellenado, imagenCompartida } from '../../state/nav
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { atajosUsuario, barraOculta, cargarAtajos, editorAtajos, ocultarBarra } from '../../state/atajos.ts';
 import { vibrar } from '../../lib/haptico.ts';
+import { sonar } from '../../lib/sonido.ts';
+import { verTexto } from '../../state/privacidad.ts';
 import { Ayuda, esAyuda, seEnvia } from './Ayuda.tsx';
-import { PulsoChat } from './PulsoChat.tsx';
 import { BotonesBot, Carta } from './Carta.tsx';
 import { Insignia, T, visualDeNombre, type Icono } from '../../components/ui/iconos.tsx';
 import { abrirOpciones } from '../../components/ui/Selector.tsx';
@@ -176,6 +177,7 @@ export function Chat() {
     agregar({ de: 'yo', texto: 'Comprobante para leer' });
     const { lectura, error } = await leerComprobante(foto);
     setEscaneando(false);
+    if (lectura) { vibrar([10, 30, 10]); sonar('escaneo'); } else sonar('error');
     if (!lectura) { agregar({ de: 'bot', texto: error ?? 'No pude leerlo.' }); return; }
     const d = datosSignal.peek();
     // si la categoría sugerida existe en esta instalación, va primero para que el bot la reconozca
@@ -192,7 +194,7 @@ export function Chat() {
     if (f) void escanear(f);
   };
 
-  const alPulsar = (b: Boton) => { if (b.id === 'ok') vibrar(); void enviar({ boton: b.id }, b.titulo.replace(/^[\p{Extended_Pictographic}️‍\s]+/u, '').trim() || b.titulo); };
+  const alPulsar = (b: Boton) => { if (b.id === 'ok') { vibrar(); sonar('ok'); } void enviar({ boton: b.id }, b.titulo.replace(/^[\p{Extended_Pictographic}️‍\s]+/u, '').trim() || b.titulo); };
   const mandar = (t: string) => { void enviar({ texto: t }, t); };
   /** Un ejemplo de la guía: las consultas se envían; lo demás queda escrito para ponerle el monto. */
   const alEjemplo = (e: string) => {
@@ -269,11 +271,10 @@ export function Chat() {
     <>
       {avisos.map((a, i) => (
         <div key={i} class={`alerta mx-4 mt-3 ${a.nivel === 'urgente' ? 'urgente' : a.nivel === 'aviso' ? 'aviso' : ''}`}>
-          {quitarEmojis(a.texto)}
+          {verTexto(quitarEmojis(a.texto))}
           <div class="botones">{a.acciones!.map((x, j) => <button key={j} class="chip" data-aviso={`${i}.${j}`} onClick={() => alAviso(i, j)}>{x.titulo}</button>)}</div>
         </div>
       ))}
-      <PulsoChat />
       <div class="chat flex flex-1 flex-col gap-2.5 overflow-y-auto p-4" id="chat">
         {burbujas.map((b, i) => <BurbujaVista key={`${i}-${b.texto.length}`} b={b} ultima={i === burbujas.length - 1} orden={burbujas.length - 1 - i} alPulsar={alPulsar} alEjemplo={alEjemplo} />)}
         {escaneando && <div class="burbuja bot" role="status"><span class="sub">Leyendo el comprobante...</span></div>}
@@ -300,7 +301,7 @@ export function Chat() {
           <button class="chip atajo shrink-0" id="atajo-mas" aria-label="Agregar o cambiar mis botones rápidos" title="Mis botones rápidos" onClick={() => { editorAtajos.value = true; }}><Plus size={18} /></button>
         </div>
       )}
-      <form id="form" class="entrada vidrio mx-3 mb-1 rounded-[1.4rem] p-2 ring-1 ring-anillo" onSubmit={alEnviar}>
+      <form id="form" class="entrada entrada-compacta vidrio mx-3 mb-1 rounded-[1.3rem] p-1 ring-1 ring-anillo" onSubmit={alEnviar}>
         <input id="texto" type="text" autocomplete="off" autocapitalize="sentences" placeholder="Ej.: mecato 5000" aria-label="Escribe lo que pasó" class="!bg-transparent !shadow-none" value={texto}
           onInput={e => { const v = (e.target as HTMLInputElement).value; setTexto(v); void escribir('borrador', v); }} />
         {/* Android no ofrece cámara y galería en la misma lista: con «capture» solo abre la cámara y sin él solo la galería. Por eso hay dos entradas y una hoja que pregunta cuál. */}
@@ -317,7 +318,7 @@ export function Chat() {
             {oyendo ? <span class="ondas" aria-hidden="true"><span /><span /><span /><span /><span /></span> : <Mic size={21} />}
           </button>
         )}
-        <button type="submit" class="primario !min-h-11 !w-11 !rounded-full !p-0" aria-label="Enviar" title="Enviar"><ArrowUp size={22} strokeWidth={2.4} /></button>
+        <button type="submit" class="primario !min-h-10 !w-10 !rounded-full !p-0" aria-label="Enviar" title="Enviar"><ArrowUp size={22} strokeWidth={2.4} /></button>
         </div>
       </form>
       <div id="vozEstado" class={`sub px-5 ${estadoVoz ? 'pb-1 pt-1' : 'h-0'}`} role="status" aria-live="polite">{estadoVoz}</div>

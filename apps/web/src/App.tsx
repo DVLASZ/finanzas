@@ -2,7 +2,7 @@
  * El cascarón de la app: cabecera de vidrio, la pantalla que toca (con transición) y la barra de abajo
  * flotante con un indicador que se desliza entre las cinco secciones. En pantalla ancha la barra pasa a un lado.
  */
-import { BarChart3, Check, MessageCircle, MoreHorizontal, Moon, Receipt, Sun, WalletCards, WifiOff } from 'lucide-preact';
+import { BarChart3, Check, MessageCircle, MoreHorizontal, Moon, Receipt, Sun, WalletCards, WifiOff, Eye, EyeOff } from 'lucide-preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { actual, alternarTema } from './state/apariencia.ts';
 import { enBarra, irA, pantalla, type Pantalla } from './state/nav.ts';
@@ -11,6 +11,7 @@ import { entrarPantalla } from './lib/efectos.ts';
 import { HojaSelector } from './components/ui/Selector.tsx';
 import { Confirmacion } from './components/ui/Confirmacion.tsx';
 import { Dialogo } from './components/ui/Dialogo.tsx';
+import { alternarPrivacidad, montosOcultos } from './state/privacidad.ts';
 import { EditorAtajos } from './features/chat/EditorAtajos.tsx';
 import { Chat } from './features/chat/Chat.tsx';
 import { Saldos } from './features/saldos/Saldos.tsx';
@@ -50,11 +51,14 @@ function Estado() {
 
 function Cabecera() {
   return (
-    <header class="vidrio sticky top-0 z-30 flex lg:col-span-2 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 pb-2.5 pt-[calc(env(safe-area-inset-top)+.6rem)] ring-1 ring-anillo">
+    <header class="vidrio sticky top-0 z-30 flex lg:col-span-2 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 pb-1.5 pt-[calc(env(safe-area-inset-top)+.4rem)] ring-1 ring-anillo">
       <h1 class="min-w-[6rem] flex-[1_1_0] truncate">{document.title}</h1>
-      <div class="ml-auto flex items-center gap-2">
+      <div class="ml-auto flex items-center gap-1.5">
         <Estado />
-        <button id="cambiar-tema" class="grid h-11 w-11 place-items-center rounded-full bg-sup text-tx ring-1 ring-anillo transition active:scale-90" aria-label="Cambiar entre tema claro y oscuro" title="Claro u oscuro" onClick={alternarTema}>
+        <button id="ojo" class="grid h-10 w-10 place-items-center rounded-full bg-sup text-tx ring-1 ring-anillo transition active:scale-90" aria-pressed={montosOcultos.value} aria-label={montosOcultos.value ? 'Mostrar los montos' : 'Ocultar los montos'} title={montosOcultos.value ? 'Mostrar los montos' : 'Ocultar los montos'} onClick={alternarPrivacidad}>
+          {montosOcultos.value ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+        <button id="cambiar-tema" class="grid h-10 w-10 place-items-center rounded-full bg-sup text-tx ring-1 ring-anillo transition active:scale-90" aria-label="Cambiar entre tema claro y oscuro" title="Claro u oscuro" onClick={alternarTema}>
           {oscuro.value ? <Sun size={19} /> : <Moon size={19} />}
         </button>
       </div>

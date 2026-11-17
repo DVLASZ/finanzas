@@ -27,6 +27,7 @@ export const ROLES = [
 type RolId = typeof ROLES[number]['id'];
 
 export const NO_ES_PERSONA = 'No es una persona';
+export const ES_APODO = 'Es un apodo de...';
 
 // ---------------------------------------------------------------------------------------
 // Ventas del catálogo: «vendí 3 botellas de jugo», «15 galletas a granel Tomás»
@@ -60,8 +61,23 @@ const faltanteCobro = (nombre: string): Faltante => ({
   campo: 'cobro', dato: nombre, pregunta: `¿${nombre} pagó o se lo fiaste?`, opciones: ['Pagó ahora', 'Se lo fié'],
 });
 
+/** Palabras de trato que casi siempre acompañan a un nombre que es un apodo o un nombre a medias: «Don Carlos», «la seño». */
+const DE_TRATO = new Set(['don', 'dona', 'senor', 'senora', 'seno', 'profe', 'profesor', 'profesora', 'tio', 'tia', 'doctor', 'doctora', 'doc', 'el', 'la']);
+
+/**
+ * Una persona nueva con trato («Don Carlos») en un préstamo o una deuda: se pregunta quién es, porque dejarla en «amigos»
+ * sin decirlo es lo que luego estorba. Un nombre simple («Ana») sigue sin preguntar, para no agregar un paso a cada préstamo.
+ */
+function preguntarQuienEs(p: Propuesta, ctx: Contexto): void {
+  const conocida = ctx.cuentas.some(c => c.tipo === 'persona' && c.clave === limpiar(p.persona ?? ''));
+  if (conocida || p.faltantes.some(f => f.campo === 'persona')) return;
+  if (!limpiar(p.persona ?? '').split(' ').some(w => DE_TRATO.has(w))) return;
+  p.pedirGrupo = true;
+  p.faltantes.unshift(faltanteGrupo(p.persona ?? '', ctx));
+}
+
 export const faltanteGrupo = (nombre: string, ctx: Contexto): Faltante => ({
-  campo: 'grupo', dato: nombre, pregunta: `¿Quién es ${nombre}?`, opciones: [...gruposDe(ctx).map(g => g.nombre), NO_ES_PERSONA],
+  campo: 'grupo', dato: nombre, pregunta: `¿Quién es ${nombre}?`, opciones: [...gruposDe(ctx).map(g => g.nombre), ...(ctx.cuentas.some(c => c.tipo === 'persona') ? [ES_APODO] : []), NO_ES_PERSONA],
 });
 const faltanteRol = (nombre: string): Faltante => ({
   campo: 'rol', dato: nombre, pregunta: `Veo a ${nombre} en el mensaje. ¿Qué fue?`, opciones: ROLES.map(r => r.nombre),
@@ -218,6 +234,7 @@ export function prestamo(b0: Base, ctx: Contexto): Resultado {
   const p = propuestaBase(b, 'prestamo', `Préstamo a ${persona.escrito}`, monto, mm.moneda);
   p.cuentaId = cuentaId;
   p.persona = resolverNombre(persona.escrito, ctx, p);
+  preguntarQuienEs(p, ctx);
   p.concepto = `Préstamo a ${p.persona}`;
   // lo que sobra («para cámara y comercio») es el motivo
   const sobra = recortarBordes(palabrasLibres(b.t, [...b.cuentas, ...tramosDe(b.montos)]).filter(w => !['preste', 'prestamo', 'le'].includes(w) && !personaDeNombre(persona.escrito).includes(w)));
@@ -250,6 +267,7 @@ export function deuda(b: Base, ctx: Contexto, recibeDinero: boolean, fechaLimite
   const motivo = motivoWs.length ? conOriginales(motivoWs, b2) : undefined;
   const p = propuestaBase(b2, 'deuda', '', mm.monto, mm.moneda);
   p.persona = resolverNombre(nombre.escrito, ctx, p);
+  preguntarQuienEs(p, ctx);
   p.concepto = recibeDinero ? `Préstamo de ${p.persona}` : `Deuda con ${p.persona}`;
   p.recibeDinero = recibeDinero;
   p.motivo = motivo;

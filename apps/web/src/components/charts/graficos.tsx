@@ -4,7 +4,8 @@
  * `prefers-reduced-motion` (el CSS las apaga).
  */
 import { useEffect, useId, useState } from 'preact/hooks';
-import { formatear } from '../../../../../packages/core/src/index.ts';
+import {} from '../../../../../packages/core/src/index.ts';
+import { formatear } from '../../lib/formatear.ts';
 
 /** Una curva suave que pasa por los puntos (Catmull-Rom convertida a Bézier). */
 function curva(pts: [number, number][]): string {

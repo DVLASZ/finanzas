@@ -145,7 +145,9 @@ Los botones rápidos del chat (los de arriba del cuadro de escribir) los arma ca
 
 Después de las 6 de la tarde, si hubo movimientos en la billetera y nadie la ha contado, la app pregunta: «según la app tienes X en efectivo y Y en monedas, ¿es lo que hay?». El botón «Sí, cuadra» manda el arqueo con esas cifras (queda una tarjeta por confirmar) y «No cuadra» deja escrito `arqueo efectivo ` para que pongas lo real. Aparece arriba del chat y en Saldos, no como aviso al celular.
 
-Los botones de abajo del chat traen Ayuda, y según la app, Ventas (donde se vende) y Jornales (donde hay trabajadores). También incluyen los mensajes que repetiste dos veces o más en los últimos 90 días (por ejemplo `mecato 2000`). Tocar uno lo manda al chat y hay que confirmarlo como siempre.
+Los botones de abajo del chat traen Ayuda, y según la app, Ventas (donde se vende) y Jornales (donde hay trabajadores), más los pagos fijos que ya tocan. Los demás los armas tú con el `+`: una plantilla deja el texto escrito en el cuadro para ponerle el monto y la cuenta, y una frase completa arma la tarjeta para confirmar. La app ya no inventa botones con montos. Se pueden ordenar, quitar y ocultar, y se sincronizan con el servidor junto con los apodos.
+
+«Actualizar efectivo que tengo hoy», en Saldos, es un cuadre rápido: cuentas la billetera, la app compara con lo anotado y, si falta plata, ofrece anotar «Otros gastos varios sin anotar» por la diferencia (queda una tarjeta por confirmar). Si sobra, ofrece un arqueo.
 
 ### Transporte
 
@@ -207,7 +209,7 @@ Cada persona tiene un saldo neto contigo. Si te debía y luego paga algo por ti,
 
 Las personas se identifican por el nombre completo que uses. Si escribes un nombre suelto que se parece a varios, el bot pregunta cuál. Si lo escribes con un error de tipeo ("danyel" cuando existe Daniel), también pregunta y no adivina.
 
-Cuando aparece un nombre nuevo, el bot pregunta de qué grupo es (en la app familiar: los de la casa, familia, trabajadores, etc.) y después qué fue el movimiento: le pagué, le presté, le vendí, me pagó, me prestó, le regalé o fue gasto mío.
+Cuando aparece un nombre nuevo, el bot pregunta de qué grupo es (en la app familiar: los de la casa, familia, trabajadores, etc.) y después qué fue el movimiento: le pagué, le presté, le vendí, me pagó, me prestó, le regalé o fue gasto mío. Si el nombre viene con trato («Don Carlos», «la seño»), también lo pregunta en un préstamo o una deuda, y ofrece «Es un apodo de...»: elige a quién y, al confirmar, ese nombre queda como apodo de esa persona y la próxima vez no pregunta. Los apodos se ven y se cambian en Más, Categorías y personas. Un nombre simple en un préstamo («presté 20000 a Ana») no pregunta, para no sumar un paso a cada uno.
 
 Si dices para qué fue un préstamo (`presté 52000 para cámara`), lo que sigue a "para" es el motivo, no una persona. El bot pregunta a quién se lo prestaste.
 
@@ -375,8 +377,22 @@ Solo en la empresa. Es la plata del negocio que está en cuentas personales de l
 | `existencias` | Cuántas unidades quedan de cada producto que lleva cuenta (apps con catálogo) |
 | `últimos` | Los últimos movimientos |
 | `cuánto llevo en mecato` | Lo de la semana y el mes en esa categoría |
+| `cuánto hay en nequi` | El saldo de esa cuenta, nada más |
+| `quién me debe plata` | Lo mismo que `deudas` |
+| `cuánto puedo gastar esta semana` | Lo que queda libre para la semana (ver abajo) |
 | `tope mecato 60000` | Fija un tope mensual. El bot avisa al 80 % y al 100 % |
 | `quitar tope mecato` | Quita el tope |
+
+Las preguntas se entienden como se dicen, con o sin signos y con o sin tilde, también dictadas: `¿cuánto llevo en comida este mes?`, `¿cuánto hay en Nequi?`, `¿quién me debe plata?`.
+
+```
+cuánto llevo en mecato este mes
+cuánto hay en efectivo
+quién me debe plata
+cuánto puedo gastar esta semana
+```
+
+Lo de la semana sale de lo libre del mes (lo disponible menos los pagos fijos que faltan y lo apartado para metas), repartido entre los días que quedan y multiplicado por siete. Es la misma cuenta de «Seguro para gastar hoy». También sale en Saldos y en Resumen.
 
 Para que lo que sobró de un tope el mes pasado se sume al de este mes, se pone la config `tope_arrastra` en `1` (en el `.json` de la instalación y `npm run instalar -- actualizar <nombre>`).
 

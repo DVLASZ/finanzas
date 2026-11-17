@@ -358,3 +358,27 @@ test('push: las fotos que se acercan al límite avisan, como mucho una vez por s
     assert.equal(textos.length, 2);
   });
 });
+
+test('recordatorio de la noche: avisa en la media hora elegida si hoy no se anotó nada, y calla si ya se anotó', async () => {
+  const env = entorno();
+  const c = celular();
+  await llamar(env, '/api/push/suscribir', { suscripcion: c.suscripcion });
+  const repo = new D1Repo(env.DB);
+  await procesar(repo, { texto: 'saldo inicial efectivo 100000' }, AHORA); await procesar(repo, { boton: 'ok' }, AHORA);
+  await llamar(env, '/api/sync', { ops: [{ op: 'config', clave: 'recordatorio', valor: '20:30' } satisfies Op] });
+  const conHora = async (iso: string, textos: string[]) => {
+    const real = globalThis.Date;
+    const fijo = new real(iso).getTime();
+    globalThis.Date = class extends real { constructor(...a: unknown[]) { super(...((a.length ? a : [fijo]) as [number])); } static override now() { return fijo; } } as DateConstructor;
+    try { await worker.scheduled({}, env); } finally { globalThis.Date = real; }
+    return textos.length;
+  };
+  await conAvisos(c, async textos => {
+    // 01:31 UTC del 21 = 8:31 pm del 20 en Colombia; lo último anotado fue el 19
+    assert.equal(await conHora('2026-10-21T01:31:00Z', textos), 1);
+    assert.match(textos[0], /¿Anotaste los gastos de hoy\?/);
+    assert.equal(await conHora('2026-10-21T00:01:00Z', textos), 1, 'a otra hora no manda más');
+    await procesar(repo, { texto: 'mecato 5000' }, new Date('2026-10-21T00:30:00Z')); await procesar(repo, { boton: 'ok' }, new Date('2026-10-21T00:30:00Z'));
+    assert.equal(await conHora('2026-10-21T01:31:00Z', textos), 1, 'si ya anotó hoy, calla');
+  });
+});

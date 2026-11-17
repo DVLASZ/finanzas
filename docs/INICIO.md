@@ -82,7 +82,8 @@ Si una persona tiene dos apps (una personal y una de su negocio), se instala cad
 ## 5. Los primeros pasos dentro de la app
 
 - Dile cuánta plata tienes: `saldo inicial efectivo 85000 monedas 12000` (usa las cuentas que tenga tu app).
-- Escribe `ayuda` o pulsa el botón Ayuda del chat para ver ejemplos.
+- Escribe `ayuda` o pulsa el botón Ayuda del chat: te pregunta de qué quieres saber y trae un recorrido de cuatro pasos para empezar. Cada ejemplo tiene un botón «Probar en el chat».
+- Las cifras arrancan escondidas (`••••••`). Toca el ojo de la barra de arriba para verlas.
 - En Más, Ajustes, activa los avisos del celular si quieres (ver [AVISOS.md](AVISOS.md)).
 - Si quieres leer comprobantes con la cámara, la primera vez Cloudflare pide aceptar una licencia de Meta, una sola vez por cuenta. Ver [IA.md](IA.md).
 
