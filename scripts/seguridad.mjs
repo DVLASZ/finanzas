@@ -118,6 +118,7 @@ const aviso = t => console.log(`AVISO ${t}`);
   const html = leer('apps/web/index.html');
   for (const m of html.matchAll(/<script\b([^>]*)>/g)) if (!/\bsrc=/.test(m[1])) faltan.push('index.html trae un script en línea');
   if (/\son[a-z]+=/i.test(html)) faltan.push('index.html trae manejadores en línea');
+  if (!/_headers/.test(leer('scripts/build-web.mjs')) || !/CABECERAS_SEGURAS/.test(leer('scripts/build-web.mjs'))) faltan.push('la compilación no escribe el archivo _headers (la página la sirve Cloudflare sin pasar por el Worker)');
   const toml = leer('apps/worker/wrangler.toml');
   if (/(?:API_TOKEN|PIN_BORRADO)\s*=\s*["']/.test(toml)) faltan.push('wrangler.toml trae un secreto');
   faltan.length ? faltan.forEach(m => falla(`Worker: ${m}`)) : ok('Worker: cabeceras de seguridad en la página, la API y los errores; sin scripts en línea');
