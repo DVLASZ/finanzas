@@ -7,12 +7,13 @@
  */
 import {
   ArrowLeft, ArrowLeftRight, ArrowUpRight, Banknote, BarChart3, Bus, CalendarClock, CalendarDays, DollarSign, HandCoins, Info, Pencil, Receipt,
-  ScanLine, Scale, ShoppingBasket, Sparkles, Store, Tag, Target, TrendingUp, Undo2, Users,
+  Rocket, ScanLine, Scale, ShoppingBasket, Sparkles, Store, Tag, Target, TrendingUp, Undo2, Users,
 } from 'lucide-preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { quitarEmojis } from '../../lib/carta.ts';
 import { entrar } from '../../lib/efectos.ts';
 import { Insignia, T, type Icono, type Visual } from '../../components/ui/iconos.tsx';
+import { ctx as contexto } from '../../state/store.ts';
 
 /** El texto que devuelve el bot para «ayuda» (empieza siempre igual). */
 export const esAyuda = (t: string): boolean => t.startsWith('👋 Cuéntame');
@@ -62,8 +63,8 @@ function visualDe(linea: string): Visual {
 
 interface Tema { id: string; titulo: string; Icono: Icono; tono: keyof typeof T; lineas: string[]; nota?: string; escaner?: boolean }
 
-/** Reparte las líneas de la ayuda del bot por tema y agrega los temas con ejemplos propios. */
-export function temasDe(texto: string): Tema[] {
+/** Reparte las líneas de la ayuda del bot por tema y agrega los temas con ejemplos propios. `cuenta` es una cuenta real de la app (Nequi, Bancolombia...). */
+export function temasDe(texto: string, cuenta = 'nequi'): Tema[] {
   const lineas = quitarEmojis(texto).split('\n').map(l => l.trim());
   const puntos = lineas.filter(l => l.startsWith('•'));
   const nota = lineas.find(l => /^Si te equivocas/.test(l));
@@ -72,7 +73,13 @@ export function temasDe(texto: string): Tema[] {
   const compartidos = dividir(/entre varios|#/);
   const saldos = dividir(/«saldo»|«semana»|arqueo|cambio|dólares|usd/);
   const aparte = new Set([...prestamos, ...compartidos, ...saldos]);
+  const primero = /«([^»]+)»/.exec(puntos.find(l => /^•\s*Gast/.test(l)) ?? '')?.[1] ?? 'almuerzo 12000';
   return [
+    {
+      id: 'inicio', titulo: 'Empezar: recorrido de 4 pasos', Icono: Rocket, tono: 'cian',
+      lineas: [`• Paso 1, escribe lo que gastaste como hablas: «${primero}»`, `• Paso 2, di con qué pagaste: «${primero} ${cuenta}»`, '• Paso 3, mira la tarjeta y pulsa Confirmar. Si algo está mal, pulsa Editar.', '• Paso 4, mira cómo vas: «saldo»'],
+      nota: 'Nada se guarda hasta que pulsas Confirmar, y todo se puede deshacer.',
+    },
     { id: 'anotar', titulo: 'Anotar gastos e ingresos', Icono: Receipt, tono: 'coral', lineas: puntos.filter(l => !aparte.has(l)) },
     { id: 'deudas', titulo: 'Préstamos y deudas', Icono: HandCoins, tono: 'ambar', lineas: [...prestamos, '• Ver quién te debe y a quién le debes: «deudas»'] },
     { id: 'compartidos', titulo: 'Compartidos', Icono: Users, tono: 'violeta', lineas: compartidos },
@@ -92,7 +99,10 @@ export function temasDe(texto: string): Tema[] {
 }
 
 export function Ayuda({ texto, alElegir }: { texto: string; alElegir: (ejemplo: string) => void }) {
-  const temas = temasDe(texto);
+  const ctx = contexto.value;
+  // una cuenta de verdad de esta app para los ejemplos (Nequi, Bancolombia...): no una inventada
+  const cuenta = ctx?.cuentas.find(c => c.tipo === 'dinero' && c.id !== 'efectivo' && c.id !== 'monedas' && c.moneda === 'COP')?.clave ?? 'efectivo';
+  const temas = temasDe(texto, cuenta);
   const [abierto, setAbierto] = useState<string | null>(null);
   const tema = temas.find(t => t.id === abierto);
   const cuerpo = useRef<HTMLDivElement>(null);
@@ -120,11 +130,12 @@ export function Ayuda({ texto, alElegir }: { texto: string; alElegir: (ejemplo: 
           </div>
           {tema.lineas.length > 0 && (
             <section class="ayuda-bloque">
-              <p class="sub !m-0">Toca un ejemplo para usarlo.</p>
+              <p class="sub !m-0">Toca «Probar en el chat»: la frase queda escrita para que la cambies y la confirmes.</p>
               {tema.lineas.map(l => (
                 <div key={l} class="ayuda-fila">
                   <Insignia v={visualDe(l)} tam={34} />
                   <div class="ayuda-partes">
+                    {partir(l).filter(p => 'ejemplo' in p).length === 1 && <button type="button" class="probar" data-probar={(partir(l).find(p => 'ejemplo' in p) as { ejemplo: string }).ejemplo} onClick={() => alElegir((partir(l).find(p => 'ejemplo' in p) as { ejemplo: string }).ejemplo)}>Probar en el chat</button>}
                     {partir(l).map((p, j) => 'ejemplo' in p
                       ? <button key={j} type="button" class="ejemplo" data-ejemplo={p.ejemplo} onClick={() => alElegir(p.ejemplo)}>{p.ejemplo}<ArrowUpRight size={14} aria-hidden="true" /></button>
                       : <span key={j} class="ayuda-texto">{p.texto}</span>)}

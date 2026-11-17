@@ -7,10 +7,13 @@ import { Ban, BarChart3, Copy, Download, Pencil, ScanLine, Share2, Camera, Image
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  aLocal, esArqueo, etiquetasUsadas, filtrarMovimientos, fraseDeOCR, movimientosACsv, movimientosAJson, describirDia, describirFecha, formatear, leerSubcategorias, limpiar, nombreMes, rangoPeriodo,
+  aLocal, esArqueo, etiquetasUsadas, filtrarMovimientos, fraseDeOCR, movimientosACsv, movimientosAJson, describirDia, describirFecha, leerSubcategorias, leerRecurrentes, limpiar, nombreMes, rangoPeriodo,
   type Cuenta, type Movimiento,
 } from '../../../../../packages/core/src/index.ts';
+import { formatear } from '../../lib/formatear.ts';
+import { formatear as formatearReal } from '../../../../../packages/core/src/index.ts';
 import { claves, escribir, leer } from '../../services/almacen.ts';
+import { verMonto } from '../../state/privacidad.ts';
 import { app } from '../../services/estado.ts';
 import { bajarFoto, borrarFotoEnServidor, subirFoto } from '../../services/fotos.ts';
 import { sincronizar } from '../../services/sincronizacion.ts';
@@ -100,6 +103,15 @@ export function tituloDelPeriodo(periodo: Periodo, desde: string): string {
   return periodo === 'mes' ? `${nombreMes(desde)} ${desde.slice(0, 4)}` : periodo === 'anio' ? `Año ${desde.slice(0, 4)}` : `Semana del ${describirDia(desde.slice(0, 10))}`;
 }
 
+/** Etiquetas de una fila: lo que la distingue de un gasto común. */
+function marcasDe(m: Movimiento, fijos: string[]): string[] {
+  const r: string[] = [];
+  if (m.editadoEn) r.push('EDITADO');
+  if (m.tipo === 'compartido') r.push('COMPARTIDO');
+  if (m.estado === 'ok' && fijos.some(c => c && limpiar(m.descripcion).includes(c))) r.push('FIJO');
+  return r;
+}
+
 function Detalle({ m }: { m: Movimiento }) {
   const datos = datosSignal.value!;
   const ctx = contexto.value!;
@@ -131,7 +143,7 @@ function Detalle({ m }: { m: Movimiento }) {
     setLeyendo(false);
     if (!r.lectura) { setLectura(r.error ?? 'No pude leerlo.'); return; }
     const l = r.lectura;
-    setLectura(`${l.comercio || 'Pago'} por ${formatear(l.monto)}${l.fecha ? ' el ' + l.fecha : ''}${l.categoria ? ' (' + l.categoria + ')' : ''}`);
+    setLectura(`${l.comercio || 'Pago'} por ${formatearReal(l.monto)}${l.fecha ? ' el ' + l.fecha : ''}${l.categoria ? ' (' + l.categoria + ')' : ''}`);
     prellenarChat(fraseDeOCR(l, aLocal(new Date()).slice(0, 10)));
   };
   const nombre = (id: string) => datos.cuentas.find(c => c.id === id)?.nombre ?? id;
@@ -234,6 +246,7 @@ export function Movimientos() {
   if (!datos || !ctx) return <p class="vacio">Cargando…</p>;
   const f = filtros.value;
   const q = limpiar(busqueda.value);
+  const fijos = leerRecurrentes(datos.config).map(r => limpiar(r.concepto));
   const nombre = (id: string) => datos.cuentas.find(c => c.id === id)?.nombre ?? id;
   const r = rangoDeFiltros(f, ctx.ahora);
 
@@ -354,7 +367,7 @@ export function Movimientos() {
           <span class="flujo-out" style={{ flexGrow: gastos, flexBasis: 0 }} />
         </div>
       )}
-      <p id="cuenta" class="sub !my-0 px-1">{lista.length} movimientos · Gastos {formatear(gastos)} · Ingresos {formatear(ingresos)}</p>
+      <p id="cuenta" class="sub !my-0 px-1">{lista.length} movimientos · Gastos {verMonto(formatear(gastos))} · Ingresos {verMonto(formatear(ingresos))}</p>
       {lista.length > 0 && (
         <div class="carrusel no-scrollbar" role="group" aria-label="Exportar lo que se ve">
           <button class="chip" id="exportar-csv" onClick={() => descargar(`movimientos-${aLocal(ctx.ahora).slice(0, 10)}.csv`, movimientosACsv(lista, datos.cuentas), 'text/csv')}><Download size={15} />Exportar CSV</button>
@@ -401,11 +414,11 @@ export function Movimientos() {
                 <div class="flex min-w-0 items-center gap-3">
                   <Insignia v={visual} tam={42} />
                   <div class="min-w-0">
-                    <div class="titulo">{m.descripcion}{m.etiqueta && <span class="etiq"> #{m.etiqueta}</span>}{conFoto.value.has(m.id) && <span class="insig-foto" title="Tiene foto del recibo"><IconoFoto size={12} />recibo</span>}</div>
+                    <div class="titulo">{m.descripcion}{m.etiqueta && <span class="etiq"> #{m.etiqueta}</span>}{conFoto.value.has(m.id) && <span class="insig-foto" title="Tiene foto del recibo"><IconoFoto size={12} />recibo</span>}{marcasDe(m, fijos).map(x => <span key={x} class={`marca-mov marca-${x.toLowerCase()}`}>{x}</span>)}</div>
                     <div class="sub">{categoria}{cuenta ? ' · ' + cuenta : ''}{ruta} · {describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora)}</div>
                   </div>
                 </div>
-                <div class={`monto tabular-nums ${v.clase}`}>{v.texto}</div>
+                <div class={`monto tabular-nums ${v.clase}`}>{v.texto ? verMonto(v.texto) : ''}</div>
               </li>
             );
           }),

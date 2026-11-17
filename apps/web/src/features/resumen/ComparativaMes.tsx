@@ -3,7 +3,9 @@
  * hacia dónde va el cierre del mes si el ritmo sigue igual. Lo calcula `comparativaMensual` (núcleo).
  */
 import { ArrowDownRight, ArrowUpRight, Minus, TrendingUp } from 'lucide-preact';
-import { comparativaMensual, formatear, textoProyeccion, type Datos } from '../../../../../packages/core/src/index.ts';
+import { comparativaMensual, textoProyeccion, type Datos } from '../../../../../packages/core/src/index.ts';
+import { formatear } from '../../lib/formatear.ts';
+import { verTexto } from '../../state/privacidad.ts';
 import { BarraAvance, Insignia, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
 
@@ -19,7 +21,7 @@ function Variacion({ v, nuevo }: { v: number | null; nuevo: boolean }) {
 export function ComparativaMes({ datos, ahora }: { datos: Datos; ahora: Date }) {
   const c = comparativaMensual(datos, ahora);
   if (!c.totalActual && !c.totalAnteriorMismosDias) return null;
-  const texto = textoProyeccion(c);
+  const texto = textoProyeccion(c) ? verTexto(textoProyeccion(c) as string) : null;
   const filas = c.filas.slice(0, 6);
   const maxFila = Math.max(1, ...filas.map(f => Math.max(f.actual, f.anterior)));
   const pctProyeccion = c.totalMesAnterior > 0 && c.proyeccion !== null ? Math.min(150, Math.round((c.proyeccion / c.totalMesAnterior) * 100)) : null;

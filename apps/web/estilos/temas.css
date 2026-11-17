@@ -51,6 +51,52 @@ html[data-piel="tierra"][data-tema="claro"] {
 html[data-piel="tierra"][data-matiz="azulado"][data-tema="claro"] { --marca: #0f766e; --marca-2: #0369a1; --marca-sup: #d2efea; --sobre: #ffffff; --tx-marca-sup: #0b3b37; --brillo: rgba(15, 118, 110, .16); }
 html[data-piel="tierra"][data-matiz="azulado"][data-tema="oscuro"] { --marca: #2dd4bf; --marca-2: #38bdf8; --marca-sup: #0e403b; --sobre: #04201c; --tx-marca-sup: #cdf4ee; --brillo: rgba(45, 212, 191, .22); }
 
+/* Tres atmósferas más (cada una en oscuro y claro): Esmeralda, Océano y Atardecer. Mismos nombres de variables y la misma forma que «libro». */
+html[data-piel="esmeralda"][data-tema="oscuro"] {
+  --fondo: #06120e; --sup: #0e1d17; --elev: #17291f; --tx: #eef8f2; --tx2: #9fbaab; --bor: #1f3a2c;
+  --marca: #34d399; --marca-2: #2dd4bf; --sobre: #03150e; --marca-sup: #0f3a2b; --tx-marca-sup: #d1fae5;
+  --pos: #34d399; --neg: #fda4af; --adv: #f59e0b; --info: #38bdf8; --acc: #a5b4fc;
+  --vidrio: rgba(8, 20, 15, .72); --anillo: rgba(255, 255, 255, .10); --brillo: rgba(52, 211, 153, .22);
+  --halo-1: rgba(16, 185, 129, .26); --halo-2: rgba(45, 212, 191, .16);
+}
+html[data-piel="esmeralda"][data-tema="claro"] {
+  --fondo: #f1f8f4; --sup: #ffffff; --elev: #e3efe8; --tx: #0a1a12; --tx2: #455a4e; --bor: #cfe0d6;
+  --marca: #047857; --marca-2: #0f766e; --sobre: #ffffff; --marca-sup: #d1fae5; --tx-marca-sup: #064e3b;
+  --pos: #065f46; --neg: #be123c; --adv: #9a4a05; --info: #02598b; --acc: #4f46e5;
+  --vidrio: rgba(255, 255, 255, .78); --anillo: rgba(15, 23, 42, .10); --brillo: rgba(4, 120, 87, .16);
+  --halo-1: rgba(16, 185, 129, .18); --halo-2: rgba(45, 212, 191, .12);
+}
+html[data-piel="oceano"][data-tema="oscuro"] {
+  --fondo: #060f1c; --sup: #0d1b2e; --elev: #162a44; --tx: #eef6ff; --tx2: #9fb5d1; --bor: #223a58;
+  --marca: #22d3ee; --marca-2: #60a5fa; --sobre: #021520; --marca-sup: #0c3347; --tx-marca-sup: #cffafe;
+  --pos: #34d399; --neg: #fda4af; --adv: #f59e0b; --info: #38bdf8; --acc: #a5b4fc;
+  --vidrio: rgba(8, 16, 30, .72); --anillo: rgba(255, 255, 255, .10); --brillo: rgba(34, 211, 238, .22);
+  --halo-1: rgba(56, 189, 248, .26); --halo-2: rgba(96, 165, 250, .16);
+}
+html[data-piel="oceano"][data-tema="claro"] {
+  --fondo: #eef6fb; --sup: #ffffff; --elev: #deecf5; --tx: #08141f; --tx2: #46576a; --bor: #c9dbe8;
+  --marca: #0369a1; --marca-2: #1d4ed8; --sobre: #ffffff; --marca-sup: #dbeafe; --tx-marca-sup: #0c2d5a;
+  --pos: #065f46; --neg: #be123c; --adv: #9a4a05; --info: #02598b; --acc: #4f46e5;
+  --vidrio: rgba(255, 255, 255, .78); --anillo: rgba(15, 23, 42, .10); --brillo: rgba(3, 105, 161, .16);
+  --halo-1: rgba(56, 189, 248, .18); --halo-2: rgba(29, 78, 216, .12);
+}
+html[data-piel="atardecer"][data-tema="oscuro"] {
+  --fondo: #170c14; --sup: #231320; --elev: #321c2d; --tx: #fdf0f4; --tx2: #c9a9ba; --bor: #4a2a40;
+  --marca: #fb923c; --marca-2: #f472b6; --sobre: #260b04; --marca-sup: #4a1d2c; --tx-marca-sup: #ffe4ec;
+  --pos: #86efac; --neg: #fb7185; --adv: #fbbf24; --info: #7dd3fc; --acc: #c4b5fd;
+  --vidrio: rgba(28, 13, 22, .72); --anillo: rgba(255, 230, 240, .10); --brillo: rgba(251, 146, 60, .22);
+  --halo-1: rgba(244, 114, 182, .24); --halo-2: rgba(251, 191, 36, .14);
+}
+html[data-piel="atardecer"][data-tema="claro"] {
+  --fondo: #fcf1ee; --sup: #fffaf8; --elev: #f6e3de; --tx: #2a1017; --tx2: #6b4a55; --bor: #ecd0c8;
+  --marca: #c2410c; --marca-2: #be185d; --sobre: #ffffff; --marca-sup: #fde1d6; --tx-marca-sup: #5a1d0a;
+  --pos: #166534; --neg: #b91c1c; --adv: #92400e; --info: #075985; --acc: #6d28d9;
+  --vidrio: rgba(255, 250, 248, .80); --anillo: rgba(90, 30, 20, .12); --brillo: rgba(194, 65, 12, .16);
+  --halo-1: rgba(244, 114, 182, .18); --halo-2: rgba(251, 191, 36, .12);
+}
+
+html[data-piel="esmeralda"], html[data-piel="oceano"], html[data-piel="atardecer"] { --base: 16px; --radio: 22px; --radio-b: 16px; --alto-btn: 50px; }
+
 /* Forma y tamaño. «libro» es más ceñido; «tierra», más redondo y con letra algo mayor */
 html[data-piel="libro"] { --base: 16px; --radio: 20px; --radio-b: 14px; --alto-btn: 48px; }
 html[data-piel="tierra"] { --base: 17px; --radio: 24px; --radio-b: 18px; --alto-btn: 54px; }

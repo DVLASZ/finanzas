@@ -69,6 +69,16 @@ try {
   const abrirDeMas = async nombre => { await irA('Más'); await pag.evaluate(n => [...document.querySelectorAll('button, a')].find(x => x.innerText.includes(n))?.click(), nombre); await espera(600); };
   const sinDesborde = () => pag.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 
+  await prueba('privacidad: la app arranca con los montos ocultos y el ojo los muestra', async () => {
+    igual(await pag.evaluate(() => document.documentElement.dataset.privado), '1', 'arranca oculta');
+    await irA('Saldos'); await espera(700);
+    igual(await pag.evaluate(() => document.querySelectorAll('[data-oculto]').length > 0), true, 'puntos en lugar de montos');
+    igual(await pag.evaluate(() => /\$\s?\d/.test(document.querySelector('#contenido').innerText)), false, 'ningún monto a la vista');
+    await pag.evaluate(() => document.querySelector('#ojo').click()); await espera(400);
+    igual(await pag.evaluate(() => document.documentElement.dataset.privado), '0', 'el ojo los muestra');
+    igual(await pag.evaluate(() => document.querySelectorAll('[data-oculto]').length), 0, 'ya no hay puntos');
+    await irA('Chat');
+  });
   await prueba('el chat da la bienvenida con los pasos', async () => contiene(await ultima(), 'Escribe como hablas', 'bienvenida'));
   await prueba('la capa de componentes (Preact y signals) arranca y refleja el estado de la app', async () => {
     const r = await pag.evaluate(() => { const el = document.querySelector('#raiz-preact'); return el ? { listo: el.dataset.listo, estado: el.dataset.estado, movs: Number(el.dataset.movimientos) } : null; });
@@ -302,15 +312,43 @@ try {
     await pag.evaluate(() => document.querySelector('#ayuda-volver')?.click()); await espera(400);
     igual(await pag.evaluate(() => Boolean(document.querySelector('#ayuda-temas'))), true, 'se vuelve a los temas');
   });
-  await prueba('chat: la cabecera viva muestra lo disponible, 7 días de barras y se pliega', async () => {
-    await irA('Chat'); await espera(500);
-    igual(await pag.evaluate(() => document.querySelectorAll('#pulso .pulso-dia').length), 7, 'siete días');
-    igual(await pag.evaluate(() => ['bien', 'cerca', 'tope'].includes(document.querySelector('#pulso').dataset.estado)), true, 'estado del ritmo');
-    contiene(await pag.evaluate(() => document.querySelector('#pulso').innerText), '$', 'muestra montos');
-    await pag.evaluate(() => document.querySelector('#pulso-alternar')?.click()); await espera(300);
-    igual(await pag.evaluate(() => Boolean(document.querySelector('#pulso-cuerpo'))), false, 'plegada');
-    await pag.evaluate(() => document.querySelector('#pulso-alternar')?.click()); await espera(300);
-    igual(await pag.evaluate(() => Boolean(document.querySelector('#pulso-cuerpo'))), true, 'desplegada');
+  await prueba('consultas habladas: «¿cuánto hay en efectivo?» y «¿cuánto puedo gastar esta semana?» responden en el chat', async () => {
+    await irA('Chat');
+    await escribir('¿cuánto hay en efectivo?');
+    contiene(await ultima(), 'Efectivo', 'el saldo de esa cuenta');
+    await escribir('¿cuánto puedo gastar esta semana?');
+    contiene(await ultima(), 'Esta semana puedes gastar', 'el presupuesto de la semana');
+  });
+  await prueba('saldos: la semana, la salud patrimonial y el cuadre rápido del efectivo', async () => {
+    await irA('Saldos'); await espera(800);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#presupuesto-semana'))), true, 'tarjeta de la semana');
+    contiene((await pag.evaluate(() => document.querySelector('#contenido').innerText)).toLowerCase(), 'salud patrimonial', 'la barra de salud patrimonial');
+    await pag.evaluate(() => document.querySelector('#cuadre-rapido').click()); await espera(500);
+    await pag.type('#dialogo input', '0'); await pag.evaluate(() => document.querySelector('#dialogo-aceptar').click()); await espera(500);
+    contiene(await pag.evaluate(() => document.querySelector('#dialogo')?.innerText ?? ''), 'Te faltan', 'dice cuánto falta');
+    await pag.evaluate(() => document.querySelector('#dialogo-aceptar').click()); await espera(1000);
+    contiene(await ultima(), 'Otros', 'arma el gasto «Gastos varios sin anotar»');
+    contiene(await ultima(), 'gastos varios sin anotar', 'con ese concepto');
+    await pulsar('Cancelar');
+  });
+  await prueba('resumen: la semana, el mapa de calor y las barras de seis meses', async () => {
+    await irA('Resumen'); await espera(800);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#presupuesto-semana'))), true, 'la semana');
+    igual(await pag.evaluate(() => document.querySelectorAll('#mapa-calor .calor-dia').length >= 28), true, 'un cuadro por día del mes');
+    igual(await pag.evaluate(() => document.querySelectorAll('#seis-meses .mes-par').length), 6, 'seis meses');
+    await pag.evaluate(() => document.querySelector('#mapa-calor .calor-dia:not(.nf)')?.click()); await espera(300);
+    contiene(await pag.evaluate(() => document.querySelector('#calor-dato').innerText), ' de ', 'toca un día y dice cuánto se gastó');
+  });
+  await prueba('temas: se puede elegir una atmósfera nueva y volver a la de siempre', async () => {
+    await abrirDeMas('Ajustes'); await espera(500);
+    await pag.evaluate(() => [...document.querySelectorAll('.tema-card')].find(b => b.innerText.includes('Océano') && !b.innerText.includes('claro'))?.click()); await espera(400);
+    igual(await pag.evaluate(() => document.documentElement.dataset.piel), 'oceano', 'piel océano');
+    await pag.evaluate(() => [...document.querySelectorAll('.tema-card')].find(b => b.innerText.includes('Midnight'))?.click()); await espera(400);
+    igual(await pag.evaluate(() => document.documentElement.dataset.piel), 'libro', 'vuelve a libro');
+    await pag.evaluate(() => document.querySelector('#sonidos').click()); await espera(200);
+    igual(await pag.evaluate(() => document.querySelector('#sonidos').checked), true, 'el interruptor de sonido');
+    await pag.evaluate(() => document.querySelector('#sonidos').click()); await espera(200);
+    await irA('Chat');
   });
   await prueba('resumen: compara cada categoría con el mes pasado', async () => {
     await irA('Resumen'); await espera(700);

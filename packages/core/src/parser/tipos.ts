@@ -12,11 +12,11 @@ export type Comando =
   | 'editar_ultimo' | 'ultimos' | 'categoria' | 'evento' | 'lista' | 'lista_agregar' | 'lista_quitar'
   | 'recurrente_agregar' | 'recurrente_quitar' | 'recurrentes'
   | 'deshacer_varios' | 'subcategoria' | 'cierre_cerrar' | 'cierre_abrir' | 'cierre_ver'
-  | 'revision' | 'jornales' | 'cuadrar_persona' | 'metas' | 'meta_fijar' | 'meta_apartar' | 'meta_sacar' | 'meta_quitar';
+  | 'saldo_cuenta' | 'presupuesto_semana' | 'revision' | 'jornales' | 'cuadrar_persona' | 'metas' | 'meta_fijar' | 'meta_apartar' | 'meta_sacar' | 'meta_quitar';
 
 /** Un dato que falta o que hay que aclarar antes de poder confirmar. */
 export interface Faltante {
-  campo: 'categoria' | 'desde' | 'hasta' | 'persona' | 'grupo' | 'rol' | 'cobro';
+  campo: 'categoria' | 'desde' | 'hasta' | 'persona' | 'grupo' | 'rol' | 'cobro' | 'apodo';
   pregunta: string;
   opciones?: string[];
   /** Lo que escribiste (para 'persona': el nombre dudoso). */
@@ -47,6 +47,8 @@ export interface Propuesta {
   grupoPersona?: Grupo;
   /** La persona es nueva: si se aclara que es «(nuevo)», hay que preguntar su grupo. */
   pedirGrupo?: boolean;
+  /** Un nombre nuevo que resultó ser el apodo de alguien que ya conoces: se guarda al confirmar. */
+  apodoNuevo?: { apodo: string; personaId: string };
   /** Gasto compartido: lo que te debe cada persona. */
   personas?: { nombre: string; monto: number }[];
   /** Compartido o gasto pagado por otro. */

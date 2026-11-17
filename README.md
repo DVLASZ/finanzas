@@ -39,12 +39,12 @@ La contabilidad es de partida doble, funciona sin internet y corre gratis en Clo
   </tr>
   <tr>
     <td valign="top"><b>Sin conexión</b><br />Todo se guarda en el celular y se sincroniza cuando vuelve la red. Se instala desde Chrome, con accesos directos y gesto atrás.</td>
-    <td valign="top"><b>Saldos y resumen</b><br />Disponible con la curva de los últimos días, liquidez contra deudas, topes, gastos hormiga y una dona que se toca.</td>
+    <td valign="top"><b>Saldos y resumen</b><br />Disponible con la curva de los últimos días, salud patrimonial, lo que puedes gastar esta semana, mapa de calor del mes, seis meses de ingresos contra gastos, topes y una dona que se toca.</td>
     <td valign="top"><b>Tres variantes por rama</b><br />Personal, familiar y de empresa. Es el mismo código con otra plantilla de cuentas y categorías.</td>
   </tr>
 </table>
 
-También hay alcancías con fecha estimada, pagos fijos con aviso antes del cobro, efectivo con billetes y vuelto, y una revisión del mes con botones que llevan a donde se arregla cada hallazgo.
+Las cifras arrancan escondidas (el ojo de la cabecera las muestra), el chat entiende preguntas como «¿cuánto hay en Nequi?» o «¿quién me debe plata?», los botones rápidos los armas tú, la ayuda te guía por temas, hay un recordatorio opcional de la noche y siete atmósferas visuales entre claras y oscuras (Midnight, Tierra, Esmeralda, Océano y Atardecer). También hay alcancías con fecha estimada, pagos fijos con aviso antes del cobro, efectivo con billetes y vuelto, y una revisión del mes con botones que llevan a donde se arregla cada hallazgo.
 
 ## ¿Qué puedes escribirle al chat?
 
@@ -59,6 +59,7 @@ El bot lee la frase, muestra la tarjeta "Entendí" y solo guarda cuando pulsas C
 | `almuerzo 60000 entre Ana, Luis y yo` | Gasto compartido en partes iguales entre tres | Efectivo **-60.000** · Comida **+20.000** · Ana **+20.000** · Luis **+20.000** |
 | `cada mes el 5 internet 60000` | Pago fijo: avisa dos días antes y hasta que lo anotes | Ninguno todavía. Al escribir `internet 60000` se registra como gasto |
 | `ahorré 50000 para viaje` | Aparta 50.000 en la alcancía "Viaje" (creada con `meta viaje 800000`) | Ninguno: la plata no cambia de cuenta, solo se anota para qué es |
+| `¿cuánto hay en Nequi?` | Solo el saldo de esa cuenta | Ninguno: es una consulta |
 | `vendí 3 botellas de jugo` | Venta con el precio de tu catálogo (en las apps que venden), incluido el fiado | Un ingreso: fuente del producto **-total** · Efectivo **+total**. No lleva control de existencias |
 
 Más ejemplos, con todos los casos: [docs/BOT.md](docs/BOT.md).
@@ -76,7 +77,16 @@ Más ejemplos, con todos los casos: [docs/BOT.md](docs/BOT.md).
   <tr>
     <td align="center"><img src="docs/screenshots/deudas.png" alt="Deudas" width="230" /><br /><b>Deudas</b><br /><sub>Quién te debe y a quién le debes</sub></td>
     <td align="center"><img src="docs/screenshots/resumen.png" alt="Resumen" width="230" /><br /><b>Resumen</b><br /><sub>Ritmo, topes y hormiga</sub></td>
-    <td align="center" valign="middle"><sub>Los nombres y las cifras son inventados.<br />Las imágenes salen de <code>npm run capturas</code>.</sub></td>
+    <td align="center"><img src="docs/screenshots/calor.png" alt="Mapa de calor del mes" width="230" /><br /><b>Mapa de calor</b><br /><sub>Cada día del mes, por gasto</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/ayuda.png" alt="Ayuda por temas" width="230" /><br /><b>Ayuda guiada</b><br /><sub>Temas y recorrido de 4 pasos</sub></td>
+    <td align="center"><img src="docs/screenshots/tema-oceano.png" alt="Tema Océano" width="230" /><br /><b>Océano</b><br /><sub>Vidrio y aurora azul</sub></td>
+    <td align="center"><img src="docs/screenshots/tema-atardecer.png" alt="Tema Atardecer" width="230" /><br /><b>Atardecer</b><br /><sub>Ciruela, naranja y rosa</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/tema-esmeralda.png" alt="Tema Esmeralda clara" width="230" /><br /><b>Esmeralda clara</b><br /><sub>Una de las atmósferas claras</sub></td>
+    <td align="center" valign="middle" colspan="2"><sub>Los nombres y las cifras son inventados.<br />Las imágenes salen de <code>npm run capturas</code>.</sub></td>
   </tr>
 </table>
 

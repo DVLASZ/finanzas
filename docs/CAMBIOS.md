@@ -4,6 +4,22 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-16 (segunda tanda)
+
+- Revisé el retiro de modelos de Workers AI del 20 de noviembre: la app usa Llama 3.3 70B para el texto y Llama 3.2 11B Vision para los comprobantes, y ninguno está en la lista. Los probé contra el Worker publicado y respondieron bien. El detalle y los reemplazos recomendados quedaron en `docs/IA.md`.
+- El Chat gana espacio: se fue la cabecera viva, la barra de arriba es más baja y el cuadro de escribir es una sola línea con el escáner, el micrófono y Enviar alineados.
+- Modo privacidad: la app arranca con los montos escondidos (`••••••`) y el ojo de la cabecera los muestra o los oculta. Se recuerda la elección. Los textos de alertas también esconden sus montos. Las tarjetas del chat sí los muestran, porque ahí hay que confirmar.
+- Preguntas habladas: «¿cuánto hay en Nequi?», «¿cuánto llevo en comida este mes?», «¿quién me debe plata?» y «¿cuánto puedo gastar esta semana?» se responden en el chat.
+- «Esta semana» en Saldos y Resumen: lo libre del mes entre los días que quedan, por siete.
+- Cuadre rápido en Saldos («Actualizar efectivo que tengo hoy»): si falta plata ofrece anotar «Otros gastos varios sin anotar»; si sobra, un arqueo.
+- Nombres con trato («Don Carlos») se preguntan aun en un préstamo, con la opción «Es un apodo de...». Los atajos del chat ahora viajan al servidor como un ajuste más, junto con los apodos.
+- Recordatorio de la noche opcional (Ajustes). El cron del Worker pasó a correr cada media hora.
+- Gráficas nuevas: mapa de calor del mes y barras de ingresos contra gastos de seis meses en Resumen, y la barra de salud patrimonial (liquidez, por cobrar, por pagar) en Saldos.
+- Tres atmósferas nuevas, cada una en oscuro y claro: Esmeralda, Océano y Atardecer, todas con la prueba de contraste.
+- Sonido suave opcional (apagado por defecto) al confirmar y al leer un comprobante, y vibración al leerlo.
+- Etiquetas EDITADO, FIJO y COMPARTIDO en las filas de Movimientos.
+- La ayuda suma un recorrido de cuatro pasos con una cuenta real de la app y un botón «Probar en el chat» en cada ejemplo.
+
 ## 2026-11-16
 
 - Los botones rápidos del chat los armas tú. Se fueron los que salían solos con montos y medios de pago inventados («Pasaje», «Recarga»). Ahora la barra trae Ayuda, los pagos fijos que ya tocan y un + para crear los tuyos desde el chat o desde Ajustes. Cada uno es una plantilla (deja el texto escrito para ponerle el monto y la cuenta) o una frase completa (arma la tarjeta para confirmar). Se pueden editar, subir, bajar, quitar y ocultar toda la barra. Se guardan en el celular, no en el servidor.

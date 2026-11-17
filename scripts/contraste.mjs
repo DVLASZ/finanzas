@@ -26,7 +26,8 @@ const PARES = [
   // el botón principal es un degradado de marca a marca-2: el texto tiene que leerse sobre los dos extremos
   ['sobre', 'marca-2'], ['info', 'sup'], ['acc', 'sup'], ['pos', 'elev'], ['neg', 'elev'], ['adv', 'elev'], ['info', 'fondo'], ['acc', 'fondo'],
 ];
-const combos = [['libro', 'claro', ''], ['libro', 'oscuro', ''], ['tierra', 'claro', ''], ['tierra', 'oscuro', ''], ['tierra', 'claro', 'azulado'], ['tierra', 'oscuro', 'azulado']];
+const combos = [['libro', 'claro', ''], ['libro', 'oscuro', ''], ['tierra', 'claro', ''], ['tierra', 'oscuro', ''], ['tierra', 'claro', 'azulado'], ['tierra', 'oscuro', 'azulado'],
+  ['esmeralda', 'claro', ''], ['esmeralda', 'oscuro', ''], ['oceano', 'claro', ''], ['oceano', 'oscuro', ''], ['atardecer', 'claro', ''], ['atardecer', 'oscuro', '']];
 
 let mal = 0;
 for (const [piel, tema, matiz] of combos) {
@@ -73,6 +74,15 @@ for (const [piel, tema, matiz] of combos) {
       const r = razon(v[texto], vidrio);
       if (r < 4.5) { console.log(`NO LLEGA ${piel}/${tema}: --${texto} sobre el vidrio con el brillo ${brillo} = ${r.toFixed(2)}`); mal++; }
     }
+  }
+}
+// el mapa de calor: el número de cada día va sobre una mezcla de la superficie con la marca (22 % y 42 %; los dos días más fuertes usan marca y marca-2 con el texto «sobre»)
+for (const [piel, tema, matiz] of combos) {
+  const v = {};
+  for (const b of bloques) { const x = b.sel; if (x.piel === piel && x.tema === tema && (!x.matiz || x.matiz === matiz)) Object.assign(v, b.vars); }
+  for (const [t, texto] of [[0.22, 'tx'], [0.42, 'tx']]) {
+    const r = razon(v[texto], mezclar(v.sup, v.marca, t));
+    if (r < 4.5) { console.log(`NO LLEGA ${piel}/${tema}: --${texto} sobre el mapa de calor al ${t * 100} % = ${r.toFixed(2)}`); mal++; }
   }
 }
 console.log(mal ? `\n${mal} par(es) de colores no se leen bien.` : 'OK   Todos los pares de colores llegan a AA (4,5 a 1).');

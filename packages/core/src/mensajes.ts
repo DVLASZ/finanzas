@@ -184,6 +184,16 @@ export function textoSaldo(movs: Movimiento[], ctx: Contexto): string {
   return l.join('\n');
 }
 
+/** El saldo de una sola cuenta («¿cuánto hay en Nequi?»). Si no la reconoce, dice cuáles hay. */
+export function textoSaldoDe(arg: string, movs: Movimiento[], ctx: Contexto): string {
+  const apertura = ctx.config.fecha_apertura ?? '2000-01-01 00:00:00';
+  const r = resumenSaldos(movs, ctx.cuentas, apertura);
+  const q = arg.trim();
+  const hallada = r.cuentas.find(x => x.cuenta.clave === q || x.cuenta.clave.startsWith(q) || x.cuenta.nombre.toLowerCase().includes(q));
+  if (!hallada) return `No encuentro una cuenta que se llame «${q}». Tus cuentas son: ${r.cuentas.map(x => x.cuenta.nombre).join(', ')}.`;
+  return `💰 ${hallada.cuenta.nombre}: ${formatear(hallada.saldo, hallada.cuenta.moneda)}`;
+}
+
 /** El periodo de antes: el mes anterior, la semana anterior o el año anterior. */
 function periodoAnterior(periodo: 'semana' | 'mes' | 'anio', ahora: Date): { desde: string; hasta: string } {
   if (periodo === 'semana') return rangoPeriodo('semana', new Date(ahora.getTime() - 7 * 86400000));
