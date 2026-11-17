@@ -44,7 +44,7 @@ La contabilidad es de partida doble, funciona sin internet y corre gratis en Clo
   </tr>
 </table>
 
-El Worker sirve con política de contenido estricta y límites de peticiones, el PIN se guarda con PBKDF2 y puede bloquear la app, y hay respaldo con contraseña (AES-GCM); todo se revisa con `npm run seguridad` (ver [SECURITY.md](SECURITY.md)). Puedes dictar varios movimientos en una frase, pegar la alerta de tu banco y deshacer con un toque durante ocho segundos. Las cifras arrancan escondidas (el ojo de la cabecera las muestra), el chat entiende preguntas como «¿cuánto hay en Nequi?» o «¿quién me debe plata?», los botones rápidos los armas tú, la ayuda te guía por temas, hay un recordatorio opcional de la noche y siete atmósferas visuales entre claras y oscuras (Midnight, Tierra, Esmeralda, Océano y Atardecer). También hay alcancías con fecha estimada, pagos fijos con aviso antes del cobro, efectivo con billetes y vuelto, y una revisión del mes con botones que llevan a donde se arregla cada hallazgo.
+El Worker sirve con política de contenido estricta y límites de peticiones, el PIN se guarda con PBKDF2 y puede bloquear la app, y hay respaldo con contraseña (AES-GCM); todo se revisa con `npm run seguridad` (ver [SECURITY.md](SECURITY.md)). Puedes dictar varios movimientos en una frase, pegar la alerta de tu banco y deshacer con un toque durante ocho segundos. Las cifras arrancan escondidas (el ojo de la cabecera las muestra), el chat entiende preguntas como «¿cuánto hay en Nequi?» o «¿quién me debe plata?», los botones rápidos los armas tú, la ayuda te guía por temas, hay un recordatorio opcional de la noche y doce temas entre claros y oscuros (Midnight, Tierra, Esmeralda, Océano, Atardecer y Obsidiana, un negro puro minimalista para pantallas AMOLED). También hay alcancías con fecha estimada, pagos fijos con aviso antes del cobro, efectivo con billetes y vuelto, y una revisión del mes con botones que llevan a donde se arregla cada hallazgo.
 
 ## ¿Qué puedes escribirle al chat?
 
@@ -86,7 +86,11 @@ Más ejemplos, con todos los casos: [docs/BOT.md](docs/BOT.md).
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/tema-esmeralda.png" alt="Tema Esmeralda clara" width="230" /><br /><b>Esmeralda clara</b><br /><sub>Una de las atmósferas claras</sub></td>
-    <td align="center" valign="middle" colspan="2"><sub>Los nombres y las cifras son inventados.<br />Las imágenes salen de <code>npm run capturas</code>.</sub></td>
+    <td align="center"><img src="docs/screenshots/tema-obsidiana.png" alt="Tema Obsidiana AMOLED" width="230" /><br /><b>Obsidiana AMOLED</b><br /><sub>Negro puro y minimalista</sub></td>
+    <td align="center"><img src="docs/screenshots/tema-obsidiana-resumen.png" alt="Resumen en Obsidiana" width="230" /><br /><b>Obsidiana, Resumen</b><br /><sub>Color solo en lo esencial</sub></td>
+  </tr>
+  <tr>
+    <td align="center" valign="middle" colspan="3"><sub>Los nombres y las cifras son inventados.<br />Las imágenes salen de <code>npm run capturas</code>.</sub></td>
   </tr>
 </table>
 
