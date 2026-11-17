@@ -50,6 +50,16 @@ const EN_PAGINA = {
   revisar: () => {
     const ancho = innerWidth;
     const hallazgos = [];
+    // la cabecera siempre en una fila delgada, y el compositor del chat con el campo y los tres botones en la misma fila
+    const cab = document.querySelector('header');
+    if (cab && cab.getBoundingClientRect().height > 72) hallazgos.push({ tipo: 'la cabecera se parte en dos filas', el: 'header', texto: '', dato: `alto ${Math.round(cab.getBoundingClientRect().height)}` });
+    const campo = document.querySelector('#form #texto');
+    const enviar = document.querySelector('#form button[type=submit]');
+    if (campo && enviar && Math.abs(campo.getBoundingClientRect().top - enviar.getBoundingClientRect().top) > 24) hallazgos.push({ tipo: 'el compositor se apila en dos pisos', el: 'form#form', texto: '', dato: `campo ${Math.round(campo.getBoundingClientRect().top)} y botón ${Math.round(enviar.getBoundingClientRect().top)}` });
+    if (document.documentElement.dataset.privado === '1') {
+      const visible = document.body.innerText.match(/[-+]?(?:US)?\$\s?\d[\d.,]*|[-+]?\d+(?:[.,]\d+)?\s?%/);
+      if (visible) hallazgos.push({ tipo: 'con la privacidad activa se ve una cifra', el: 'body', texto: visible[0], dato: '' });
+    }
     const nombre = el => `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}${typeof el.className === 'string' && el.className ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.') : ''}`;
     const texto = el => (el.innerText || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 50);
     const conScroll = el => { for (let p = el.parentElement; p && p !== document.body && p.id !== 'contenido'; p = p.parentElement) { const o = getComputedStyle(p).overflowX; if (o === 'auto' || o === 'scroll') return true; } return false; };

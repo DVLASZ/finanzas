@@ -429,6 +429,24 @@ try {
     await clic('#dialogo-aceptar');
     igual(await hay('#dialogo'), false, 'Entendido lo cierra');
   });
+  await prueba('privacidad total: ni montos ni porcentajes se ven en el chat, saldos, movimientos ni resumen', async () => {
+    const cifras = () => pag.evaluate(() => document.body.innerText.match(/[-+]?(?:US)?\$\s?\d[\d.,]*|[-+]?\d+(?:[.,]\d+)?\s?%/)?.[0] ?? null);
+    await pag.evaluate(() => { if (document.documentElement.dataset.privado !== '1') document.querySelector('#ojo').click(); }); await espera(400);
+    await irA('Chat'); await escribir('mecato 4000');
+    igual(await cifras(), null, 'la tarjeta del chat y lo que escribiste');
+    await pulsar('Confirmar');
+    igual(await cifras(), null, 'el «Guardado» con «Quedó en...»');
+    for (const n of ['Saldos', 'Movimientos', 'Resumen']) { await irA(n); await espera(900); igual(await cifras(), null, n); }
+    await pag.evaluate(() => document.querySelector('#ojo').click()); await espera(400);
+    igual(await pag.evaluate(() => /\$\s?\d/.test(document.querySelector('#contenido').innerText)), true, 'al mostrar vuelven las cifras');
+    await irA('Chat');
+  });
+  await prueba('cabecera: con todo guardado es un indicador chiquito, sin texto largo', async () => {
+    const r = await pag.evaluate(() => { const e = document.querySelector('#estado'); return { texto: e.innerText.trim(), alto: document.querySelector('header').getBoundingClientRect().height, aria: e.getAttribute('aria-label') }; });
+    igual(r.texto, '', 'sin texto');
+    igual(Boolean(r.aria), true, 'con nombre para lectores de pantalla');
+    igual(r.alto < 72, true, 'una sola fila');
+  });
   await prueba('ningún cuadro del navegador salió en toda la visita', async () => igual(nativos, 0, 'cuadros nativos'));
   await prueba('sin errores de JavaScript en toda la visita', async () => igual(errores.join(' | '), '', 'errores'));
 } finally {
