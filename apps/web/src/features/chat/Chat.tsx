@@ -224,7 +224,8 @@ export function Chat() {
   const pegarNotificacion = async () => {
     if (!ctx) return;
     let n = null;
-    try { n = leerNotificacion((await navigator.clipboard.readText()) ?? '', ctx); } catch { /* sin permiso del portapapeles: se pide el texto */ }
+    // si el navegador se queda esperando el permiso del portapapeles, a los 2 segundos se pide el texto en un cuadro
+    try { n = leerNotificacion((await Promise.race([navigator.clipboard.readText(), new Promise<string>((_, no) => setTimeout(no, 2000))])) ?? '', ctx); } catch { /* sin permiso del portapapeles: se pide el texto */ }
     if (!n) {
       const escrito = await pedir({ titulo: 'Pega la notificación del banco', texto: 'De Nequi, Bancolombia o Banco de Bogotá. Leo el monto, el comercio y la hora sin gastar IA.', aceptar: 'Leer' });
       if (escrito === null) return;

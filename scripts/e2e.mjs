@@ -480,7 +480,7 @@ try {
   });
   await prueba('pegar una alerta del banco: se lee el monto, el comercio y la cuenta sin IA', async () => {
     await irA('Chat');
-    await pag.evaluate(() => document.querySelector('#pegar-notificacion').click()); await espera(500);
+    await pag.evaluate(() => document.querySelector('#pegar-notificacion').click()); await espera(2800);
     // en la prueba no hay permiso del portapapeles: la app pide el texto en un cuadro
     if (await pag.evaluate(() => Boolean(document.querySelector('#dialogo input')))) {
       await pag.type('#dialogo input', 'Nequi: Pagaste $15.000 en TIENDA DON PEPE. Tu saldo disponible es $85.000.'); await pag.keyboard.press('Enter'); await espera(900);
