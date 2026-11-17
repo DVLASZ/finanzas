@@ -141,6 +141,8 @@ revisar
 
 ### Cierre del día y atajos
 
+Al guardar, editar, duplicar o anular algo, una barra abajo ofrece «Deshacer» durante ocho segundos. Deshacer una anulación vuelve a contar el movimiento y reactiva sus deudas (es una operación propia, `restaurar`, que se sincroniza como las demás).
+
 Los botones rápidos del chat (los de arriba del cuadro de escribir) los arma cada persona con el + o desde Ajustes. La app no inventa ninguno, salvo los pagos fijos que ya tocan.
 
 Después de las 6 de la tarde, si hubo movimientos en la billetera y nadie la ha contado, la app pregunta: «según la app tienes X en efectivo y Y en monedas, ¿es lo que hay?». El botón «Sí, cuadra» manda el arqueo con esas cifras (queda una tarjeta por confirmar) y «No cuadra» deja escrito `arqueo efectivo ` para que pongas lo real. Aparece arriba del chat y en Saldos, no como aviso al celular.
@@ -269,6 +271,16 @@ almuerzo 12000
 150000 Ana + 500000 Ana - 75000 llanta
 ```
 
+También se cortan donde empieza otra cosa dentro de la misma frase: un «y» o una coma seguidos de un día, de «luego» o de un verbo de plata, siempre que cada trozo traiga una cantidad. Por ejemplo, dictar «ayer pagué 15 mil de almuerzo en efectivo y hoy entraron 80 mil a Nequi» deja dos movimientos. «Entraron», «llegaron» y «consignaron» con una cantidad de plata se leen como ingreso (sin decir de dónde viene, cae en Otros); «llegaron 35 galletas» sigue siendo mercancía.
+
+```
+ayer pagué 15000 de almuerzo en efectivo y hoy entraron 80000 a Nequi
+mecato 2000, luego gasté 5000 en pasaje
+me llegaron 50000 por nequi de trabajo
+```
+
+Cada tarjeta trae su botón, y la primera suma «Confirmar los N»: guarda todas de un toque mientras se entiendan del todo. Se detiene en la primera que tenga una pregunta, un aviso o plata que no alcanza y la deja como tarjeta.
+
 El bot los muestra uno por uno, cada uno con su tarjeta ("Movimiento 2 de 3"). Lo que sigue a un + se toma como plata que entra. Si pulsas Cancelar en uno, sigue con el siguiente. Una parte que no entiende la avisa y pasa a la que sigue. El máximo es 10 por mensaje.
 
 ## Ventas
@@ -366,6 +378,10 @@ La plata pasa de Monedas a Alcancía (o al revés al sacar). La alcancía sale a
 
 Solo en la empresa. Es la plata del negocio que está en cuentas personales de los socios. Se le pasa con `cambio 100000 efectivo a personal` y sí suma al disponible.
 
+## Alertas del banco
+
+El botón «Pegar alerta» del chat lee una notificación copiada de Nequi, Bancolombia o Banco de Bogotá (si el navegador no deja leer el portapapeles, la pegas en un cuadro). Saca el monto (el primero, no el saldo), si fue pago o plata que llegó, el comercio o la persona, la cuenta, la fecha y la hora, y arma la frase que ya entiende el bot. Todo con reglas: no usa IA ni gasta cuota. La frase pasa por la tarjeta de confirmación como cualquier mensaje, así que nada se guarda sin que pulses Confirmar. Si la app no tiene la cuenta de ese banco, la tarjeta lo dice y hay que cambiar la cuenta. La lectura está en `packages/core/src/notificaciones.ts`.
+
 ## Consultas y comandos
 
 | Escribes | Muestra |
@@ -380,6 +396,7 @@ Solo en la empresa. Es la plata del negocio que está en cuentas personales de l
 | `cuánto hay en nequi` | El saldo de esa cuenta, nada más |
 | `quién me debe plata` | Lo mismo que `deudas` |
 | `cuánto puedo gastar esta semana` | Lo que queda libre para la semana (ver abajo) |
+| `corte`, `corte de la semana` | Ventas e ingresos, gastos, utilidad neta, ingresos por fuente y lo que se está acabando (en Resumen, las apps que venden tienen botones para compartirlo o imprimirlo) |
 | `tope mecato 60000` | Fija un tope mensual. El bot avisa al 80 % y al 100 % |
 | `quitar tope mecato` | Quita el tope |
 

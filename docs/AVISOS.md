@@ -46,6 +46,7 @@ Usa el estándar Web Push, sin librerías:
 - El aviso va cifrado para ese celular (RFC 8291) y firmado por el servidor (VAPID, RFC 8292). Quien lo transporta, Google o Mozilla, no puede leerlo.
 > [!NOTE]
 > Hay un solo cron del Worker, `0,30 * * * *`, que corre cada media hora. A las 13:00 UTC (8 am en Colombia) manda los avisos de la mañana, a las 23:00 UTC (6 pm) el cierre del día, y en cada media hora revisa el recordatorio de la noche. Es uno solo porque la plan gratis de Cloudflare deja 5 crons por cuenta y hay tres apps. Los avisos al momento salen al sincronizar o al llegar algo por el buzón. Una suscripción que el servicio de avisos da por muerta (404 o 410) se borra sola. Si falla por otra razón, se conserva para mañana.
+- Liquidez a 30 días y stock mínimo: si una cuenta no alcanza para un pago fijo que viene en el próximo mes («Nequi se queda corta el 25/10 por Internet»), o un producto bajó de su mínimo, sale como aviso en Saldos y en el resumen de la mañana. La cuenta de cada pago fijo se lee de su frase («internet 60000 nequi»); sin cuenta dicha, sale del efectivo.
 - Recordatorio de la noche: en Ajustes eliges una hora entre las 7:00 y las 10:30 pm (en punto o y media). A esa hora llega «¿Anotaste los gastos de hoy?», pero solo si hoy no anotaste nada. Al tocarlo se abre el chat con el cursor en el cuadro. La hora se guarda en el ajuste `recordatorio` y se sincroniza.
 - El service worker (`apps/web/sw.js`) muestra la notificación y abre la app al tocarla.
 

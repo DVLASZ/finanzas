@@ -18,6 +18,8 @@ import { mostrarConfirmacion } from '../../components/ui/Confirmacion.tsx';
 import { Selector } from '../../components/ui/Selector.tsx';
 import { subirDesdeAbajo } from '../../lib/efectos.ts';
 import { app } from '../../services/estado.ts';
+import { anotarActividad } from '../../services/actividad.ts';
+import { mostrarDeshacer } from '../../components/ui/ToastDeshacer.tsx';
 import { guardarCambio } from '../../state/acciones.ts';
 import { detalle } from '../../state/nav.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
@@ -120,9 +122,11 @@ export function EditarMovimiento() {
   const guardar = async () => {
     setGuardando(true); setError('');
     try {
-      await guardarCambio(async () => { await aplicarEdicion(app.repo, new Date(), m.id, cambios); });
+      const original = structuredClone(m); // para poder deshacer: la edición reemplaza el movimiento entero, y esto lo devuelve a como estaba
+      await guardarCambio(async () => { await aplicarEdicion(app.repo, new Date(), m.id, cambios); anotarActividad('edicion', 'Se editó un movimiento'); });
       cerrar();
       mostrarConfirmacion('Cambios guardados');
+      mostrarDeshacer('Movimiento editado', () => guardarCambio(() => app.repo.editarMovimiento(original, [])));
     } catch (e) {
       setError((e as Error).message);
       setPaso('formulario');

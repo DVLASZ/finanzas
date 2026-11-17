@@ -13,6 +13,7 @@ import { DECIMALES, type Aprendido, type Compromiso, type Cuenta, type Movimient
 export type Op =
   | { op: 'guardar'; movimiento: Movimiento; cuentasNuevas: Cuenta[]; compromisos: Compromiso[] }
   | { op: 'anular'; id: string; cuando: string }
+  | { op: 'restaurar'; id: string; cuando: string }
   /** Reemplaza un movimiento ya guardado (mismo id): sus datos y sus asientos, juntos. */
   | { op: 'editar'; movimiento: Movimiento; cuentasNuevas: Cuenta[] }
   | { op: 'compromisos'; lista: Compromiso[] }
@@ -88,6 +89,7 @@ export function validarOp(op: unknown): string | null {
         break;
       }
       case 'anular': if (!esTexto(o.id) || !esTexto(o.cuando)) return 'Anulación mal formada'; break;
+      case 'restaurar': if (!esTexto(o.id) || !esTexto(o.cuando)) return 'Restauración mal formada'; break;
       case 'compromisos': if (!Array.isArray(o.lista)) return 'Compromisos mal formados'; break;
       case 'aprendido': if (!esTexto(o.palabra) || !o.valor || typeof o.valor !== 'object') return 'Palabra aprendida mal formada'; break;
       case 'presupuesto':
@@ -123,6 +125,7 @@ export async function aplicarOps(repo: Repo, ops: Op[]): Promise<Rechazo[]> {
         case 'guardar': await repo.guardarMovimiento(o.movimiento, o.cuentasNuevas, o.compromisos); break;
         case 'editar': await repo.editarMovimiento(o.movimiento, o.cuentasNuevas); break;
         case 'anular': await repo.anularMovimiento(o.id, o.cuando); break;
+        case 'restaurar': await repo.restaurarMovimiento(o.id, o.cuando); break;
         case 'compromisos': await repo.actualizarCompromisos(o.lista); break;
         case 'aprendido': await repo.guardarAprendido(o.palabra, o.valor); break;
         case 'presupuesto': await repo.setPresupuesto(o.categoriaId, o.monto); break;
@@ -185,6 +188,11 @@ export class RepoConCola implements Repo {
   async anularMovimiento(id: string, cuando: string) {
     await this.base.anularMovimiento(id, cuando);
     this.cola.push({ op: 'anular', id, cuando });
+    this.alCambiar();
+  }
+  async restaurarMovimiento(id: string, cuando: string) {
+    await this.base.restaurarMovimiento(id, cuando);
+    this.cola.push({ op: 'restaurar', id, cuando });
     this.alCambiar();
   }
   async actualizarCompromisos(cs: Compromiso[]) {

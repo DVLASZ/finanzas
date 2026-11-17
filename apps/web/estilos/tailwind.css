@@ -575,4 +575,12 @@
   .entrada-compacta #texto { text-overflow: ellipsis; }
   html[data-letra="grande"] .entrada-compacta #texto { font-size: 1rem; }
 
+  /* la barra de «Deshacer»: flota sobre la barra de abajo y se vacía en ocho segundos */
+  .toast-deshacer { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 5.9rem); z-index: 70; display: flex; align-items: center; gap: .6rem; width: min(26rem, calc(100% - 1.5rem)); padding: .55rem .6rem .55rem 1rem; border-radius: 1.1rem; overflow: hidden; transform: translateX(-50%); background: color-mix(in srgb, var(--sup) 94%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 40%, var(--anillo)), 0 16px 40px -14px rgba(0, 0, 0, .6); animation: toast-entra .35s cubic-bezier(.22, 1.1, .36, 1) both; font-size: .92rem; }
+  @keyframes toast-entra { from { opacity: 0; transform: translate(-50%, 16px) scale(.97); } to { opacity: 1; transform: translateX(-50%); } }
+  .toast-boton { display: inline-flex; align-items: center; gap: .35rem; flex: none; min-height: 40px; padding: 0 .9rem; border: 0; border-radius: 999px; font-weight: 700; color: var(--sobre); background: linear-gradient(135deg, var(--marca), var(--marca-2)); }
+  .toast-boton:active { transform: scale(.94); }
+  .toast-barra { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--marca); transform-origin: left; animation: toast-vacia linear both; }
+  @keyframes toast-vacia { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
 }

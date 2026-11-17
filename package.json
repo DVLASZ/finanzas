@@ -9,7 +9,8 @@
     "node": ">=24"
   },
   "scripts": {
-    "check": "npm run typecheck && npm test && npm run verificar && npm run contraste && npm run privacidad",
+    "check": "npm run typecheck && npm test && npm run verificar && npm run contraste && npm run privacidad && npm run seguridad",
+    "seguridad": "node scripts/seguridad.mjs",
     "typecheck": "tsc --noEmit -p .",
     "test": "node --test \"packages/core/test/*.test.ts\" \"apps/worker/test/*.test.ts\"",
     "salud": "node scripts/salud.mjs",

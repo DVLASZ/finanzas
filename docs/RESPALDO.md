@@ -73,6 +73,10 @@ npx wrangler d1 execute finanzas-familia-nueva --remote --file importacion/resta
 > [!NOTE]
 > Lo que no vuelve con el respaldo: las fotos de recibos, las suscripciones de avisos (cada celular tiene que volver a activarlos) y los secretos (tokens), que se ponen otra vez con `wrangler secret put`.
 
+## Respaldo con contraseña desde la app
+
+Ajustes, «Respaldo con contraseña», baja un archivo cifrado en el navegador: PBKDF2 con SHA-256 (600.000 vueltas) saca la clave de tu contraseña y AES-GCM de 256 bits cifra el contenido, con sal y vector propios en cada archivo. AES-GCM además avisa si alguien tocó el archivo. La contraseña no se guarda en ninguna parte: si la pierdes, el respaldo no se puede abrir. Mínimo 8 caracteres. «Restaurar respaldo» reconoce solo si el archivo está cifrado y pide la contraseña; los respaldos de antes, sin cifrar, siguen funcionando. Es independiente del respaldo semanal a GitHub de arriba. Código: `apps/web/src/services/cifrado.ts`.
+
 ## Cómo está hecho
 
 `apps/worker/src/respaldo.ts`. Cifra con AES-GCM de 256 bits; la llave sale de tu frase con PBKDF2 (100.000 vueltas, el máximo que deja Cloudflare, y una sal distinta en cada archivo). Cada día tiene su archivo: si el domingo se repite, no duplica. Las claves de avisos (`secreto_`) nunca entran al respaldo. Las fotos de recibos tampoco: viven en su propia tabla y pesan.

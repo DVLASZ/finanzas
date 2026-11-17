@@ -36,9 +36,10 @@ export const json = (datos: unknown, status = 200): Response =>
 
 /** Comparación en tiempo constante (no filtra información por el tiempo de respuesta). */
 export function igualesSeguro(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let r = 0;
-  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  // se recorre el largo del más largo y la diferencia de largos cuenta como diferencia: el tiempo no revela cuántas letras coinciden ni el largo del token
+  const n = Math.max(a.length, b.length);
+  let r = a.length ^ b.length;
+  for (let i = 0; i < n; i++) r |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
   return r === 0;
 }
 

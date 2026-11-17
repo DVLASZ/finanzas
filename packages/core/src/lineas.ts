@@ -9,6 +9,17 @@ export const MAX_MOVIMIENTOS_POR_MENSAJE = 10;
 
 const tieneCantidad = (s: string): boolean => /\d/.test(s);
 
+/**
+ * «ayer pagué 15 mil de almuerzo y hoy entraron 80 mil a Nequi» son dos movimientos: se corta donde empieza otra cosa
+ * (un «y» o una coma seguidos de un día, «luego», o un verbo de plata) y solo si cada trozo trae una cantidad.
+ */
+const CORTE = /\s*(?:,|\s+y)\s+(?=(?:hoy|ayer|anteayer|antier|luego|despu[eé]s|tambi[eé]n|adem[aá]s)\b|(?:me\s+)?(?:entr(?:o|ó|aron)|lleg(?:o|ó|aron)|ingresaron|consignaron|depositaron|pagu[eé]|gast[eé]|compr[eé]|prest[eé]|vend[ií])\b)/i;
+
+function cortarPorConjuncion(fila: string): string[] {
+  const trozos = fila.split(CORTE).map(x => x.trim()).filter(Boolean);
+  return trozos.length > 1 && trozos.every(tieneCantidad) ? trozos : [fila];
+}
+
 export function dividirLinea(texto: string): string[] {
   const filas = texto.split(/\r?\n|;/).map(x => x.trim()).filter(Boolean);
   const partes: string[] = [];
@@ -35,7 +46,7 @@ export function dividirLinea(texto: string): string[] {
       // lo que sigue a un "+" es plata que entra: se escribe como "ingreso texto", que el bot ya entiende
       for (const t of trozos) partes.push(t.signo === '+' ? 'ingreso ' + t.texto : t.texto);
     } else {
-      partes.push(fila);
+      partes.push(...cortarPorConjuncion(fila));
     }
   }
   return partes.slice(0, MAX_MOVIMIENTOS_POR_MENSAJE);

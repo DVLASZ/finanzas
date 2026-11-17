@@ -41,4 +41,7 @@ export * from './edicion.ts';
 export * from './comparativa.ts';
 export * from './pulso.ts';
 export * from './recordatorio.ts';
+export * from './liquidez.ts';
+export * from './operacion.ts';
+export * from './notificaciones.ts';
 export * from './duplicar.ts';

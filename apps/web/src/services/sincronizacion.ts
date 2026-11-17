@@ -2,6 +2,7 @@
 import { aplicarOps, fusionarRespuesta, MemoriaRepo, quitarEnviadas, type Op, type RespuestaSync } from '../../../../packages/core/src/index.ts';
 import { escribir, leer } from './almacen.ts';
 import { app, hayServidor, notificarCambio } from './estado.ts';
+import { anotarActividad } from './actividad.ts';
 import { cabeceraJson, urlBase } from './http.ts';
 
 /**
@@ -50,11 +51,14 @@ export async function sincronizar(): Promise<string> {
       const describir = (o: Op | undefined): string => !o ? 'cambio' : o.op === 'guardar' ? `${o.movimiento.descripcion} ${o.movimiento.ocurridoEn.slice(0, 10)}` : o.op;
       app.rechazados.push(...rechazadas.map(x => ({ cuando: servidorEn, que: describir(enviadas[x.indice]), motivo: x.motivo })));
       await escribir('rechazados', app.rechazados);
+      anotarActividad('error', `${rechazadas.length} cambio(s) que el servidor no aceptó`);
       return `Sincronizado, pero ${rechazadas.length} cambio(s) no se pudieron guardar (míralos en Ajustes).`;
     }
+    if (enviadas.length) anotarActividad('sincronizacion', `${enviadas.length} cambio(s) enviados`);
     return `Sincronizado (${enviadas.length} cambios enviados).`;
   } catch (e) {
     app.ultimoError = (e as Error).message;
+    anotarActividad('error', `Sincronización: ${app.ultimoError}`);
     return `No pude sincronizar: ${app.ultimoError}`;
   } finally {
     app.sincronizando = false;
