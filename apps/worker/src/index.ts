@@ -27,6 +27,7 @@ import { rutaIA } from './rutas/ia.ts';
 import { rutaOCR } from './rutas/ocr.ts';
 import { rutaPush } from './rutas/push.ts';
 import { rutaSync } from './rutas/sync.ts';
+import { conCabecerasSeguras, conexionDe, intentosFallidos, limiteIA, peticiones } from './seguridad.ts';
 
 export type { Env } from './comun.ts';
 
@@ -69,6 +70,11 @@ export default {
   },
 
   async fetch(req: Request, env: Env): Promise<Response> {
+    return conCabecerasSeguras(await atender(req, env));
+  },
+};
+
+async function atender(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
     if (url.pathname.startsWith('/api/')) {
       try { return await api(req, url, env); } catch (e) {
@@ -78,17 +84,34 @@ export default {
     }
     if (env.ASSETS) return env.ASSETS.fetch(req);
     return new Response('Finanzas: la app web aún no está desplegada.', { status: 404 });
-  },
-};
+}
+
+/** 429 con el aviso de cuánto esperar. */
+function limitado(esperaS: number): Response {
+  const r = json({ error: 'Demasiadas peticiones. Espera un momento.', esperaS }, 429);
+  r.headers.set('Retry-After', String(esperaS));
+  return r;
+}
 
 async function api(req: Request, url: URL, env: Env): Promise<Response> {
   // el buzón de otras apps tiene su propia clave y no pasa por la autorización de abajo
   const publico = await buzonPublico(req, url, env);
   if (publico) return publico;
 
+  // freno a la fuerza bruta: tras 8 tokens equivocados en 10 minutos esa conexión espera, aunque después acierte
+  const conexion = conexionDe(req);
+  if (conexion && intentosFallidos.lleno(conexion)) return limitado(intentosFallidos.esperaS(conexion));
   const principal = tokenValido(req, env.API_TOKEN);
   const soloLectura = !principal && Boolean(env.API_TOKEN_LECTURA) && tokenValido(req, env.API_TOKEN_LECTURA ?? '');
-  if (!principal && !soloLectura) return json({ error: 'No autorizado' }, 401);
+  if (!principal && !soloLectura) {
+    if (conexion) intentosFallidos.anotar(conexion);
+    return json({ error: 'No autorizado' }, 401);
+  }
+  if (conexion) {
+    if (!peticiones.anotar(conexion)) return limitado(peticiones.esperaS(conexion));
+    // la IA y la lectura de comprobantes gastan la cuota gratis de Workers AI
+    if ((url.pathname === '/api/interpretar' || url.pathname === '/api/ocr') && !limiteIA.anotar(conexion)) return limitado(limiteIA.esperaS(conexion));
+  }
   if (soloLectura && !(req.method === 'GET' && (url.pathname === '/api/datos' || url.pathname === '/api/salud'))) return json({ error: 'Este acceso es de solo lectura.' }, 403);
 
   const contexto: Contexto = { req, url, env, repo: new D1Repo(env.DB) };

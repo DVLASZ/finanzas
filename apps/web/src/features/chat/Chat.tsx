@@ -3,10 +3,10 @@
  * escritura con dictado por voz (ondas mientras escucha) y los avisos con botón de arriba.
  * La lógica es la de siempre: el bot corre dentro de la app y solo se pide ayuda a la IA si no entendió.
  */
-import { ArrowUp, CalendarClock, Camera, HardHat, HelpCircle, Images, Mic, Plus, ScanLine, SlidersHorizontal, Store } from 'lucide-preact';
+import { ArrowUp, CalendarClock, Camera, ClipboardPaste, HardHat, HelpCircle, Images, Mic, Plus, ScanLine, SlidersHorizontal, Store } from 'lucide-preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  aLocal, atajosRapidos, calcularAlertas, formatear, fraseDeOCR, limpiar, hayTrabajadores, interpretar, normalizarDictado, procesar, vendeProductos, type Boton,
+  aLocal, atajosRapidos, calcularAlertas, formatear, fraseDeOCR, leerNotificacion, limpiar, hayTrabajadores, interpretar, normalizarDictado, procesar, vendeProductos, type Boton,
 } from '../../../../../packages/core/src/index.ts';
 import { leerComprobante } from '../../services/ocr.ts';
 import { app, hayServidor } from '../../services/estado.ts';
@@ -20,11 +20,13 @@ import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { atajosUsuario, barraOculta, cargarAtajos, editorAtajos, ocultarBarra } from '../../state/atajos.ts';
 import { vibrar } from '../../lib/haptico.ts';
 import { sonar } from '../../lib/sonido.ts';
+import { mostrarDeshacer } from '../../components/ui/ToastDeshacer.tsx';
 import { verTexto } from '../../state/privacidad.ts';
 import { Ayuda, esAyuda, seEnvia } from './Ayuda.tsx';
 import { BotonesBot, Carta } from './Carta.tsx';
 import { Insignia, T, visualDeNombre, type Icono } from '../../components/ui/iconos.tsx';
 import { abrirOpciones } from '../../components/ui/Selector.tsx';
+import { avisar, pedir } from '../../components/ui/Dialogo.tsx';
 
 interface Burbuja { de: 'yo' | 'bot'; texto: string; botones?: Boton[] }
 
@@ -164,6 +166,11 @@ export function Chat() {
         }
       }
       agregar(...salidas.map(s => ({ de: 'bot' as const, texto: s.texto, botones: s.botones })));
+      // lo que acaba de guardarse se puede deshacer con un toque durante unos segundos, sin buscar el botón en la tarjeta
+      if (entrada.boton === 'ok' || entrada.boton === 'okall') {
+        const ids = salidas.flatMap(s => s.botones ?? []).map(b => b.id).filter(id => id.startsWith('undo:')).map(id => id.slice(5));
+        if (ids.length) mostrarDeshacer(ids.length === 1 ? 'Movimiento guardado' : `Se guardaron ${ids.length} movimientos`, async () => { void enviar({ boton: ids.length === 1 ? `undo:${ids[0]}` : `unds!:${ids.join(',')}` }, 'Deshacer'); });
+      }
       void escribir('chat', burbujasRef.current);
       if (mereceConfeti(salidas.map(s => s.texto))) { celebrar(); vibrar([18, 40, 18]); }
       void sincronizar();
@@ -211,6 +218,21 @@ export function Chat() {
     const campo = document.querySelector<HTMLInputElement>('#texto');
     campo?.focus();
     requestAnimationFrame(() => campo?.setSelectionRange(t.length, t.length));
+  };
+
+  /** Una alerta del banco pegada: se lee con reglas (sin IA) y la frase pasa por la tarjeta de confirmación. */
+  const pegarNotificacion = async () => {
+    if (!ctx) return;
+    let n = null;
+    try { n = leerNotificacion((await navigator.clipboard.readText()) ?? '', ctx); } catch { /* sin permiso del portapapeles: se pide el texto */ }
+    if (!n) {
+      const escrito = await pedir({ titulo: 'Pega la notificación del banco', texto: 'De Nequi, Bancolombia o Banco de Bogotá. Leo el monto, el comercio y la hora sin gastar IA.', aceptar: 'Leer' });
+      if (escrito === null) return;
+      n = leerNotificacion(escrito, ctx);
+    }
+    if (!n) { await avisar({ titulo: 'No reconocí ese mensaje', texto: 'Tiene que traer un monto con $ y decir si fue un pago o plata que llegó.', tono: 'peligro' }); return; }
+    agregar({ de: 'bot', texto: `Leí la notificación: ${n.resumen}. Revisa la tarjeta antes de confirmar.` });
+    mandar(n.frase);
   };
 
   const alEnviar = (e: Event) => {
@@ -293,6 +315,7 @@ export function Chat() {
               <Insignia v={{ Icono: CalendarClock, ...T.ambar }} tam={26} redondo />{a.etiqueta}
             </button>
           ))}
+          <button class="chip atajo shrink-0" id="pegar-notificacion" data-atajo-fijo="pegar" onClick={() => void pegarNotificacion()}><Insignia v={{ Icono: ClipboardPaste, ...T.cian }} tam={26} redondo />Pegar alerta</button>
           {propios.map(a => (
             <button key={a.id} class="chip atajo shrink-0" data-atajo={a.frase} data-tipo={a.modo} onClick={() => alAtajo(a)}>
               <Insignia v={visualDeNombre(a.frase)} tam={26} redondo />{a.etiqueta}

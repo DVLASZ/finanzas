@@ -16,6 +16,8 @@ import { Arco, BarraApilada, Sparkline } from '../../components/charts/graficos.
 import { Insignia, visualDeCuenta } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
 import { PresupuestoSemana } from './PresupuestoSemana.tsx';
+import { contarEfectivo } from './ContadorEfectivo.tsx';
+import { LiquidezProxima } from './LiquidezProxima.tsx';
 import { avisar, confirmar, pedir } from '../../components/ui/Dialogo.tsx';
 import { verMonto, verTexto } from '../../state/privacidad.ts';
 
@@ -47,10 +49,21 @@ export function Saldos() {
   const liquidez = Math.max(0, r.disponibleCop);
   /** Cuadre rápido: cuentas cuánto efectivo tienes y la app compara con lo anotado. Si falta, ofrece anotar el gasto que no se anotó. */
   const cuadrarEfectivo = async () => {
-    const texto = await pedir({ titulo: '¿Cuánto efectivo tienes hoy?', texto: 'Cuenta lo que hay en tu billetera y escribe el total.', tipo: 'numero', aceptar: 'Cuadrar' });
-    if (texto === null) return;
-    const real = Number(texto.replace(/\D/g, ''));
-    if (!texto.trim() || !Number.isFinite(real)) { await avisar({ titulo: 'Escribe solo el total, por ejemplo 85000', tono: 'peligro' }); return; }
+    // un mini-contador de billetes; si prefieres, escribes el total a mano
+    const conteo = await contarEfectivo();
+    if (conteo === null) return;
+    let real = conteo.billetes;
+    if (conteo.escritoAMano) {
+      const texto = await pedir({ titulo: '¿Cuánto efectivo tienes hoy?', texto: 'Cuenta lo que hay en tu billetera y escribe el total.', tipo: 'numero', aceptar: 'Cuadrar' });
+      if (texto === null) return;
+      real = Number(texto.replace(/\D/g, ''));
+      if (!texto.trim() || !Number.isFinite(real)) { await avisar({ titulo: 'Escribe solo el total, por ejemplo 85000', tono: 'peligro' }); return; }
+    }
+    // las monedas van en su propia cuenta: si las contaste, se dice cómo van contra lo anotado, sin tocar nada
+    const anotadoMonedas = r.cuentas.find(x => x.cuenta.id === 'monedas')?.saldo ?? 0;
+    if (conteo.monedas > 0 && conteo.monedas !== anotadoMonedas) {
+      await avisar({ titulo: 'Las monedas no coinciden', texto: `Contaste ${formatearReal(conteo.monedas)} y en Monedas hay anotados ${formatearReal(anotadoMonedas)}. Para cuadrarlas escribe «arqueo monedas ${conteo.monedas}» en el chat.`, tono: 'info' });
+    }
     const anotado = r.cuentas.find(x => x.cuenta.id === 'efectivo')?.saldo ?? 0;
     const falta = anotado - real;
     if (falta === 0) { await avisar({ titulo: 'Tu efectivo cuadra', texto: 'Lo que tienes es justo lo que está anotado.', tono: 'info' }); return; }
@@ -141,6 +154,7 @@ export function Saldos() {
       )}
 
       <PresupuestoSemana />
+      <LiquidezProxima />
 
       <button class="secundario w-full" id="cuadre-rapido" onClick={() => void cuadrarEfectivo()}><Scale size={18} />Actualizar efectivo que tengo hoy</button>
 

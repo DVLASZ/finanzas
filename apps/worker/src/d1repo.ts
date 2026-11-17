@@ -147,6 +147,15 @@ export class D1Repo implements Repo {
     ]);
   }
 
+  async restaurarMovimiento(id: string, cuando: string): Promise<void> {
+    await this.db.batch([
+      this.db.prepare("UPDATE movimientos SET estado = 'ok', anulado_en = NULL, actualizado_en = ?, cambio_en = datetime('now','-5 hours') WHERE id = ? AND estado = 'anulado'")
+        .bind(cuando, id),
+      this.db.prepare("UPDATE compromisos SET estado = 'activa' WHERE id LIKE ? AND estado = 'anulada'")
+        .bind(`${id}-c%`),
+    ]);
+  }
+
   async actualizarCompromisos(cs: Compromiso[]): Promise<void> {
     if (!cs.length) return;
     await this.db.batch(cs.map(c => this.db.prepare('UPDATE compromisos SET estado = ? WHERE id = ?').bind(c.estado, c.id)));

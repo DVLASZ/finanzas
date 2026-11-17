@@ -10,18 +10,8 @@
   <link rel="apple-touch-icon" href="icon-192.png" />
   <link rel="stylesheet" href="styles.css" />
   <title>Mis finanzas</title>
-  <!-- Aplica piel, tema y letra ANTES de pintar, para que no parpadee de claro a oscuro al abrir. -->
-  <script>
-    (function () {
-      var h = document.documentElement, d = h.dataset, e = {};
-      try { e = JSON.parse(localStorage.getItem('apariencia') || '{}'); } catch (x) { /* sin almacenamiento */ }
-      var t = e.tema || d.temaDefecto || 'auto';
-      d.temaElegido = t;
-      d.tema = t === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro') : t;
-      d.piel = e.piel || d.pielDefecto || 'libro';
-      d.letra = e.letra || d.letraDefecto || 'normal';
-    })();
-  </script>
+  <!-- Aplica piel, tema y letra ANTES de pintar (archivo aparte: la política de contenido no permite scripts en línea). -->
+  <script src="tema.js"></script>
 </head>
 <body>
   <div id="raiz"></div>

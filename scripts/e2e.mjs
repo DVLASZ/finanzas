@@ -38,6 +38,9 @@ try {
   if (celular) await (await pag.createCDPSession()).send('Storage.clearDataForOrigin', { origin: `http://localhost:${PUERTO}`, storageTypes: 'all' });
   const errores = [];
   pag.on('pageerror', e => errores.push(e.message));
+  // la política de contenido del servidor (la misma que usa el Worker) no debe bloquear nada de la app
+  const bloqueos = [];
+  pag.on('console', m => { if (/Content Security Policy|Refused to/i.test(m.text())) bloqueos.push(m.text().slice(0, 160)); });
   // los cuadros del navegador (alert, confirm, prompt) no deberían salir nunca: la app tiene los suyos
   let nativos = 0;
   pag.on('dialog', d => { nativos++; void d.dismiss(); });
@@ -324,7 +327,13 @@ try {
     igual(await pag.evaluate(() => Boolean(document.querySelector('#presupuesto-semana'))), true, 'tarjeta de la semana');
     contiene((await pag.evaluate(() => document.querySelector('#contenido').innerText)).toLowerCase(), 'salud patrimonial', 'la barra de salud patrimonial');
     await pag.evaluate(() => document.querySelector('#cuadre-rapido').click()); await espera(500);
-    await pag.type('#dialogo input', '0'); await pag.evaluate(() => document.querySelector('#dialogo-aceptar').click()); await espera(500);
+    // el mini-contador de billetes: dos de 50.000 suman 100.000; se quitan y se cuenta cero para que falte plata
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#contador'))), true, 'abre el contador de billetes');
+    await pag.evaluate(() => { const m = document.querySelector('[data-mas="50000"]'); m.click(); m.click(); }); await espera(200);
+    contiene(await pag.evaluate(() => document.querySelector('#contador-total').innerText), '100.000', 'suma los billetes');
+    await pag.evaluate(() => { for (const b of document.querySelectorAll('[aria-label^="Quitar un billete"]')) { b.click(); b.click(); } }); await espera(200);
+    contiene(await pag.evaluate(() => document.querySelector('#contador-total').innerText), '$0', 'vuelve a cero');
+    await pag.evaluate(() => document.querySelector('#contador-usar').click()); await espera(500);
     contiene(await pag.evaluate(() => document.querySelector('#dialogo')?.innerText ?? ''), 'Te faltan', 'dice cuánto falta');
     await pag.evaluate(() => document.querySelector('#dialogo-aceptar').click()); await espera(1000);
     contiene(await ultima(), 'Otros', 'arma el gasto «Gastos varios sin anotar»');
@@ -447,6 +456,62 @@ try {
     igual(Boolean(r.aria), true, 'con nombre para lectores de pantalla');
     igual(r.alto < 72, true, 'una sola fila');
   });
+  await prueba('metas: con fecha objetivo sale la cuota semanal y el botón aparta la cuota', async () => {
+    await irA('Chat'); await escribir('meta bici 800000');
+    await abrirDeMas('Alcancías'); await espera(700);
+    const futuro = new Date(Date.now() + 63 * 86400000).toISOString().slice(0, 10);
+    await pag.evaluate(f => { const i = document.querySelector('[data-cuota="Bici"] input[type=date]'); i.value = f; i.dispatchEvent(new Event('input', { bubbles: true })); }, futuro); await espera(800);
+    contiene(await pag.evaluate(() => document.querySelector('[data-cuota="Bici"]').innerText), 'por semana', 'la cuota semanal');
+    await pag.evaluate(() => document.querySelector('[data-apartar-cuota="Bici"]').click()); await espera(900);
+    contiene(await pag.evaluate(() => document.querySelector('[data-meta="Bici"]').innerText), '$', 'queda algo apartado');
+    igual(await pag.evaluate(() => /apartad|Faltan/i.test(document.querySelector('[data-meta="Bici"]').innerText)), true, 'la tarjeta de la meta sigue ahí');
+    await irA('Chat');
+  });
+  await prueba('deshacer global: al guardar sale la barra de 8 segundos y el botón revierte; si no se toca, se va sola', async () => {
+    await irA('Chat');
+    await escribir('mecato 1234'); await pulsar('Confirmar');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#toast-deshacer'))), true, 'sale la barra');
+    await pag.evaluate(() => document.querySelector('#deshacer-toast').click()); await espera(1200);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#toast-deshacer'))), false, 'se cierra al deshacer');
+    contiene(await pag.evaluate(() => document.querySelector('#chat').innerText), 'Deshacer', 'queda dicho en el chat');
+    await escribir('mecato 4321'); await pulsar('Confirmar');
+    await espera(8600);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#toast-deshacer'))), false, 'a los 8 segundos se va sola');
+  });
+  await prueba('pegar una alerta del banco: se lee el monto, el comercio y la cuenta sin IA', async () => {
+    await irA('Chat');
+    await pag.evaluate(() => document.querySelector('#pegar-notificacion').click()); await espera(500);
+    // en la prueba no hay permiso del portapapeles: la app pide el texto en un cuadro
+    if (await pag.evaluate(() => Boolean(document.querySelector('#dialogo input')))) {
+      await pag.type('#dialogo input', 'Nequi: Pagaste $15.000 en TIENDA DON PEPE. Tu saldo disponible es $85.000.'); await pag.keyboard.press('Enter'); await espera(900);
+    }
+    contiene(await pag.evaluate(() => document.querySelector('#chat').innerText), '$15.000', 'la tarjeta con el monto');
+    contiene(await pag.evaluate(() => document.querySelector('#chat').innerText), 'Nequi', 'en la cuenta Nequi');
+    await pulsar('Cancelar');
+  });
+  await prueba('bloqueo: con PIN, al pasar a segundo plano pide el PIN; equivocarse hace esperar; acertar entra', async () => {
+    await abrirDeMas('Ajustes'); await espera(500);
+    // ya hay un PIN (1234) de la prueba anterior: se cambia a 2468 (pide el de ahora y luego el nuevo)
+    await pag.evaluate(() => [...document.querySelectorAll('button')].find(b => /Crear PIN|Cambiar PIN/.test(b.innerText))?.click()); await espera(400);
+    await pag.type('#dialogo input', '1234'); await pag.keyboard.press('Enter'); await espera(700);
+    await pag.type('#dialogo input', '2468'); await pag.keyboard.press('Enter'); await espera(900);
+    await pag.evaluate(() => document.querySelector('#bloqueo-modo').click()); await espera(400);
+    await pag.evaluate(() => document.querySelector('[role=option][data-valor="fondo"]')?.click()); await espera(400);
+    const fondo = async oculto => { await pag.evaluate(o => { Object.defineProperty(document, 'hidden', { value: o, configurable: true }); document.dispatchEvent(new Event('visibilitychange')); }, oculto); await espera(400); };
+    await fondo(true); await fondo(false);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#bloqueo'))), true, 'quedó bloqueada');
+    for (let i = 0; i < 3; i++) { await pag.type('#bloqueo-pin', '1111'); await pag.evaluate(() => document.querySelector('#bloqueo-entrar').click()); await espera(500); }
+    contiene(await pag.evaluate(() => document.querySelector('#bloqueo-mensaje').innerText), 'Espera', 'después de tres errores hace esperar');
+    igual(await pag.evaluate(() => document.querySelector('#bloqueo-pin').disabled), true, 'el campo se apaga durante la espera');
+    await espera(5600);
+    await pag.type('#bloqueo-pin', '2468'); await pag.evaluate(() => document.querySelector('#bloqueo-entrar').click()); await espera(900);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#bloqueo'))), false, 'el PIN correcto entra');
+    contiene(await pag.evaluate(() => document.querySelector('#actividad')?.innerText ?? ''), 'Se desbloqueó', 'queda en la actividad reciente');
+    await pag.evaluate(() => document.querySelector('#bloqueo-modo').click()); await espera(300);
+    await pag.evaluate(() => document.querySelector('[role=option][data-valor="nunca"]')?.click()); await espera(300);
+    await irA('Chat');
+  });
+  await prueba('la política de contenido no bloqueó nada en toda la visita', async () => igual(bloqueos.join(' | '), '', 'bloqueos de la política de contenido'));
   await prueba('ningún cuadro del navegador salió en toda la visita', async () => igual(nativos, 0, 'cuadros nativos'));
   await prueba('sin errores de JavaScript en toda la visita', async () => igual(errores.join(' | '), '', 'errores'));
 } finally {

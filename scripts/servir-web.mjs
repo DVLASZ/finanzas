@@ -7,6 +7,11 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+// con las mismas cabeceras de seguridad que pone el Worker (la política de contenido incluida): así lo que se prueba aquí
+// falla si la política bloquea algo de la app, y no recién en producción
+const { CABECERAS_SEGURAS } = await import(pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'worker', 'src', 'seguridad.ts')).href);
 
 // DIST sirve otra carpeta (por ejemplo la app compilada de una instalación): DIST=instalaciones/mama/dist
 const dist = process.env.DIST ? normalize(process.env.DIST) : join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'dist');
@@ -22,7 +27,7 @@ createServer(async (req, res) => {
   if (!archivo.startsWith(dist)) { res.writeHead(403).end(); return; }
   try {
     const datos = await readFile(archivo);
-    res.writeHead(200, { 'Content-Type': tipos[extname(archivo)] ?? 'application/octet-stream', 'Cache-Control': 'no-store' }).end(datos);
+    res.writeHead(200, { ...CABECERAS_SEGURAS, 'Content-Type': tipos[extname(archivo)] ?? 'application/octet-stream', 'Cache-Control': 'no-store' }).end(datos);
   } catch {
     res.writeHead(404).end('No encontrado');
   }

@@ -2,9 +2,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  aplicarDuplicado, atajosRapidos, gastoDelMes, gastoDiario, horaDeRecordatorio, ingresosGastosPorMes, limpiarAtajos, tocaRecordar, modoSugerido, moverAtajo, sugerenciasAtajos, calcularAlertas, calcularSaldos, comparativaMensual, deLocal, previsualizarDuplicado, saldoDe, textoProyeccion,
+  aplicarDuplicado, atajosRapidos, gastoDelMes, gastoDiario, horaDeRecordatorio, ingresosGastosPorMes, limpiarAtajos, proyeccionLiquidez, avisosDeLiquidez, cuotaSemanal, corteDeTurno, textoCorte, stockBajo, tocaRecordar, modoSugerido, moverAtajo, sugerenciasAtajos, calcularAlertas, calcularSaldos, comparativaMensual, deLocal, previsualizarDuplicado, saldoDe, textoProyeccion,
 } from '../src/index.ts';
-import { AHORA, nuevoBot } from '../../../tests/ayudas.ts';
+import { AHORA, nuevoBot, textoDe } from '../../../tests/ayudas.ts';
 
 async function guardar(bot: ReturnType<typeof nuevoBot>, texto: string, ahora: Date = AHORA) {
   await bot.di(texto, ahora);
@@ -185,4 +185,57 @@ test('recordatorio: solo en la media hora elegida y si hoy no se anotó nada', a
   assert.equal(tocaRecordar(undefined, d.movimientos, deLocal('2026-10-19 20:31:00')), false, 'apagado');
   await guardar(bot, 'almuerzo 12000', deLocal('2026-10-19 13:00:00'));
   assert.equal(tocaRecordar('20:30', (await bot.repo.cargar()).movimientos, deLocal('2026-10-19 20:31:00')), false, 'ya anotó hoy');
+});
+
+// ---------------------------------------------------------------- liquidez, metas con fecha, stock mínimo y corte
+
+test('liquidez a 30 días: avisa cuando una cuenta no alcanza para un pago fijo que viene, y usa la cuenta de la frase', async () => {
+  const bot = nuevoBot();
+  const antes = deLocal('2026-10-01 08:00:00');
+  await bot.di('saldo inicial efectivo 500000 nequi 30000', antes); await bot.pulsa('ok', antes);
+  await bot.di('cada mes el 25 internet 60000 nequi', AHORA); await bot.pulsa('ok', AHORA);
+  await bot.di('cada mes el 28 arriendo 100000', AHORA); await bot.pulsa('ok', AHORA);
+  const d = await bot.repo.cargar();
+  const p = proyeccionLiquidez(d, AHORA, 30); // lunes 19 de octubre
+  const nequi = p.find(c => c.cuentaId === 'nequi')!;
+  assert.equal(nequi.saldo, 30000);
+  assert.equal(nequi.corta?.fecha, '2026-10-25');
+  assert.equal(nequi.corta?.faltan, 30000);
+  const efectivo = p.find(c => c.cuentaId === 'efectivo')!;
+  assert.equal(efectivo.corta, null, 'el arriendo cabe en el efectivo');
+  const avisos = avisosDeLiquidez(d, AHORA, 30);
+  assert.equal(avisos.length, 1);
+  assert.match(avisos[0].texto, /Nequi se queda corta el 25\/10 por Internet/);
+  assert.ok(calcularAlertas(d, AHORA).some(a => a.id === 'liquidez'), 'sale en las alertas');
+});
+
+test('metas con fecha: la cuota semanal reparte lo que falta entre las semanas que quedan', () => {
+  assert.deepEqual(cuotaSemanal({ meta: 1000000, apartado: 200000, fecha: '2026-12-14' }, '2026-10-19'), { faltan: 800000, semanas: 8, porSemana: 100000, vencida: false });
+  assert.equal(cuotaSemanal({ meta: 1000000, apartado: 200000 }, '2026-10-19'), null, 'sin fecha no hay cuota');
+  assert.equal(cuotaSemanal({ meta: 1000, apartado: 1000, fecha: '2026-12-14' }, '2026-10-19'), null, 'ya lograda');
+  assert.equal(cuotaSemanal({ meta: 1000000, apartado: 0, fecha: '2026-10-21' }, '2026-10-19')?.semanas, 1, 'menos de una semana cuenta como una');
+  assert.equal(cuotaSemanal({ meta: 1000000, apartado: 0, fecha: '2026-10-01' }, '2026-10-19')?.vencida, true);
+});
+
+test('corte de turno: ventas, gastos y utilidad del día, y lo que se está acabando según el mínimo', async () => {
+  const bot = nuevoBot();
+  const antes = deLocal('2026-10-01 08:00:00');
+  await bot.di('saldo inicial efectivo 500000', antes); await bot.pulsa('ok', antes);
+  await bot.di('ingreso 90000 trabajo', AHORA); await bot.pulsa('ok', AHORA);
+  await bot.di('almuerzo 12000', AHORA); await bot.pulsa('ok', AHORA);
+  await bot.di('almuerzo 8000', deLocal('2026-10-18 13:00:00')); await bot.pulsa('ok', AHORA);
+  const d = await bot.repo.cargar();
+  const c = corteDeTurno(d, AHORA, 'dia');
+  assert.equal(c.ventas, 90000);
+  assert.equal(c.gastos, 12000, 'el de ayer no entra');
+  assert.equal(c.utilidad, 78000);
+  assert.deepEqual(c.porFuente, [{ nombre: 'Trabajo', total: 90000 }]);
+  assert.equal(corteDeTurno(d, AHORA, 'semana').gastos, 12000, 'AHORA es lunes: la semana empieza hoy y el domingo es de la anterior');
+  assert.equal(corteDeTurno(d, deLocal('2026-10-21 10:00:00'), 'semana').gastos, 12000);
+  assert.match(textoCorte(c), /Utilidad neta: \$78\.000/);
+  assert.match(textoDe(await bot.di('corte', AHORA)), /Utilidad neta: \$78\.000/);
+  // stock mínimo: un producto que lleva cuenta y quedó en su mínimo
+  const config = { catalogo: JSON.stringify({ productos: [{ id: 'g', nombre: 'Galletas', presentaciones: [{ id: 'granel', nombre: 'granel', precio: 500 }], conteo: { cantidad: 10, desde: '2026-10-01 00:00:00' }, minimo: 12 }] }) };
+  assert.deepEqual(stockBajo(config, []), [{ producto: 'Galletas', quedan: 10, minimo: 12 }]);
+  assert.deepEqual(stockBajo({ catalogo: JSON.stringify({ productos: [{ id: 'g', nombre: 'Galletas', presentaciones: [{ id: 'granel', nombre: 'granel', precio: 500 }], conteo: { cantidad: 10, desde: '2026-10-01 00:00:00' } }] }) }, []), [], 'sin mínimo no avisa');
 });

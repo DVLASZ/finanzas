@@ -96,6 +96,8 @@ function detectarComando(t: string): { comando: Comando; arg?: string } | null {
   // preguntas como se dicen: «¿quién me debe plata?», «¿cuánto hay en nequi?», «¿cuánto puedo gastar esta semana?»
   if (/^(?:quien|quienes) me deben?(?: plata| algo| dinero)?$/.test(t)) return { comando: 'deudas' };
   if (/^(?:cuanto (?:puedo|podria) gastar(?: esta semana| en la semana| por semana| a la semana)?|presupuesto(?: de la| de esta)? semana)$/.test(t)) return { comando: 'presupuesto_semana' };
+  const corte = t.match(/^corte(?: de turno| de caja| del dia| de hoy| de la semana| de esta semana| semanal)?$/);
+  if (corte) return { comando: 'corte', arg: /semana|semanal/.test(t) ? 'semana' : 'dia' };
   const deCuenta = t.match(/^(?:cuanto (?:hay|tengo|me queda|queda|plata hay)|saldo)(?: de| en) (?:la |el )?([a-z ]+)$/);
   if (deCuenta) return { comando: 'saldo_cuenta', arg: deCuenta[1].trim() };
   m = t.match(/^(?:cuanto (?:llevo gastado|llevo|he gastado|gaste)|gastos?) en ([a-z ]+?)(?: (?:este mes|en el mes|del mes|esta semana|en la semana|hoy))?$/);
@@ -159,7 +161,29 @@ export function repartoEntre(texto: string): string {
   return `${m[1]} pagué por ${nombres.join(' y ')}`;
 }
 
+/**
+ * «Hoy entraron 80 mil a Nequi», «me llegaron 50000 de trabajo»: plata que entra dicha con el verbo en vez de «ingreso».
+ * Se vuelve «ingreso 80 mil nequi hoy». Devuelve null si la frase no es de ese estilo.
+ */
+export function ingresoPorVerbo(texto: string): string | null {
+  const m = texto.trim().match(/^(?:(hoy|ayer|anteayer|antier)\s+)?(?:me\s+)?(?:entr(?:o|ó|aron)|lleg(?:o|ó|aron)|ingresaron|consignaron|depositaron|transfirieron|giraron)\s+(.+)$/i);
+  if (!m || !/\d/.test(m[2])) return null;
+  // «llegaron 35 galletas» es mercancía, no plata: hace falta una cuenta, «mil» o una cifra de miles
+  const cifra = Number((/\d[\d.]*/.exec(m[2])?.[0] ?? '0').replace(/\./g, ''));
+  if (!(cifra >= 1000 || /\b(?:mil|k|lucas?|pesos)\b|nequi|daviplata|bancolombia|bogot|banco|efectivo|cuenta/i.test(m[2]))) return null;
+  // «a», «en» y «por» sobran: «80 mil a Nequi» es «80 mil nequi»
+  const resto = m[2].replace(/\s+(?:a|al|en|por|de la|de)\s+(?=nequi|daviplata|bancolombia|bogota|bogotá|efectivo|monedas|banco|davi)/gi, ' ').replace(/\s+/g, ' ').trim();
+  return `ingreso ${resto}${m[1] ? ' ' + m[1] : ''}`;
+}
+
 export function interpretar(texto: string, ctx: Contexto): Resultado {
+  const porVerbo = ingresoPorVerbo(texto);
+  if (porVerbo) {
+    const r = interpretar(porVerbo, ctx);
+    // sin decir de dónde viene, cae en «Otros» en vez de preguntar (se puede cambiar con Editar)
+    if (r.clase === 'error' && r.mensaje.startsWith('¿De quién o de qué es el ingreso')) return interpretar(`${porVerbo} otros`, ctx);
+    return r;
+  }
   // primero los números (el dictado trae «25,000»), después las dos formas de repartir un gasto
   texto = repartoEnOtroOrden(repartoEntre(quitarComasDeMiles(texto)), ctx);
   // una compra con varias líneas se lee como un solo gasto y deja el detalle en la nota

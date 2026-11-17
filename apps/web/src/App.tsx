@@ -13,6 +13,9 @@ import { Confirmacion } from './components/ui/Confirmacion.tsx';
 import { Dialogo } from './components/ui/Dialogo.tsx';
 import { alternarPrivacidad, montosOcultos } from './state/privacidad.ts';
 import { EditorAtajos } from './features/chat/EditorAtajos.tsx';
+import { Bloqueo } from './features/ajustes/Bloqueo.tsx';
+import { ToastDeshacer } from './components/ui/ToastDeshacer.tsx';
+import { ContadorEfectivo } from './features/saldos/ContadorEfectivo.tsx';
 import { Chat } from './features/chat/Chat.tsx';
 import { Saldos } from './features/saldos/Saldos.tsx';
 import { Movimientos } from './features/movimientos/Movimientos.tsx';
@@ -138,6 +141,9 @@ export function App() {
       <HojaSelector />
       <Confirmacion />
       <EditorAtajos />
+      <ContadorEfectivo />
+      <ToastDeshacer />
+      <Bloqueo />
       <Dialogo />
     </div>
   );

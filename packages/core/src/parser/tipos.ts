@@ -12,7 +12,7 @@ export type Comando =
   | 'editar_ultimo' | 'ultimos' | 'categoria' | 'evento' | 'lista' | 'lista_agregar' | 'lista_quitar'
   | 'recurrente_agregar' | 'recurrente_quitar' | 'recurrentes'
   | 'deshacer_varios' | 'subcategoria' | 'cierre_cerrar' | 'cierre_abrir' | 'cierre_ver'
-  | 'saldo_cuenta' | 'presupuesto_semana' | 'revision' | 'jornales' | 'cuadrar_persona' | 'metas' | 'meta_fijar' | 'meta_apartar' | 'meta_sacar' | 'meta_quitar';
+  | 'corte' | 'saldo_cuenta' | 'presupuesto_semana' | 'revision' | 'jornales' | 'cuadrar_persona' | 'metas' | 'meta_fijar' | 'meta_apartar' | 'meta_sacar' | 'meta_quitar';
 
 /** Un dato que falta o que hay que aclarar antes de poder confirmar. */
 export interface Faltante {

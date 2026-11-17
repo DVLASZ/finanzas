@@ -13,6 +13,8 @@ export interface Meta {
   apartado: number;
   /** Lo apartado y sacado, con su fecha («AAAA-MM-DD»): sirve para estimar cuándo se llega. */
   aportes?: { f: string; m: number }[];
+  /** La fecha en que se quiere tenerla («AAAA-MM-DD»): con ella se calcula cuánto apartar cada semana. */
+  fecha?: string;
 }
 
 export function leerMetas(config: Record<string, string>): Meta[] {

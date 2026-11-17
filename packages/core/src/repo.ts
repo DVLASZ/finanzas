@@ -44,6 +44,8 @@ export interface Repo {
   cargar(): Promise<Datos>;
   guardarMovimiento(m: Movimiento, cuentasNuevas: Cuenta[], compromisos: Compromiso[]): Promise<void>;
   anularMovimiento(id: string, cuando: string): Promise<void>;
+  /** Deshace una anulación: el movimiento vuelve a contar y sus deudas a estar activas. Si no está anulado, no hace nada. */
+  restaurarMovimiento(id: string, cuando: string): Promise<void>;
   /**
    * Reemplaza un movimiento que ya existe (mismo id): sus datos y sus asientos, de una sola vez. Si no existe o está
    * anulado, lanza: no se edita lo anulado.
@@ -117,6 +119,15 @@ export class MemoriaRepo implements Repo {
     for (const c of cuentasNuevas) if (!this.datos.cuentas.some(x => x.id === c.id)) this.datos.cuentas.push(c);
     this.datos.movimientos.push(structuredClone(m));
     this.datos.compromisos.push(...compromisos);
+  }
+
+  async restaurarMovimiento(id: string, _cuando: string): Promise<void> {
+    const m = this.datos.movimientos.find(x => x.id === id);
+    if (!m || m.estado !== 'anulado') return;
+    m.estado = 'ok'; m.anuladoEn = null;
+    for (const c of this.datos.compromisos) {
+      if (c.id.startsWith(`${id}-c`) && c.estado === 'anulada') c.estado = 'activa';
+    }
   }
 
   async anularMovimiento(id: string, cuando: string): Promise<void> {

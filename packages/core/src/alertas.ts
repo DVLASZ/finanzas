@@ -3,6 +3,8 @@
  * de la app y, más adelante, como notificaciones push).
  */
 import { calcularSaldos, deudasPorPersona, diasSinRegistros, estadoPresupuesto, gastoPorCategoria, totalIngresos } from './consultas.ts';
+import { avisosDeLiquidez } from './liquidez.ts';
+import { stockBajo } from './operacion.ts';
 import { formatear } from './dinero.ts';
 import { ejemploDeSaldos } from './entidades.ts';
 import { aLocal, describirDia, nombreMes, rangoPeriodo } from './fechas.ts';
@@ -14,7 +16,7 @@ export interface Alerta {
   nivel: 'urgente' | 'aviso' | 'info';
   texto: string;
   /** Para saber de qué alerta se trata sin leer el texto (los avisos al celular saltan la del saldo inicial). */
-  id?: 'saldo-inicial' | 'saldo-negativo' | 'cierre-dia' | 'resumen-mes' | 'resumen-semana' | 'proyeccion';
+  id?: 'saldo-inicial' | 'saldo-negativo' | 'cierre-dia' | 'resumen-mes' | 'resumen-semana' | 'proyeccion' | 'liquidez' | 'stock';
   /** Botones que la app muestra con la alerta. `enviar`: el texto se manda solo al chat (queda una tarjeta por confirmar); si no, solo se deja escrito. */
   acciones?: { titulo: string; texto: string; enviar?: boolean }[];
 }
@@ -93,6 +95,11 @@ export function calcularAlertas(d: Datos, ahora: Date): Alerta[] {
   for (const r of recurrentesPendientes(d.config, d.movimientos, hoy)) {
     res.push({ nivel: 'aviso', texto: `${periodoDe(r).replace(/^./, c => c.toUpperCase())} toca ${r.concepto} (${formatear(r.monto)}, ${describirFrecuencia(r)}). Anótalo así: «${r.frase}».` });
   }
+
+  // liquidez a 30 días: una cuenta que no alcanza para un pago fijo que viene
+  for (const a of avisosDeLiquidez(d, ahora, 30)) res.push({ id: 'liquidez', nivel: 'aviso', texto: a.texto });
+  // productos que ya están en su mínimo
+  for (const s of stockBajo(d.config, d.movimientos)) res.push({ id: 'stock', nivel: 'aviso', texto: `Se está acabando ${s.producto}: quedan ${s.quedan} y el mínimo es ${s.minimo}.` });
 
   // Proyección del mes: si a este ritmo se gasta bastante más que el mes pasado, se avisa (pasados diez días del mes)
   {

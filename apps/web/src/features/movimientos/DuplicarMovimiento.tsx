@@ -6,10 +6,12 @@ import { signal } from '@preact/signals';
 import { AlertTriangle, Check, Copy, X } from 'lucide-preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { aplicarDuplicado, previsualizarDuplicado } from '../../../../../packages/core/src/index.ts';
+import { aLocal, aplicarDuplicado, previsualizarDuplicado } from '../../../../../packages/core/src/index.ts';
 import { mostrarConfirmacion } from '../../components/ui/Confirmacion.tsx';
 import { subirDesdeAbajo } from '../../lib/efectos.ts';
 import { app } from '../../services/estado.ts';
+import { anotarActividad } from '../../services/actividad.ts';
+import { mostrarDeshacer } from '../../components/ui/ToastDeshacer.tsx';
 import { guardarCambio } from '../../state/acciones.ts';
 import { atras, detalle } from '../../state/nav.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
@@ -33,10 +35,12 @@ export function DuplicarMovimiento() {
   const duplicar = async () => {
     setGuardando(true); setError('');
     try {
-      await guardarCambio(async () => { await aplicarDuplicado(app.repo, new Date(), id); });
+      let nuevoId = '';
+      await guardarCambio(async () => { nuevoId = await aplicarDuplicado(app.repo, new Date(), id); anotarActividad('duplicado', 'Se duplicó un movimiento'); });
       cerrar();
       atras(); // cierra también el detalle: el movimiento nuevo ya está en la lista, con la fecha de hoy
       mostrarConfirmacion('Movimiento duplicado');
+      mostrarDeshacer('Movimiento duplicado', () => guardarCambio(() => app.repo.anularMovimiento(nuevoId, aLocal(new Date()))));
     } catch (e) {
       setError((e as Error).message);
       setGuardando(false);
