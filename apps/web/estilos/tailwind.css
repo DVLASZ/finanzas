@@ -568,4 +568,11 @@
   .probar { order: 3; flex-basis: 100%; justify-self: start; display: inline-flex; align-items: center; min-height: 32px; width: fit-content; padding: .15rem .7rem; border-radius: 999px; border: 0; font-size: .78rem; font-weight: 700; color: var(--sobre); background: linear-gradient(135deg, var(--marca), var(--marca-2)); }
   .probar:active { transform: scale(.95); }
 
+  /* el compositor del chat: una sola fila siempre (también con letra grande); el campo cede ancho, los botones no se encogen */
+  .entrada.entrada-compacta { flex-wrap: nowrap; }
+  .entrada-compacta > input[type=text] { flex: 1 1 0; min-width: 0; }
+  .entrada-compacta > div { flex-shrink: 0; gap: .3rem; }
+  .entrada-compacta #texto { text-overflow: ellipsis; }
+  html[data-letra="grande"] .entrada-compacta #texto { font-size: 1rem; }
+
 }

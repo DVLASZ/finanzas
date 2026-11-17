@@ -20,10 +20,10 @@ export function MontoAnimado({ valor, moneda = 'COP', class: clase = '' }: { val
     if (desde === valor) return;
     return contar(valor, setMostrado);
   }, [valor]);
-  if (montosOcultos.value) return <span class={`tabular-nums ${clase}`} data-oculto="1" aria-label="Monto oculto">{PUNTOS}</span>;
+  if (montosOcultos.value) return <span class={`tabular-nums whitespace-nowrap ${clase}`} data-oculto="1" aria-label="Monto oculto">{PUNTOS}</span>;
   // el valor final, invisible, reserva el ancho: la cifra no cambia de tamaño ni de sitio mientras cuenta
   return (
-    <span class={`tabular-nums inline-grid ${clase}`}>
+    <span class={`tabular-nums inline-grid whitespace-nowrap ${clase}`}>
       <span class="invisible col-start-1 row-start-1" aria-hidden="true">{formatear(valor, moneda)}</span>
       <span class="col-start-1 row-start-1">{formatear(mostrado, moneda)}</span>
     </span>
