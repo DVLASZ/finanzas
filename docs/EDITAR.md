@@ -54,3 +54,7 @@ Un movimiento que vino de un archivo y no guarda cómo se armó solo deja cambia
 - La pantalla está en `apps/web/src/features/movimientos/EditarMovimiento.tsx` y se prueba con `npm run e2e` y `npm run e2e:letra`.
 
 </details>
+
+## Deshacer
+
+Al guardar la edición sale abajo, ocho segundos, una barra con «Deshacer»: devuelve el movimiento a como estaba antes, con una sola operación (la edición es un reemplazo completo, así que deshacerla también lo es). Lo mismo pasa al guardar un movimiento nuevo, al duplicar y al anular. Para deshacer una anulación existe la operación `restaurar`: el movimiento vuelve a contar y sus deudas a estar activas.

@@ -9,17 +9,20 @@
 
 | Comando | Qué hace |
 |---|---|
-| `npm run check` | Tipos, pruebas, base de datos y contraste de colores. Tiene que pasar antes de cada commit |
+| `npm run check` | Tipos, pruebas, base de datos, contraste de colores, privacidad del repositorio y seguridad. Tiene que pasar antes de cada commit |
 | `npm run typecheck` | Solo los tipos |
 | `npm test` | Las pruebas del núcleo y del Worker |
 | `npm run verificar` | Arma la base en memoria y revisa que todo cuadre |
-| `npm run contraste` | Revisa que los colores se lean bien |
+| `npm run contraste` | Revisa que los colores se lean bien (AA) en todos los temas, también el texto sobre el vidrio con la aurora y el mapa de calor |
+| `npm run seguridad` | `npm audit`, secretos dentro de git, consultas a D1 con parámetros, funciones peligrosas en la interfaz y cabeceras del Worker (ver [SECURITY.md](../SECURITY.md)) |
+| `npm run privacidad` | Que lo que sigue git no lleve datos personales |
+| `npm run capturas` | Vuelve a sacar las capturas de `docs/screenshots/` con datos inventados |
 | `npm run web:build` | Compila la app a `apps/web/dist` |
 | `npm run web:dev` | Compila y sirve la app en `http://localhost:5173` |
 | `npm run instalar -- <orden> <nombre>` | Crea o publica una instalación (ver [DESPLIEGUE.md](DESPLIEGUE.md)) |
 | `npm run guia -- <plantilla>` | Arma la guía de usuario de una app con sus cuentas y categorías (queda en `docs-privado/`) |
 | `npm run abrir-respaldo -- <archivo>` | Abre un respaldo cifrado de la nube (ver [RESPALDO.md](RESPALDO.md)) |
-| `npm run e2e` | Abre la app en tu Chrome y recorre las pantallas como una persona (19 pruebas en tamaño de celular; en el celular real son 18, porque subir una imagen desde un archivo solo corre en PC). No va en `check` porque necesita Chrome |
+| `npm run e2e` | Abre la app en tu Chrome y recorre las pantallas como una persona (44 pruebas en tamaño de celular; en el celular real son 18, porque subir una imagen desde un archivo solo corre en PC). No va en `check` porque necesita Chrome |
 | `npm run e2e:letra` | Revisa que nada se desborde con letra grande en un celular angosto (393 px, como el Redmi Note 14), con varias escalas de texto. `ESCALAS=1,1.3` y `INSTALACION=personal` ajustan la prueba |
 | `npm run e2e:variantes` | Corre esa misma revisión en las tres variantes (personal, mamá y asociación), con texto normal y al 130 %: chat, saldos, movimientos, resumen, edición, duplicar y todo el menú Más |
 | `npm run salud` | Pregunta a cada instalación publicada cómo va: movimientos, último movimiento, avisos, IA |

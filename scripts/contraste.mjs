@@ -27,7 +27,8 @@ const PARES = [
   ['sobre', 'marca-2'], ['info', 'sup'], ['acc', 'sup'], ['pos', 'elev'], ['neg', 'elev'], ['adv', 'elev'], ['info', 'fondo'], ['acc', 'fondo'],
 ];
 const combos = [['libro', 'claro', ''], ['libro', 'oscuro', ''], ['tierra', 'claro', ''], ['tierra', 'oscuro', ''], ['tierra', 'claro', 'azulado'], ['tierra', 'oscuro', 'azulado'],
-  ['esmeralda', 'claro', ''], ['esmeralda', 'oscuro', ''], ['oceano', 'claro', ''], ['oceano', 'oscuro', ''], ['atardecer', 'claro', ''], ['atardecer', 'oscuro', '']];
+  ['esmeralda', 'claro', ''], ['esmeralda', 'oscuro', ''], ['oceano', 'claro', ''], ['oceano', 'oscuro', ''], ['atardecer', 'claro', ''], ['atardecer', 'oscuro', ''],
+  ['obsidiana', 'claro', ''], ['obsidiana', 'oscuro', '']];
 
 let mal = 0;
 for (const [piel, tema, matiz] of combos) {

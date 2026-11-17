@@ -11,6 +11,9 @@
 
 ## Para probar con personas
 
+- El bloqueo por inactividad y el recordatorio de la noche en celulares reales: el ahorro de batería de algunas marcas puede retrasar el aviso.
+- Pegar alertas con mensajes reales de cada banco (las pruebas usan textos de ejemplo).
+
 - El dictado por voz con frases reales: cada persona habla distinto y el reconocedor se equivoca de formas distintas. Lo que se entienda mal se agrega a `packages/core/src/voz.ts` con su prueba.
 - La ayuda de la IA con frases reales. Las pruebas usan una IA falsa y no dicen nada de la calidad del modelo.
 - La conciliación con extractos reales de cada banco. El lector entiende `;`, `,` y tabulador, varias formas de fecha y de monto, pero no se ha visto con extractos de verdad.
@@ -29,6 +32,11 @@
 - El borrado definitivo en el servidor depende de que `PIN_BORRADO` esté puesto.
 - Si cambias una plantilla, las bases ya publicadas no se actualizan solas: `npm run instalar -- actualizar <nombre>`.
 - El 4x1000 no se calcula solo, porque el banco exonera una parte y el valor real casi nunca es el 0,4 % exacto.
+- El límite de peticiones del Worker cuenta en la memoria de cada instancia, así que es un freno de mejor esfuerzo. Para uno exacto haría falta Durable Objects o KV, que no son gratis a este nivel.
+- El PIN y el bloqueo de la app son una barrera para quien agarre el teléfono desbloqueado: los datos locales no están cifrados. El respaldo con contraseña sí lo está.
+- Las alertas del banco se leen con reglas escritas para el texto de hoy de Nequi, Bancolombia y Banco de Bogotá. Si un banco cambia sus mensajes, hay que agregar la forma nueva a `packages/core/src/notificaciones.ts` con su prueba.
+- La proyección de liquidez solo cuenta los pagos fijos: no supone ingresos futuros ni gastos que no están anotados.
+- `npm audit` muestra dos avisos moderados en `uuid`, dentro de `exceljs` (el Excel). No se usa con entradas de otras personas.
 - Las metas de ahorro son una etiqueta: la plata no cambia de cuenta, así que si la gastas la meta no se entera.
 - El aviso de «ya contaste hoy» usa la hora del servidor.
 - La sincronización parcial trae de nuevo todo si hace más de 30 días que la app no sincroniza o si en el servidor se purgó o se borró algo.

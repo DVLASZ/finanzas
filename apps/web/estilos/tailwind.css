@@ -583,4 +583,27 @@
   .toast-barra { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--marca); transform-origin: left; animation: toast-vacia linear both; }
   @keyframes toast-vacia { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
+
+  /* ------------------------------------------------------------ Obsidiana (AMOLED, minimalista)
+     Nada de aurora ni de puntos: el fondo es negro puro. Las superficies son opacas, con un filete de 1 px; los íconos de
+     categoría pierden el color (el color queda para las cifras y los estados); los botones principales son champán. */
+  html[data-piel="obsidiana"][data-tema="oscuro"] { background: #000; }
+  html[data-piel="obsidiana"] body::before, html[data-piel="obsidiana"] body::after, html[data-piel="obsidiana"]::before { display: none; }
+  html[data-piel="obsidiana"] { --cristal-a: 100%; }
+  html[data-piel="obsidiana"] .cristal, html[data-piel="obsidiana"] .tarjeta, html[data-piel="obsidiana"] .lista, html[data-piel="obsidiana"] .burbuja.bot,
+  html[data-piel="obsidiana"] .burbuja.carta, html[data-piel="obsidiana"] .alerta, html[data-piel="obsidiana"] .dialogo-hoja, html[data-piel="obsidiana"] .vidrio {
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  html[data-piel="obsidiana"] .tarjeta { background: var(--sup); box-shadow: 0 0 0 1px var(--anillo); }
+  html[data-piel="obsidiana"] .cristal, html[data-piel="obsidiana"] .lista, html[data-piel="obsidiana"] .burbuja.bot, html[data-piel="obsidiana"] .burbuja.carta,
+  html[data-piel="obsidiana"] .alerta, html[data-piel="obsidiana"] .dialogo-hoja { background: var(--sup); box-shadow: 0 0 0 1px var(--anillo); }
+  html[data-piel="obsidiana"] header.vidrio, html[data-piel="obsidiana"] nav#nav { background: var(--fondo); box-shadow: none; border-bottom: 1px solid var(--anillo); }
+  html[data-piel="obsidiana"] nav#nav { border: 1px solid var(--anillo); }
+  html[data-piel="obsidiana"] .entrada.vidrio { background: var(--sup); }
+  html[data-piel="obsidiana"] .bg-gradient-to-br { filter: grayscale(.9) brightness(1.15); }
+  html[data-piel="obsidiana"] .primario, html[data-piel="obsidiana"] .chip[aria-pressed="true"] { box-shadow: none; }
+  html[data-piel="obsidiana"] .burbuja.yo { box-shadow: none; }
+  html[data-piel="obsidiana"] .toast-deshacer, html[data-piel="obsidiana"] .confirmacion-caja { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--sup); }
+  html[data-piel="obsidiana"] .tarjeta.relative .blur-2xl, html[data-piel="obsidiana"] [class*="blur-2xl"] { display: none; }
+
 }

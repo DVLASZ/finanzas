@@ -55,7 +55,7 @@ const rt = spawnSync(process.execPath, [tailwind, '-i', join(web, 'estilos', 'ta
 if (rt.status !== 0) { console.error(rt.stdout + rt.stderr); process.exit(1); }
 renameSync(salidaTailwind, join(dist, 'styles.css'));
 // La barra del sistema y la pantalla de arranque usan el fondo del tema de fábrica: así nada de otro color asoma bajo la app.
-const FONDOS = { libro: { oscuro: '#090d16', claro: '#f3f5fa' }, tierra: { oscuro: '#17110c', claro: '#f7f0e6' } };
+const FONDOS = { obsidiana: { oscuro: '#000000', claro: '#fafaf7' }, libro: { oscuro: '#090d16', claro: '#f3f5fa' }, tierra: { oscuro: '#17110c', claro: '#f7f0e6' } };
 const fondoApp = FONDOS[pielApp]?.[temaApp === 'claro' ? 'claro' : 'oscuro'] ?? '#090d16';
 // El nombre de la app cambia por instalación (así se distinguen en el celular).
 writeFileSync(join(dist, 'index.html'), readFileSync(join(web, 'index.html'), 'utf8')

@@ -95,6 +95,8 @@ try {
   await tema('oceano', 'oscuro'); await irA('Saldos'); await foto('tema-oceano');
   await tema('atardecer', 'oscuro'); await irA('Resumen'); await foto('tema-atardecer');
   await tema('esmeralda', 'claro'); await irA('Chat'); await foto('tema-esmeralda');
+  await tema('obsidiana', 'oscuro'); await irA('Saldos'); await foto('tema-obsidiana');
+  await irA('Resumen'); await foto('tema-obsidiana-resumen');
 } finally {
   await navegador.close();
   servidor.kill();

@@ -63,6 +63,10 @@ Para ver qué secretos existen, solo los nombres: `npx wrangler secret list --co
 
 </details>
 
+## Cabeceras de seguridad
+
+La compilación escribe `_headers` junto a la página: Cloudflare sirve esos archivos sin pasar por el código del Worker, así que las cabeceras (política de contenido, HSTS, `X-Frame-Options`...) tienen que ir ahí. La API las lleva por el código. Después de publicar se puede comprobar con `curl -sI https://<tu-app>.workers.dev/`: tienen que salir `content-security-policy` y `x-frame-options`.
+
 ## Cambios de esquema
 
 Una migración nueva y numerada en `db/migrations/`, aplicada a cada base con `npx wrangler d1 migrations apply <base> --remote`. Actualiza también `db/schema.sql`, `db/seed.sql` y `packages/core/src/semilla.ts`.

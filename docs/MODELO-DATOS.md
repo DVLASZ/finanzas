@@ -83,11 +83,11 @@ Ejemplo con vuelto: `trident 4500 con billete de 10k, vuelto 5k y 500 en monedas
 | `cuentas` | Todas las cuentas de arriba. |
 | `movimientos` | Fecha, tipo, descripción, evento, lugar de salida y llegada, de dónde vino (`bot`, `app`, `excel`), el mensaje original y la tarjeta confirmada para poder editarlo, y el estado. |
 | `asientos` | Las líneas de cada movimiento: cuenta, monto con signo y moneda. |
-| `compromisos` | Deudas y préstamos: persona, dirección, monto, motivo, fecha límite y estado. |
+| `compromisos` | Deudas y préstamos: persona, dirección, monto, motivo, fecha límite y estado. Anular un movimiento anula las deudas que creó; restaurarlo las vuelve a activar. |
 | `atajos` | Palabras con monto y categoría fijos, como `pasaje`. |
 | `aprendido` | Lo que el bot aprendió: palabra y categoría. |
 | `presupuestos` | El tope mensual de cada categoría. |
-| `config` | Ajustes. Claves usadas: `fecha_apertura`, `moneda_base`, `meta_ahorro_pct`, `grupos`, `alias_cuentas`, `apodos_personas`, `catalogo`, `lista_compras`, `ventas`, `ia`, `ia_uso`. Las que empiezan por `secreto_` son del servidor y no viajan a la app. |
+| `config` | Ajustes. Claves usadas: `fecha_apertura`, `moneda_base`, `meta_ahorro_pct`, `grupos`, `alias_cuentas`, `apodos_personas`, `atajos_usuario`, `recordatorio`, `catalogo`, `lista_compras`, `ventas`, `ia`, `ia_uso`. Las que empiezan por `secreto_` son del servidor y no viajan a la app. |
 | `pendiente` | La tarjeta sin confirmar, una sola fila. Guarda también los movimientos que faltan de un mensaje con varios. |
 
 Vistas: `v_saldos`, `v_gasto_mensual` y `v_movimientos_desbalanceados`.
@@ -98,3 +98,10 @@ Vistas: `v_saldos`, `v_gasto_mensual` y `v_movimientos_desbalanceados`.
 2. Actualiza `db/schema.sql`, `db/seed.sql` y `packages/core/src/semilla.ts`. Una prueba comprueba que coincidan.
 3. Corre `npm run check`.
 4. Aplica la migración a cada base: `npx wrangler d1 migrations apply <base> --remote`. Son una por instalación.
+
+## Dentro de `config` (JSON)
+
+- `metas`: cada meta lleva nombre, valor, apartado, los aportes recientes y, si se quiere, `fecha` (AAAA-MM-DD) para calcular la cuota semanal.
+- `catalogo`: cada producto lleva presentaciones, el `conteo` de existencias (opcional) y `minimo` (opcional): de ahí para abajo sale en las alertas y en el corte de turno.
+- `atajos_usuario`: los botones rápidos del chat (etiqueta, frase y si son plantilla o frase completa).
+- `recordatorio`: la hora del aviso de la noche («20:30»), o vacío si está apagado.
