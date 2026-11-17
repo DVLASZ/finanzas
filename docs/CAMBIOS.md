@@ -4,6 +4,11 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-18
+
+- Tema nuevo, Obsidiana, pensado para pantallas AMOLED: fondo negro puro sin aurora ni brillos, tarjetas en negro carbón con un filete de 1 px, texto marfil y platino, y color solo en las cifras y los estados (esmeralda para lo que entra, coral sobrio para lo que sale, champán en las acciones principales). Los íconos de categoría pierden el color. Tiene su versión clara en marfil. El texto principal llega a contraste AAA en el oscuro, y pasa `npm run contraste` y la revisión de letra grande en las tres variantes.
+- Revisión completa de la documentación: arquitectura (módulos y operaciones nuevas), modelo de datos (claves de configuración, metas con fecha, stock mínimo), despliegue (cabeceras en `_headers`), celular, pendientes y límites conocidos, `SECURITY.md` y los índices.
+
 ## 2026-11-17
 
 Seguridad (detalle en `SECURITY.md`):

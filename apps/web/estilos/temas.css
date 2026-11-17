@@ -97,6 +97,25 @@ html[data-piel="atardecer"][data-tema="claro"] {
 
 html[data-piel="esmeralda"], html[data-piel="oceano"], html[data-piel="atardecer"] { --base: 16px; --radio: 22px; --radio-b: 16px; --alto-btn: 50px; }
 
+/* Obsidiana: minimalista, para pantallas AMOLED. Negro puro de fondo (los píxeles apagados no gastan batería), tarjetas en negro
+   carbón con un filete finísimo, texto marfil y platino, y color solo donde importa: esmeralda para lo que entra, coral sobrio para
+   lo que sale o alerta, champán en las acciones principales. Sin aurora ni brillos de fondo (ver tailwind.css). */
+html[data-piel="obsidiana"][data-tema="oscuro"] {
+  --fondo: #000000; --sup: #09090b; --elev: #111114; --tx: #f4f4f6; --tx2: #9ca3af; --bor: #1f1f24;
+  --marca: #d8c9a3; --marca-2: #bfc3cc; --sobre: #0a0a0a; --marca-sup: #1a1814; --tx-marca-sup: #eadfc4;
+  --pos: #34d399; --neg: #f28b82; --adv: #e2b85c; --info: #9cb3d1; --acc: #bfc3cc;
+  --vidrio: rgba(0, 0, 0, .94); --anillo: rgba(255, 255, 255, .08); --brillo: rgba(216, 201, 163, .12);
+  --halo-1: rgba(0, 0, 0, 0); --halo-2: rgba(0, 0, 0, 0);
+}
+html[data-piel="obsidiana"][data-tema="claro"] {
+  --fondo: #fafaf7; --sup: #ffffff; --elev: #f1f0eb; --tx: #111114; --tx2: #5b5f6a; --bor: #e3e1da;
+  --marca: #8a6f2f; --marca-2: #5b5f6a; --sobre: #ffffff; --marca-sup: #f3ebd6; --tx-marca-sup: #4a3a12;
+  --pos: #0b6a4d; --neg: #b4382e; --adv: #8a5a00; --info: #3d5a80; --acc: #5b5f6a;
+  --vidrio: rgba(255, 255, 255, .94); --anillo: rgba(17, 17, 20, .09); --brillo: rgba(138, 111, 47, .12);
+  --halo-1: rgba(0, 0, 0, 0); --halo-2: rgba(0, 0, 0, 0);
+}
+html[data-piel="obsidiana"] { --base: 16px; --radio: 18px; --radio-b: 14px; --alto-btn: 50px; }
+
 /* Forma y tamaño. «libro» es más ceñido; «tierra», más redondo y con letra algo mayor */
 html[data-piel="libro"] { --base: 16px; --radio: 20px; --radio-b: 14px; --alto-btn: 48px; }
 html[data-piel="tierra"] { --base: 17px; --radio: 24px; --radio-b: 18px; --alto-btn: 54px; }

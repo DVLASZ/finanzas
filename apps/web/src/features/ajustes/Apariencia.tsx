@@ -14,6 +14,8 @@ const TEMAS: { piel: Piel; tema: Tema; nombre: string; detalle: string; p: Palet
   { piel: 'oceano', tema: 'claro', nombre: 'Océano claro', detalle: 'Hielo y azul mar', p: { fondo: '#eef6fb', sup: '#ffffff', elev: '#deecf5', tx: '#08141f', tx2: '#46576a', a: '#0369a1', b: '#1d4ed8' } },
   { piel: 'atardecer', tema: 'oscuro', nombre: 'Atardecer', detalle: 'Ciruela, naranja y rosa', p: { fondo: '#170c14', sup: '#231320', elev: '#321c2d', tx: '#fdf0f4', tx2: '#c9a9ba', a: '#fb923c', b: '#f472b6' } },
   { piel: 'atardecer', tema: 'claro', nombre: 'Atardecer claro', detalle: 'Durazno y coral', p: { fondo: '#fcf1ee', sup: '#fffaf8', elev: '#f6e3de', tx: '#2a1017', tx2: '#6b4a55', a: '#c2410c', b: '#be185d' } },
+  { piel: 'obsidiana', tema: 'oscuro', nombre: 'Obsidiana AMOLED', detalle: 'Negro puro, minimalista', p: { fondo: '#000000', sup: '#09090b', elev: '#111114', tx: '#f4f4f6', tx2: '#9ca3af', a: '#d8c9a3', b: '#bfc3cc' } },
+  { piel: 'obsidiana', tema: 'claro', nombre: 'Obsidiana clara', detalle: 'Marfil y champán', p: { fondo: '#fafaf7', sup: '#ffffff', elev: '#f1f0eb', tx: '#111114', tx2: '#5b5f6a', a: '#8a6f2f', b: '#5b5f6a' } },
 ];
 
 /** Una tarjeta pequeña que muestra cómo se ve el tema: fondo, tarjeta, texto y botón. */

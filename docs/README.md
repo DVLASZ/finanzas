@@ -14,7 +14,8 @@ Por dónde empezar según lo que quieras hacer.
 
 - [GUIA-CUENTAS.md](GUIA-CUENTAS.md): la cuenta de Cloudflare.
 - [DESPLIEGUE.md](DESPLIEGUE.md): publicar con el instalador o a mano, y cambiar el esquema.
-- [RESPALDO.md](RESPALDO.md): la copia de seguridad semanal en la nube y cómo restaurarla.
+- [RESPALDO.md](RESPALDO.md): la copia de seguridad semanal en la nube, el respaldo con contraseña desde la app y cómo restaurarlos.
+- [SECURITY.md](../SECURITY.md): cómo está protegida la app, qué no cubre y cómo reportar una falla.
 - [CELULAR.md](CELULAR.md): cómo probar la app en un celular de verdad.
 - [BUZON.md](BUZON.md): avisos entre tus apps y el acceso de solo lectura.
 

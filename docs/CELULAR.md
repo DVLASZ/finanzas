@@ -32,7 +32,7 @@ npm run e2e:celular
 
 Compila la app, la sirve en el PC y hace que el celular la vea como `localhost`. Abre una pestaña en el Chrome del celular y recorre las pantallas como lo hace `npm run e2e`. Usa datos de prueba que viven solo en ese navegador: no toca la app real ni ninguna base. Es lo más parecido a que alguien use la app, con el motor real de Chrome Android.
 
-Probado el 2026-11-14 con un celular Android 17: pasan las 17 pruebas en el Chrome del celular (en PC son 18; la foto desde un archivo solo corre allá). La vez anterior, el 2026-11-07, eran 13.
+Probado el 2026-11-17 con un celular Android: pasan todas las pruebas en el Chrome del celular (son las mismas de `npm run e2e`; la foto desde un archivo solo corre allá). Si falla al abrir con «Could not find TabModelList», Chrome del celular está cerrado o con la pantalla apagada: desbloquéalo, ábrelo y vuelve a correr.
 
 Si `adb devices` no lista el celular aunque Windows lo vea, mira que la depuración USB siga activada (a veces Android la apaga) y que el modo USB sea Transferencia de archivos. Chrome Android deja varios sockets de control; el script prueba cada uno hasta que uno contesta.
 

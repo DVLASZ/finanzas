@@ -46,7 +46,7 @@ Cada instalación (una persona o un negocio) es un Worker, una base D1 y una cla
 |---|---|
 | `packages/core` | El cerebro. No depende de ninguna plataforma. |
 | `apps/web` | La app: componentes de Preact con signals, estilos con Tailwind, copia local en IndexedDB, sincronización, service worker. Ordenada en `components/`, `features/`, `state/`, `services/` y `lib/` (ver [apps/web/README.md](../apps/web/README.md)). |
-| `apps/worker` | El servidor: rutas de la API por dominio (`src/rutas/`), repositorio sobre D1, avisos y IA. |
+| `apps/worker` | El servidor: rutas de la API por dominio (`src/rutas/`), repositorio sobre D1, avisos, IA y seguridad (`seguridad.ts`: cabeceras y límites de peticiones). |
 | `db` | Esquema, datos iniciales, diccionario de palabras y migraciones. |
 | `scripts` | Instalador, compilación de la web y herramientas. |
 | `tests` | Ayudas compartidas por las pruebas. |
@@ -75,6 +75,12 @@ Cada instalación (una persona o un negocio) es un Worker, una base D1 y una cla
 | `sync.ts` | Operaciones, validación y cola para sincronizar. |
 | `alertas.ts` | Qué conviene avisar: deudas por vencer, topes, días sin anotar. |
 | `seguro.ts`, `hormiga.ts`, `metas.ts`, `recurrentes.ts` | El seguro para gastar hoy, los gastos hormiga, las alcancías y los pagos fijos. |
+| `pulso.ts`, `presupuesto.ts`, `comparativa.ts` | El gasto de cada día (barras y mapa de calor), los ingresos y gastos de seis meses, lo que se puede gastar esta semana y la comparación con el mes pasado. |
+| `liquidez.ts`, `operacion.ts` | La proyección de liquidez a 30 días con los pagos fijos, la cuota semanal de una meta, el stock mínimo y el corte de turno. |
+| `notificaciones.ts` | Lee las alertas pegadas de Nequi, Bancolombia y Banco de Bogotá con reglas, sin IA. |
+| `recordatorio.ts` | La hora del recordatorio de la noche y cuándo toca avisar. |
+| `atajos.ts` | Los botones rápidos del chat: los pagos fijos que tocan y los atajos que arma cada persona. |
+| `edicion.ts`, `duplicar.ts` | Editar y duplicar un movimiento guardado, con la vista de lo que cambia (ver [EDITAR.md](EDITAR.md)). |
 | `ocr.ts` | Lee la respuesta de la IA con visión y la vuelve una frase para el bot. |
 | `ia.ts` | Instrucciones y límites de la ayuda de la IA. |
 | `exportar.ts` | El archivo de Excel. |
@@ -103,9 +109,9 @@ El bot solo conoce la interfaz `Repo`. Hay tres implementaciones: una en memoria
 
 </details>
 
-Cualquier otra ruta sirve los archivos de la app. Hay también una tarea diaria (`scheduled`) que manda los avisos.
+Cualquier otra ruta sirve los archivos de la app. Hay también una tarea (`scheduled`) que corre cada media hora: a las 8 am y a las 6 pm manda los avisos, y en cada media hora mira si toca el recordatorio de la noche. Todas las respuestas, también las de la página, salen con las cabeceras de seguridad de `apps/worker/src/seguridad.ts` (la página las lleva en el archivo `_headers` que escribe la compilación). Las rutas tienen un límite de peticiones por conexión y la IA uno más bajo. El detalle está en [SECURITY.md](../SECURITY.md).
 
-La ruta `/api/sync` revisa la forma de cada operación antes de tocar la base. Una operación mala se rechaza sola y no frena a las demás. Desde la app solo se pueden cambiar estas claves de configuración, y cualquier otra se rechaza: `fecha_apertura`, `catalogo`, `lista_compras`, `recurrentes`, `metas`, `categoria_persona`, `apodos_personas`, `grupos`, `subcategorias`, `cerrado_hasta`, `tope_arrastra` y `buzon`. La lista vive en `CLAVES_CONFIG_PERMITIDAS` (`packages/core/src/sync.ts`).
+La ruta `/api/sync` revisa la forma de cada operación antes de tocar la base. Una operación mala se rechaza sola y no frena a las demás. Las operaciones son `guardar`, `editar`, `anular`, `restaurar` (deshace una anulación), `compromisos`, `aprendido`, `presupuesto`, `config` y `cuenta`. Desde la app solo se pueden cambiar estas claves de configuración, y cualquier otra se rechaza: `fecha_apertura`, `catalogo`, `lista_compras`, `recurrentes`, `metas`, `categoria_persona`, `apodos_personas`, `grupos`, `subcategorias`, `cerrado_hasta`, `tope_arrastra`, `buzon`, `atajos_usuario` (los botones rápidos de cada persona) y `recordatorio`. La lista vive en `CLAVES_CONFIG_PERMITIDAS` (`packages/core/src/sync.ts`).
 
 ## Sin internet y sincronización
 

@@ -9,6 +9,8 @@ Herramientas que se corren con `npm run`.
 | `build-web.mjs` | `npm run web:build` | Compila la app. El instalador lo llama con el nombre, los colores y la plantilla |
 | `servir-web.mjs` | `npm run web:dev` | Sirve la app compilada en el puerto 5173 |
 | `contraste.mjs` | `npm run contraste` | Revisa que los pares de colores se lean bien |
+| `seguridad.mjs` | `npm run seguridad` | `npm audit`, secretos, consultas a D1, funciones peligrosas de la interfaz y cabeceras del Worker |
+| `capturas.mjs` | `npm run capturas` | Saca las capturas de `docs/screenshots/` con datos inventados |
 | `verificar-db.mjs` | `npm run verificar` | Arma la base en memoria y revisa que todo cuadre |
 | `generar-migracion.mjs` | `npm run migracion` | Regenera la migración 0001 a partir del esquema y la semilla |
 
