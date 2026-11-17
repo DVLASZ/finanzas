@@ -13,7 +13,7 @@ import { build } from 'esbuild';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { crearIconos } from './icono.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -72,5 +72,10 @@ const iconos = crearIconos(plantillaApp, colorApp);
 writeFileSync(join(dist, 'icon.svg'), iconos.svg);
 writeFileSync(join(dist, 'icon-192.png'), iconos.png192);
 writeFileSync(join(dist, 'icon-512.png'), iconos.png512);
+
+// ---- Cabeceras de seguridad para la página: los archivos de la app los sirve Cloudflare directo (sin pasar por el código del
+// Worker), así que las mismas cabeceras que pone el Worker a la API van aquí, en el archivo _headers.
+const { CABECERAS_SEGURAS } = await import(pathToFileURL(join(raiz, 'apps', 'worker', 'src', 'seguridad.ts')).href);
+writeFileSync(join(dist, '_headers'), ['/*', ...Object.entries(CABECERAS_SEGURAS).map(([k, v]) => `  ${k}: ${v}`), ''].join(String.fromCharCode(10)));
 
 console.log(`App compilada en ${dist}`);
