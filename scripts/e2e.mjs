@@ -514,6 +514,60 @@ try {
     await pag.evaluate(() => document.querySelector('[role=option][data-valor="nunca"]')?.click()); await espera(300);
     await irA('Chat');
   });
+  await prueba('lenguaje natural: «hicimos vaca» pregunta con botones y al elegir anota el gasto compartido', async () => {
+    await irA('Chat');
+    await escribir('hicimos vaca de 60k con Ana y Luis para el almuerzo');
+    contiene(await ultima(), 'Con Ana y Luis', 'la pregunta de reparto');
+    contiene(await ultima(), 'Dividir entre los 3', 'el botón de dividir');
+    await pulsar(await pag.evaluate(() => [...document.querySelectorAll('button')].map(b => b.innerText.trim()).filter(t => t.startsWith('Dividir entre los 3')).pop()));
+    contiene(await ultima(), 'Tu parte', 'la tarjeta del gasto compartido');
+    await pulsar('Confirmar'); await espera(400);
+    if (await pag.evaluate(() => [...document.querySelectorAll('button')].some(b => b.innerText.trim() === 'Guardar igual'))) await pulsar('Guardar igual');
+    contiene(await ultima(), 'GUARDADO', 'el gasto compartido se guardó');
+  });
+  await prueba('ayuda: «Pregúntale cómo decirlo» da el ejemplo y el botón lo deja escrito en el chat', async () => {
+    await irA('Chat');
+    await pag.evaluate(() => document.querySelector('[data-atajo="ayuda"]')?.click()); await espera(900);
+    await pag.type('#ayuda-duda', 'cómo anoto que presté plata'); await pag.keyboard.press('Enter'); await espera(400);
+    contiene(await pag.evaluate(() => document.querySelector('#ayuda-respuesta')?.innerText ?? ''), 'presté', 'el ejemplo de préstamo');
+    await pag.evaluate(() => document.querySelector('#ayuda-usar')?.click()); await espera(400);
+    contiene(await pag.evaluate(() => document.querySelector('#texto').value), 'presté', 'el ejemplo queda escrito');
+    await pag.evaluate(() => { const t = document.querySelector('#texto'); t.value = ''; t.dispatchEvent(new Event('input', { bubbles: true })); });
+  });
+  await prueba('resumen: flujo del mes, ranking de conceptos y anillo de medios de pago', async () => {
+    await irA('Resumen'); await espera(900);
+    const hay = id => pag.evaluate(i => Boolean(document.querySelector(i)), id);
+    igual(await hay('#flujo-mes svg'), true, 'la línea del flujo');
+    igual(await hay('#ranking-lista li'), true, 'el ranking');
+    igual(await hay('#anillo-medios svg'), true, 'el anillo de medios');
+    await pag.evaluate(() => { const s = document.querySelector('#flujo-mes svg').getBoundingClientRect(); window.__r = s; });
+    await pag.mouse.move(150, await pag.evaluate(() => window.__r.top + 20)); await espera(200);
+    contiene((await pag.evaluate(() => document.querySelector('#flujo-dato')?.innerText ?? '')).toLowerCase(), 'balance acumulado', 'el dato del día');
+  });
+  await prueba('resumen con privacidad total: las cifras de las gráficas nuevas salen ocultas', async () => {
+    const estaba = await pag.evaluate(() => document.documentElement.dataset.privado === '1');
+    if (!estaba) await pag.evaluate(() => document.querySelector('#ojo')?.click()); await espera(500);
+    const t = await pag.evaluate(() => (document.querySelector('#ranking-conceptos')?.innerText ?? '') + (document.querySelector('#medios-pago')?.innerText ?? ''));
+    igual(/$s?d/.test(t), false, 'ninguna cifra a la vista');
+    if (!estaba) await pag.evaluate(() => document.querySelector('#ojo')?.click()); await espera(300);
+  });
+  await prueba('movimientos: el gasto compartido despliega su reparto (tu gasto real y lo que te deben)', async () => {
+    await irA('Movimientos'); await espera(500);
+    await pag.evaluate(() => document.querySelector('#limpiar')?.click()); await espera(300);
+    await pag.click('[data-tipo=todos]').catch(() => {}); await espera(300);
+    // se abre cada almuerzo de la lista hasta dar con el compartido
+    for (let k = 0; k < 20; k++) {
+      const abrio = await pag.evaluate(n => { const f = [...document.querySelectorAll('li.fila[data-id]')].filter(x => /(almuerzo|comida)/i.test(x.innerText))[n]; f?.click(); return Boolean(f); }, k); await espera(500);
+      if (!abrio || await pag.evaluate(() => Boolean(document.querySelector('#ver-desglose')))) break;
+      await pag.evaluate(() => document.querySelector('#cerrar')?.click()); await espera(300);
+    }
+    const hay = await pag.evaluate(() => Boolean(document.querySelector('#ver-desglose')));
+    if (hay) {
+      await pag.evaluate(() => document.querySelector('#ver-desglose').click()); await espera(500);
+      contiene(await pag.evaluate(() => document.querySelector('#desglose-detalle')?.innerText ?? ''), 'Por cobrar a Ana', 'lo que debe Ana');
+    } else { throw new Error('ningún almuerzo de la lista es compartido'); }
+    await pag.evaluate(() => document.querySelector('#cerrar')?.click()); await espera(300);
+  });
   await prueba('la política de contenido no bloqueó nada en toda la visita', async () => igual(bloqueos.join(' | '), '', 'bloqueos de la política de contenido'));
   await prueba('ningún cuadro del navegador salió en toda la visita', async () => igual(nativos, 0, 'cuadros nativos'));
   await prueba('sin errores de JavaScript en toda la visita', async () => igual(errores.join(' | '), '', 'errores'));

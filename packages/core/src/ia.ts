@@ -35,6 +35,9 @@ export function instruccionesIA(datos: Pick<Datos, 'cuentas' | 'config'>): strin
     '- Pasar plata entre cuentas: "cambio 50000 efectivo a ' + otra + '"',
     '- Regalo: "le regalé 50000 a Jorge"',
     '- Gasto repartido: "almuerzo 25000 pagué por marta 20000" (el gasto total y la parte de Marta) o "pizza 9000 entre ana, luis y yo". Todo el gasto va en UNA sola frase: "almuerzo 25000 pagué 20000 por marta" NO son dos movimientos, y "pagué 20000 por marta" dentro de un gasto no es pagar una deuda.',
+    '- Gasto igual entre varios: "pizza 9000 entre ana, luis y yo" (el monto es el total que se pagó). "Hicimos vaca", "a medias", "por los 3" son reparto en partes iguales.',
+    '- Jerga: "me fiaron 20k donde Rosa" y "quedé debiendo 15k a Pedro" son "le debo 20000 a Rosa" y "le debo 15000 a Pedro"; "me giraron/consignaron/soltaron 80k" es un ingreso; "Luis me debe 20k" es "presté 20000 a Luis"; "saqué 100k del cajero" es "cambio 100000 ' + otra + ' a efectivo"; "pasé de ' + otra + ' a efectivo 50k" es "cambio 50000 ' + otra + ' a efectivo".',
+    '- Si no sabes entre cuántos se repartió o qué cuenta es, no inventes: responde {"frases": []}.',
   ];
   if (vendeProductos(datos)) l.push('- Venta: "vendí 3 botellas de jugo", "15 galletas a granel a Marta"');
   l.push(

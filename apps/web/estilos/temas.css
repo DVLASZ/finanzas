@@ -211,9 +211,23 @@ html[data-piel="bordeaux"][data-tema="claro"] {
   --vidrio: rgba(246, 228, 226, 0.8); --anillo: rgba(74, 14, 35, 0.12); --brillo: rgba(128, 169, 91, 0.18);
   --halo-1: rgba(128, 169, 91, 0.14); --halo-2: rgba(163, 197, 127, 0.1);
 }
+html[data-piel="zafiro"][data-tema="oscuro"] {
+  --fondo: #0b132b; --sup: #1c2541; --elev: #1e3a8a; --tx: #eaf2ff; --tx2: #b3b8c5; --bor: #2b4a9e;
+  --marca: #00b4d8; --marca-2: #48cae4; --sobre: #010205; --marca-tx: #48cae4; --marca-sup: #16425f; --tx-marca-sup: #d3ecfb;
+  --pos: #34d399; --neg: #fc9caa; --adv: #fbbf24; --info: #7cc4f0; --acc: #71d4eb;
+  --vidrio: rgba(11, 19, 43, 0.74); --anillo: rgba(0, 180, 216, 0.22); --brillo: rgba(0, 180, 216, 0.22);
+  --halo-1: rgba(0, 180, 216, 0.2); --halo-2: rgba(72, 202, 228, 0.14);
+}
+html[data-piel="zafiro"][data-tema="claro"] {
+  --fondo: #eef4ff; --sup: #f9fbff; --elev: #dbe7ff; --tx: #0b132b; --tx2: #34446e; --bor: #bccdee;
+  --marca: #0284c7; --marca-2: #38a9e6; --sobre: #000000; --marca-tx: #036194; --marca-sup: #d1e8f6; --tx-marca-sup: #0b132b;
+  --pos: #046a4c; --neg: #b02039; --adv: #894f00; --info: #0b5f8f; --acc: #054e7a;
+  --vidrio: rgba(238, 244, 255, 0.8); --anillo: rgba(2, 132, 199, 0.26); --brillo: rgba(2, 132, 199, 0.18);
+  --halo-1: rgba(2, 132, 199, 0.14); --halo-2: rgba(56, 169, 230, 0.1);
+}
 /* PALETAS:FIN */
 html[data-piel="esmeralda"], html[data-piel="oceano"], html[data-piel="atardecer"], html[data-piel="veltro"], html[data-piel="aether"], html[data-piel="kinetix"],
-html[data-piel="abyss"], html[data-piel="mocha"], html[data-piel="onyx"], html[data-piel="bordeaux"] { --base: 16px; --radio: 22px; --radio-b: 16px; --alto-btn: 50px; }
+html[data-piel="abyss"], html[data-piel="mocha"], html[data-piel="onyx"], html[data-piel="bordeaux"], html[data-piel="zafiro"] { --base: 16px; --radio: 22px; --radio-b: 16px; --alto-btn: 50px; }
 html[data-piel="obsidiana"] { --base: 16px; --radio: 18px; --radio-b: 14px; --alto-btn: 50px; }
 
 /* Forma y tamaño. «libro» es más ceñido; «tierra», más redondo y con letra algo mayor */

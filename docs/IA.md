@@ -11,6 +11,8 @@ Las reglas del bot entienden casi todo lo de todos los días, pero una frase muy
 
 La app lo hace sola cuando el bot responde que no entendió, hay servidor configurado y hay internet. Verás un "Déjame pensarlo un momento" y luego "Creo que quisiste decir". Si la IA tampoco entiende, queda el mensaje normal del bot.
 
+Las reglas del bot corren primero y sin red, y entienden los modismos de uso diario (ver «Como lo dice la gente» en BOT.md). La IA entra solo con lo que las reglas no pudieron leer. Sus instrucciones llevan las formas canónicas de los gastos repartidos, la jerga de deudas y los verbos de mover plata, y le piden que responda `{"frases": []}` en vez de inventar cuando no sabe entre cuántos se repartió algo o qué cuenta es. Lo que devuelve vuelve a pasar por el bot y por la tarjeta de confirmación.
+
 Sin internet no hay ayuda de la IA: el bot dice lo que no entendió y reescribes la frase más simple.
 
 ## Leer comprobantes

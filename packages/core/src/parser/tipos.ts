@@ -86,7 +86,9 @@ export interface Propuesta {
 export type Resultado =
   | { clase: 'comando'; comando: Comando; arg?: string }
   | { clase: 'movimiento'; propuesta: Propuesta }
-  | { clase: 'error'; mensaje: string };
+  | { clase: 'error'; mensaje: string }
+  /** La frase puede significar dos cosas: se pregunta con botones. Cada opción trae la frase que se manda si se elige. */
+  | { clase: 'pregunta'; mensaje: string; opciones: { titulo: string; frase: string }[] };
 
 export const error = (mensaje: string): Resultado => ({ clase: 'error', mensaje });
 

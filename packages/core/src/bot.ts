@@ -165,6 +165,8 @@ class Motor {
     }
     if (id.startsWith('lista+:')) return this.agregarALista(id.slice(7));
     // una frase que la IA entendió cuando volvió el internet: se trata como si se acabara de escribir
+    // «ia:=texto» no es una frase para el bot sino una indicación para la persona (por ejemplo, cómo decir un reparto distinto)
+    if (id.startsWith('ia:=')) return [{ texto: id.slice(4) }];
     if (id.startsWith('ia:')) return this.alEscribir(id.slice(3));
     if (id === 'nada') return [{ texto: 'Está bien, no lo anoté.' }];
     if (id.startsWith('undo:')) return this.deshacer(id.slice(5));
@@ -220,6 +222,10 @@ class Motor {
     //    la referencia al movimiento original (que se anula solo al confirmar).
     const res = interpretar(texto, this.ctx);
     if (res.clase === 'comando') return this.comando(res.comando, res.arg);
+    // la frase puede significar dos cosas: se pregunta con botones en vez de adivinar
+    if (res.clase === 'pregunta') {
+      return [{ texto: `❓ ${res.mensaje}`, botones: [...res.opciones.map(o => ({ id: `ia:${o.frase}`, titulo: o.titulo })), { id: 'no', titulo: '❌ Cancelar' }] }];
+    }
     if (res.clase === 'error') {
       // Una línea sin plata («Jabón baño») parece algo por comprar: se ofrece anotarla en la lista.
       const limpio = texto.trim();
@@ -249,7 +255,7 @@ class Motor {
         salida[0].texto = [...avisos, cabeza].filter(Boolean).join('\n') + '\n' + salida[0].texto;
         return salida;
       }
-      avisos.push(`No pude con «${texto}»: ${res.clase === 'error' ? res.mensaje : 'eso no es un movimiento'}`);
+      avisos.push(`No pude con «${texto}»: ${res.clase === 'error' ? res.mensaje : res.clase === 'pregunta' ? res.mensaje + ' Escríbelo solo.' : 'eso no es un movimiento'}`);
       restantes = resto;
     }
     return avisos.length ? [{ texto: avisos.join('\n') }] : [];

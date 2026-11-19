@@ -95,7 +95,8 @@ Más ejemplos, con todos los casos: [docs/BOT.md](docs/BOT.md).
     <td align="center"><img src="docs/screenshots/tema-bordeaux.png" alt="Tema Bordeaux Sage" width="230" /><br /><b>Bordeaux Sage</b><br /><sub>Burdeos, rosa polvo y salvia</sub></td>
   </tr>
   <tr>
-    <td align="center" valign="middle" colspan="3"><sub>Los nombres y las cifras son inventados.<br />Las imágenes salen de <code>npm run capturas</code>.</sub></td>
+    <td align="center"><img src="docs/screenshots/tema-zafiro.png" alt="Tema Zafiro Real" width="230" /><br /><b>Zafiro Real</b><br /><sub>Cobalto, azul real y cian</sub></td>
+    <td align="center" valign="middle" colspan="2"><sub>Los nombres y las cifras son inventados.<br />Las imágenes salen de <code>npm run capturas</code>.</sub></td>
   </tr>
 </table>
 
@@ -107,9 +108,9 @@ Cada tema tiene su versión oscura y su versión clara, y cada una sale de la mi
 
 <div align="center">
 
-<img src="docs/screenshots/temas-oscuros.png" alt="Los trece temas en oscuro" width="860" />
+<img src="docs/screenshots/temas-oscuros.png" alt="Los catorce temas en oscuro" width="860" />
 
-<img src="docs/screenshots/temas-claros.png" alt="Los trece temas en claro" width="860" />
+<img src="docs/screenshots/temas-claros.png" alt="Los catorce temas en claro" width="860" />
 
 </div>
 
