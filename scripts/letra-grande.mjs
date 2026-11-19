@@ -178,7 +178,7 @@ try {
         await irA('Chat');
         await pag.evaluate(() => document.querySelector('#atajo-mas')?.click()); await espera(500);
         await pag.evaluate(() => document.querySelector('#at-nuevo')?.click()); await espera(300);
-        await pag.type('#at-frase', 'recarga nequi para el celular de mi familia'); await escalar();
+        if (await pag.$('#at-frase')) await pag.type('#at-frase', 'recarga nequi para el celular de mi familia'); await escalar();
         await pag.evaluate(() => document.querySelector('#at-guardar')?.click()); await espera(300); await escalar();
       }],
       ['Saldos', async () => { await irA('Saldos'); await espera(900); await escalar(); }],

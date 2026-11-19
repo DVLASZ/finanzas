@@ -91,12 +91,39 @@ try {
   await escribir('almuerzo 18500 nequi');
   await espera(700);
   await foto('chat');
-  // las atmósferas nuevas
-  await tema('oceano', 'oscuro'); await irA('Saldos'); await foto('tema-oceano');
-  await tema('atardecer', 'oscuro'); await irA('Resumen'); await foto('tema-atardecer');
-  await tema('esmeralda', 'claro'); await irA('Chat'); await foto('tema-esmeralda');
-  await tema('obsidiana', 'oscuro'); await irA('Saldos'); await foto('tema-obsidiana');
+  // ---- los temas: una hoja con todos (Saldos en cada uno), una en oscuro y otra en claro
+  const PIELES = [['libro', 'Midnight'], ['tierra', 'Tierra'], ['esmeralda', 'Esmeralda'], ['oceano', 'Océano'], ['atardecer', 'Atardecer'], ['obsidiana', 'Obsidiana'],
+    ['veltro', 'Veltro'], ['aether', 'Aether'], ['kinetix', 'Kinetix'], ['abyss', 'Abyss'], ['mocha', 'Mocha Silk'], ['onyx', 'Onyx Solar'], ['bordeaux', 'Bordeaux Sage']];
+  await pag.setViewport({ width: 393, height: 700, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+  await irA('Saldos');
+  const hojas = { oscuro: [], claro: [] };
+  for (const [piel, nombre] of PIELES) for (const modo of ['oscuro', 'claro']) {
+    await tema(piel, modo); await espera(500);
+    await pag.evaluate(() => document.querySelector('#contenido')?.scrollTo(0, 0));
+    hojas[modo].push([nombre, await pag.screenshot({ encoding: 'base64' })]);
+  }
+  for (const modo of ['oscuro', 'claro']) {
+    const h = await navegador.newPage();
+    await h.setViewport({ width: 7 * 180, height: 10 });
+    await h.setContent(`<body style="margin:0;background:#777;display:grid;grid-template-columns:repeat(7,180px)">${hojas[modo].map(([n, f]) => `<div style="position:relative"><img src="data:image/png;base64,${f}" width="180"><b style="position:absolute;left:5px;top:3px;font:700 11px system-ui;color:#fff;background:#000b;padding:1px 6px;border-radius:9px">${n}</b></div>`).join('')}</body>`);
+    await espera(400);
+    await h.screenshot({ path: join(salida, `temas-${modo}s.png`), fullPage: true }); console.log(`  temas-${modo}s`);
+    await h.close();
+  }
+  await pag.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  // los siete nuevos y Obsidiana, uno por uno
+  for (const [piel, modo] of [['veltro', 'claro'], ['aether', 'oscuro'], ['kinetix', 'oscuro'], ['abyss', 'oscuro'], ['mocha', 'claro'], ['onyx', 'oscuro'], ['bordeaux', 'oscuro'], ['obsidiana', 'oscuro']]) {
+    await tema(piel, modo); await irA('Saldos'); await foto('tema-' + piel);
+  }
   await irA('Resumen'); await foto('tema-obsidiana-resumen');
+  // el selector de temas con su píldora 60-30-10
+  await tema('libro', 'oscuro');
+  await irA('Más');
+  await pag.evaluate(() => document.querySelector('[data-ir=ajustes]')?.click());
+  await espera(1200);
+  await pag.evaluate(() => document.querySelector('#temas')?.scrollIntoView({ block: 'start' }));
+  await espera(600);
+  await pag.screenshot({ path: join(salida, 'selector-temas.png') }); console.log('  selector-temas');
 } finally {
   await navegador.close();
   servidor.kill();

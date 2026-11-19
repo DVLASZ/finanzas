@@ -11,6 +11,7 @@ Herramientas que se corren con `npm run`.
 | `contraste.mjs` | `npm run contraste` | Revisa que los pares de colores se lean bien |
 | `seguridad.mjs` | `npm run seguridad` | `npm audit`, secretos, consultas a D1, funciones peligrosas de la interfaz y cabeceras del Worker |
 | `capturas.mjs` | `npm run capturas` | Saca las capturas de `docs/screenshots/` con datos inventados |
+| `paletas.mjs` | `npm run paletas` | Genera los colores de todos los temas con la regla 60-30-10 y los deja en `temas.css`, `auroras.css` y el selector |
 | `verificar-db.mjs` | `npm run verificar` | Arma la base en memoria y revisa que todo cuadre |
 | `generar-migracion.mjs` | `npm run migracion` | Regenera la migración 0001 a partir del esquema y la semilla |
 

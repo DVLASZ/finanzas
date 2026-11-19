@@ -4,6 +4,14 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-19
+
+- Los temas se rehicieron con la regla 60-30-10 (60 % fondo, 30 % tarjetas y estructura, 10 % acento). El modo claro ya no es el mismo blanco en todos: Tierra claro es arena con terracota, Fintech claro es gris hielo con pizarra, Esmeralda, Océano y Atardecer tienen su propio ambiente, y Obsidiana conserva el negro puro también en Saldos, sin degradado pálido.
+- Siete temas nuevos, cada uno en oscuro y en claro: Veltro (crema, abeto y rojo tomate), Aether (ciruela, titanio y ámbar), Kinetix (índigo, lavanda y verde voltio), Abyss (azul abisal, cian y rosa neón), Mocha Silk (crema seda, mocha y azul cielo), Onyx Solar (negro esmeralda, oro e índigo) y Bordeaux Sage (burdeos, rosa polvo y salvia).
+- El selector de Ajustes muestra en cada tema una píldora con sus proporciones reales 60-30-10, y el modo (claro, oscuro o automático) se elige aparte.
+- Los colores salen de `scripts/paletas.mjs` (`npm run paletas`), que ajusta solo lo necesario para llegar a AA. El acento tiene ahora dos versiones: el relleno (`--marca`) y el que sirve como texto (`--marca-tx`). La tarjeta grande de Saldos pasó de un degradado de acento a una superficie con un tinte suave; el acento queda para el gráfico y la pestaña de días.
+- `npm run contraste` lee todos los temas del CSS (ya no hay una lista aparte) y revisa también la tarjeta grande de Saldos.
+
 ## 2026-11-18
 
 - Tema nuevo, Obsidiana, pensado para pantallas AMOLED: fondo negro puro sin aurora ni brillos, tarjetas en negro carbón con un filete de 1 px, texto marfil y platino, y color solo en las cifras y los estados (esmeralda para lo que entra, coral sobrio para lo que sale, champán en las acciones principales). Los íconos de categoría pierden el color. Tiene su versión clara en marfil. El texto principal llega a contraste AAA en el oscuro, y pasa `npm run contraste` y la revisión de letra grande en las tres variantes.
