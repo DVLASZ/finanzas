@@ -44,7 +44,7 @@ La contabilidad es de partida doble, funciona sin internet y corre gratis en Clo
   </tr>
 </table>
 
-El Worker sirve con política de contenido estricta y límites de peticiones, el PIN se guarda con PBKDF2 y puede bloquear la app, y hay respaldo con contraseña (AES-GCM); todo se revisa con `npm run seguridad` (ver [SECURITY.md](SECURITY.md)). Puedes dictar varios movimientos en una frase, pegar la alerta de tu banco y deshacer con un toque durante ocho segundos. Las cifras arrancan escondidas (el ojo de la cabecera las muestra), el chat entiende preguntas como «¿cuánto hay en Nequi?» o «¿quién me debe plata?», los botones rápidos los armas tú, la ayuda te guía por temas, hay un recordatorio opcional de la noche y doce temas entre claros y oscuros (Midnight, Tierra, Esmeralda, Océano, Atardecer y Obsidiana, un negro puro minimalista para pantallas AMOLED). También hay alcancías con fecha estimada, pagos fijos con aviso antes del cobro, efectivo con billetes y vuelto, y una revisión del mes con botones que llevan a donde se arregla cada hallazgo.
+El Worker sirve con política de contenido estricta y límites de peticiones, el PIN se guarda con PBKDF2 y puede bloquear la app, y hay respaldo con contraseña (AES-GCM); todo se revisa con `npm run seguridad` (ver [SECURITY.md](SECURITY.md)). Puedes dictar varios movimientos en una frase, pegar la alerta de tu banco y deshacer con un toque durante ocho segundos. Las cifras arrancan escondidas (el ojo de la cabecera las muestra), el chat entiende preguntas como «¿cuánto hay en Nequi?» o «¿quién me debe plata?», los botones rápidos los armas tú, la ayuda te guía por temas, hay un recordatorio opcional de la noche y trece temas, cada uno en claro y en oscuro (Midnight, Tierra, Esmeralda, Océano, Atardecer, Obsidiana, Veltro, Aether, Kinetix, Abyss, Mocha Silk, Onyx Solar y Bordeaux Sage), todos hechos con la regla 60-30-10. También hay alcancías con fecha estimada, pagos fijos con aviso antes del cobro, efectivo con billetes y vuelto, y una revisión del mes con botones que llevan a donde se arregla cada hallazgo.
 
 ## ¿Qué puedes escribirle al chat?
 
@@ -81,18 +81,35 @@ Más ejemplos, con todos los casos: [docs/BOT.md](docs/BOT.md).
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/ayuda.png" alt="Ayuda por temas" width="230" /><br /><b>Ayuda guiada</b><br /><sub>Temas y recorrido de 4 pasos</sub></td>
-    <td align="center"><img src="docs/screenshots/tema-oceano.png" alt="Tema Océano" width="230" /><br /><b>Océano</b><br /><sub>Vidrio y aurora azul</sub></td>
-    <td align="center"><img src="docs/screenshots/tema-atardecer.png" alt="Tema Atardecer" width="230" /><br /><b>Atardecer</b><br /><sub>Ciruela, naranja y rosa</sub></td>
+    <td align="center"><img src="docs/screenshots/selector-temas.png" alt="Selector de temas con la píldora 60-30-10" width="230" /><br /><b>Selector de temas</b><br /><sub>Cada tema muestra su 60-30-10</sub></td>
+    <td align="center"><img src="docs/screenshots/tema-obsidiana.png" alt="Tema Obsidiana AMOLED" width="230" /><br /><b>Obsidiana</b><br /><sub>Negro puro para AMOLED</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/tema-esmeralda.png" alt="Tema Esmeralda clara" width="230" /><br /><b>Esmeralda clara</b><br /><sub>Una de las atmósferas claras</sub></td>
-    <td align="center"><img src="docs/screenshots/tema-obsidiana.png" alt="Tema Obsidiana AMOLED" width="230" /><br /><b>Obsidiana AMOLED</b><br /><sub>Negro puro y minimalista</sub></td>
-    <td align="center"><img src="docs/screenshots/tema-obsidiana-resumen.png" alt="Resumen en Obsidiana" width="230" /><br /><b>Obsidiana, Resumen</b><br /><sub>Color solo en lo esencial</sub></td>
+    <td align="center"><img src="docs/screenshots/tema-veltro.png" alt="Tema Veltro" width="230" /><br /><b>Veltro</b><br /><sub>Crema, abeto y tomate</sub></td>
+    <td align="center"><img src="docs/screenshots/tema-kinetix.png" alt="Tema Kinetix" width="230" /><br /><b>Kinetix</b><br /><sub>Índigo, lavanda y voltio</sub></td>
+    <td align="center"><img src="docs/screenshots/tema-abyss.png" alt="Tema Abyss" width="230" /><br /><b>Abyss</b><br /><sub>Azul abisal y rosa neón</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/tema-mocha.png" alt="Tema Mocha Silk" width="230" /><br /><b>Mocha Silk</b><br /><sub>Crema seda y azul cielo</sub></td>
+    <td align="center"><img src="docs/screenshots/tema-onyx.png" alt="Tema Onyx Solar" width="230" /><br /><b>Onyx Solar</b><br /><sub>Negro esmeralda, oro e índigo</sub></td>
+    <td align="center"><img src="docs/screenshots/tema-bordeaux.png" alt="Tema Bordeaux Sage" width="230" /><br /><b>Bordeaux Sage</b><br /><sub>Burdeos, rosa polvo y salvia</sub></td>
   </tr>
   <tr>
     <td align="center" valign="middle" colspan="3"><sub>Los nombres y las cifras son inventados.<br />Las imágenes salen de <code>npm run capturas</code>.</sub></td>
   </tr>
 </table>
+
+</div>
+
+### Todos los temas
+
+Cada tema tiene su versión oscura y su versión clara, y cada una sale de la misma regla: el 60 % es el fondo, el 30 % las tarjetas y la estructura, y el 10 % el acento (botón principal, pestaña activa, progreso y cifras destacadas).
+
+<div align="center">
+
+<img src="docs/screenshots/temas-oscuros.png" alt="Los trece temas en oscuro" width="860" />
+
+<img src="docs/screenshots/temas-claros.png" alt="Los trece temas en claro" width="860" />
 
 </div>
 

@@ -41,7 +41,7 @@ export function Bloqueo() {
   return (
     <div id="bloqueo" role="dialog" aria-modal="true" aria-label="App bloqueada" class="fixed inset-0 z-[120] grid place-items-center bg-fondo p-6">
       <form class="w-full max-w-xs text-center" onSubmit={probar}>
-        <span class="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-marca/15 text-marca"><Lock size={26} /></span>
+        <span class="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-marca/15 text-marca-tx"><Lock size={26} /></span>
         <h1 class="!text-lg">App bloqueada</h1>
         <p class="sub">Escribe tu PIN para entrar.</p>
         <input ref={campo} id="bloqueo-pin" type="password" inputMode="numeric" autocomplete="off" aria-label="PIN" disabled={espera > 0} value={pin}

@@ -7,7 +7,7 @@
  */
 export type Tema = 'claro' | 'oscuro' | 'auto';
 export type Letra = 'normal' | 'grande';
-export type Piel = 'libro' | 'tierra' | 'esmeralda' | 'oceano' | 'atardecer' | 'obsidiana';
+export type Piel = 'libro' | 'tierra' | 'esmeralda' | 'oceano' | 'atardecer' | 'obsidiana' | 'veltro' | 'aether' | 'kinetix' | 'abyss' | 'mocha' | 'onyx' | 'bordeaux';
 
 interface Elegido { tema?: Tema; letra?: Letra; piel?: Piel }
 

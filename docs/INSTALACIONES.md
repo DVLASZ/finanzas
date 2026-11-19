@@ -29,7 +29,7 @@ La plantilla `familia` trae un gasto "Aporte Cooperativa" para un pago mensual q
 
 Cada instalación trae un aspecto por defecto y cada persona lo cambia en Más, Ajustes, Letra y colores.
 
-- `piel`: `libro` (la paleta Midnight Fintech, o su versión clara), `tierra` (café cálido, con más aire), `esmeralda`, `oceano`, `atardecer` u `obsidiana` (negro puro y minimalista para pantallas AMOLED, con su versión clara en marfil). Dentro de la app se elige entre doce temas con vista previa en Ajustes. Todos pasan `npm run contraste` y la revisión de letra grande.
+- `piel`: `libro` (Midnight Fintech: azul noche de noche, gris hielo y pizarra de día), `tierra` (café cálido, con más aire; de día, arena y terracota), `esmeralda`, `oceano`, `atardecer`, `obsidiana` (negro puro para pantallas AMOLED), `veltro`, `aether`, `kinetix`, `abyss`, `mocha`, `onyx` o `bordeaux`. Cada una existe en claro y en oscuro. Dentro de la app se elige en Ajustes, Letra y colores, donde cada tema muestra una píldora con sus proporciones 60-30-10. Todos pasan `npm run contraste` y la revisión de letra grande.
 - `tema`: `claro`, `oscuro` o `auto`.
 - `letra`: `normal` o `grande`.
 - `matiz` (opcional): `azulado` sobre la piel `tierra`.

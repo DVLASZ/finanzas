@@ -38,7 +38,7 @@ Si cambias algo y no lo ves, el navegador probablemente guardó la versión viej
 - Los accesos directos del ícono (`?accion=gasto`, `voz`, `saldos`) y la imagen compartida (`?compartido=1`) se atienden en `main.tsx`.
 - Las notas sueltas de las pantallas de HTML plano (`p.sub`) se vuelven cuadros con ícono solas (`decorarNotas` en `features/mas/Mas.tsx`).
 - No hay emojis en la interfaz: se usan íconos de Lucide. Lo que el bot escribe con emojis pasa por `quitarEmojis` (`lib/carta.ts`). Las pantallas de HTML plano piden íconos con `iconoHtml`, `insigniaHtml` y `vacioHtml`.
-- Los colores son variables CSS en hexadecimal. Se revisan con `npm run contraste`; si agregas un par nuevo, agrégalo a ese script. El vidrio y los brillos usan `rgba` y quedan fuera de esa revisión.
+- Los colores son variables CSS en hexadecimal y salen de `scripts/paletas.mjs` (regla 60-30-10; ver [DESARROLLO.md](../../docs/DESARROLLO.md)): no se editan a mano en `temas.css` entre las marcas `PALETAS`. Se revisan con `npm run contraste`, que lee todos los temas del CSS. Para el acento como texto o ícono se usa `text-marca-tx` (la versión legible), no `text-marca`.
 - Los títulos de sección salen en mayúsculas por estilo y `innerText` los devuelve así. Las pruebas de `npm run e2e` lo tienen en cuenta.
 - El ícono lo dibuja `scripts/icono.mjs`, sin imágenes: tres barras que suben y un destello dentro de la zona segura de los íconos maskable. El acento sale de la plantilla. El build le pone al manifiesto el fondo del tema como `theme_color`.
 - `react` se resuelve a `preact/compat` (en `tsconfig.json` y en el build), así que sirven librerías hechas para React.
