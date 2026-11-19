@@ -23,7 +23,8 @@ import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
 import { BarrasMeses, MapaCalor } from '../../components/charts/Calendario.tsx';
 import { PresupuestoSemana } from '../saldos/PresupuestoSemana.tsx';
 import { BotonesCorte, HojaCorte } from './CorteTurno.tsx';
-import { vendeProductos, aLocal as aLocalHoy, gastoDelMes, ingresosGastosPorMes } from '../../../../../packages/core/src/index.ts';
+import { vendeProductos, aLocal as aLocalHoy, gastoDelMes, ingresosGastosPorMes, flujoAcumulado, gastoPorMedio, topConceptos } from '../../../../../packages/core/src/index.ts';
+import { AnilloMedios, FlujoMes, RankingConceptos } from '../../components/charts/Flujo.tsx';
 
 type Periodo = 'semana' | 'mes' | 'anio';
 const periodo = signal<Periodo>('mes');
@@ -248,6 +249,27 @@ export function Resumen() {
           <Dona trozos={trozos} total={total} />
         </section>
       )}
+
+      {p === 'mes' && (() => {
+        const anio = Number(desde.slice(0, 4)), mes = Number(desde.slice(5, 7));
+        const flujo = flujoAcumulado(datos, anio, mes, a === 0 ? diaHoy : undefined);
+        return flujo.length > 1 && flujo.some(x => x.neto !== 0) ? (
+          <section class="tarjeta" id="flujo-mes">
+            <h3 class="!mt-0">Flujo del mes</h3>
+            <p class="sub !mt-0 mb-2">Ingresos menos gastos, sumados día a día. Toca la línea para ver un día.</p>
+            <FlujoMes puntos={flujo} />
+          </section>
+        ) : null;
+      })()}
+
+      {total > 0 && (() => {
+        const top = topConceptos(datos, desde, hasta, 5);
+        const medios = gastoPorMedio(datos, desde, hasta);
+        return <>
+          {top.length > 0 && <section class="tarjeta" id="ranking-conceptos"><h3 class="!mt-0">Dónde más se va la plata</h3><RankingConceptos top={top} /></section>}
+          {medios.length > 0 && <section class="tarjeta" id="medios-pago"><h3 class="!mt-0">Con qué pagas</h3><AnilloMedios medios={medios} /></section>}
+        </>;
+      })()}
 
       <section class="tarjeta" id="mapa-calor">
         <h3 class="!mt-0">Calor del mes: día por día</h3>

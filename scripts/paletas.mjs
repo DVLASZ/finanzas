@@ -107,6 +107,9 @@ export const PALETAS = [
   // Bordeaux Sage: vino burdeos (60), rosa polvo (30), verde salvia (10)
   { piel: 'bordeaux', tema: 'oscuro', ring: '#f4c3c2', f: '#4a0e23', s: '#5e1a32', e: '#72263f', tx: '#f4c3c2', a: '#80a95b', a2: '#a3c57f', atx: '#a9cd85', p30: '#f4c3c2', neg: '#ffb3a7' },
   { piel: 'bordeaux', tema: 'claro', f: '#f6e4e2', s: '#fff6f5', e: '#ebcfcd', tx: '#4a0e23', tx2: '#7a4452', a: '#80a95b', a2: '#a3c57f', atx: '#4a6e2c', p30: '#4a0e23' },
+  // Zafiro Real: azul cobalto (60), estructura azul real (30), cian eléctrico (10)
+  { piel: 'zafiro', tema: 'oscuro', ring: '#00b4d8', f: '#0b132b', s: '#1c2541', e: '#1e3a8a', tx: '#eaf2ff', a: '#00b4d8', a2: '#48cae4', atx: '#48cae4', p30: '#1e3a8a', bor: '#2b4a9e' },
+  { piel: 'zafiro', tema: 'claro', ring: '#0284c7', f: '#eef4ff', s: '#f9fbff', e: '#dbe7ff', tx: '#0b132b', tx2: '#34446e', a: '#0284c7', a2: '#38a9e6', atx: '#0369a1', p30: '#1e3a8a', bor: '#bccdee' },
 ];
 
 /** Los nombres que se ven en el selector, y de dónde viene cada tema. */
@@ -115,7 +118,7 @@ export const NOMBRES = {
   esmeralda: ['Esmeralda', 'Verde bosque y menta'], oceano: ['Océano', 'Azul marino y turquesa'], atardecer: ['Atardecer', 'Durazno, coral y ciruela'],
   obsidiana: ['Obsidiana', 'Negro puro, minimalista'], veltro: ['Veltro', 'Crema, abeto y rojo tomate'], aether: ['Aether', 'Ciruela, titanio y ámbar'],
   kinetix: ['Kinetix', 'Índigo, lavanda y verde voltio'], abyss: ['Abyss', 'Azul abisal, cian y rosa neón'], mocha: ['Mocha Silk', 'Crema seda, mocha y azul cielo'],
-  onyx: ['Onyx Solar', 'Negro esmeralda, oro e índigo'], bordeaux: ['Bordeaux Sage', 'Burdeos, rosa polvo y salvia'],
+  onyx: ['Onyx Solar', 'Negro esmeralda, oro e índigo'], bordeaux: ['Bordeaux Sage', 'Burdeos, rosa polvo y salvia'], zafiro: ['Zafiro Real', 'Cobalto, azul real y cian eléctrico'],
 };
 
 // ---------------------------------------------------------------- derivar una paleta completa

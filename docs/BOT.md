@@ -245,6 +245,34 @@ ivan me pagó el almuerzo 6000
 
 En el primero tu parte es $3.500 y ellos te deben las suyas. En el segundo se divide en partes iguales entre los tres. El tercero dice lo mismo con otras palabras: funciona cuando tú estás en la lista («yo»). Las cuatro siguientes son el primero dicho en otro orden, como sale al hablar: el gasto total y luego la parte de Ivan, con o sin «pagué», con «por» o con «de», o solo el nombre. Todas dejan el mismo resultado. Las formas sin «pagué ... por» solo se leen así si Ivan ya existe en tus personas. El dictado de Android escribe «25,000» con coma: se lee como 25000.
 
+### Como lo dice la gente
+
+Antes de leer la frase, el bot la pasa por una capa de lenguaje natural que entiende modismos sin que tengas que aprender la sintaxis. Funciona sin internet.
+
+```
+fui a comer con Ana y Luis, pagué 60k por los 3
+hicimos vaca de 60k con Ana y Luis para el almuerzo
+mitad y mitad con Ana el almuerzo de 40k
+cine con Ana 30k a medias
+cada quien pone su parte, almuerzo 45k con Pedro y Marta
+pagué 50k, 30k míos y 20k de Ana en el almuerzo
+pagué 90 mil de la cuenta, éramos 3
+```
+
+Las que dicen el reparto con claridad (por los 3, a medias, mitad y mitad, cada quien pone su parte) quedan como gasto compartido en partes iguales. Cuando la frase puede querer decir dos cosas, el bot no adivina: te muestra botones. Con «hicimos vaca» o «pagué lo de Ana y lo mío» ofrece dividir entre todos, anotar solo tu parte o dar otro reparto. Con «éramos 3, pagué 90 mil» pregunta si anota tu parte o todo lo que pagaste.
+
+El dinero se puede decir como sale al hablar: «sesenta mil», «quince quinientos» (15.500), «30 lucas», «2 barras», «un palo» (un millón). El dictado que oye «neki» o «banco colombia» se corrige solo.
+
+Verbos de todos los días que el bot ya lee:
+
+- Entra plata: «me giraron 80 mil a nequi», «me consignaron 200k», «me soltaron 30 lucas», «Ana me giró 50k».
+- Deudas: «me fiaron 20k donde doña Rosa» y «quedé debiendo 15 mil a Pedro» son deudas; «Luis me debe 20k» es un préstamo tuyo.
+- Gastos: «me tocó poner 30k para el taxi».
+- Mover plata: «saqué 100k del cajero» y «pasé 50k de nequi a efectivo».
+- Sacar de una meta sigue siendo «saqué 80000 de la meta moto», no un retiro del cajero.
+
+Si no sabes cómo decir algo, en la Ayuda escribe tu duda en «Pregúntale cómo decirlo» («cómo anoto que presté plata»). Te da el ejemplo con tus cuentas y el botón «Usar este ejemplo» lo deja escrito en el chat.
+
 ## Eventos
 
 Agrega `#cumple-daniel` a cualquier mensaje. Para ver todo lo de ese evento, escribe solo `#cumple-daniel`.

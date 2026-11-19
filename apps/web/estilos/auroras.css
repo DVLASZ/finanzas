@@ -43,3 +43,7 @@ html[data-piel="bordeaux"][data-tema="oscuro"] { --glow-a: #56743b; --glow-b: #5
 html[data-piel="bordeaux"][data-tema="oscuro"][data-seccion] { --sec: #56743b; }
 html[data-piel="bordeaux"][data-tema="claro"] { --glow-a: #80a95b; --glow-b: #a3c57f; --glow-c: #e56894; --glow-d: #c0d0a8; }
 html[data-piel="bordeaux"][data-tema="claro"][data-seccion] { --sec: #80a95b; }
+html[data-piel="zafiro"][data-tema="oscuro"] { --glow-a: #006e84; --glow-b: #116f82; --glow-c: #1e3a8a; --glow-d: #0e6d8d; }
+html[data-piel="zafiro"][data-tema="oscuro"][data-seccion] { --sec: #006e84; }
+html[data-piel="zafiro"][data-tema="claro"] { --glow-a: #0284c7; --glow-b: #38a9e6; --glow-c: #1e3a8a; --glow-d: #7ec0e3; }
+html[data-piel="zafiro"][data-tema="claro"][data-seccion] { --sec: #0284c7; }

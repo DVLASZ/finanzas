@@ -16,6 +16,7 @@ import { declaraciones } from './parser/declaraciones.ts';
 import { hallarFecha, hallarFechaLimite } from './fechas.ts';
 import { quitarComasDeMiles, repartoEnOtroOrden } from './reparto.ts';
 import { diaDeSemana, mesDeNombre } from './recurrentes.ts';
+import { naturalizar } from './lenguaje.ts';
 import { limpiar } from './texto.ts';
 import { type Contexto, type Moneda } from './tipos.ts';
 
@@ -166,17 +167,25 @@ export function repartoEntre(texto: string): string {
  * Se vuelve «ingreso 80 mil nequi hoy». Devuelve null si la frase no es de ese estilo.
  */
 export function ingresoPorVerbo(texto: string): string | null {
-  const m = texto.trim().match(/^(?:(hoy|ayer|anteayer|antier)\s+)?(?:me\s+)?(?:entr(?:o|ó|aron)|lleg(?:o|ó|aron)|ingresaron|consignaron|depositaron|transfirieron|giraron)\s+(.+)$/i);
+  const m = texto.trim().match(/^(?:(hoy|ayer|anteayer|antier)\s+)?(?:me\s+)?(?:entr(?:o|ó|aron)|lleg(?:o|ó|aron)|ingresaron|consignaron|depositaron|transfirieron|giraron|pasaron|soltaron|mandaron|enviaron|cayeron)\s+(.+)$/i);
   if (!m || !/\d/.test(m[2])) return null;
   // «llegaron 35 galletas» es mercancía, no plata: hace falta una cuenta, «mil» o una cifra de miles
   const cifra = Number((/\d[\d.]*/.exec(m[2])?.[0] ?? '0').replace(/\./g, ''));
-  if (!(cifra >= 1000 || /\b(?:mil|k|lucas?|pesos)\b|nequi|daviplata|bancolombia|bogot|banco|efectivo|cuenta/i.test(m[2]))) return null;
+  if (!(cifra >= 1000 || /\d\s?(?:mil|k|lucas?|lukas?|barras?|palos?)\b|\b(?:mil|lucas?|pesos)\b|nequi|daviplata|bancolombia|bogot|banco|efectivo|cuenta/i.test(m[2]))) return null;
   // «a», «en» y «por» sobran: «80 mil a Nequi» es «80 mil nequi»
   const resto = m[2].replace(/\s+(?:a|al|en|por|de la|de)\s+(?=nequi|daviplata|bancolombia|bogota|bogotá|efectivo|monedas|banco|davi)/gi, ' ').replace(/\s+/g, ' ').trim();
   return `ingreso ${resto}${m[1] ? ' ' + m[1] : ''}`;
 }
 
 export function interpretar(texto: string, ctx: Contexto): Resultado {
+  // el lenguaje natural primero: modismos, jerga de plata y gastos compartidos dichos de mil maneras (ver lenguaje.ts)
+  const nat = naturalizar(texto, ctx);
+  if (nat?.pregunta) return { clase: 'pregunta', ...nat.pregunta };
+  if (nat && nat.texto !== texto.trim()) {
+    const r = interpretar(nat.texto, ctx);
+    if (r.clase !== 'error') return r;
+    // lo que reescribimos no se entendió: se prueba con lo que escribió la persona
+  }
   const porVerbo = ingresoPorVerbo(texto);
   if (porVerbo) {
     const r = interpretar(porVerbo, ctx);

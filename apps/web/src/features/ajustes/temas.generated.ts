@@ -184,6 +184,20 @@ export const PILDORAS: { piel: Piel; tema: Tema; f: string; e30: string; a: stri
     f: '#f6e4e2',
     e30: '#4a0e23',
     a: '#80a95b'
+  },
+  {
+    piel: 'zafiro',
+    tema: 'oscuro',
+    f: '#0b132b',
+    e30: '#1e3a8a',
+    a: '#00b4d8'
+  },
+  {
+    piel: 'zafiro',
+    tema: 'claro',
+    f: '#eef4ff',
+    e30: '#1e3a8a',
+    a: '#0284c7'
   }
 ];
 
@@ -202,4 +216,5 @@ export const PIELES: { piel: Piel; nombre: string; detalle: string }[] = [
   { piel: 'mocha', nombre: 'Mocha Silk', detalle: 'Crema seda, mocha y azul cielo' },
   { piel: 'onyx', nombre: 'Onyx Solar', detalle: 'Negro esmeralda, oro e índigo' },
   { piel: 'bordeaux', nombre: 'Bordeaux Sage', detalle: 'Burdeos, rosa polvo y salvia' },
+  { piel: 'zafiro', nombre: 'Zafiro Real', detalle: 'Cobalto, azul real y cian eléctrico' },
 ];

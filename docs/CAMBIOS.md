@@ -6,6 +6,14 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-19
 
+- El bot entiende mucho más cómo habla la gente. Una capa de lenguaje natural (`packages/core/src/lenguaje.ts`, sin internet) lee gastos compartidos («fui a comer con Ana y Luis, pagué 60k por los 3», «a medias», «hicimos vaca», «pagué 50k, 30k míos y 20k de Ana», «éramos 3»), dinero dicho de otras formas («sesenta mil», «quince quinientos», «30 lucas», «un palo») y verbos como «me giraron», «me fiaron», «quedé debiendo», «Luis me debe», «saqué del cajero» y «pasé de Nequi a efectivo». Lo que puede significar dos cosas ahora pregunta con botones en vez de adivinar. Detalle en BOT.md.
+- La Ayuda tiene «Pregúntale cómo decirlo»: escribes tu duda y te da el ejemplo exacto con tus cuentas y un botón que lo deja escrito en el chat.
+- La IA recibe instrucciones más completas y prefiere no responder antes que inventar un reparto o una cuenta.
+- Tema 14, Zafiro Real: cobalto, azul real y cian eléctrico (60-30-10), en oscuro y claro. El selector de Ajustes queda en 2 columnas y 7 filas.
+- Resumen con tres gráficas nuevas: el flujo del mes (línea suave con el balance acumulado, que se toca para ver cada día), el ranking de los conceptos que más plata se llevan y un anillo de con qué pagas (efectivo contra digital). Con la privacidad activa las cifras salen ocultas y sin animaciones si el sistema las pide apagadas.
+- En el detalle de un gasto compartido, «Ver cómo se reparte» despliega tu gasto real y lo que debe cada persona.
+- Pruebas nuevas: `frases-naturales.test.ts` (43 frases difíciles), `ayuda-guiada.test.ts`, `graficas.test.ts` y cinco recorridos más en `e2e`.
+
 - Los temas se rehicieron con la regla 60-30-10 (60 % fondo, 30 % tarjetas y estructura, 10 % acento). El modo claro ya no es el mismo blanco en todos: Tierra claro es arena con terracota, Fintech claro es gris hielo con pizarra, Esmeralda, Océano y Atardecer tienen su propio ambiente, y Obsidiana conserva el negro puro también en Saldos, sin degradado pálido.
 - Siete temas nuevos, cada uno en oscuro y en claro: Veltro (crema, abeto y rojo tomate), Aether (ciruela, titanio y ámbar), Kinetix (índigo, lavanda y verde voltio), Abyss (azul abisal, cian y rosa neón), Mocha Silk (crema seda, mocha y azul cielo), Onyx Solar (negro esmeralda, oro e índigo) y Bordeaux Sage (burdeos, rosa polvo y salvia).
 - El selector de Ajustes muestra en cada tema una píldora con sus proporciones reales 60-30-10, y el modo (claro, oscuro o automático) se elige aparte.

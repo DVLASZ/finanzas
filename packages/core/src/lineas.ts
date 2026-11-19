@@ -4,6 +4,8 @@
  * entre dos trozos que traen cantidad ("150000 Ana + 500000 Ana - 75000 llanta").
  */
 
+import { numerosDeDinero } from './voz.ts';
+
 /** Máximo de movimientos por mensaje, para no volverse una cola eterna. */
 export const MAX_MOVIMIENTOS_POR_MENSAJE = 10;
 
@@ -13,7 +15,7 @@ const tieneCantidad = (s: string): boolean => /\d/.test(s);
  * «ayer pagué 15 mil de almuerzo y hoy entraron 80 mil a Nequi» son dos movimientos: se corta donde empieza otra cosa
  * (un «y» o una coma seguidos de un día, «luego», o un verbo de plata) y solo si cada trozo trae una cantidad.
  */
-const CORTE = /\s*(?:,|\s+y)\s+(?=(?:hoy|ayer|anteayer|antier|luego|despu[eé]s|tambi[eé]n|adem[aá]s)\b|(?:me\s+)?(?:entr(?:o|ó|aron)|lleg(?:o|ó|aron)|ingresaron|consignaron|depositaron|pagu[eé]|gast[eé]|compr[eé]|prest[eé]|vend[ií])\b)/i;
+const CORTE = /\s*(?:,|\s+y)\s+(?=(?:hoy|ayer|anteayer|antier|luego|despu[eé]s|tambi[eé]n|adem[aá]s)\b|(?:me\s+)?(?:entr(?:o|ó|aron)|lleg(?:o|ó|aron)|ingresaron|consignaron|depositaron|giraron|pasaron|soltaron|mandaron|enviaron|pagu[eé]|gast[eé]|compr[eé]|prest[eé]|vend[ií])\b)/i;
 
 function cortarPorConjuncion(fila: string): string[] {
   const trozos = fila.split(CORTE).map(x => x.trim()).filter(Boolean);
@@ -21,7 +23,8 @@ function cortarPorConjuncion(fila: string): string[] {
 }
 
 export function dividirLinea(texto: string): string[] {
-  const filas = texto.split(/\r?\n|;/).map(x => x.trim()).filter(Boolean);
+  // «quince mil» y «sesenta lucas» pasan a números antes de contar cantidades: así «ayer pagué quince mil de almuerzo y hoy me giraron ochenta mil» se parte en dos
+  const filas = texto.split(/\r?\n|;/).map(x => numerosDeDinero(x.trim())).filter(Boolean);
   const partes: string[] = [];
   for (const fila of filas) {
     // «pollo 8000 para luis puso 6000 nequi»: todo el gasto era de Luis y él ya mandó una parte. Son dos

@@ -123,6 +123,7 @@ function Detalle({ m }: { m: Movimiento }) {
   const [cargando, setCargando] = useState(true);
   const [lectura, setLectura] = useState('');
   const [leyendo, setLeyendo] = useState(false);
+  const [verDesglose, setVerDesglose] = useState(false);
   // un gasto dividido entre varias personas: lo que debe cada una sale de los asientos de las personas
   const filasDivision = m.tipo === 'compartido'
     ? m.asientos.filter(a => a.moneda === 'COP' && a.monto > 0 && datos.cuentas.find(c => c.id === a.cuentaId)?.tipo === 'persona')
@@ -209,6 +210,26 @@ function Detalle({ m }: { m: Movimiento }) {
         <p class="sub">{describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora)} · {m.tipo} · {m.origen}{m.estado === 'anulado' ? ' · ANULADO' : ''}</p>
         {m.mensajeOriginal && <p class="sub">Escribiste: «{m.mensajeOriginal}»</p>}
         <p class="sub" id="historial-mov">Anotado {describirFecha(m.creadoEn, ctx.ahora)}{m.editadoEn && <span id="editado-en"> · Editado {describirFecha(m.editadoEn, ctx.ahora)}</span>}</p>
+        {filasDivision.length > 0 && (
+          <div class="desglose-compartido" id="desglose-compartido">
+            <button type="button" class="chip" id="ver-desglose" aria-expanded={verDesglose} onClick={() => setVerDesglose(v => !v)}>
+              <Scale size={16} />{verDesglose ? 'Ocultar cómo se reparte' : 'Ver cómo se reparte'}
+            </button>
+            {verDesglose && (
+              <div class="compartido-desglose" id="desglose-detalle">
+                <div class="barra-apilada" role="img" aria-label="Tu parte y lo que te deben">
+                  <span style={{ flex: Math.max(1, tuParte), background: 'var(--acc)' }} />
+                  {filasDivision.map((f, i) => <span key={f.nombre} style={{ flex: Math.max(1, f.monto), background: `color-mix(in srgb, var(--adv) ${100 - i * 18}%, var(--sup))` }} />)}
+                </div>
+                <ul class="asientos !mt-2">
+                  <li><span>Tu gasto real</span><b class="tabular-nums text-pos">{formatear(tuParte)}</b></li>
+                  {filasDivision.map(f => <li key={f.nombre}><span>Por cobrar a {f.nombre}</span><b class="tabular-nums text-adv">{formatear(f.monto)}</b></li>)}
+                  <li><span>Total pagado</span><b class="tabular-nums">{formatear(totalGasto)}</b></li>
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
         <ul class="asientos">
           {m.asientos.map((a, i) => <li key={i}><span>{nombre(a.cuentaId)}</span><span class="tabular-nums">{formatear(a.monto, a.moneda)}</span></li>)}
         </ul>
