@@ -350,9 +350,12 @@ try {
   });
   await prueba('temas: se puede elegir una atmósfera nueva y volver a la de siempre', async () => {
     await abrirDeMas('Ajustes'); await espera(500);
-    await pag.evaluate(() => [...document.querySelectorAll('.tema-card')].find(b => b.innerText.includes('Océano') && !b.innerText.includes('claro'))?.click()); await espera(400);
+    await pag.evaluate(() => document.querySelector('.tema-card[data-piel="oceano"]')?.click()); await espera(400);
     igual(await pag.evaluate(() => document.documentElement.dataset.piel), 'oceano', 'piel océano');
-    await pag.evaluate(() => [...document.querySelectorAll('.tema-card')].find(b => b.innerText.includes('Midnight'))?.click()); await espera(400);
+    igual(await pag.evaluate(() => document.querySelectorAll('.tema-card .pildora-6030').length >= 13), true, 'cada tema trae su píldora 60-30-10');
+    await pag.evaluate(() => document.querySelector('.tema-card[data-piel="veltro"]')?.click()); await espera(300);
+    igual(await pag.evaluate(() => document.documentElement.dataset.piel), 'veltro', 'uno de los nuevos');
+    await pag.evaluate(() => document.querySelector('.tema-card[data-piel="libro"]')?.click()); await espera(400);
     igual(await pag.evaluate(() => document.documentElement.dataset.piel), 'libro', 'vuelve a libro');
     await pag.evaluate(() => document.querySelector('#sonidos').click()); await espera(200);
     igual(await pag.evaluate(() => document.querySelector('#sonidos').checked), true, 'el interruptor de sonido');

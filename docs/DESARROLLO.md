@@ -14,6 +14,7 @@
 | `npm test` | Las pruebas del núcleo y del Worker |
 | `npm run verificar` | Arma la base en memoria y revisa que todo cuadre |
 | `npm run contraste` | Revisa que los colores se lean bien (AA) en todos los temas, también el texto sobre el vidrio con la aurora y el mapa de calor |
+| `npm run paletas` | Reescribe los colores de todos los temas desde `scripts/paletas.mjs` (ver «Temas» abajo) |
 | `npm run seguridad` | `npm audit`, secretos dentro de git, consultas a D1 con parámetros, funciones peligrosas en la interfaz y cabeceras del Worker (ver [SECURITY.md](../SECURITY.md)) |
 | `npm run privacidad` | Que lo que sigue git no lleve datos personales |
 | `npm run capturas` | Vuelve a sacar las capturas de `docs/screenshots/` con datos inventados |
@@ -119,3 +120,16 @@ El service worker, que es lo que da el modo sin internet, solo se registra en HT
 
 </details>
 
+## Temas
+
+Los temas siguen la regla de diseño 60-30-10: el 60 % es el fondo y el ambiente de la pantalla, el 30 % son las tarjetas, la estructura y el texto principal, y el 10 % es el acento, que se reserva para lo clave (el botón principal de confirmar o enviar, la pestaña activa, los indicadores de progreso y las cifras destacadas). Cada tema (una «piel») existe en oscuro y en claro, y cada versión tiene su propio ambiente: el modo claro de Tierra es arena con terracota, el de Fintech es gris hielo con pizarra, y así con todos.
+
+Los colores se definen en un solo lugar, `scripts/paletas.mjs`, con tres colores de intención por tema (`f` el 60 %, `s` y `e` el 30 %, `a` y `a2` el 10 %) más el texto. De ahí `npm run paletas` deriva todo lo demás y lo escribe en tres archivos que no se editan a mano:
+
+- el bloque entre `PALETAS:INICIO` y `PALETAS:FIN` de `apps/web/estilos/temas.css` (los oscuros de Midnight y de Tierra, y los matices, siguen a mano en ese archivo);
+- `apps/web/estilos/auroras.css`, con los brillos de la aurora de cada tema;
+- `apps/web/src/features/ajustes/temas.generated.ts`, la lista del selector con los colores de la píldora 60-30-10.
+
+La derivación ajusta sola lo que haga falta para llegar a AA (4,5 a 1) sobre todos los fondos donde se usa: el texto suave, el texto sobre el acento, los colores de ingreso, gasto, alerta y dato, y el acento cuando se usa como texto. Por eso un acento muy vibrante, como el rojo tomate de Veltro, es el relleno del botón y a la vez tiene una versión más oscura (`--marca-tx`) para los textos y los íconos. Los brillos de la aurora se oscurecen conservando su tono hasta que el texto se lea en el peor caso. `npm run contraste` no se fía del generador: vuelve a medir desde el CSS, y por eso también revisa el texto sobre la tarjeta grande de Saldos y sobre el mapa de calor.
+
+Para agregar un tema: una entrada nueva en `PALETAS` (en oscuro y en claro) y su nombre en `NOMBRES`, `npm run paletas`, y sumar su nombre a la unión `Piel` de `apps/web/src/state/apariencia.ts`. Si el tema usa medidas distintas (radios, alto de botones), se agrega su regla en `temas.css`. Obsidiana es el caso especial: sin aurora ni vidrio, con las reglas propias que están al final de `tailwind.css`.

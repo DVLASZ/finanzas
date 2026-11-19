@@ -51,7 +51,7 @@ export const TINTAS = [
   { fondo: 'bg-pos/15', texto: 'text-pos' },
   { fondo: 'bg-adv/15', texto: 'text-adv' },
   { fondo: 'bg-neg/15', texto: 'text-neg' },
-  { fondo: 'bg-marca/15', texto: 'text-marca' },
+  { fondo: 'bg-marca/15', texto: 'text-marca-tx' },
 ] as const;
 
 /** La misma tinta para el mismo texto, siempre (así cada categoría o cuenta tiene «su» color). */

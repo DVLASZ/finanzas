@@ -19,7 +19,7 @@ const instalacion = process.env.INSTALACION ?? 'mama';
 const escalas = (process.env.ESCALAS ?? '1,1.15,1.3').split(',').map(Number);
 const capturas = process.env.CAPTURAS;
 // los temas que se revisan (piel:tema). Por defecto los cuatro de siempre; TEMAS=todos suma las tres atmósferas nuevas
-const TODOS = 'libro:oscuro,libro:claro,tierra:oscuro,tierra:claro,esmeralda:oscuro,esmeralda:claro,oceano:oscuro,oceano:claro,atardecer:oscuro,atardecer:claro,obsidiana:oscuro,obsidiana:claro';
+const TODOS = 'libro:oscuro,libro:claro,tierra:oscuro,tierra:claro,esmeralda:oscuro,esmeralda:claro,oceano:oscuro,oceano:claro,atardecer:oscuro,atardecer:claro,obsidiana:oscuro,obsidiana:claro,veltro:oscuro,veltro:claro,aether:oscuro,aether:claro,kinetix:oscuro,kinetix:claro,abyss:oscuro,abyss:claro,mocha:oscuro,mocha:claro,onyx:oscuro,onyx:claro,bordeaux:oscuro,bordeaux:claro';
 const temas = (process.env.TEMAS === 'todos' ? TODOS : process.env.TEMAS ?? 'libro:oscuro,libro:claro,tierra:oscuro,tierra:claro,obsidiana:oscuro').split(',').map(x => x.split(':'));
 if (capturas) mkdirSync(capturas, { recursive: true });
 
@@ -178,7 +178,7 @@ try {
         await irA('Chat');
         await pag.evaluate(() => document.querySelector('#atajo-mas')?.click()); await espera(500);
         await pag.evaluate(() => document.querySelector('#at-nuevo')?.click()); await espera(300);
-        await pag.type('#at-frase', 'recarga nequi para el celular de mi familia'); await escalar();
+        if (await pag.$('#at-frase')) await pag.type('#at-frase', 'recarga nequi para el celular de mi familia'); await escalar();
         await pag.evaluate(() => document.querySelector('#at-guardar')?.click()); await espera(300); await escalar();
       }],
       ['Saldos', async () => { await irA('Saldos'); await espera(900); await escalar(); }],

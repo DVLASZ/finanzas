@@ -21,14 +21,13 @@ const bloques = [...css.matchAll(/html((?:\[[^\]]+\])+)\s*\{([^}]*)\}/g)].map(m 
 })).filter(b => Object.keys(b.vars).length);
 
 const PARES = [
-  ['tx', 'fondo'], ['tx', 'sup'], ['tx2', 'fondo'], ['tx2', 'sup'], ['tx2', 'elev'], ['sobre', 'marca'], ['marca', 'sup'], ['marca', 'fondo'],
+  ['tx', 'fondo'], ['tx', 'sup'], ['tx2', 'fondo'], ['tx2', 'sup'], ['tx2', 'elev'], ['sobre', 'marca'], ['marca-tx', 'sup'], ['marca-tx', 'fondo'], ['marca-tx', 'elev'],
   ['tx-marca-sup', 'marca-sup'], ['pos', 'sup'], ['neg', 'sup'], ['adv', 'sup'], ['pos', 'fondo'], ['neg', 'fondo'], ['tx', 'elev'],
   // el botón principal es un degradado de marca a marca-2: el texto tiene que leerse sobre los dos extremos
   ['sobre', 'marca-2'], ['info', 'sup'], ['acc', 'sup'], ['pos', 'elev'], ['neg', 'elev'], ['adv', 'elev'], ['info', 'fondo'], ['acc', 'fondo'],
 ];
-const combos = [['libro', 'claro', ''], ['libro', 'oscuro', ''], ['tierra', 'claro', ''], ['tierra', 'oscuro', ''], ['tierra', 'claro', 'azulado'], ['tierra', 'oscuro', 'azulado'],
-  ['esmeralda', 'claro', ''], ['esmeralda', 'oscuro', ''], ['oceano', 'claro', ''], ['oceano', 'oscuro', ''], ['atardecer', 'claro', ''], ['atardecer', 'oscuro', ''],
-  ['obsidiana', 'claro', ''], ['obsidiana', 'oscuro', '']];
+// Todos los temas que haya en el CSS (piel, tema y, si lo trae, matiz): no hay una lista aparte que se desactualice.
+const combos = [...new Map(bloques.filter(b => b.sel.piel && b.sel.tema).map(b => [`${b.sel.piel}|${b.sel.tema}|${b.sel.matiz ?? ''}`, [b.sel.piel, b.sel.tema, b.sel.matiz ?? '']])).values()];
 
 let mal = 0;
 for (const [piel, tema, matiz] of combos) {
@@ -52,6 +51,12 @@ const colores = bloque => Object.values(Object.fromEntries([...bloque.matchAll(/
 const bloqueOscuro = /\n  html \{([^}]*--c-cian[^}]*)\}/.exec(tw)?.[1] ?? '';
 const bloqueClaro = /html\[data-tema="claro"\]\s*\{([^}]*--c-[^}]*)\}/.exec(tw)?.[1] ?? '';
 const brillos = { oscuro: colores(bloqueOscuro), claro: colores(bloqueClaro) };
+// los brillos propios de cada tema (apps/web/estilos/auroras.css, escrito por scripts/paletas.mjs); si un tema no trae, valen los de arriba
+const auroras = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'estilos', 'auroras.css'), 'utf8');
+const brillosDe = (piel, tema) => {
+  const m = new RegExp('html\\[data-piel="' + piel + '"\\]\\[data-tema="' + tema + '"\\]\\s*\\{([^}]*--glow-a[^}]*)\\}').exec(auroras);
+  return m ? [...m[1].matchAll(/--glow-[a-d]:\s*(#[0-9a-f]{6})/g)].map(x => x[1]) : null;
+};
 const num = (re, def = 0) => Number(re.exec(tw)?.[1] ?? def) / 100;
 const intensidad = { oscuro: Math.max(num(/data-tema="oscuro"\]\s*\{\s*--glow-i:\s*(\d+)%/), num(/data-tema="oscuro"\]\s*\{[^}]*--glow-j:\s*(\d+)%/)), claro: Math.max(num(/data-tema="claro"\]\s*\{\s*--glow-i:\s*(\d+)%/), num(/data-tema="claro"\]\s*\{[^}]*--glow-j:\s*(\d+)%/)) };
 const cristal = { oscuro: num(/--cristal-a:\s*(\d+)%/), claro: num(/data-tema="claro"\][^}]*--cristal-a:\s*(\d+)%/) };
@@ -63,7 +68,7 @@ for (const [piel, tema, matiz] of combos) {
   const v = {};
   for (const b of bloques) { const x = b.sel; if (x.piel === piel && x.tema === tema && (!x.matiz || x.matiz === matiz)) Object.assign(v, b.vars); }
   const t = intensidad[tema];
-  for (const brillo of brillos[tema]) {
+  for (const brillo of brillosDe(piel, tema) ?? brillos[tema]) {
     const fondo = mezclar(v.fondo, brillo, t);
     for (const texto of ['tx', 'tx2']) {
       const r = razon(v[texto], fondo);
@@ -77,13 +82,23 @@ for (const [piel, tema, matiz] of combos) {
     }
   }
 }
-// el mapa de calor: el número de cada día va sobre una mezcla de la superficie con la marca (22 % y 42 %; los dos días más fuertes usan marca y marca-2 con el texto «sobre»)
+// el mapa de calor: el número de cada día va sobre una mezcla de la superficie con la marca (14 % y 30 %; los dos días más fuertes usan marca y marca-2 con el texto «sobre»)
 for (const [piel, tema, matiz] of combos) {
   const v = {};
   for (const b of bloques) { const x = b.sel; if (x.piel === piel && x.tema === tema && (!x.matiz || x.matiz === matiz)) Object.assign(v, b.vars); }
-  for (const [t, texto] of [[0.22, 'tx'], [0.42, 'tx']]) {
+  for (const [t, texto] of [[0.14, 'tx'], [0.30, 'tx']]) {
     const r = razon(v[texto], mezclar(v.sup, v.marca, t));
     if (r < 4.5) { console.log(`NO LLEGA ${piel}/${tema}: --${texto} sobre el mapa de calor al ${t * 100} % = ${r.toFixed(2)}`); mal++; }
+  }
+}
+// la tarjeta grande de Saldos: una superficie con 16 % del acento y 8 % del segundo; su texto va al 85 % de opacidad, así que se pide más margen
+for (const [piel, tema, matiz] of combos) {
+  const v = {};
+  for (const b of bloques) { const x = b.sel; if (x.piel === piel && x.tema === tema && (!x.matiz || x.matiz === matiz)) Object.assign(v, b.vars); }
+  const hero = mezclar(mezclar(v.sup, v.marca, 0.16), v["marca-2"], 0.08);
+  for (const texto of ['tx', 'tx2']) {
+    const r = razon(v[texto], hero);
+    if (r < (texto === 'tx' ? 5.5 : 4.5)) { console.log(`NO LLEGA ${piel}/${tema}: --${texto} sobre la tarjeta grande de Saldos = ${r.toFixed(2)}`); mal++; }
   }
 }
 console.log(mal ? `\n${mal} par(es) de colores no se leen bien.` : 'OK   Todos los pares de colores llegan a AA (4,5 a 1).');
