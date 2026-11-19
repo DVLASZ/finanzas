@@ -96,26 +96,26 @@ export function Saldos() {
         </div>
       ))}
 
-      <section class="tarjeta grande relative overflow-hidden !p-5 text-sobre ring-1 ring-white/25" style={{ background: 'linear-gradient(135deg, var(--marca), var(--marca-2))' }}>
+      <section class="tarjeta grande hero-saldo relative overflow-hidden !p-5 ring-1 ring-white/25">
         <div class="pointer-events-none absolute inset-0 opacity-60" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.22) 1px, transparent 1.2px)', backgroundSize: '15px 15px', maskImage: 'linear-gradient(120deg, transparent 10%, #000 55%, transparent 95%)', WebkitMaskImage: 'linear-gradient(120deg, transparent 10%, #000 55%, transparent 95%)' }} />
         <div class="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
         <div class="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-white/20 blur-2xl" />
-        <div class="pointer-events-none absolute -bottom-16 left-8 h-40 w-40 rounded-full bg-black/10 blur-2xl" />
+        <div class="pointer-events-none absolute -bottom-16 left-8 h-40 w-40 rounded-full bg-marca/10 blur-2xl" />
         <div class="relative">
           <div class="flex items-center justify-between"><div class="text-xs font-semibold uppercase tracking-[.09em] opacity-85">Disponible</div><Nfc size={22} class="opacity-80" /></div>
           <div data-ajusta class="mt-1 text-[2.6rem] font-extrabold leading-none tracking-tight"><MontoAnimado valor={r.disponibleCop} /></div>
           <div class="mt-2 text-[.8rem] opacity-85">{cuentasEnDisponible} · sin las monedas{r.cuentas.some(x => x.cuenta.moneda === 'USD') ? ' ni los dólares' : ''}</div>
-          <div class="-mx-1 mt-3"><Sparkline valores={evolucion} etiquetas={etiquetasEvolucion} claro /></div>
+          <div class="-mx-1 mt-3"><Sparkline valores={evolucion} etiquetas={etiquetasEvolucion} /></div>
           <div class="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
             <span class="opacity-90">{cambio === 0 ? 'Sin cambios' : `${cambio > 0 ? '+' : '-'}${formatear(Math.abs(cambio))}`} en {dias} días</span>
-            <span class="flex shrink-0 gap-1 whitespace-nowrap">{([14, 30] as const).map(n => <button key={n} class={`rounded-full px-2.5 py-1 font-semibold transition active:scale-95 ${dias === n ? 'bg-white/30' : 'bg-black/10'}`} aria-pressed={dias === n} onClick={() => setDias(n)}>{n} d</button>)}</span>
+            <span class="flex shrink-0 gap-1 whitespace-nowrap">{([14, 30] as const).map(n => <button key={n} class={`rounded-full px-2.5 py-1 font-semibold transition active:scale-95 ${dias === n ? 'bg-marca text-sobre' : 'bg-tx/10'}`} aria-pressed={dias === n} onClick={() => setDias(n)}>{n} d</button>)}</span>
           </div>
           <div class="grid grid-cols-2 gap-2">
-            <div class="rounded-2xl bg-black/15 px-3 py-2 backdrop-blur-sm">
+            <div class="rounded-2xl bg-tx/[.07] px-3 py-2">
               <div class="flex items-center gap-1 text-[.7rem] font-semibold uppercase tracking-wider opacity-85"><ArrowDownLeft size={14} />Entró este mes</div>
               <div data-ajusta class="mt-0.5 text-lg font-bold"><MontoAnimado valor={entro} /></div>
             </div>
-            <div class="rounded-2xl bg-black/15 px-3 py-2 backdrop-blur-sm">
+            <div class="rounded-2xl bg-tx/[.07] px-3 py-2">
               <div class="flex items-center gap-1 text-[.7rem] font-semibold uppercase tracking-wider opacity-85"><ArrowUpRight size={14} />Salió este mes</div>
               <div data-ajusta class="mt-0.5 text-lg font-bold"><MontoAnimado valor={salio} /></div>
             </div>

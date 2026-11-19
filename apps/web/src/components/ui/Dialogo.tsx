@@ -93,7 +93,7 @@ export function Dialogo() {
         onSubmit={e => { e.preventDefault(); cerrar(actual.clase === 'pedir' ? escrito : true); }}>
         <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-bor sm:hidden" />
         <div class="flex items-start gap-3">
-          <span class={`dialogo-icono grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${peligro ? 'bg-neg/15 text-neg' : 'bg-marca/15 text-marca'}`}><Icono size={22} /></span>
+          <span class={`dialogo-icono grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${peligro ? 'bg-neg/15 text-neg' : 'bg-marca/15 text-marca-tx'}`}><Icono size={22} /></span>
           <div class="min-w-0 flex-1">
             <h3 class="dialogo-titulo !m-0 !text-base !normal-case !tracking-normal !text-tx">{titulo}</h3>
             {texto && <p class="sub !mt-1.5 whitespace-pre-line">{texto}</p>}
