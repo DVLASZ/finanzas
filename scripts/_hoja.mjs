@@ -9,7 +9,7 @@ const srv = spawn('node', ['scripts/servir-web.mjs'], { env: { ...process.env, P
 await new Promise(r => setTimeout(r, 1500));
 const espera = ms => new Promise(r => setTimeout(r, ms));
 const nav = await puppeteer.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox'] });
-const PIELES = ['libro', 'tierra', 'esmeralda', 'oceano', 'atardecer', 'obsidiana', 'veltro', 'aether', 'kinetix', 'abyss', 'mocha', 'onyx', 'bordeaux'];
+const PIELES = ['libro', 'tierra', 'esmeralda', 'oceano', 'atardecer', 'obsidiana', 'veltro', 'aether', 'kinetix', 'abyss', 'mocha', 'onyx', 'bordeaux', 'zafiro'];
 const solo = process.env.SOLO ? process.env.SOLO.split(',') : PIELES;
 try {
   const pag = await nav.newPage();

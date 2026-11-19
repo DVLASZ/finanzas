@@ -93,7 +93,7 @@ try {
   await foto('chat');
   // ---- los temas: una hoja con todos (Saldos en cada uno), una en oscuro y otra en claro
   const PIELES = [['libro', 'Midnight'], ['tierra', 'Tierra'], ['esmeralda', 'Esmeralda'], ['oceano', 'Océano'], ['atardecer', 'Atardecer'], ['obsidiana', 'Obsidiana'],
-    ['veltro', 'Veltro'], ['aether', 'Aether'], ['kinetix', 'Kinetix'], ['abyss', 'Abyss'], ['mocha', 'Mocha Silk'], ['onyx', 'Onyx Solar'], ['bordeaux', 'Bordeaux Sage']];
+    ['veltro', 'Veltro'], ['aether', 'Aether'], ['kinetix', 'Kinetix'], ['abyss', 'Abyss'], ['mocha', 'Mocha Silk'], ['onyx', 'Onyx Solar'], ['bordeaux', 'Bordeaux Sage'], ['zafiro', 'Zafiro Real']];
   await pag.setViewport({ width: 393, height: 700, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await irA('Saldos');
   const hojas = { oscuro: [], claro: [] };
@@ -112,7 +112,7 @@ try {
   }
   await pag.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   // los siete nuevos y Obsidiana, uno por uno
-  for (const [piel, modo] of [['veltro', 'claro'], ['aether', 'oscuro'], ['kinetix', 'oscuro'], ['abyss', 'oscuro'], ['mocha', 'claro'], ['onyx', 'oscuro'], ['bordeaux', 'oscuro'], ['obsidiana', 'oscuro']]) {
+  for (const [piel, modo] of [['veltro', 'claro'], ['aether', 'oscuro'], ['kinetix', 'oscuro'], ['abyss', 'oscuro'], ['mocha', 'claro'], ['onyx', 'oscuro'], ['bordeaux', 'oscuro'], ['obsidiana', 'oscuro'], ['zafiro', 'claro']]) {
     await tema(piel, modo); await irA('Saldos'); await foto('tema-' + piel);
   }
   await irA('Resumen'); await foto('tema-obsidiana-resumen');

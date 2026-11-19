@@ -26,13 +26,17 @@ const MULTIPLICADOR: Record<string, number> = {
   lucas: 1000,
   luka: 1000,
   lukas: 1000,
+  barra: 1000,
+  barras: 1000,
+  palo: 1_000_000,
+  palos: 1_000_000,
   millon: 1_000_000,
   millones: 1_000_000,
 };
 const MARCA_USD = new Set(['usd', 'dolar', 'dolares', 'dlls', 'dll', 'us']);
 
 const RE_MONTO =
-  /(?<![a-z0-9.,/])(us\$|\$)?\s?(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)(?:\s?(k|mil|lucas?|lukas?|millon(?:es)?|usd|dolar(?:es)?|dlls?|us)(?![a-z]))?/g;
+  /(?<![a-z0-9.,/])(us\$|\$)?\s?(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)(?:\s?(k|mil|lucas?|lukas?|barras?|palos?|millon(?:es)?|usd|dolar(?:es)?|dlls?|us)(?![a-z]))?/g;
 
 /** Busca todos los montos de un texto ya normalizado (ver `limpiar`). */
 export function hallarMontos(t: string): MontoHallado[] {

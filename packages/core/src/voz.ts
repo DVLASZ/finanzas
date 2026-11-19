@@ -71,6 +71,13 @@ const MAL_OIDAS: [RegExp, string][] = [
   [/\bme cato\b/gi, 'mecato'],
 ];
 
+/** «neki», «banco colombia», «davi plata»: las cuentas como las deja el dictado, a como se escriben. */
+export function corregirCuentasMalOidas(texto: string): string {
+  let t = texto;
+  for (const [re, bien] of MAL_OIDAS) t = t.replace(re, bien);
+  return t;
+}
+
 /** Pasa lo dictado a como se escribe. Lo que no es número ni cuenta mal oída queda igual. */
 export function normalizarDictado(dictado: string): string {
   const crudo = dictado.replace(/[¿?¡!;]/g, ' ').replace(/[.,]+(?=\s|$)/g, ' ').replace(/\s+/g, ' ').trim();
@@ -87,4 +94,32 @@ export function normalizarDictado(dictado: string): string {
   let t = quitarComasDeMiles(salida.join(' ')).replace(/(\d)\s+pesos\b/gi, '$1');
   for (const [re, bien] of MAL_OIDAS) t = t.replace(re, bien);
   return t;
+}
+
+const SUFIJOS_DE_PLATA = new Set(['lucas', 'luca', 'lukas', 'luka', 'barras', 'barra', 'palos', 'palo', 'pesos', 'peso']);
+
+/**
+ * Los números en palabras que son plata, también al escribir: «sesenta mil» -> 60000, «treinta lucas» -> 30 lucas, «quince
+ * quinientos» -> 15500. Solo toca los que traen «mil», «millón» o van antes de «lucas», «barras», «palos» o «pesos»: «dos leches»
+ * y «tres empanadas» se quedan como están, porque ahí el número no es plata.
+ */
+export function numerosDeDinero(texto: string): string {
+  const originales = texto.split(' ');
+  const claves = originales.map(base);
+  const salida: string[] = [];
+  for (let i = 0; i < originales.length;) {
+    // «80 mil»: ese «mil» ya es la jerga de un número escrito con cifras, no un «mil» a convertir en 1000
+    if ((esMil(claves[i]) || esMillon(claves[i])) && /\d$/.test(originales[i - 1] ?? '')) { salida.push(originales[i]); i++; continue; }
+    const n = leerNumero(claves, i);
+    if (n && n.fin > i) {
+      const corrida = claves.slice(i, n.fin);
+      const plata = corrida.some(w => esMil(w) || esMillon(w)) || SUFIJOS_DE_PLATA.has(claves[n.fin] ?? '');
+      if (plata) { salida.push(String(n.valor)); i = n.fin; continue; }
+      // «quince quinientos»: los miles y quinientos, dicho a la colombiana
+      if (n.valor < 100 && claves[n.fin] === 'quinientos') { salida.push(String(n.valor * 1000 + 500)); i = n.fin + 1; continue; }
+    }
+    salida.push(originales[i]);
+    i++;
+  }
+  return salida.join(' ').replace(/(\d)\s+pesos?\b/gi, '$1');
 }
