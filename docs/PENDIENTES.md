@@ -7,18 +7,35 @@
 
 ## Ideas
 
-- Varias monedas con tasa guardada por movimiento. Choca con la regla de no convertir dólares solos, así que antes hay que decidir qué se mostraría.
+Ninguna abierta. Las varias monedas con conversión automática se descartaron: chocan con la regla de que los dólares y las deudas en dólares nunca se convierten solos.
 
 ## Para probar con personas
 
-- El bloqueo por inactividad y el recordatorio de la noche en celulares reales: el ahorro de batería de algunas marcas puede retrasar el aviso.
-- Pegar alertas con mensajes reales de cada banco (las pruebas usan textos de ejemplo).
+Esto solo se comprueba con teléfonos y gente de verdad. Las pruebas automáticas no lo cubren.
 
+- Las funciones de noviembre con datos reales: existencias en la app de la empresa y pagos fijos semanales, quincenales y anuales.
+- El lenguaje natural del bot con frases de cada persona (vaca, a medias, lucas, me fiaron) y las preguntas con botones cuando hay duda. La suite tiene 43 frases inventadas.
 - El dictado por voz con frases reales: cada persona habla distinto y el reconocedor se equivoca de formas distintas. Lo que se entienda mal se agrega a `packages/core/src/voz.ts` con su prueba.
 - La ayuda de la IA con frases reales. Las pruebas usan una IA falsa y no dicen nada de la calidad del modelo.
+- Pegar alertas con mensajes reales de cada banco (las pruebas usan textos de ejemplo).
 - La conciliación con extractos reales de cada banco. El lector entiende `;`, `,` y tabulador, varias formas de fecha y de monto, pero no se ha visto con extractos de verdad.
+- Los avisos de la mañana, de la tarde y el recordatorio de la noche, y el bloqueo por inactividad, en celulares de otras marcas: el ahorro de batería puede retrasarlos.
 - La usabilidad con personas de distintas edades.
-- Los avisos de la mañana y de la tarde en celulares reales de distintas marcas: el ahorro de batería puede retrasarlos.
+- Probar [Empezar](INICIO.md) con otra cuenta de Cloudflare, para ver si alguien distinto logra instalar desde cero.
+
+## Ya resuelto
+
+Lo que antes estaba aquí como pendiente y ya está hecho y publicado en las tres apps:
+
+- Notificaciones push, OCR de tirillas, compartir y atajos del ícono, probados en un celular real.
+- Ayuda de la IA como respaldo del bot, con tope diario.
+- Editar movimientos con doble confirmación.
+- Pagos fijos quincenales, semanales y anuales.
+- Letra grande en pantallas angostas.
+- Bot con lenguaje natural, gastos compartidos con aclaración por botones y la ayuda guiada «Pregúntale cómo decirlo».
+- Gráficas nuevas del Resumen (flujo del mes, ranking de conceptos, anillo por medio de pago) y el desglose del gasto compartido.
+- Catorce temas, con el contraste revisado.
+- Varios movimientos en una sola línea: se parten y se confirman de a uno.
 
 ## Límites que ya se conocen
 
