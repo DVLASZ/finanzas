@@ -4,6 +4,14 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-20
+
+- Los temas bajan de catorce a seis, porque muchos se veían casi iguales (cuatro azules, cuatro cafés, dos negros). Quedan Obsidiana, Midnight, Tierra, Esmeralda, Bordeaux y Kinetix, cada uno en claro y en oscuro.
+- Cada tema tiene ahora su propia forma, no solo su color. Obsidiana es negro puro sin adorno, con filetes de 1 px y radios de 14 px. Midnight es vidrio con más desenfoque y una aurora azul e índigo (18 px). Tierra es papel: superficies mate, sombras cálidas y esquinas de 22 px. Esmeralda lleva una tira de acento en el borde de cada tarjeta. Bordeaux es editorial, con titulares en serifa, superficies contrastadas y una doble raya en la cabecera. Kinetix es angular, con radios de 10 px, bordes de 2 px, sombras duras y una rejilla de fondo.
+- Quien tenía guardado un tema que se fue pasa solo al más parecido: Libro, Océano, Zafiro Real y Abyss a Midnight; Mocha Silk a Tierra; Veltro a Esmeralda; Aether a Kinetix; Onyx Solar a Obsidiana; Atardecer a Bordeaux. La instalación personal pasó de `libro` a `midnight` como tema de fábrica.
+- El selector de Ajustes queda en 2 columnas y 3 filas, y la vista previa de cada tema ya trae el radio de esquina del tema.
+- `npm run e2e:letra` revisa por defecto los seis temas, en claro y en oscuro, al 130 %. `npm run e2e` comprueba la migración de los temas que se fueron.
+
 ## 2026-11-19
 
 - El bot entiende mucho más cómo habla la gente. Una capa de lenguaje natural (`packages/core/src/lenguaje.ts`, sin internet) lee gastos compartidos («fui a comer con Ana y Luis, pagué 60k por los 3», «a medias», «hicimos vaca», «pagué 50k, 30k míos y 20k de Ana», «éramos 3»), dinero dicho de otras formas («sesenta mil», «quince quinientos», «30 lucas», «un palo») y verbos como «me giraron», «me fiaron», «quedé debiendo», «Luis me debe», «saqué del cajero» y «pasé de Nequi a efectivo». Lo que puede significar dos cosas ahora pregunta con botones en vez de adivinar. Detalle en BOT.md.
