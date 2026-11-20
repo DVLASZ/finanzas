@@ -56,8 +56,10 @@ export function FlujoMes({ puntos }: { puntos: PuntoDeFlujo[] }) {
         <line x1={PAD} x2={W - PAD} y1={cero} y2={cero} stroke="var(--bor)" stroke-dasharray="3 4" />
         <path d={area} fill="url(#flujo-degradado)" class="flujo-area" />
         <path d={linea} fill="none" stroke="var(--acc)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" pathLength={1} class="flujo-linea" />
-        <line x1={pts[i][0]} x2={pts[i][0]} y1={PAD} y2={H - PAD} stroke="var(--tx2)" stroke-opacity=".35" />
-        <circle cx={pts[i][0]} cy={pts[i][1]} r="4.2" fill="var(--acc)" stroke="var(--sup)" stroke-width="2" />
+        <g class="flujo-marca" style={{ transform: `translate(${pts[i][0]}px, 0px)` }}>
+          <line x1="0" x2="0" y1={PAD} y2={H - PAD} stroke="var(--tx2)" stroke-opacity=".35" />
+          <circle cx="0" cy={pts[i][1]} r="4.2" fill="var(--acc)" stroke="var(--sup)" stroke-width="2" style={{ transition: "cy .18s ease-out" }} />
+        </g>
       </svg>
       <div class="mt-1 grid gap-2 text-xs [grid-template-columns:repeat(auto-fit,minmax(7.5rem,1fr))]" id="flujo-dato">
         <div><div class="etiqueta">Día {Number(actual.fecha.slice(8))}</div><b class={`tabular-nums ${actual.neto < 0 ? 'text-neg' : 'text-pos'}`}>{verMonto(formatear(actual.neto))}</b></div>

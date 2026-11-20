@@ -25,6 +25,7 @@ import { PresupuestoSemana } from '../saldos/PresupuestoSemana.tsx';
 import { BotonesCorte, HojaCorte } from './CorteTurno.tsx';
 import { vendeProductos, aLocal as aLocalHoy, gastoDelMes, ingresosGastosPorMes, flujoAcumulado, gastoPorMedio, topConceptos } from '../../../../../packages/core/src/index.ts';
 import { AnilloMedios, FlujoMes, RankingConceptos } from '../../components/charts/Flujo.tsx';
+import { BotonOjo } from '../../components/ui/BotonOjo.tsx';
 
 type Periodo = 'semana' | 'mes' | 'anio';
 const periodo = signal<Periodo>('mes');
@@ -209,9 +210,9 @@ export function Resumen() {
   const mesCalor = p === 'mes' ? desde.slice(0, 7) : aLocalHoy(ctx.ahora).slice(0, 7);
   return (
     <div class="space-y-3">
-      <div class="pestanas" role="tablist">
+      <div class="flex items-center gap-2"><div class="pestanas min-w-0 flex-1" role="tablist">
         {(['semana', 'mes', 'anio'] as const).map(x => <button key={x} class={`pestana ${x === p ? 'activa' : ''}`} data-p={x} onClick={() => cambiar(x)}>{x === 'anio' ? 'Año' : x[0].toUpperCase() + x.slice(1)}</button>)}
-      </div>
+      </div><BotonOjo /></div>
       <div class="periodo">
         <button class="chip" aria-label="Ver el periodo anterior" onClick={() => { atras.value = a + 1; }}><ChevronLeft size={16} />Anterior</button>
         <h2 class="!m-0">{titulo(p, desde)}</h2>

@@ -1,17 +1,16 @@
 /**
- * El cascarón de la app: cabecera de vidrio, la pantalla que toca (con transición) y la barra de abajo
+ * El cascarón de la app: sin cabecera (todo el alto es para la pantalla), la pantalla que toca (con transición) y la barra de abajo
  * flotante con un indicador que se desliza entre las cinco secciones. En pantalla ancha la barra pasa a un lado.
  */
-import { BarChart3, Check, MessageCircle, MoreHorizontal, Moon, Receipt, Sun, WalletCards, WifiOff, Eye, EyeOff } from 'lucide-preact';
+import { BarChart3, MessageCircle, MoreHorizontal, Receipt, WalletCards } from 'lucide-preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { actual, alternarTema } from './state/apariencia.ts';
 import { enBarra, irA, pantalla, type Pantalla } from './state/nav.ts';
-import { conServidor, datos, estadoSync, pendientes } from './state/store.ts';
+import { datos, estadoSync, pendientes } from './state/store.ts';
 import { entrarPantalla } from './lib/efectos.ts';
 import { HojaSelector } from './components/ui/Selector.tsx';
 import { Confirmacion } from './components/ui/Confirmacion.tsx';
 import { Dialogo } from './components/ui/Dialogo.tsx';
-import { alternarPrivacidad, montosOcultos } from './state/privacidad.ts';
+import { AvisoSync } from './components/ui/EstadoSync.tsx';
 import { EditorAtajos } from './features/chat/EditorAtajos.tsx';
 import { Bloqueo } from './features/ajustes/Bloqueo.tsx';
 import { ToastDeshacer } from './components/ui/ToastDeshacer.tsx';
@@ -21,7 +20,6 @@ import { Saldos } from './features/saldos/Saldos.tsx';
 import { Movimientos } from './features/movimientos/Movimientos.tsx';
 import { Resumen } from './features/resumen/Resumen.tsx';
 import { Mas, Subvista } from './features/mas/Mas.tsx';
-import { signal } from '@preact/signals';
 
 const BARRA: { id: Pantalla; nombre: string; corto?: string; Icono: typeof MessageCircle }[] = [
   { id: 'chat', nombre: 'Chat', Icono: MessageCircle },
@@ -30,54 +28,6 @@ const BARRA: { id: Pantalla; nombre: string; corto?: string; Icono: typeof Messa
   { id: 'resumen', nombre: 'Resumen', Icono: BarChart3 },
   { id: 'mas', nombre: 'Más', Icono: MoreHorizontal },
 ];
-
-/** Se vuelve a leer cuando cambia la apariencia (tema claro u oscuro). */
-const oscuro = signal(actual().oscuro);
-window.addEventListener('apariencia', () => { oscuro.value = actual().oscuro; });
-
-function Estado() {
-  const e = estadoSync.value;
-  const p = pendientes.value;
-  const sinRed = conServidor.value && navigator.onLine === false;
-  const texto = !conServidor.value ? 'Solo en este aparato'
-    : sinRed ? (p ? `Sin internet · ${p} sin enviar` : 'Sin internet')
-    : e === 'sincronizando' ? 'Sincronizando'
-    : p ? `${p} sin enviar` : 'Todo guardado';
-  // todo en orden (guardado, o solo en este aparato): un indicador chiquito, para que la cabecera quepa siempre en una fila.
-  // El texto largo queda para cuando algo pasa: sincronizando, sin internet, cambios sin enviar.
-  const tranquilo = !sinRed && ((e === 'local' && !conServidor.value) || (e === 'ok' && !p));
-  if (tranquilo) {
-    return (
-      <span id="estado" class={`estado grid h-8 w-8 shrink-0 place-items-center rounded-full ${e === 'ok' ? 'text-pos bg-pos/12' : 'text-tx2 bg-elev'}`} role="img" aria-label={texto} title={texto}>
-        {e === 'ok' ? <Check size={15} /> : <span class="h-2 w-2 rounded-full bg-current" />}
-      </span>
-    );
-  }
-  const tono = e === 'ok' && !sinRed ? 'text-pos bg-pos/12' : e === 'local' ? 'text-tx2 bg-elev' : 'text-adv bg-adv/12';
-  return (
-    <span id="estado" class={`estado inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${tono}`}>
-      {sinRed ? <WifiOff size={13} /> : e === 'ok' ? <Check size={13} /> : <span class="h-1.5 w-1.5 rounded-full bg-current" />}
-      {texto}
-    </span>
-  );
-}
-
-function Cabecera() {
-  return (
-    <header class="vidrio sticky top-0 z-30 flex lg:col-span-2 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 pb-1.5 pt-[calc(env(safe-area-inset-top)+.4rem)] ring-1 ring-anillo">
-      <h1 class="min-w-[6rem] flex-[1_1_0] truncate">{document.title}</h1>
-      <div class="ml-auto flex items-center gap-1.5">
-        <Estado />
-        <button id="ojo" class="grid h-10 w-10 place-items-center rounded-full bg-sup text-tx ring-1 ring-anillo transition active:scale-90" aria-pressed={montosOcultos.value} aria-label={montosOcultos.value ? 'Mostrar los montos' : 'Ocultar los montos'} title={montosOcultos.value ? 'Mostrar los montos' : 'Ocultar los montos'} onClick={alternarPrivacidad}>
-          {montosOcultos.value ? <EyeOff size={18} /> : <Eye size={18} />}
-        </button>
-        <button id="cambiar-tema" class="grid h-10 w-10 place-items-center rounded-full bg-sup text-tx ring-1 ring-anillo transition active:scale-90" aria-label="Cambiar entre tema claro y oscuro" title="Claro u oscuro" onClick={alternarTema}>
-          {oscuro.value ? <Sun size={19} /> : <Moon size={19} />}
-        </button>
-      </div>
-    </header>
-  );
-}
 
 function Barra() {
   const activa = enBarra(pantalla.value);
@@ -97,7 +47,7 @@ function Barra() {
   }, []);
   const i = Math.max(0, BARRA.findIndex(b => b.id === activa));
   return (
-    <nav ref={nav} id="nav" aria-label="Secciones" class={`${apretada ? 'apretada ' : ''}vidrio fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+.6rem)] z-40 mx-auto flex max-w-md rounded-[1.6rem] p-1.5 shadow-[0_18px_50px_-14px_rgba(0,0,0,.55)] ring-1 ring-anillo lg:static lg:col-start-1 lg:row-start-2 lg:m-0 lg:max-w-none lg:flex-col lg:gap-1 lg:rounded-none lg:bg-transparent lg:p-3 lg:shadow-none lg:ring-0 lg:backdrop-blur-none`}>
+    <nav ref={nav} id="nav" aria-label="Secciones" class={`${apretada ? 'apretada ' : ''}vidrio fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+.6rem)] z-40 mx-auto flex max-w-md rounded-[1.6rem] p-1.5 shadow-[0_18px_50px_-14px_rgba(0,0,0,.55)] ring-1 ring-anillo lg:static lg:col-start-1 lg:row-start-1 lg:m-0 lg:max-w-none lg:flex-col lg:gap-1 lg:rounded-none lg:bg-transparent lg:p-3 lg:shadow-none lg:ring-0 lg:backdrop-blur-none`}>
       <span aria-hidden="true" class="pointer-events-none absolute bottom-1.5 left-1.5 top-1.5 w-[calc((100%-.75rem)/5)] rounded-[1.2rem] bg-marca-sup ring-1 ring-anillo transition-transform duration-[380ms] ease-[cubic-bezier(.22,1.2,.36,1)] lg:hidden" style={{ transform: `translateX(${i * 100}%)` }} />
       {BARRA.map(({ id, nombre, corto, Icono }) => (
         <button key={id} data-p={id} aria-label={nombre} aria-current={id === activa ? 'page' : undefined} onClick={() => irA(id)}
@@ -113,12 +63,20 @@ function Barra() {
 function Contenido() {
   const ref = useRef<HTMLDivElement>(null);
   const p = pantalla.value;
-  useEffect(() => { if (ref.current) { ref.current.parentElement?.scrollTo(0, 0); entrarPantalla(ref.current); } }, [p]);
+  const antes = useRef(p);
+  useEffect(() => {
+    // hacia dónde se va: según el lugar de cada sección en la barra
+    const orden = (x: Pantalla) => BARRA.findIndex(b => b.id === enBarra(x));
+    const dir = Math.sign(orden(p) - orden(antes.current));
+    antes.current = p;
+    if (ref.current) { ref.current.parentElement?.scrollTo(0, 0); entrarPantalla(ref.current, dir); }
+  }, [p]);
   // el fondo cambia de color suavemente según la sección (ver estilos: html[data-seccion])
   useEffect(() => { document.documentElement.dataset.seccion = enBarra(p); }, [p]);
   const interna = enBarra(p) === 'mas' && p !== 'mas';
   return (
-    <main id="contenido" aria-live="polite" class={`contenido mx-auto w-full flex-1 overflow-y-auto overscroll-contain ${p === 'chat' ? 'flex max-w-3xl flex-col overflow-hidden pb-[calc(env(safe-area-inset-bottom)+5.3rem)] lg:pb-0' : 'max-w-3xl px-4 pb-32 pt-4 lg:pb-8'} lg:col-start-2 lg:row-start-2 lg:max-w-none`}>
+    <main id="contenido" aria-live="polite" class={`contenido mx-auto w-full flex-1 overflow-y-auto overscroll-contain ${p === 'chat' ? 'flex max-w-3xl flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+5.3rem)] lg:pb-0' : 'max-w-3xl px-4 pb-32 pt-[calc(env(safe-area-inset-top)+1rem)] lg:pb-8'} lg:col-start-2 lg:row-start-1 lg:max-w-none`}>
+      <h1 class="sr-only">{document.title}</h1>
       <div ref={ref} key={p} class={p === 'chat' ? 'mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col' : 'mx-auto w-full max-w-3xl'}>
         {p === 'chat' && <Chat />}
         {p === 'saldos' && <Saldos />}
@@ -133,8 +91,7 @@ function Contenido() {
 
 export function App() {
   return (
-    <div id="raiz-preact" data-listo="1" data-estado={estadoSync.value} data-pendientes={pendientes.value} data-movimientos={datos.value?.movimientos.length ?? 0} class="marco flex h-[100dvh] flex-col lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)]">
-      <Cabecera />
+    <div id="raiz-preact" data-listo="1" data-estado={estadoSync.value} data-pendientes={pendientes.value} data-movimientos={datos.value?.movimientos.length ?? 0} class="marco flex h-[100dvh] flex-col lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
       <Contenido />
       <div aria-hidden="true" class="fixed inset-x-0 bottom-0 z-30 h-[calc(env(safe-area-inset-bottom)+.7rem)] bg-vidrio backdrop-blur-xl lg:hidden" />
       <Barra />
@@ -142,7 +99,7 @@ export function App() {
       <Confirmacion />
       <EditorAtajos />
       <ContadorEfectivo />
-      <ToastDeshacer />
+      <div class="pila-superior"><AvisoSync /><ToastDeshacer /></div>
       <Bloqueo />
       <Dialogo />
     </div>
