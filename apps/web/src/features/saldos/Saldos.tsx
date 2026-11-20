@@ -20,6 +20,7 @@ import { contarEfectivo } from './ContadorEfectivo.tsx';
 import { LiquidezProxima } from './LiquidezProxima.tsx';
 import { avisar, confirmar, pedir } from '../../components/ui/Dialogo.tsx';
 import { verMonto, verTexto } from '../../state/privacidad.ts';
+import { BotonOjo } from '../../components/ui/BotonOjo.tsx';
 
 export function Saldos() {
   const [dias, setDias] = useState<14 | 30>(14);
@@ -85,6 +86,7 @@ export function Saldos() {
 
   return (
     <div class="space-y-3">
+      <div class="flex justify-end"><BotonOjo /></div>
       {alertas.map((a, i) => (
         <div key={i} class={`alerta ${a.nivel === 'urgente' ? 'urgente' : a.nivel === 'aviso' ? 'aviso' : ''}`}>
           {verTexto(quitarEmojis(a.texto))}

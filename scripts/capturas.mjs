@@ -8,6 +8,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
+import { mostrarMontos } from './_ojo.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const salida = join(raiz, 'docs', 'screenshots');
@@ -43,7 +44,7 @@ try {
   const foto = async nombre => { await pag.evaluate(() => document.querySelector('#contenido')?.scrollTo(0, 0)); await pag.screenshot({ path: join(salida, nombre + '.png') }); console.log('  ' + nombre + '.png'); };
 
   // la app arranca con los montos escondidos: se muestran para la foto
-  await pag.evaluate(() => { if (document.documentElement.dataset.privado === '1') document.querySelector('#ojo')?.click(); });
+  await mostrarMontos(pag);
   const tema = async (piel, t) => { await pag.evaluate((p, x) => { document.documentElement.dataset.piel = p; document.documentElement.dataset.tema = x; window.dispatchEvent(new Event('apariencia')); }, piel, t); await espera(500); };
 
   // los datos de ejemplo: nombres y cifras inventados
