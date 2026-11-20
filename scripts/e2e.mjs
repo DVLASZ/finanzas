@@ -350,17 +350,33 @@ try {
   });
   await prueba('temas: se puede elegir una atmósfera nueva y volver a la de siempre', async () => {
     await abrirDeMas('Ajustes'); await espera(500);
-    await pag.evaluate(() => document.querySelector('.tema-card[data-piel="oceano"]')?.click()); await espera(400);
-    igual(await pag.evaluate(() => document.documentElement.dataset.piel), 'oceano', 'piel océano');
-    igual(await pag.evaluate(() => document.querySelectorAll('.tema-card .pildora-6030').length >= 13), true, 'cada tema trae su píldora 60-30-10');
-    await pag.evaluate(() => document.querySelector('.tema-card[data-piel="veltro"]')?.click()); await espera(300);
-    igual(await pag.evaluate(() => document.documentElement.dataset.piel), 'veltro', 'uno de los nuevos');
-    await pag.evaluate(() => document.querySelector('.tema-card[data-piel="libro"]')?.click()); await espera(400);
-    igual(await pag.evaluate(() => document.documentElement.dataset.piel), 'libro', 'vuelve a libro');
+    await pag.evaluate(() => document.querySelector('.tema-card[data-piel="obsidiana"]')?.click()); await espera(400);
+    igual(await pag.evaluate(() => document.documentElement.dataset.piel), 'obsidiana', 'piel obsidiana');
+    igual(await pag.evaluate(() => document.querySelectorAll('.tema-card .pildora-6030').length === 6), true, 'los seis temas traen su píldora 60-30-10');
+    await pag.evaluate(() => document.querySelector('.tema-card[data-piel="kinetix"]')?.click()); await espera(300);
+    igual(await pag.evaluate(() => document.documentElement.dataset.piel), 'kinetix', 'otro de los seis');
+    await pag.evaluate(() => document.querySelector('.tema-card[data-piel="midnight"]')?.click()); await espera(400);
+    igual(await pag.evaluate(() => document.documentElement.dataset.piel), 'midnight', 'vuelve a midnight');
     await pag.evaluate(() => document.querySelector('#sonidos').click()); await espera(200);
     igual(await pag.evaluate(() => document.querySelector('#sonidos').checked), true, 'el interruptor de sonido');
     await pag.evaluate(() => document.querySelector('#sonidos').click()); await espera(200);
     await irA('Chat');
+  });
+  await prueba('temas: quien tenía guardado un tema que ya no existe pasa al más parecido, sin errores', async () => {
+    const otra = await navegador.newPage();
+    const errores = [];
+    otra.on('pageerror', e => errores.push(e.message));
+    await otra.goto(`http://localhost:${PUERTO}/`, { waitUntil: 'networkidle0' });
+    const quedan = {};
+    for (const viejo of ['libro', 'zafiro', 'oceano', 'abyss', 'mocha', 'veltro', 'aether', 'onyx', 'atardecer', 'inventado']) {
+      await otra.evaluate(v => localStorage.setItem('apariencia', JSON.stringify({ piel: v })), viejo);
+      await otra.reload({ waitUntil: 'networkidle0' });
+      quedan[viejo] = await otra.evaluate(() => document.documentElement.dataset.piel);
+    }
+    await otra.evaluate(() => localStorage.removeItem('apariencia'));
+    await otra.close();
+    igual(JSON.stringify(quedan), JSON.stringify({ libro: 'midnight', zafiro: 'midnight', oceano: 'midnight', abyss: 'midnight', mocha: 'tierra', veltro: 'esmeralda', aether: 'kinetix', onyx: 'obsidiana', atardecer: 'bordeaux', inventado: 'midnight' }), 'cada tema viejo pasa al suyo');
+    igual(errores.length, 0, 'sin errores de JavaScript al migrar');
   });
   await prueba('resumen: compara cada categoría con el mes pasado', async () => {
     await irA('Resumen'); await espera(700);

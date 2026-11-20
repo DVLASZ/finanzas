@@ -34,7 +34,7 @@ Lo que antes estaba aquí como pendiente y ya está hecho y publicado en las tre
 - Letra grande en pantallas angostas.
 - Bot con lenguaje natural, gastos compartidos con aclaración por botones y la ayuda guiada «Pregúntale cómo decirlo».
 - Gráficas nuevas del Resumen (flujo del mes, ranking de conceptos, anillo por medio de pago) y el desglose del gasto compartido.
-- Catorce temas, con el contraste revisado.
+- Seis temas, cada uno con su propia forma, con el contraste y la letra grande revisados.
 - Varios movimientos en una sola línea: se parten y se confirman de a uno.
 
 ## Límites que ya se conocen

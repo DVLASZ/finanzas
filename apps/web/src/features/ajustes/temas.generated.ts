@@ -4,217 +4,97 @@ import type { Piel, Tema } from '../../state/apariencia.ts';
 /** Los colores de la píldora 60-30-10 de cada tema: el fondo (60), la estructura (30) y el acento (10). */
 export const PILDORAS: { piel: Piel; tema: Tema; f: string; e30: string; a: string }[] = [
   {
-    piel: 'libro',
-    tema: 'oscuro',
-    f: '#090d16',
-    e30: '#111827',
-    a: '#38bdf8'
-  },
-  {
-    piel: 'tierra',
-    tema: 'oscuro',
-    f: '#17110c',
-    e30: '#211812',
-    a: '#f0a06a'
-  },
-  {
-    piel: 'libro',
-    tema: 'claro',
-    f: '#e4eaf2',
-    e30: '#0f1c2e',
-    a: '#0e7490'
-  },
-  {
-    piel: 'tierra',
-    tema: 'claro',
-    f: '#eee1c8',
-    e30: '#8a4b25',
-    a: '#b45309'
-  },
-  {
-    piel: 'esmeralda',
-    tema: 'oscuro',
-    f: '#06120e',
-    e30: '#0e1d17',
-    a: '#34d399'
-  },
-  {
-    piel: 'esmeralda',
-    tema: 'claro',
-    f: '#d9eadf',
-    e30: '#0b2417',
-    a: '#047857'
-  },
-  {
-    piel: 'oceano',
-    tema: 'oscuro',
-    f: '#060f1c',
-    e30: '#0d1b2e',
-    a: '#22d3ee'
-  },
-  {
-    piel: 'oceano',
-    tema: 'claro',
-    f: '#d6e8f2',
-    e30: '#08202f',
-    a: '#0369a1'
-  },
-  {
-    piel: 'atardecer',
-    tema: 'oscuro',
-    f: '#170c14',
-    e30: '#231320',
-    a: '#fb923c'
-  },
-  {
-    piel: 'atardecer',
-    tema: 'claro',
-    f: '#f8e1d5',
-    e30: '#7a2338',
-    a: '#c2410c'
-  },
-  {
     piel: 'obsidiana',
     tema: 'oscuro',
     f: '#000000',
     e30: '#09090b',
-    a: '#d8c9a3'
+    a: '#e5c158'
   },
   {
     piel: 'obsidiana',
     tema: 'claro',
-    f: '#f6f5f0',
+    f: '#faf9f6',
     e30: '#ffffff',
-    a: '#8a6f2f'
+    a: '#e5c158'
   },
   {
-    piel: 'veltro',
-    tema: 'claro',
-    f: '#eee2cb',
-    e30: '#1b4532',
-    a: '#ee4129'
-  },
-  {
-    piel: 'veltro',
+    piel: 'midnight',
     tema: 'oscuro',
-    f: '#0f2619',
-    e30: '#1b4532',
-    a: '#ee4129'
+    f: '#0b1120',
+    e30: '#121a2e',
+    a: '#38bdf8'
   },
   {
-    piel: 'aether',
-    tema: 'oscuro',
-    f: '#2b1c33',
-    e30: '#d9d3cc',
-    a: '#ff8c12'
-  },
-  {
-    piel: 'aether',
-    tema: 'claro',
-    f: '#e8e1da',
-    e30: '#2b1c33',
-    a: '#ff8c12'
-  },
-  {
-    piel: 'kinetix',
-    tema: 'oscuro',
-    f: '#1e1830',
-    e30: '#8e7fe3',
-    a: '#c6ff24'
-  },
-  {
-    piel: 'kinetix',
-    tema: 'claro',
-    f: '#e9e5fa',
-    e30: '#8e7fe3',
-    a: '#c6ff24'
-  },
-  {
-    piel: 'abyss',
-    tema: 'oscuro',
-    f: '#01485a',
-    e30: '#00b7cb',
-    a: '#ff3b8b'
-  },
-  {
-    piel: 'abyss',
-    tema: 'claro',
-    f: '#d3eff4',
-    e30: '#00b7cb',
-    a: '#e1247d'
-  },
-  {
-    piel: 'mocha',
-    tema: 'claro',
-    f: '#f3e8d8',
-    e30: '#433329',
-    a: '#86bcef'
-  },
-  {
-    piel: 'mocha',
-    tema: 'oscuro',
-    f: '#2a211b',
-    e30: '#433329',
-    a: '#86bcef'
-  },
-  {
-    piel: 'onyx',
-    tema: 'oscuro',
-    f: '#051a10',
-    e30: '#e8c613',
-    a: '#3b2dff'
-  },
-  {
-    piel: 'onyx',
-    tema: 'claro',
-    f: '#f1efd2',
-    e30: '#e8c613',
-    a: '#3b2dff'
-  },
-  {
-    piel: 'bordeaux',
-    tema: 'oscuro',
-    f: '#4a0e23',
-    e30: '#f4c3c2',
-    a: '#80a95b'
-  },
-  {
-    piel: 'bordeaux',
-    tema: 'claro',
-    f: '#f6e4e2',
-    e30: '#4a0e23',
-    a: '#80a95b'
-  },
-  {
-    piel: 'zafiro',
-    tema: 'oscuro',
-    f: '#0b132b',
-    e30: '#1e3a8a',
-    a: '#00b4d8'
-  },
-  {
-    piel: 'zafiro',
+    piel: 'midnight',
     tema: 'claro',
     f: '#eef4ff',
-    e30: '#1e3a8a',
+    e30: '#0d1a33',
     a: '#0284c7'
+  },
+  {
+    piel: 'tierra',
+    tema: 'oscuro',
+    f: '#1c1410',
+    e30: '#271c15',
+    a: '#d97706'
+  },
+  {
+    piel: 'tierra',
+    tema: 'claro',
+    f: '#f5ede0',
+    e30: '#8a4b25',
+    a: '#c2410c'
+  },
+  {
+    piel: 'esmeralda',
+    tema: 'oscuro',
+    f: '#061e16',
+    e30: '#0d2c21',
+    a: '#10b981'
+  },
+  {
+    piel: 'esmeralda',
+    tema: 'claro',
+    f: '#ecfdf5',
+    e30: '#0b2417',
+    a: '#059669'
+  },
+  {
+    piel: 'bordeaux',
+    tema: 'oscuro',
+    f: '#2a0813',
+    e30: '#3b1120',
+    a: '#f43f5e'
+  },
+  {
+    piel: 'bordeaux',
+    tema: 'claro',
+    f: '#fdf2f4',
+    e30: '#4a0e23',
+    a: '#be123c'
+  },
+  {
+    piel: 'kinetix',
+    tema: 'oscuro',
+    f: '#161124',
+    e30: '#8e7fe3',
+    a: '#a3e635'
+  },
+  {
+    piel: 'kinetix',
+    tema: 'claro',
+    f: '#f5f3ff',
+    e30: '#8e7fe3',
+    a: '#4d7c0f'
   }
 ];
 
 /** Los temas, en el orden del selector. */
 export const PIELES: { piel: Piel; nombre: string; detalle: string }[] = [
-  { piel: 'libro', nombre: 'Midnight Fintech', detalle: 'Gris hielo y pizarra, con cian e índigo' },
-  { piel: 'tierra', nombre: 'Tierra Editorial', detalle: 'Arena y café, con ámbar y esmeralda' },
-  { piel: 'esmeralda', nombre: 'Esmeralda', detalle: 'Verde bosque y menta' },
-  { piel: 'oceano', nombre: 'Océano', detalle: 'Azul marino y turquesa' },
-  { piel: 'atardecer', nombre: 'Atardecer', detalle: 'Durazno, coral y ciruela' },
-  { piel: 'obsidiana', nombre: 'Obsidiana', detalle: 'Negro puro, minimalista' },
-  { piel: 'veltro', nombre: 'Veltro', detalle: 'Crema, abeto y rojo tomate' },
-  { piel: 'aether', nombre: 'Aether', detalle: 'Ciruela, titanio y ámbar' },
-  { piel: 'kinetix', nombre: 'Kinetix', detalle: 'Índigo, lavanda y verde voltio' },
-  { piel: 'abyss', nombre: 'Abyss', detalle: 'Azul abisal, cian y rosa neón' },
-  { piel: 'mocha', nombre: 'Mocha Silk', detalle: 'Crema seda, mocha y azul cielo' },
-  { piel: 'onyx', nombre: 'Onyx Solar', detalle: 'Negro esmeralda, oro e índigo' },
-  { piel: 'bordeaux', nombre: 'Bordeaux Sage', detalle: 'Burdeos, rosa polvo y salvia' },
-  { piel: 'zafiro', nombre: 'Zafiro Real', detalle: 'Cobalto, azul real y cian eléctrico' },
+  { piel: 'obsidiana', nombre: 'Obsidiana', detalle: 'Negro puro, champán y nada de adorno' },
+  { piel: 'midnight', nombre: 'Midnight', detalle: 'Azul noche de vidrio y cian eléctrico' },
+  { piel: 'tierra', nombre: 'Tierra', detalle: 'Arena, café y terracota, como papel' },
+  { piel: 'esmeralda', nombre: 'Esmeralda', detalle: 'Verde bosque y jade, fresco' },
+  { piel: 'bordeaux', nombre: 'Bordeaux', detalle: 'Vino burdeos y coral, editorial' },
+  { piel: 'kinetix', nombre: 'Kinetix', detalle: 'Morado profundo y lima voltio, angular' },
 ];

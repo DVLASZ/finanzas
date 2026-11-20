@@ -621,6 +621,66 @@
   html[data-piel="obsidiana"] .toast-deshacer, html[data-piel="obsidiana"] .confirmacion-caja { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--sup); }
   html[data-piel="obsidiana"] .tarjeta.relative .blur-2xl, html[data-piel="obsidiana"] [class*="blur-2xl"] { display: none; }
 
+  /* ------------------------------------------------------------ Un carácter por tema
+     Cada tema tiene su propia silueta (los radios están en temas.css) y su propio tratamiento de superficie, borde y sombra, para que
+     cambiar de tema se sienta como estrenar la interfaz y no como un recolor. Obsidiana está arriba. Nada de esto toca los colores de
+     texto: el contraste lo garantiza scripts/contraste.mjs sobre las superficies de siempre. */
+
+  /* Midnight: vidrio. Superficies translúcidas con más desenfoque y un filo de luz arriba, sobre una aurora azul e índigo. */
+  html[data-piel="midnight"] :is(.cristal, .tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta, .dialogo-hoja) { -webkit-backdrop-filter: blur(26px) saturate(1.7); backdrop-filter: blur(26px) saturate(1.7); }
+  html[data-piel="midnight"] .tarjeta { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--marca) 45%, transparent), 0 0 0 1px var(--anillo), 0 18px 40px -20px var(--brillo); }
+
+  /* Tierra: papel. Nada de vidrio ni brillo: superficies mate, sombras cálidas y apenas una aurora de fondo. */
+  html[data-piel="tierra"] body::after { display: none; }
+  html[data-piel="tierra"] body::before, html[data-piel="tierra"]::before { opacity: .5; }
+  html[data-piel="tierra"] :is(.cristal, .tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta, .dialogo-hoja, header.vidrio, nav#nav, .entrada.vidrio, .toast-deshacer) { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  html[data-piel="tierra"] :is(.cristal, .tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta, .dialogo-hoja) { background: var(--sup); }
+  html[data-piel="tierra"] :is(.tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta) { box-shadow: 0 0 0 1px var(--anillo), 0 1px 2px rgba(70, 38, 14, .16), 0 12px 26px -14px rgba(70, 38, 14, .38); }
+  html[data-piel="tierra"] header.vidrio { background: var(--fondo); border-bottom: 1px solid var(--anillo); }
+  html[data-piel="tierra"] nav#nav { background: var(--sup); box-shadow: 0 0 0 1px var(--anillo), 0 10px 24px -12px rgba(70, 38, 14, .4); }
+  html[data-piel="tierra"] .primario, html[data-piel="tierra"] .chip[aria-pressed="true"], html[data-piel="tierra"] .burbuja.yo { background: var(--marca); box-shadow: 0 2px 0 color-mix(in srgb, var(--marca) 62%, #000), 0 8px 14px -8px rgba(70, 38, 14, .45); }
+
+  /* Esmeralda: una tira de acento en el borde izquierdo de cada tarjeta, sobre una aurora verde y orgánica. */
+  html[data-piel="esmeralda"] :is(.tarjeta, .burbuja.carta) { box-shadow: inset 4px 0 0 var(--marca), 0 0 0 1px var(--anillo), 0 14px 32px -18px var(--brillo); }
+  html[data-piel="esmeralda"] .tarjeta { padding-left: calc(1.05rem + 2px); }
+  html[data-piel="esmeralda"] header.vidrio { border-bottom: 2px solid color-mix(in srgb, var(--marca) 55%, transparent); }
+
+  /* Bordeaux: editorial. Titulares con serifa, superficies contrastadas con filete y una doble raya en la cabecera. */
+  html[data-piel="bordeaux"] :is(h1, h2, .monto, .tarjeta .grande) { font-family: Georgia, 'Times New Roman', serif; letter-spacing: 0; }
+  html[data-piel="bordeaux"] h3, html[data-piel="bordeaux"] .etiqueta { letter-spacing: .14em; }
+  html[data-piel="bordeaux"] body::after { display: none; }
+  html[data-piel="bordeaux"] body::before, html[data-piel="bordeaux"]::before { opacity: .55; }
+  html[data-piel="bordeaux"] :is(.cristal, .tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta, .dialogo-hoja, header.vidrio, nav#nav, .entrada.vidrio) { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  html[data-piel="bordeaux"] :is(.cristal, .tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta, .dialogo-hoja) { background: var(--elev); }
+  html[data-piel="bordeaux"] :is(.tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta) { box-shadow: 0 0 0 1px var(--bor); }
+  html[data-piel="bordeaux"] header.vidrio { background: var(--fondo); border-bottom: 4px double var(--bor); }
+  html[data-piel="bordeaux"] nav#nav { background: var(--elev); box-shadow: 0 0 0 1px var(--bor); }
+
+  /* Kinetix: angular y deportivo. Bordes gruesos y marcados, sombras duras sin desenfoque, rejilla de fondo y etiquetas en mayúscula. */
+  html[data-piel="kinetix"] body::after {
+    background-image: linear-gradient(var(--punto) 1px, transparent 1px), linear-gradient(90deg, var(--punto) 1px, transparent 1px); background-size: 28px 28px;
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 70%); mask-image: linear-gradient(180deg, #000 0%, transparent 70%);
+  }
+  html[data-piel="kinetix"] :is(.cristal, .tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta, .dialogo-hoja, header.vidrio, nav#nav, .entrada.vidrio, .toast-deshacer) { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  html[data-piel="kinetix"] :is(.cristal, .tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta, .dialogo-hoja) { background: var(--sup); }
+  html[data-piel="kinetix"] :is(.tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta) { box-shadow: 0 0 0 2px var(--bor), 6px 6px 0 -1px color-mix(in srgb, var(--marca) 30%, transparent); }
+  html[data-piel="kinetix"] header.vidrio { background: var(--fondo); border-bottom: 2px solid var(--bor); }
+  html[data-piel="kinetix"] nav#nav { background: var(--sup); box-shadow: 0 0 0 2px var(--bor); }
+  html[data-piel="kinetix"] .primario, html[data-piel="kinetix"] .chip[aria-pressed="true"] { box-shadow: 4px 4px 0 0 color-mix(in srgb, var(--tx) 38%, transparent); font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+  html[data-piel="kinetix"] :is(.secundario, .chip, input, select, textarea, .select-btn) { box-shadow: 0 0 0 2px var(--bor); }
+  html[data-piel="kinetix"] h3, html[data-piel="kinetix"] .etiqueta { font-weight: 800; letter-spacing: .12em; }
+
+  /* La tarjeta grande de Saldos lleva clases de Tailwind (anillo y adornos con desenfoque) que ganan a las reglas de arriba; aquí se les
+     da la forma de cada tema. Midnight conserva el brillo; los demás pierden los destellos blancos. */
+  html[data-piel="tierra"] .hero-saldo > .pointer-events-none, html[data-piel="bordeaux"] .hero-saldo > .pointer-events-none,
+  html[data-piel="kinetix"] .hero-saldo > .pointer-events-none { display: none; }
+  html[data-piel="tierra"] .hero-saldo { background: color-mix(in srgb, var(--marca) 14%, var(--sup)); box-shadow: 0 0 0 1px var(--anillo), 0 1px 2px rgba(70, 38, 14, .16), 0 16px 30px -16px rgba(70, 38, 14, .45) !important; }
+  html[data-piel="bordeaux"] .hero-saldo { background: var(--elev); box-shadow: 0 0 0 1px var(--bor), inset 0 4px 0 var(--marca) !important; }
+  html[data-piel="bordeaux"] .hero-saldo [data-ajusta] { font-family: Georgia, 'Times New Roman', serif; letter-spacing: 0; }
+  html[data-piel="kinetix"] .hero-saldo { background: var(--sup); box-shadow: 0 0 0 2px var(--bor), 8px 8px 0 -1px color-mix(in srgb, var(--marca) 34%, transparent) !important; }
+  html[data-piel="esmeralda"] .hero-saldo { box-shadow: inset 5px 0 0 var(--marca), 0 0 0 1px var(--anillo), 0 18px 36px -20px var(--brillo) !important; }
+  html[data-piel="esmeralda"] .hero-saldo > .relative { padding-left: .35rem; }
+
   /* la tarjeta grande de Saldos: una superficie (el 30 %) con un tinte del acento; el acento de verdad (el 10 %) queda para el gráfico y la
      pestaña de días. Obsidiana la deja en negro con un filete, sin tinte. */
   .hero-saldo { background: var(--hero, linear-gradient(135deg, color-mix(in srgb, var(--marca) 16%, var(--sup)), color-mix(in srgb, var(--marca-2) 8%, var(--sup)))); color: var(--tx); }
