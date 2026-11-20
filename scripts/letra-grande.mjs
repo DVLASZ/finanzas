@@ -18,9 +18,9 @@ if (!chrome) { console.error('No encuentro Chrome. Pon su ruta en CHROME_PATH.')
 const instalacion = process.env.INSTALACION ?? 'mama';
 const escalas = (process.env.ESCALAS ?? '1,1.15,1.3').split(',').map(Number);
 const capturas = process.env.CAPTURAS;
-// los temas que se revisan (piel:tema). Por defecto los cuatro de siempre; TEMAS=todos suma las tres atmósferas nuevas
-const TODOS = 'libro:oscuro,libro:claro,tierra:oscuro,tierra:claro,esmeralda:oscuro,esmeralda:claro,oceano:oscuro,oceano:claro,atardecer:oscuro,atardecer:claro,obsidiana:oscuro,obsidiana:claro,veltro:oscuro,veltro:claro,aether:oscuro,aether:claro,kinetix:oscuro,kinetix:claro,abyss:oscuro,abyss:claro,mocha:oscuro,mocha:claro,onyx:oscuro,onyx:claro,bordeaux:oscuro,bordeaux:claro,zafiro:oscuro,zafiro:claro';
-const temas = (process.env.TEMAS === 'todos' ? TODOS : process.env.TEMAS ?? 'libro:oscuro,libro:claro,tierra:oscuro,tierra:claro,obsidiana:oscuro').split(',').map(x => x.split(':'));
+// los temas que se revisan (piel:tema). Por defecto los seis, en claro y en oscuro; TEMAS=obsidiana:oscuro,tierra:claro revisa solo esos
+const TODOS = 'obsidiana:oscuro,obsidiana:claro,midnight:oscuro,midnight:claro,tierra:oscuro,tierra:claro,esmeralda:oscuro,esmeralda:claro,bordeaux:oscuro,bordeaux:claro,kinetix:oscuro,kinetix:claro';
+const temas = (process.env.TEMAS === 'todos' || !process.env.TEMAS ? TODOS : process.env.TEMAS).split(',').map(x => x.split(':'));
 if (capturas) mkdirSync(capturas, { recursive: true });
 
 const prep = spawnSync('npm', ['run', 'instalar', '--', 'preparar', instalacion], { cwd: raiz, encoding: 'utf8', shell: true });

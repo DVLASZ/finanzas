@@ -24,7 +24,7 @@ const dist = arg('out', join(web, 'dist'));
 const nombreApp = arg('nombre', 'Mis finanzas');
 const nombreCorto = arg('corto', 'Finanzas');
 const colorApp = arg('color', '#1f7a5a');
-const pielApp = arg('piel', 'libro');
+const pielApp = arg('piel', 'midnight');
 const temaApp = arg('tema', 'oscuro');
 const letraApp = arg('letra', 'normal');
 const matizApp = arg('matiz', '');
@@ -55,14 +55,14 @@ const rt = spawnSync(process.execPath, [tailwind, '-i', join(web, 'estilos', 'ta
 if (rt.status !== 0) { console.error(rt.stdout + rt.stderr); process.exit(1); }
 renameSync(salidaTailwind, join(dist, 'styles.css'));
 // La barra del sistema y la pantalla de arranque usan el fondo del tema de fábrica: así nada de otro color asoma bajo la app.
-const FONDOS = { obsidiana: { oscuro: '#000000', claro: '#fafaf7' }, libro: { oscuro: '#090d16', claro: '#f3f5fa' }, tierra: { oscuro: '#17110c', claro: '#f7f0e6' } };
-const fondoApp = FONDOS[pielApp]?.[temaApp === 'claro' ? 'claro' : 'oscuro'] ?? '#090d16';
+const FONDOS = { obsidiana: { oscuro: '#000000', claro: '#faf9f6' }, midnight: { oscuro: '#0b1120', claro: '#eef4ff' }, tierra: { oscuro: '#1c1410', claro: '#f5ede0' }, esmeralda: { oscuro: '#061e16', claro: '#ecfdf5' }, bordeaux: { oscuro: '#2a0813', claro: '#fdf2f4' }, kinetix: { oscuro: '#161124', claro: '#f5f3ff' } };
+const fondoApp = FONDOS[pielApp]?.[temaApp === 'claro' ? 'claro' : 'oscuro'] ?? '#0b1120';
 // El nombre de la app cambia por instalación (así se distinguen en el celular).
 writeFileSync(join(dist, 'index.html'), readFileSync(join(web, 'index.html'), 'utf8')
   .replace('data-plantilla="personal"', `data-plantilla="${plantillaApp}"`)
   .replace('<title>Mis finanzas</title>', `<title>${nombreApp}</title>`)
   // lo de fábrica de esta instalación (la persona puede cambiarlo dentro de la app)
-  .replace('data-piel-defecto="libro" data-tema-defecto="oscuro" data-letra-defecto="normal" data-piel="libro" data-tema="oscuro" data-letra="normal"', `data-piel-defecto="${pielApp}" data-tema-defecto="${temaApp}" data-letra-defecto="${letraApp}" data-piel="${pielApp}" data-tema="${temaApp === 'auto' ? 'claro' : temaApp}" data-letra="${letraApp}"${matizApp ? ` data-matiz="${matizApp}"` : ''}`));
+  .replace('data-piel-defecto="midnight" data-tema-defecto="oscuro" data-letra-defecto="normal" data-piel="midnight" data-tema="oscuro" data-letra="normal"', `data-piel-defecto="${pielApp}" data-tema-defecto="${temaApp}" data-letra-defecto="${letraApp}" data-piel="${pielApp}" data-tema="${temaApp === 'auto' ? 'claro' : temaApp}" data-letra="${letraApp}"${matizApp ? ` data-matiz="${matizApp}"` : ''}`));
 writeFileSync(join(dist, 'manifest.webmanifest'), JSON.stringify({ ...JSON.parse(readFileSync(join(web, 'manifest.webmanifest'), 'utf8')), name: nombreApp, short_name: nombreCorto, theme_color: fondoApp, background_color: fondoApp }, null, 2));
 writeFileSync(join(dist, 'tema.js'), readFileSync(join(web, 'tema.js'), 'utf8'));
 writeFileSync(join(dist, 'sw.js'), readFileSync(join(web, 'sw.js'), 'utf8').replaceAll('__VERSION__', Date.now().toString(36)));

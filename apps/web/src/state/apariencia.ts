@@ -7,7 +7,23 @@
  */
 export type Tema = 'claro' | 'oscuro' | 'auto';
 export type Letra = 'normal' | 'grande';
-export type Piel = 'libro' | 'tierra' | 'esmeralda' | 'oceano' | 'atardecer' | 'obsidiana' | 'veltro' | 'aether' | 'kinetix' | 'abyss' | 'mocha' | 'onyx' | 'bordeaux' | 'zafiro';
+export type Piel = 'obsidiana' | 'midnight' | 'tierra' | 'esmeralda' | 'bordeaux' | 'kinetix';
+
+/**
+ * Los temas que ya no existen y el que los reemplaza. Quien tenía guardado uno de estos sigue con algo parecido, sin errores.
+ * Se repite en tema.js (que corre antes de pintar): si cambias uno, cambia el otro.
+ */
+const LEGADO: Record<string, Piel> = {
+  libro: 'midnight', oceano: 'midnight', zafiro: 'midnight', abyss: 'midnight',
+  mocha: 'tierra', veltro: 'esmeralda', aether: 'kinetix', onyx: 'obsidiana', atardecer: 'bordeaux',
+};
+const VIGENTES: string[] = ['obsidiana', 'midnight', 'tierra', 'esmeralda', 'bordeaux', 'kinetix'];
+
+/** Un nombre de tema guardado o de fábrica, llevado a uno que existe. */
+export function pielValida(p: string | undefined): Piel {
+  if (p && VIGENTES.includes(p)) return p as Piel;
+  return (p && LEGADO[p]) || 'midnight';
+}
 
 interface Elegido { tema?: Tema; letra?: Letra; piel?: Piel }
 
@@ -27,19 +43,19 @@ const oscuroDelSistema = (): boolean => matchMedia('(prefers-color-scheme: dark)
 export function aplicar(): void {
   const e = leer();
   const tema = e.tema ?? (html.dataset.temaDefecto as Tema | undefined) ?? 'auto';
-  html.dataset.piel = e.piel ?? html.dataset.pielDefecto ?? 'libro';
+  html.dataset.piel = pielValida(e.piel ?? html.dataset.pielDefecto);
   html.dataset.temaElegido = tema;
   html.dataset.tema = tema === 'auto' ? (oscuroDelSistema() ? 'oscuro' : 'claro') : tema;
   html.dataset.letra = e.letra ?? html.dataset.letraDefecto ?? 'normal';
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', getComputedStyle(html).getPropertyValue('--fondo').trim() || '#090d16');
+  if (meta) meta.setAttribute('content', getComputedStyle(html).getPropertyValue('--fondo').trim() || '#0b1120');
   window.dispatchEvent(new Event('apariencia')); // para que la cabecera y Ajustes se pongan al día
 }
 
 export const actual = () => ({
   tema: (html.dataset.temaElegido as Tema) ?? 'auto',
   letra: (html.dataset.letra as Letra) ?? 'normal',
-  piel: (html.dataset.piel as Piel) ?? 'libro',
+  piel: pielValida(html.dataset.piel),
   oscuro: html.dataset.tema === 'oscuro',
 });
 

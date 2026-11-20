@@ -21,16 +21,19 @@ function Pildora({ piel, tema }: { piel: Piel; tema: 'claro' | 'oscuro' }) {
   );
 }
 
+/** El radio de esquina de cada tema (el mismo de temas.css, a escala), para que la vista previa ya tenga su silueta. */
+const ESQUINA: Record<Piel, string> = { obsidiana: '.4rem', midnight: '.7rem', tierra: '.9rem', esmeralda: '.8rem', bordeaux: '.3rem', kinetix: '.2rem' };
+
 /** Una tarjeta pequeña que muestra cómo se ve el tema: fondo, tarjeta, texto y botón. */
 function Vista({ piel, tema }: { piel: Piel; tema: 'claro' | 'oscuro' }) {
   const p = PILDORAS.find(x => x.piel === piel && x.tema === tema);
   if (!p) return null;
   return (
-    <span class="tema-vista" style={{ background: p.f }}>
-      <span class="tema-sup" style={{ background: p.e30 === p.f ? '#888' : p.e30, opacity: 0.9 }}>
+    <span class="tema-vista" style={{ background: p.f, borderRadius: ESQUINA[piel] }}>
+      <span class="tema-sup" style={{ background: p.e30 === p.f ? '#888' : p.e30, opacity: 0.9, borderRadius: ESQUINA[piel] }}>
         <i style={{ background: p.a, width: '46%' }} /><i style={{ background: p.a, opacity: 0.45, width: '72%' }} />
       </span>
-      <span class="tema-sup" style={{ background: p.a, height: '.9rem', width: '40%' }} />
+      <span class="tema-sup" style={{ background: p.a, height: '.9rem', width: '40%', borderRadius: ESQUINA[piel] }} />
     </span>
   );
 }

@@ -71,54 +71,34 @@ function acentoLegible(a, f) {
 // Opcionales: tx2, atx (el acento como texto), pos/neg/adv/info (semánticos), p30 (el color de estructura que se muestra en la
 // píldora del selector cuando no es la superficie), glow (cuatro colores de la aurora).
 export const PALETAS = [
-  // ---- los de siempre, rediseñados. El oscuro de Fintech y de Tierra se escriben a mano en temas.css (manual: no generan CSS, solo salen en el selector)
-  { piel: 'libro', tema: 'oscuro', manual: true, f: '#090d16', s: '#111827', e: '#1b2538', tx: '#f1f5fb', a: '#38bdf8', a2: '#818cf8' },
-  { piel: 'tierra', tema: 'oscuro', manual: true, f: '#17110c', s: '#211812', e: '#2c2118', tx: '#f5ebdd', a: '#f0a06a', a2: '#f2c14e' },
-  { piel: 'libro', tema: 'claro', f: '#e4eaf2', s: '#f7f9fc', e: '#d6dfeb', tx: '#0f1c2e', tx2: '#45536a', a: '#0e7490', a2: '#4f46e5', p30: '#0f1c2e' },
-  { piel: 'tierra', tema: 'claro', f: '#eee1c8', s: '#fbf4e6', e: '#e3d2b0', tx: '#3a2514', tx2: '#684f3c', a: '#b45309', a2: '#047857', p30: '#8a4b25' },
-  { piel: 'esmeralda', tema: 'oscuro', f: '#06120e', s: '#0e1d17', e: '#17291f', tx: '#eef8f2', a: '#34d399', a2: '#2dd4bf', neg: '#fda4af' },
-  { piel: 'esmeralda', tema: 'claro', f: '#d9eadf', s: '#f1faf4', e: '#c8dfd0', tx: '#0b2417', a: '#047857', a2: '#0f766e', p30: '#0b2417' },
-  { piel: 'oceano', tema: 'oscuro', f: '#060f1c', s: '#0d1b2e', e: '#162a44', tx: '#eef6ff', a: '#22d3ee', a2: '#60a5fa', neg: '#fda4af' },
-  { piel: 'oceano', tema: 'claro', f: '#d6e8f2', s: '#f0f8fc', e: '#c3dcea', tx: '#08202f', a: '#0369a1', a2: '#0e7490', p30: '#08202f' },
-  { piel: 'atardecer', tema: 'oscuro', f: '#170c14', s: '#231320', e: '#321c2d', tx: '#fdf0f4', a: '#fb923c', a2: '#f472b6', pos: '#86efac', adv: '#fbbf24', info: '#7dd3fc' },
-  { piel: 'atardecer', tema: 'claro', f: '#f8e1d5', s: '#fff5ef', e: '#efcbbb', tx: '#3a1420', tx2: '#6b4350', a: '#c2410c', a2: '#be185d', p30: '#7a2338' },
-  { piel: 'obsidiana', tema: 'oscuro', f: '#000000', s: '#09090b', e: '#111114', tx: '#f4f4f6', tx2: '#9ca3af', a: '#d8c9a3', a2: '#bfc3cc', neg: '#f28b82', adv: '#e2b85c', info: '#9cb3d1', glow: false },
-  { piel: 'obsidiana', tema: 'claro', f: '#f6f5f0', s: '#ffffff', e: '#eae8e1', tx: '#111114', tx2: '#585c67', a: '#8a6f2f', a2: '#585c67', glow: false },
-
-  // ---- los siete nuevos
-  // Veltro: crema editorial (60), verde abeto (30), rojo tomate (10)
-  { piel: 'veltro', tema: 'claro', ring: '#1b4532', f: '#eee2cb', s: '#f8f0dd', e: '#e2d3b3', tx: '#1b4532', tx2: '#3f5f4d', a: '#ee4129', a2: '#f26b3a', atx: '#b3301c', p30: '#1b4532', bor: '#cdbb98', neg: '#a8281a' },
-  { piel: 'veltro', tema: 'oscuro', f: '#0f2619', s: '#173526', e: '#20432f', tx: '#eee2cb', a: '#ee4129', a2: '#f26b3a', atx: '#ff7a63', p30: '#1b4532' },
-  // Aether: ciruela eclipse (60), seda titanio (30), destello ámbar (10)
-  { piel: 'aether', tema: 'oscuro', f: '#2b1c33', s: '#38264a', e: '#47325a', tx: '#d9d3cc', a: '#ff8c12', a2: '#ffb454', p30: '#d9d3cc' },
-  { piel: 'aether', tema: 'claro', f: '#e8e1da', s: '#f7f3ee', e: '#d9d0c7', tx: '#2b1c33', tx2: '#5d4a66', a: '#ff8c12', a2: '#ffa640', atx: '#9c4f00', p30: '#2b1c33' },
-  // Kinetix: índigo noche (60), lavanda eléctrico (30), verde voltio (10)
-  { piel: 'kinetix', tema: 'oscuro', ring: '#8e7fe3', f: '#1e1830', s: '#2a2342', e: '#37305a', tx: '#ece9fa', a: '#c6ff24', a2: '#9be000', p30: '#8e7fe3', bor: '#4a4180' },
-  { piel: 'kinetix', tema: 'claro', ring: '#8e7fe3', f: '#e9e5fa', s: '#f7f5ff', e: '#d9d3f3', tx: '#1e1830', tx2: '#52467c', a: '#c6ff24', a2: '#a6e810', atx: '#4a3dbd', p30: '#8e7fe3', bor: '#c8bff0' },
-  // Abyss: azul abisal (60), cian nébula (30), rosa neón (10)
-  { piel: 'abyss', tema: 'oscuro', ring: '#00b7cb', f: '#01485a', s: '#065e74', e: '#0b7088', tx: '#e8f9fc', a: '#ff3b8b', a2: '#ff6fa8', atx: '#ff9cc2', p30: '#00b7cb', bor: '#0d8aa0' },
-  { piel: 'abyss', tema: 'claro', ring: '#00b7cb', f: '#d3eff4', s: '#ebfafc', e: '#bde3ea', tx: '#013544', tx2: '#1d5b6a', a: '#e0207a', a2: '#ff4f98', atx: '#c0136a', p30: '#00b7cb', bor: '#9fd3dd' },
-  // Mocha Silk: crema seda (60), café mocha (30), azul cielo (10)
-  { piel: 'mocha', tema: 'claro', f: '#f3e8d8', s: '#fbf6ec', e: '#e7d8c0', tx: '#433329', tx2: '#6c5849', a: '#86bcef', a2: '#a8d2f5', atx: '#2c6aa3', p30: '#433329' },
-  { piel: 'mocha', tema: 'oscuro', f: '#2a211b', s: '#382d25', e: '#46392f', tx: '#f3e8d8', a: '#86bcef', a2: '#a8d2f5', p30: '#433329' },
-  // Onyx Solar: negro esmeralda (60), amarillo solar (30), índigo vórtice (10)
-  { piel: 'onyx', tema: 'oscuro', ring: '#e8c613', f: '#051a10', s: '#0b2a1b', e: '#133a27', tx: '#f4f1dc', a: '#3b2dff', a2: '#6a5cff', atx: '#e8c613', p30: '#e8c613', bor: '#2a4a38' },
-  { piel: 'onyx', tema: 'claro', ring: '#c9a800', f: '#f1efd2', s: '#fffdf0', e: '#e3e0bb', tx: '#0a2418', tx2: '#3e5446', a: '#3b2dff', a2: '#6a5cff', atx: '#3b2dff', p30: '#e8c613' },
-  // Bordeaux Sage: vino burdeos (60), rosa polvo (30), verde salvia (10)
-  { piel: 'bordeaux', tema: 'oscuro', ring: '#f4c3c2', f: '#4a0e23', s: '#5e1a32', e: '#72263f', tx: '#f4c3c2', a: '#80a95b', a2: '#a3c57f', atx: '#a9cd85', p30: '#f4c3c2', neg: '#ffb3a7' },
-  { piel: 'bordeaux', tema: 'claro', f: '#f6e4e2', s: '#fff6f5', e: '#ebcfcd', tx: '#4a0e23', tx2: '#7a4452', a: '#80a95b', a2: '#a3c57f', atx: '#4a6e2c', p30: '#4a0e23' },
-  // Zafiro Real: azul cobalto (60), estructura azul real (30), cian eléctrico (10)
-  { piel: 'zafiro', tema: 'oscuro', ring: '#00b4d8', f: '#0b132b', s: '#1c2541', e: '#1e3a8a', tx: '#eaf2ff', a: '#00b4d8', a2: '#48cae4', atx: '#48cae4', p30: '#1e3a8a', bor: '#2b4a9e' },
-  { piel: 'zafiro', tema: 'claro', ring: '#0284c7', f: '#eef4ff', s: '#f9fbff', e: '#dbe7ff', tx: '#0b132b', tx2: '#34446e', a: '#0284c7', a2: '#38a9e6', atx: '#0369a1', p30: '#1e3a8a', bor: '#bccdee' },
+  // Obsidiana: negro AMOLED (60), tarjetas casi negras (30), champán dorado (10). Sin aurora.
+  { piel: 'obsidiana', tema: 'oscuro', f: '#000000', s: '#09090b', e: '#131316', tx: '#f4f4f6', tx2: '#9ca3af', a: '#e5c158', a2: '#c9a43a', neg: '#f28b82', adv: '#e2b85c', info: '#9cb3d1', glow: false },
+  { piel: 'obsidiana', tema: 'claro', f: '#faf9f6', s: '#ffffff', e: '#eeece5', tx: '#111114', tx2: '#585c67', a: '#e5c158', a2: '#c9a43a', atx: '#7a5c0f', p30: '#ffffff', glow: false },
+  // Midnight: azul noche (60), azul pizarra (30), cian eléctrico (10), vidrio y aurora azul-índigo
+  { piel: 'midnight', tema: 'oscuro', f: '#0b1120', s: '#121a2e', e: '#1b2740', tx: '#eef3fc', a: '#38bdf8', a2: '#818cf8' },
+  { piel: 'midnight', tema: 'claro', f: '#eef4ff', s: '#f9fbff', e: '#d9e5fb', tx: '#0d1a33', tx2: '#43557a', a: '#0284c7', a2: '#4f46e5', p30: '#0d1a33' },
+  // Tierra: café tostado (60), cuero (30), terracota (10), mate y de papel
+  { piel: 'tierra', tema: 'oscuro', f: '#1c1410', s: '#271c15', e: '#33261c', tx: '#f5ebdd', a: '#d97706', a2: '#f2c14e', pos: '#8bd48b', neg: '#ff9b8a', adv: '#f2c14e' },
+  { piel: 'tierra', tema: 'claro', f: '#f5ede0', s: '#fcf7ee', e: '#e6d9c2', tx: '#3a2514', tx2: '#684f3c', a: '#c2410c', a2: '#b45309', p30: '#8a4b25' },
+  // Esmeralda: verde bosque (60), verde pino (30), esmeralda vibrante (10)
+  { piel: 'esmeralda', tema: 'oscuro', f: '#061e16', s: '#0d2c21', e: '#153b2d', tx: '#eefaf4', a: '#10b981', a2: '#2dd4bf', neg: '#fda4af' },
+  { piel: 'esmeralda', tema: 'claro', f: '#ecfdf5', s: '#f7fffb', e: '#cfeedd', tx: '#0b2417', a: '#059669', a2: '#0f766e', p30: '#0b2417' },
+  // Bordeaux: vino burdeos (60), vino claro (30), frambuesa y coral (10), editorial
+  { piel: 'bordeaux', tema: 'oscuro', f: '#2a0813', s: '#3b1120', e: '#4c1b2d', tx: '#fdeef1', a: '#f43f5e', a2: '#fb7185', neg: '#ffb3a7' },
+  { piel: 'bordeaux', tema: 'claro', f: '#fdf2f4', s: '#fff9fa', e: '#f3d9de', tx: '#4a0e23', tx2: '#7a4452', a: '#be123c', a2: '#e11d48', p30: '#4a0e23' },
+  // Kinetix: morado profundo (60), violeta (30), lima voltio (10), angular y de alto contraste
+  { piel: 'kinetix', tema: 'oscuro', ring: '#8e7fe3', f: '#161124', s: '#21193b', e: '#2e2452', tx: '#ece9fa', a: '#a3e635', a2: '#84cc16', p30: '#8e7fe3', bor: '#4a4180' },
+  { piel: 'kinetix', tema: 'claro', ring: '#8e7fe3', f: '#f5f3ff', s: '#fcfbff', e: '#e4defa', tx: '#1e1830', tx2: '#52467c', a: '#4d7c0f', a2: '#65a30d', p30: '#8e7fe3', bor: '#b9aee8' },
 ];
 
-/** Los nombres que se ven en el selector, y de dónde viene cada tema. */
+/** Los nombres que se ven en el selector. */
 export const NOMBRES = {
-  libro: ['Midnight Fintech', 'Gris hielo y pizarra, con cian e índigo'], tierra: ['Tierra Editorial', 'Arena y café, con ámbar y esmeralda'],
-  esmeralda: ['Esmeralda', 'Verde bosque y menta'], oceano: ['Océano', 'Azul marino y turquesa'], atardecer: ['Atardecer', 'Durazno, coral y ciruela'],
-  obsidiana: ['Obsidiana', 'Negro puro, minimalista'], veltro: ['Veltro', 'Crema, abeto y rojo tomate'], aether: ['Aether', 'Ciruela, titanio y ámbar'],
-  kinetix: ['Kinetix', 'Índigo, lavanda y verde voltio'], abyss: ['Abyss', 'Azul abisal, cian y rosa neón'], mocha: ['Mocha Silk', 'Crema seda, mocha y azul cielo'],
-  onyx: ['Onyx Solar', 'Negro esmeralda, oro e índigo'], bordeaux: ['Bordeaux Sage', 'Burdeos, rosa polvo y salvia'], zafiro: ['Zafiro Real', 'Cobalto, azul real y cian eléctrico'],
+  obsidiana: ['Obsidiana', 'Negro puro, champán y nada de adorno'],
+  midnight: ['Midnight', 'Azul noche de vidrio y cian eléctrico'],
+  tierra: ['Tierra', 'Arena, café y terracota, como papel'],
+  esmeralda: ['Esmeralda', 'Verde bosque y jade, fresco'],
+  bordeaux: ['Bordeaux', 'Vino burdeos y coral, editorial'],
+  kinetix: ['Kinetix', 'Morado profundo y lima voltio, angular'],
 };
 
 // ---------------------------------------------------------------- derivar una paleta completa

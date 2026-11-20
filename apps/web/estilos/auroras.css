@@ -1,49 +1,21 @@
 /* Generado por scripts/paletas.mjs: los brillos de la aurora de cada tema, ya ajustados para que el texto se lea. */
-html[data-piel="libro"][data-tema="claro"] { --glow-a: #0e95ba; --glow-b: #7b74ee; --glow-c: #5083c9; --glow-d: #83b7c6; }
-html[data-piel="libro"][data-tema="claro"][data-seccion] { --sec: #0e95ba; }
-html[data-piel="tierra"][data-tema="claro"] { --glow-a: #f87e21; --glow-b: #03c38c; --glow-c: #d58555; --glow-d: #d8a478; }
-html[data-piel="tierra"][data-tema="claro"][data-seccion] { --sec: #f87e21; }
-html[data-piel="esmeralda"][data-tema="oscuro"] { --glow-a: #15694a; --glow-b: #146b60; --glow-c: #156e58; --glow-d: #1c6e50; }
-html[data-piel="esmeralda"][data-tema="oscuro"][data-seccion] { --sec: #15694a; }
-html[data-piel="esmeralda"][data-tema="claro"] { --glow-a: #03bd88; --glow-b: #14baad; --glow-c: #35b874; --glow-d: #7bb9a6; }
-html[data-piel="esmeralda"][data-tema="claro"][data-seccion] { --sec: #03bd88; }
-html[data-piel="oceano"][data-tema="oscuro"] { --glow-a: #076978; --glow-b: #025ece; --glow-c: #066996; --glow-d: #13687c; }
-html[data-piel="oceano"][data-tema="oscuro"][data-seccion] { --sec: #076978; }
-html[data-piel="oceano"][data-tema="claro"] { --glow-a: #0da9ff; --glow-b: #11b1dc; --glow-c: #3ea3e2; --glow-d: #7ab1cf; }
-html[data-piel="oceano"][data-tema="claro"][data-seccion] { --sec: #0da9ff; }
-html[data-piel="atardecer"][data-tema="oscuro"] { --glow-a: #8f4000; --glow-b: #ac0a5f; --glow-c: #b41206; --glow-d: #7f4927; }
-html[data-piel="atardecer"][data-tema="oscuro"][data-seccion] { --sec: #8f4000; }
-html[data-piel="atardecer"][data-tema="claro"] { --glow-a: #f54f0a; --glow-b: #eb478b; --glow-c: #d15371; --glow-d: #e19b7e; }
-html[data-piel="atardecer"][data-tema="claro"][data-seccion] { --sec: #f54f0a; }
-html[data-piel="veltro"][data-tema="claro"] { --glow-a: #f78676; --glow-b: #f8885f; --glow-c: #46ba85; --glow-d: #f39983; }
-html[data-piel="veltro"][data-tema="claro"][data-seccion] { --sec: #f78676; }
-html[data-piel="veltro"][data-tema="oscuro"] { --glow-a: #b8200b; --glow-b: #aa3308; --glow-c: #1b4532; --glow-d: #833b28; }
-html[data-piel="veltro"][data-tema="oscuro"][data-seccion] { --sec: #b8200b; }
-html[data-piel="aether"][data-tema="oscuro"] { --glow-a: #a65500; --glow-b: #9b5700; --glow-c: #736554; --glow-d: #98552a; }
-html[data-piel="aether"][data-tema="oscuro"][data-seccion] { --sec: #a65500; }
-html[data-piel="aether"][data-tema="claro"] { --glow-a: #ff8c12; --glow-b: #ffa640; --glow-c: #a27ab8; --glow-d: #fbc080; }
-html[data-piel="aether"][data-tema="claro"][data-seccion] { --sec: #ff8c12; }
-html[data-piel="kinetix"][data-tema="oscuro"] { --glow-a: #608200; --glow-b: #5b8400; --glow-c: #715ddf; --glow-d: #667c29; }
-html[data-piel="kinetix"][data-tema="oscuro"][data-seccion] { --sec: #608200; }
-html[data-piel="kinetix"][data-tema="claro"] { --glow-a: #c6ff24; --glow-b: #a6e810; --glow-c: #8e7fe3; --glow-d: #dffa92; }
-html[data-piel="kinetix"][data-tema="claro"][data-seccion] { --sec: #c6ff24; }
-html[data-piel="abyss"][data-tema="oscuro"] { --glow-a: #ff3b8b; --glow-b: #ff5096; --glow-c: #008e9d; --glow-d: #834d80; }
-html[data-piel="abyss"][data-tema="oscuro"][data-seccion] { --sec: #ff3b8b; }
-html[data-piel="abyss"][data-tema="claro"] { --glow-a: #ec63a3; --glow-b: #ff5b9f; --glow-c: #00b7cb; --glow-d: #e68dbb; }
-html[data-piel="abyss"][data-tema="claro"][data-seccion] { --sec: #ec63a3; }
-html[data-piel="mocha"][data-tema="claro"] { --glow-a: #86bcef; --glow-b: #a8d2f5; --glow-c: #bb9f8d; --glow-d: #c1d9ee; }
-html[data-piel="mocha"][data-tema="claro"][data-seccion] { --sec: #86bcef; }
-html[data-piel="mocha"][data-tema="oscuro"] { --glow-a: #1774cd; --glow-b: #1377ca; --glow-c: #433329; --glow-d: #5b7186; }
-html[data-piel="mocha"][data-tema="oscuro"][data-seccion] { --sec: #1774cd; }
-html[data-piel="onyx"][data-tema="oscuro"] { --glow-a: #2d1eff; --glow-b: #321fff; --glow-c: #5c4e06; --glow-d: #232c8d; }
-html[data-piel="onyx"][data-tema="oscuro"][data-seccion] { --sec: #2d1eff; }
-html[data-piel="onyx"][data-tema="claro"] { --glow-a: #6358ff; --glow-b: #6a5cff; --glow-c: #e8c613; --glow-d: #9d95f8; }
-html[data-piel="onyx"][data-tema="claro"][data-seccion] { --sec: #6358ff; }
-html[data-piel="bordeaux"][data-tema="oscuro"] { --glow-a: #56743b; --glow-b: #567734; --glow-c: #c1221f; --glow-d: #6f6247; }
-html[data-piel="bordeaux"][data-tema="oscuro"][data-seccion] { --sec: #56743b; }
-html[data-piel="bordeaux"][data-tema="claro"] { --glow-a: #80a95b; --glow-b: #a3c57f; --glow-c: #e56894; --glow-d: #c0d0a8; }
-html[data-piel="bordeaux"][data-tema="claro"][data-seccion] { --sec: #80a95b; }
-html[data-piel="zafiro"][data-tema="oscuro"] { --glow-a: #006e84; --glow-b: #116f82; --glow-c: #1e3a8a; --glow-d: #0e6d8d; }
-html[data-piel="zafiro"][data-tema="oscuro"][data-seccion] { --sec: #006e84; }
-html[data-piel="zafiro"][data-tema="claro"] { --glow-a: #0284c7; --glow-b: #38a9e6; --glow-c: #1e3a8a; --glow-d: #7ec0e3; }
-html[data-piel="zafiro"][data-tema="claro"][data-seccion] { --sec: #0284c7; }
+html[data-piel="midnight"][data-tema="oscuro"] { --glow-a: #025d86; --glow-b: #2639f7; --glow-c: #0458b8; --glow-d: #1e5f83; }
+html[data-piel="midnight"][data-tema="oscuro"][data-seccion] { --sec: #025d86; }
+html[data-piel="midnight"][data-tema="claro"] { --glow-a: #0089cf; --glow-b: #7069ed; --glow-c: #4878d4; --glow-d: #7ec0e3; }
+html[data-piel="midnight"][data-tema="claro"][data-seccion] { --sec: #0089cf; }
+html[data-piel="tierra"][data-tema="oscuro"] { --glow-a: #8a4a01; --glow-b: #735206; --glow-c: #7a4f0c; --glow-d: #804a0e; }
+html[data-piel="tierra"][data-tema="oscuro"][data-seccion] { --sec: #8a4a01; }
+html[data-piel="tierra"][data-tema="claro"] { --glow-a: #f55b1c; --glow-b: #e16507; --glow-c: #cc6c33; --glow-d: #df9c7d; }
+html[data-piel="tierra"][data-tema="claro"][data-seccion] { --sec: #f55b1c; }
+html[data-piel="esmeralda"][data-tema="oscuro"] { --glow-a: #087551; --glow-b: #157266; --glow-c: #10735c; --glow-d: #0f7351; }
+html[data-piel="esmeralda"][data-tema="oscuro"][data-seccion] { --sec: #087551; }
+html[data-piel="esmeralda"][data-tema="claro"] { --glow-a: #02a572; --glow-b: #119f94; --glow-c: #2ea065; --glow-d: #7ecbb2; }
+html[data-piel="esmeralda"][data-tema="claro"][data-seccion] { --sec: #02a572; }
+html[data-piel="bordeaux"][data-tema="oscuro"] { --glow-a: #b20724; --glow-b: #b3021b; --glow-c: #b30420; --glow-d: #98283f; }
+html[data-piel="bordeaux"][data-tema="oscuro"][data-seccion] { --sec: #b20724; }
+html[data-piel="bordeaux"][data-tema="claro"] { --glow-a: #f1416c; --glow-b: #eb4469; --glow-c: #e0487d; --glow-d: #df869b; }
+html[data-piel="bordeaux"][data-tema="claro"][data-seccion] { --sec: #f1416c; }
+html[data-piel="kinetix"][data-tema="oscuro"] { --glow-a: #496f0c; --glow-b: #4a740a; --glow-c: #6550dc; --glow-d: #526c2d; }
+html[data-piel="kinetix"][data-tema="oscuro"][data-seccion] { --sec: #496f0c; }
+html[data-piel="kinetix"][data-tema="claro"] { --glow-a: #4d7c0f; --glow-b: #65a30d; --glow-c: #8e7fe3; --glow-d: #a5bc87; }
+html[data-piel="kinetix"][data-tema="claro"][data-seccion] { --sec: #4d7c0f; }
