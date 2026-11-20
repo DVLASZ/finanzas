@@ -22,6 +22,8 @@ import { cifrarRespaldo, descifrarRespaldo, estaCifrado } from '../../services/c
 import { Selector } from '../../components/ui/Selector.tsx';
 import { ponerSonidos, sonidos } from '../../lib/sonido.ts';
 import { Apariencia } from './Apariencia.tsx';
+import { EstadoSync } from '../../components/ui/EstadoSync.tsx';
+import { alternarPrivacidad, montosOcultos } from '../../state/privacidad.ts';
 
 /** Pide el PIN (o avisa que hay que crearlo). Devuelve true si se puede continuar. */
 async function pedirPin(motivo: string): Promise<boolean> {
@@ -213,11 +215,18 @@ export function Ajustes() {
       <h2 style={{ marginTop: 0 }}>Letra y colores</h2>
       <Apariencia />
 
+      <h2>Privacidad de los montos</h2>
+      <label class="fila-interruptor">
+        <span>Ocultar los montos en pantalla<span class="sub block">Los cambia por puntos, para mirar la app en la calle.</span></span>
+        <input type="checkbox" id="ojo-ajustes" role="switch" class="interruptor" checked={montosOcultos.value} onChange={alternarPrivacidad} />
+      </label>
+
       <h2>Botones rápidos del chat</h2>
       <p class="sub">Los botones de arriba del cuadro de escribir los armas tú: plantillas para completar o frases listas. También puedes ocultar la barra.</p>
       <div class="acciones"><button class="secundario" id="editar-atajos" onClick={() => { editorAtajos.value = true; }}>Editar mis botones</button></div>
 
       <h2>Conexión con el servidor</h2>
+      <div class="mb-2"><EstadoSync /></div>
       <Nota>
         {hayServidor() ? 'Conectado a tu servidor.' : 'Modo local: todo se guarda en este dispositivo. Cuando tengas el servidor, agrégalo aquí.'}{' '}
         Cambios por enviar: <b>{pendientes.value}</b>{app.ultimoSync ? ` · última sincronización: ${app.ultimoSync}` : ''}

@@ -5,6 +5,7 @@
  */
 import { effect, signal } from '@preact/signals';
 import { escribir, leer } from '../services/almacen.ts';
+import { momentanea } from '../lib/efectos.ts';
 
 export const montosOcultos = signal(true);
 export const PUNTOS = '••••••';
@@ -14,6 +15,7 @@ aplicar();
 void leer<boolean>('montos-ocultos').then(v => { if (v === false) { montosOcultos.value = false; aplicar(); } });
 
 export function alternarPrivacidad(): void {
+  momentanea('revelando', 420);
   montosOcultos.value = !montosOcultos.value;
   aplicar();
   void escribir('montos-ocultos', montosOcultos.value);

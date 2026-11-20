@@ -5,6 +5,7 @@
  * pintar y que no parpadee). Mientras no elija nada, vale lo que trae la instalación (atributos
  * data-*-defecto de <html>, puestos al compilar la app de cada instalación).
  */
+import { momentanea } from '../lib/efectos.ts';
 export type Tema = 'claro' | 'oscuro' | 'auto';
 export type Letra = 'normal' | 'grande';
 export type Piel = 'obsidiana' | 'midnight' | 'tierra' | 'esmeralda' | 'bordeaux' | 'kinetix';
@@ -60,6 +61,7 @@ export const actual = () => ({
 });
 
 export function elegir(cambio: Elegido): void {
+  momentanea('cambiando-tema', 500);
   guardar({ ...leer(), ...cambio });
   aplicar();
 }

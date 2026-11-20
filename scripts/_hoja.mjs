@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import puppeteer from 'puppeteer-core';
+import { mostrarMontos } from './_ojo.mjs';
 const chrome = ['C:/Program Files/Google/Chrome/Application/chrome.exe'].find(existsSync);
 const out = 'C:/Users/edwar/AppData/Local/Temp/claude/b387cb9e8eb93630/4cfde460-32f1-497b-a047-f251c6f7d0f1/scratchpad';
 mkdirSync(out, { recursive: true });
@@ -16,7 +17,7 @@ try {
   await pag.setViewport({ width: 393, height: 760, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await pag.goto(`http://localhost:${PUERTO}/`, { waitUntil: 'networkidle0' });
   await espera(700);
-  await pag.evaluate(() => { if (document.documentElement.dataset.privado === '1') document.querySelector('#ojo')?.click(); });
+  await mostrarMontos(pag);
   const esc = async t => { await pag.type('#texto', t); await pag.keyboard.press('Enter'); await espera(650); };
   const pulsar = t => pag.evaluate(x => { const b = [...document.querySelectorAll('button')].filter(y => y.innerText.trim() === x).pop(); b?.click(); }, t);
   await esc('saldo inicial efectivo 500000 nequi 300000 hace 12 días'); await pulsar('Confirmar'); await espera(500);

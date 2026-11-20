@@ -17,10 +17,19 @@ export function entrar(el: Element, retraso = 0): void {
   animate(el, { opacity: [0, 1], transform: ['translateY(12px) scale(.985)', 'translateY(0) scale(1)'] }, { duration: 0.42, delay: retraso, ease: RESORTE });
 }
 
-/** Entrada de una pantalla entera (cambio de pestaña). */
-export function entrarPantalla(el: Element): void {
+/** Entrada de una pantalla entera (cambio de pestaña). `dir` es hacia dónde se va: 1 a la derecha, -1 a la izquierda, 0 sin lado. */
+export function entrarPantalla(el: Element, dir = 0): void {
   if (menosMovimiento()) return;
-  animate(el, { opacity: [0, 1], transform: ['translateY(8px)', 'translateY(0)'] }, { duration: 0.2, ease: [0.22, 1, 0.36, 1] });
+  const x = dir * 22;
+  animate(el, { opacity: [0, 1], transform: [`translateX(${x}px) translateY(${dir ? 0 : 8}px)`, 'translate(0, 0)'] }, { duration: 0.28, ease: [0.22, 1, 0.36, 1] });
+}
+
+/** Una marca de tiempo corta en una clase del <html>, para transiciones que solo valen durante un instante (cambio de tema, revelar cifras). */
+export function momentanea(clase: string, ms = 450): void {
+  if (menosMovimiento()) return;
+  const h = document.documentElement;
+  h.classList.add(clase);
+  window.setTimeout(() => h.classList.remove(clase), ms);
 }
 
 /** Un cuadro de ayuda que sube desde abajo (el detalle de un movimiento). */

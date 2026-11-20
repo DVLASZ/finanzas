@@ -7,6 +7,7 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
+import { ocultarMontos } from './_ojo.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CANDIDATOS = [process.env.CHROME_PATH, 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].filter(Boolean);
@@ -459,7 +460,7 @@ try {
   });
   await prueba('privacidad total: ni montos ni porcentajes se ven en el chat, saldos, movimientos ni resumen', async () => {
     const cifras = () => pag.evaluate(() => document.body.innerText.match(/[-+]?(?:US)?\$\s?\d[\d.,]*|[-+]?\d+(?:[.,]\d+)?\s?%/)?.[0] ?? null);
-    await pag.evaluate(() => { if (document.documentElement.dataset.privado !== '1') document.querySelector('#ojo').click(); }); await espera(400);
+    await ocultarMontos(pag);
     await irA('Chat'); await escribir('mecato 4000');
     igual(await cifras(), null, 'la tarjeta del chat y lo que escribiste');
     await pulsar('Confirmar');
@@ -469,11 +470,32 @@ try {
     igual(await pag.evaluate(() => /\$\s?\d/.test(document.querySelector('#contenido').innerText)), true, 'al mostrar vuelven las cifras');
     await irA('Chat');
   });
-  await prueba('cabecera: con todo guardado es un indicador chiquito, sin texto largo', async () => {
-    const r = await pag.evaluate(() => { const e = document.querySelector('#estado'); return { texto: e.innerText.trim(), alto: document.querySelector('header').getBoundingClientRect().height, aria: e.getAttribute('aria-label') }; });
-    igual(r.texto, '', 'sin texto');
-    igual(Boolean(r.aria), true, 'con nombre para lectores de pantalla');
-    igual(r.alto < 72, true, 'una sola fila');
+  await prueba('sin cabecera: no hay barra de arriba, el aviso de sincronizar solo sale si pasa algo y el estado vive en Ajustes', async () => {
+    await irA('Chat'); await espera(300);
+    igual(await pag.evaluate(() => document.querySelector('header')), null, 'no hay cabecera');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#aviso-sync'))), false, 'con todo en orden no hay aviso');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#cambiar-tema'))), false, 'el botón de tema ya no está arriba');
+    const alto = await pag.evaluate(() => document.querySelector('#contenido').getBoundingClientRect().top);
+    igual(alto < 8, true, 'el contenido arranca arriba del todo');
+    await irA('Saldos'); await espera(500);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#ojo'))), true, 'el ojo está en Saldos');
+    await irA('Resumen'); await espera(500);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#ojo'))), true, 'el ojo está en Resumen');
+    await abrirDeMas('Ajustes'); await espera(700);
+    const r = await pag.evaluate(() => { const e = document.querySelector('#estado'); return { texto: e?.innerText.trim(), sw: Boolean(document.querySelector('#ojo-ajustes')), modo: [...document.querySelectorAll('.opciones button')].some(b => b.innerText.trim() === 'Oscuro') }; });
+    igual(Boolean(r.texto), true, 'el estado de sincronización está en Ajustes');
+    igual(r.sw, true, 'el interruptor de privacidad está en Ajustes');
+    igual(r.modo, true, 'el modo claro y oscuro está junto a los temas');
+    await irA('Chat');
+  });
+  await prueba('aviso de deshacer: sale arriba, no tapa la caja de escribir ni la barra, y se cierra con la equis', async () => {
+    await irA('Chat');
+    await escribir('mecato 2468'); await pulsar('Confirmar'); await espera(700);
+    const r = await pag.evaluate(() => { const t = document.querySelector('#toast-deshacer').getBoundingClientRect(); const f = document.querySelector('#form').getBoundingClientRect(); const n = document.querySelector('#nav').getBoundingClientRect(); return { arriba: t.top, abajo: t.bottom, form: f.top, nav: n.top }; });
+    igual(r.arriba < 80, true, 'pegado al borde de arriba');
+    igual(r.abajo < r.form && r.abajo < r.nav, true, 'no pisa el campo de texto ni la barra de abajo');
+    await pag.evaluate(() => document.querySelector('#cerrar-toast').click()); await espera(500);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#toast-deshacer'))), false, 'la equis lo cierra');
   });
   await prueba('metas: con fecha objetivo sale la cuota semanal y el botón aparta la cuota', async () => {
     await irA('Chat'); await escribir('meta bici 800000');

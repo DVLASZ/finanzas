@@ -30,7 +30,7 @@ export function MapaCalor({ dias, hoy }: { dias: GastoDia[]; hoy: string }) {
         {celdas.map((d, i) => d ? (
           <button key={d.fecha} type="button" class={`calor-dia n${d.fecha > hoy ? 'f' : nivelDe(d.total, max)} ${d.fecha === hoy ? 'hoy' : ''} ${sel?.fecha === d.fecha ? 'sel' : ''}`}
             data-fecha={d.fecha} aria-label={`${Number(d.fecha.slice(8))} de ${MESES[Number(d.fecha.slice(5, 7)) - 1]}: ${d.total > 0 ? verMonto(formatear(d.total)) : 'sin gastos'}`}
-            style={{ animationDelay: `${Math.min(i, 30) * 14}ms` }} onClick={() => setSel(sel?.fecha === d.fecha ? null : d)}>{Number(d.fecha.slice(8))}</button>
+            style={{ animationDelay: `${(Math.floor(i / 7) + (i % 7)) * 34}ms` }} onClick={() => setSel(sel?.fecha === d.fecha ? null : d)}>{Number(d.fecha.slice(8))}</button>
         ) : <span key={`h${i}`} />)}
       </div>
       <div class="mt-2 flex items-center justify-between gap-2 text-xs text-tx2">

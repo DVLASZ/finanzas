@@ -47,7 +47,7 @@ export function ContadorEfectivo() {
               <span class="min-w-0"><b class="tabular-nums">{formatear(b)}</b><span class="sub block !text-xs">{cuantos[i] > 0 ? `${cuantos[i]} = ${formatear(cuantos[i] * b)}` : 'ninguno'}</span></span>
               <span class="flex shrink-0 items-center gap-1.5">
                 <button type="button" class="secundario !min-h-10 !min-w-10 !px-0" aria-label={`Quitar un billete de ${formatear(b)}`} disabled={cuantos[i] === 0} onClick={() => cambiar(i, -1)}><Minus size={16} /></button>
-                <span class="w-8 text-center text-lg font-bold tabular-nums" data-billete={b}>{cuantos[i]}</span>
+                <span key={cuantos[i]} class={`w-8 text-center text-lg font-bold tabular-nums ${cuantos[i] > 0 ? "salta" : ""}`} data-billete={b}>{cuantos[i]}</span>
                 <button type="button" class="primario !min-h-10 !min-w-10 !px-0" aria-label={`Agregar un billete de ${formatear(b)}`} data-mas={b} onClick={() => cambiar(i, 1)}><Plus size={16} /></button>
               </span>
             </li>

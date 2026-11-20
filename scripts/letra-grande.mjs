@@ -9,6 +9,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
+import { mostrarMontos } from './_ojo.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CANDIDATOS = [process.env.CHROME_PATH, 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].filter(Boolean);
@@ -50,9 +51,10 @@ const EN_PAGINA = {
   revisar: () => {
     const ancho = innerWidth;
     const hallazgos = [];
-    // la cabecera siempre en una fila delgada, y el compositor del chat con el campo y los tres botones en la misma fila
-    const cab = document.querySelector('header');
-    if (cab && cab.getBoundingClientRect().height > 72) hallazgos.push({ tipo: 'la cabecera se parte en dos filas', el: 'header', texto: '', dato: `alto ${Math.round(cab.getBoundingClientRect().height)}` });
+    // el compositor del chat con el campo y los tres botones en la misma fila
+    const aviso = document.querySelector('#toast-deshacer')?.getBoundingClientRect();
+    const caja = document.querySelector('#form')?.getBoundingClientRect();
+    if (aviso && caja && aviso.bottom > caja.top) hallazgos.push({ tipo: 'el aviso de deshacer tapa la caja de escribir', el: '#toast-deshacer', texto: '', dato: '' });
     const campo = document.querySelector('#form #texto');
     const enviar = document.querySelector('#form button[type=submit]');
     if (campo && enviar && Math.abs(campo.getBoundingClientRect().top - enviar.getBoundingClientRect().top) > 24) hallazgos.push({ tipo: 'el compositor se apila en dos pisos', el: 'form#form', texto: '', dato: `campo ${Math.round(campo.getBoundingClientRect().top)} y botón ${Math.round(enviar.getBoundingClientRect().top)}` });
@@ -69,7 +71,7 @@ const EN_PAGINA = {
       if (cs.display === 'none' || cs.visibility === 'hidden' || el.closest('[hidden]') || el.closest('[aria-hidden="true"]') || el.hidden) continue;
       const r = el.getBoundingClientRect();
       if (!r.width || !r.height) continue;
-      if (conScroll(el)) continue;
+      if (conScroll(el) || el.closest('.sr-only')) continue; // el h1 oculto mide 1px a propósito
       if (el.classList.contains('pointer-events-none') && cs.position === 'absolute') continue; // adornos que se salen a propósito
       // 1. se sale de la pantalla
       if (r.right > ancho + 1 || r.left < -1) { hallazgos.push({ tipo: 'fuera de la pantalla', el: nombre(el), texto: texto(el), dato: `${Math.round(r.left)}..${Math.round(r.right)} de ${ancho}` }); continue; }
@@ -125,7 +127,7 @@ try {
     await pag.goto(`http://localhost:${PUERTO}/`, { waitUntil: 'networkidle0' });
     await espera(600);
     // la app arranca con los montos ocultos: se muestran para revisar el ancho de las cifras de verdad
-    await pag.evaluate(() => { if (document.documentElement.dataset.privado === '1') document.querySelector('#ojo')?.click(); });
+    await mostrarMontos(pag);
     const escalar = () => pag.evaluate(EN_PAGINA.escalar, escala);
 
     const escribir = async t => { await pag.type('#texto', t); await pag.keyboard.press('Enter'); await espera(700); await escalar(); };
@@ -172,7 +174,8 @@ try {
         await escalar();
       }],
       ['Chat: barra de deshacer', async () => {
-        await irA('Chat'); await escribir('mecato 1111'); await pulsar('Confirmar'); await espera(300); await escalar();
+        await irA('Chat'); await escribir('mecato 1111'); await pulsar('Confirmar'); await espera(700);
+        await escalar();
       }],
       ['Atajos: editor', async () => {
         await irA('Chat');
@@ -238,7 +241,7 @@ try {
     console.log(`\n=== ${instalacion}: texto x${escala}, tema ${piel} ${tema} (letra de la app: ${await pag.evaluate(() => document.documentElement.dataset.letra)}) ===`);
     for (const [nombre, ir] of pantallas) {
       try { await ir(); } catch (e) { console.log(`  ${nombre}: no pude abrirla (${e.message})`); continue; }
-      const h = await pag.evaluate(EN_PAGINA.revisar);
+      await espera(400); const h = await pag.evaluate(EN_PAGINA.revisar);
       if (capturas) await pag.screenshot({ path: join(capturas, `x${escala}-${piel}-${tema}-${nombre.replace(/[^a-z0-9]+/gi, '-')}.png`) });
       await pag.evaluate(() => { document.querySelector('#at-cerrar')?.click(); document.querySelector('#ayuda-volver')?.click(); document.querySelector('#contador-cancelar')?.click(); document.querySelector('#corte-cerrar')?.click(); for (const id of ['dialogo', 'duplicar', 'editar']) document.querySelector('#' + id)?.remove(); });
       await espera(200);

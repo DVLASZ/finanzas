@@ -4,10 +4,17 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-21
+
+- Se quitó la barra de arriba ("Mis finanzas"). Todas las pantallas ganan alto, sobre todo el Chat con letra grande. El claro y oscuro queda solo en Ajustes, junto a los temas. El ojo de privacidad está en Saldos y en Resumen, y en Ajustes hay un interruptor con lo mismo. El estado de sincronización pasó a Ajustes; arriba solo sale una píldora cuando pasa algo real (sin internet, cambios sin enviar, sincronizando).
+- El aviso de "Movimiento guardado / Deshacer" ya no tapa la caja de escribir: sale arriba, como una píldora que baja con rebote, respeta la muesca del celular y se cierra con la equis o deslizándola hacia arriba.
+- Movimiento en toda la app, solo con `transform` y `opacity` y apagado con "reducir movimiento": la píldora de la barra de abajo ya viajaba con resorte y ahora el ícono activo da un salto; las pantallas entran deslizándose hacia el lado al que vas; el micrófono lanza dos ondas mientras escucha; los botones, chips, tarjetas y filas se comprimen al tocarlos y vuelven con rebote; los botones principales sueltan un destello al pulsar; las barras de progreso tienen un brillo al llenarse; el mapa de calor aparece en ola diagonal; el marcador de la gráfica de flujo sigue al dedo sin saltos; los dígitos del contador de billetes saltan; las hojas y diálogos suben con resorte y el fondo se difumina; el interruptor se estira al tocarlo; la tarjeta del tema elegido hace un pulso; y al cambiar de tema o de privacidad los colores y las cifras pasan con un fundido corto.
+- Quedó fuera el campo de texto de varias líneas del Chat: sigue siendo de una línea, para que Enter envíe como siempre.
+
 ## 2026-11-20
 
 - Los temas bajan de catorce a seis, porque muchos se veían casi iguales (cuatro azules, cuatro cafés, dos negros). Quedan Obsidiana, Midnight, Tierra, Esmeralda, Bordeaux y Kinetix, cada uno en claro y en oscuro.
-- Cada tema tiene ahora su propia forma, no solo su color. Obsidiana es negro puro sin adorno, con filetes de 1 px y radios de 14 px. Midnight es vidrio con más desenfoque y una aurora azul e índigo (18 px). Tierra es papel: superficies mate, sombras cálidas y esquinas de 22 px. Esmeralda lleva una tira de acento en el borde de cada tarjeta. Bordeaux es editorial, con titulares en serifa, superficies contrastadas y una doble raya en la cabecera. Kinetix es angular, con radios de 10 px, bordes de 2 px, sombras duras y una rejilla de fondo.
+- Cada tema tiene ahora su propia forma, no solo su color. Obsidiana es negro puro sin adorno, con filetes de 1 px y radios de 14 px. Midnight es vidrio con más desenfoque y una aurora azul e índigo (18 px). Tierra es papel: superficies mate, sombras cálidas y esquinas de 22 px. Esmeralda lleva una tira de acento en el borde de cada tarjeta. Bordeaux es editorial, con titulares en serifa y superficies contrastadas. Kinetix es angular, con radios de 10 px, bordes de 2 px, sombras duras y una rejilla de fondo.
 - Quien tenía guardado un tema que se fue pasa solo al más parecido: Libro, Océano, Zafiro Real y Abyss a Midnight; Mocha Silk a Tierra; Veltro a Esmeralda; Aether a Kinetix; Onyx Solar a Obsidiana; Atardecer a Bordeaux. La instalación personal pasó de `libro` a `midnight` como tema de fábrica.
 - El selector de Ajustes queda en 2 columnas y 3 filas, y la vista previa de cada tema ya trae el radio de esquina del tema.
 - `npm run e2e:letra` revisa por defecto los seis temas, en claro y en oscuro, al 130 %. `npm run e2e` comprueba la migración de los temas que se fueron.
