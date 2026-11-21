@@ -23,7 +23,7 @@ export function PresupuestoSemana() {
       {p.enRojo ? (
         <p class="sub !mt-2">Tus pagos fijos y lo apartado para metas ya cubren todo lo disponible. No hay margen libre esta semana.</p>
       ) : <>
-        <div class="mt-1 text-[1.8rem] font-extrabold leading-tight tabular-nums" data-ajusta><MontoAnimado valor={p.restoDeLaSemana} /></div>
+        <div class="fab-reserva mt-1 text-[1.8rem] font-extrabold leading-tight tabular-nums" data-ajusta><MontoAnimado valor={p.restoDeLaSemana} /></div>
         <div class="sub">para gastar lo que queda de la semana · una semana completa a este ritmo: {oculto ? PUNTOS : formatear(p.porSemana)}</div>
         <div class="mini-barra mt-3" role="img" aria-label={`Ya gastaste el ${pct} % de lo de esta semana`}><span style={{ width: `${pct}%` }} /></div>
         <div class="mt-1 flex justify-between text-xs text-tx2"><span>Gastado: {oculto ? PUNTOS : formatear(p.gastadoSemana)}</span>{p.fijos > 0 && <span>Pagos fijos descontados: {oculto ? PUNTOS : formatear(p.fijos)}</span>}</div>

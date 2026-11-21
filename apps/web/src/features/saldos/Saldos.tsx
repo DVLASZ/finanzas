@@ -109,7 +109,7 @@ export function Saldos() {
         <div class="pointer-events-none absolute -bottom-16 left-8 h-40 w-40 rounded-full bg-marca/10 blur-2xl" />
         <div class="relative">
           <div class="flex items-center justify-between"><div class="text-xs font-semibold uppercase tracking-[.09em] opacity-85">Disponible</div><Nfc size={22} class="opacity-80" /></div>
-          <div data-ajusta class="mt-1 text-[2.6rem] font-extrabold leading-none tracking-tight"><MontoAnimado valor={r.disponibleCop} /></div>
+          <div data-ajusta class="fab-reserva mt-1 text-[2.6rem] font-extrabold leading-none tracking-tight"><MontoAnimado valor={r.disponibleCop} /></div>
           <div class="mt-2 text-[.8rem] opacity-85">{cuentasEnDisponible} · sin las monedas{r.cuentas.some(x => x.cuenta.moneda === 'USD') ? ' ni los dólares' : ''}</div>
           <div class="-mx-1 mt-3" onClick={e => e.stopPropagation()}><Sparkline valores={evolucion} etiquetas={etiquetasEvolucion} /></div>
           <div class="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">

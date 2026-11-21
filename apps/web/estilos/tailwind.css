@@ -1003,3 +1003,9 @@ html[data-letra="extra"] .comp-pct { font-size: .68rem; gap: .1rem; }
 .ds-col { padding-inline: 0; }
 .ds-nombre { font-size: .62rem; letter-spacing: -.02em; }
 html[data-letra="extra"] .ds-nombre { font-size: .54rem; letter-spacing: -.04em; }
+
+/* con letra grande el ojo flotante no tapa las cifras grandes: es más chico, queda más al borde, las cifras le dejan su lugar y al final de cada pantalla sobra espacio */
+html[data-letra="extra"] .boton-ojo { width: 40px; height: 40px; right: .5rem; }
+html:is([data-letra="grande"],[data-letra="extra"]) .fab-reserva { margin-right: 2.6rem; }
+html[data-letra="grande"] #contenido.px-4 { padding-bottom: calc(env(safe-area-inset-bottom) + 10rem); }
+html[data-letra="extra"] #contenido.px-4 { padding-bottom: calc(env(safe-area-inset-bottom) + 12rem); }
