@@ -62,6 +62,13 @@ function fraseConCuando(frases: string[], cuando: string): string {
   return frases.map(f => (/\b(ayer|hoy|anteayer|hace|lunes|martes|miercoles|jueves|viernes|sabado|domingo)\b|\d\/\d/i.test(f) ? f : `${f} ${otroDia ? `${d.getDate()}/${d.getMonth() + 1} ` : ''}${hora}`)).join('\n');
 }
 
+/** Ajusta el alto del campo al contenido; el tope de 4 lineas lo pone el CSS (max-height) y de ahi pasa a scroll interno. */
+function ajustarAltura(campo: HTMLElement | null): void {
+  if (!campo) return;
+  campo.style.height = 'auto';
+  campo.style.height = `${campo.scrollHeight}px`;
+}
+
 /** ¿Algo de lo que contestó el bot merece confeti? Una deuda saldada, una billetera que cuadra, una meta cumplida. */
 function mereceConfeti(textos: string[]): boolean {
   const t = textos.join('\n');
@@ -242,8 +249,24 @@ export function Chat() {
     if (!t) return;
     setTexto('');
     void escribir('borrador', '');
-    mandar(t);
+    // el salto de linea se interpreta como espacio (el core trata cada linea como una frase aparte); en la burbuja se muestra el original
+    void enviar({ texto: t.replace(/\s*\n\s*/g, ' ') }, t);
   };
+
+  // Enter envia y Shift+Enter hace salto de linea. No se intercepta mientras el teclado compone una palabra (isComposing).
+  const alTecla = (e: KeyboardEvent) => {
+    if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+    e.preventDefault();
+    (e.currentTarget as HTMLTextAreaElement).form?.requestSubmit();
+  };
+  // Algunos teclados de Android mandan keydown 229 en vez de Enter; el salto de linea llega entonces como beforeinput y se trata como enviar.
+  const alAntesDeEntrada = (e: InputEvent) => {
+    if (e.inputType !== 'insertLineBreak') return;
+    e.preventDefault();
+    (e.currentTarget as HTMLTextAreaElement).form?.requestSubmit();
+  };
+  // Cambios hechos por codigo (dictado, atajos, limpiar al enviar) tambien reajustan la altura.
+  useEffect(() => { ajustarAltura(document.getElementById('texto')); }, [texto]);
 
   // Dictado: lo que se oye pasa por normalizarDictado y, de las alternativas del reconocedor, se elige la primera
   // que el bot entienda. Nunca se envía solo: queda escrito para revisar y pulsar Enviar.
@@ -326,8 +349,9 @@ export function Chat() {
         </div>
       )}
       <form id="form" class="entrada entrada-compacta vidrio mx-3 mb-1 rounded-[1.3rem] p-1 ring-1 ring-anillo" onSubmit={alEnviar}>
-        <input id="texto" type="text" autocomplete="off" autocapitalize="sentences" placeholder="Ej.: mecato 5000" aria-label="Escribe lo que pasó" class="!bg-transparent !shadow-none" value={texto}
-          onInput={e => { const v = (e.target as HTMLInputElement).value; setTexto(v); void escribir('borrador', v); }} />
+        <textarea id="texto" rows={1} enterkeyhint="send" autocomplete="off" autocapitalize="sentences" placeholder="Ej.: mecato 5000" aria-label="Escribe lo que pasó" class="!bg-transparent !shadow-none" value={texto}
+          onKeyDown={alTecla} onBeforeInput={alAntesDeEntrada}
+          onInput={e => { const c = e.target as HTMLTextAreaElement; ajustarAltura(c); setTexto(c.value); void escribir('borrador', c.value); }} />
         {/* Android no ofrece cámara y galería en la misma lista: con «capture» solo abre la cámara y sin él solo la galería. Por eso hay dos entradas y una hoja que pregunta cuál. */}
         <input type="file" id="archivoEscanear" accept="image/*" hidden onChange={alElegirImagen} />
         <input type="file" id="fotoEscanear" accept="image/*" capture="environment" hidden onChange={alElegirImagen} />

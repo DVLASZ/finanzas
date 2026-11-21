@@ -6,6 +6,7 @@ import { preguntarPorPersona } from './personas.ts';
 import { aMinor, formatear, type MontoHallado } from '../dinero.ts';
 import { BILLETES } from '../efectivo.ts';
 import { borrarTramos, categorizar, ejemploDeCuenta } from '../entidades.ts';
+import { describirRegla, reglaParaFrase } from '../reglas.ts';
 import { capitalizar, titulo } from '../texto.ts';
 import { type Contexto, type Cuenta, type Moneda } from '../tipos.ts';
 
@@ -81,6 +82,9 @@ export function gasto(b: Base, ctx: Contexto): Resultado {
   // Atajo: "pasaje" sin monto
   const libresAtajo = recortarBordes(palabrasLibres(b.t, [...tramos, ...tramosDe(b.montos)]));
   const atajo = ctx.atajos.find(a => libresAtajo[0] === a.palabra);
+  // Regla aprendida (core/src/reglas.ts): solo rellena lo que la frase no dijo. La cuenta escrita y el atajo con cuenta ganan.
+  const regla = mc ? null : reglaParaFrase(ctx.config, ctx.cuentas, palabrasLibres(b.t, [...tramos, ...tramosDe(b.montos)]).join(' '));
+  const reglaCuenta = !cuentas.length && !atajo?.cuentaId ? regla?.cuentaId : undefined;
 
   if (principales.length === 1 && principales[0].negativo) return error('Un gasto no puede ser negativo. Si te devolvieron plata, anótalo como ingreso: «+mamá 30k».');
 
@@ -93,7 +97,7 @@ export function gasto(b: Base, ctx: Contexto): Resultado {
       : 'Me falta el monto y en qué fue. Escríbelo completo, por ejemplo: «mecato 5000».');
   }
 
-  const cuentaId = cuentas[0]?.id ?? atajo?.cuentaId ?? 'efectivo';
+  const cuentaId = cuentas[0]?.id ?? atajo?.cuentaId ?? reglaCuenta ?? 'efectivo';
   const m0 = principales[0];
   let moneda: Moneda = m0?.moneda ?? atajo?.moneda ?? 'COP';
   if (cuentaId === 'arq') moneda = 'USD';
@@ -117,6 +121,8 @@ export function gasto(b: Base, ctx: Contexto): Resultado {
 
   let categoriaId: string | null = null;
   if (atajo && libres[0] === atajo.palabra && atajo.categoriaId) categoriaId = atajo.categoriaId;
+  const reglaCategoria = regla?.categoriaId;
+  if (!categoriaId && reglaCategoria) categoriaId = reglaCategoria;
   categoriaId ??= categorizar(textoCategoria || b.t, ctx);
   // «moto 180000» no es un pasaje: una cifra grande de moto, carro o camioneta sin recorrido es un arreglo.
   if (categoriaId === 'cat:transporte' && moneda === 'COP' && monto >= 50_000 && ctx.cuentas.some(c => c.id === 'cat:reparaciones')) {
@@ -162,6 +168,10 @@ export function gasto(b: Base, ctx: Contexto): Resultado {
   // Cómo pagó en efectivo (billetes y monedas entregados, vuelto): ver `leerPago` y core/src/efectivo.ts
   anotarPago(p, pg, efectivoCOP, avisos);
   p.avisos.push(...avisos);
+  // lo que de verdad quedó de la regla (otra regla de la app, como la categoría fija de una persona, pudo cambiar la categoría)
+  const usoCuenta = reglaCuenta && p.cuentaId === reglaCuenta ? reglaCuenta : undefined;
+  const usoCategoria = reglaCategoria && p.categoriaId === reglaCategoria ? reglaCategoria : undefined;
+  if (regla && (usoCuenta || usoCategoria)) p.reglaUsada = describirRegla(regla.clave, ctx.cuentas, usoCuenta, usoCategoria);
   return { clase: 'movimiento', propuesta: p };
 }
 
@@ -238,6 +248,9 @@ export function ingreso(b: Base, ctx: Contexto): Resultado {
   const p = propuestaBase(b, 'ingreso', `Ingreso de ${nombre.escrito}`, neto, 'COP');
   p.cuentaId = cuentaId;
   p.fuente = nombre.escrito;
+  // regla aprendida: solo si la frase no dijo en qué cuenta entró
+  const regla = b.cuentas.length ? null : reglaParaFrase(ctx.config, ctx.cuentas, ws.join(' '));
+  if (regla?.cuentaId) { p.cuentaId = regla.cuentaId; p.reglaUsada = describirRegla(regla.clave, ctx.cuentas, regla.cuentaId); }
   if (brutos !== neto) p.nota = `Recibiste $${brutos} y devolviste $${brutos - neto}: se guarda el neto.`;
   return { clase: 'movimiento', propuesta: p };
 }

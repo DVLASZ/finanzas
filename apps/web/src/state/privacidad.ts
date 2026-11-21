@@ -4,7 +4,7 @@
  * vuelven a esconderse, para que al regresar nadie al lado vea cuánto hay.
  */
 import { effect, signal } from '@preact/signals';
-import { desenfocarCifras, ondaDesde } from '../lib/efectos.ts';
+import { transicionCifras } from '../lib/efectos.ts';
 
 export const montosOcultos = signal(true);
 export const PUNTOS = '••••••';
@@ -12,12 +12,10 @@ export const PUNTOS = '••••••';
 // el atributo del <html> sigue a la señal, venga el cambio de donde venga (el botón, el bloqueo o el auto-ocultar)
 effect(() => { document.documentElement.dataset.privado = montosOcultos.value ? '1' : '0'; });
 
-/** Alterna el modo. Con el botón que lo pidió, la animación nace de ahí: una onda y las cifras que se enfocan o se difuminan. */
-export function alternarPrivacidad(origen?: unknown): void {
-  const boton = origen instanceof Element ? origen : null;
-  montosOcultos.value = !montosOcultos.value;
-  if (boton) ondaDesde(boton);
-  requestAnimationFrame(() => requestAnimationFrame(desenfocarCifras));
+/** Alterna el modo con el desenfoque cristalino: las cifras cambian siempre bajo el desenfoque, nunca nítidas. */
+export function alternarPrivacidad(): void {
+  const ocultando = !montosOcultos.value;
+  transicionCifras(() => { montosOcultos.value = ocultando; }, ocultando);
 }
 
 // al minimizar, cambiar de pestaña, apagar la pantalla o perder el foco, todo vuelve a esconderse
@@ -42,7 +40,7 @@ export const verTexto = (texto: string): string => (montosOcultos.value ? texto.
 const DINERO = /[-+]?(?:US)?\$\s?\d[\d.,]*|\d[\d.,]*\s?USD\b|[-+]?\d+(?:[.,]\d+)?\s?%/g;
 /** Lo que se escribió tú mismo en una burbuja («almuerzo 12000», «pasaje 7k») también es una cifra. */
 const ESCRITO = /\b\d{4,}\b|\b\d{1,3}(?:\.\d{3})+\b|\b\d+\s?(?:k|mil|lucas?)\b/gi;
-const FUERA = '#dialogo, #editar, #duplicar, script, style, textarea, input';
+const FUERA = '#dialogo, #editar, #duplicar, #reporte-impresion, script, style, textarea, input';
 
 const guardados = new Map<Text, { real: string; mascara: string }>();
 

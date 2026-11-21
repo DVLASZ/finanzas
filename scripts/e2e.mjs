@@ -285,7 +285,14 @@ try {
     await clic('#e-guardar'); await clic('#r-confirmar');
     igual(await pag.evaluate(() => Boolean(document.querySelector('#editar'))), false, 'se guardó y se cerró');
     igual(antes !== arriba.valor, true, 'la cuenta era otra');
+    // el movimiento es recién creado: la app ofrece guardar el cambio como regla, con un cuadro propio (no el del navegador)
+    await espera(400);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#dialogo'))), true, 'sale la pregunta de la regla');
+    contiene(await pag.evaluate(() => document.querySelector('#dialogo').innerText), 'La próxima vez que escriba', 'la pregunta');
+    await pag.evaluate(() => document.querySelector('#dialogo-aceptar').click()); await espera(600);
     await clic('#cerrar');
+    await abrirDeMas('Ajustes'); await espera(500);
+    contiene(await pag.evaluate(() => document.querySelector('#reglas-aprendidas')?.innerText ?? ''), 'almuerzo', 'la regla aparece en Ajustes');
   });
   await prueba('chat: la barra no trae botones inventados (nada de «Pasaje» con monto), solo Ayuda y el +', async () => {
     await irA('Chat'); await espera(400);
@@ -708,6 +715,66 @@ try {
       await clic('#info-cerrar'); await espera(400);
     }
   });
+  await prueba('ventanas flotantes: el gasto por día de la semana abre la ventana de cada día', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    await irA('Resumen'); await espera(700);
+    igual(await pag.evaluate(() => document.querySelectorAll('#grafica-dia-semana [data-dia-semana]').length), 7, 'siete barras, lunes a domingo');
+    igual(await pag.evaluate(() => document.querySelector('#grafica-dia-semana [data-dia-semana]')?.getAttribute('role')), 'button', 'cada barra es un botón');
+    await clic('#grafica-dia-semana [data-dia-semana="0"]');
+    igual(await pag.evaluate(() => document.querySelector('#info')?.dataset.info), 'info-dia-semana', 'abre la ventana del día');
+    igual(await pag.evaluate(() => document.querySelector('#info-dia-semana-cifras')?.dataset.diaSemana), '0', 'es el lunes');
+    await clic('#info-cerrar'); await espera(400);
+    igual(await hay('#info'), false, 'se cierra');
+  });
+  await prueba('ventanas flotantes: el comparador muestra A y B, valida los rangos y abre una categoría con los dos', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    const poner = async (s, v) => { await pag.evaluate((x, y) => { const e = document.querySelector(x); e.value = y; e.dispatchEvent(new Event('input', { bubbles: true })); }, s, v); await espera(300); };
+    await irA('Resumen'); await espera(700);
+    igual(await hay('#comparador-fechas'), true, 'está el comparador');
+    igual(await pag.evaluate(() => document.querySelectorAll('#comparador-fechas input[type=date]').length), 4, 'cuatro fechas: A y B');
+    igual(await hay('#comparador-resultado'), true, 'con los rangos de ejemplo ya compara');
+    // un rango al revés avisa y no calcula
+    await poner('#cmp-a-inicio', '2099-01-02'); await poner('#cmp-a-fin', '2099-01-01');
+    contiene(await pag.evaluate(() => document.querySelector('#comparador-error')?.innerText ?? ''), 'anterior', 'explica el rango al revés');
+    igual(await hay('#comparador-resultado'), false, 'sin resultado mientras el rango no sirva');
+    // más de dos años
+    await poner('#cmp-a-inicio', '2020-01-01'); await poner('#cmp-a-fin', '2026-01-01');
+    contiene(await pag.evaluate(() => document.querySelector('#comparador-error')?.innerText ?? ''), '2 años', 'avisa que pasa de dos años');
+    // los dos rangos buenos: tocar una categoría abre la ventana con A y B
+    await poner('#cmp-a-inicio', '2026-01-01'); await poner('#cmp-a-fin', '2026-12-31');
+    await poner('#cmp-b-inicio', '2026-01-01'); await poner('#cmp-b-fin', '2026-12-31');
+    igual(await hay('#comparador-error'), false, 'rangos buenos, sin error');
+    if (await hay('#comparador-categorias [data-comparar-rango]')) {
+      await clic('#comparador-categorias [data-comparar-rango]');
+      igual(await pag.evaluate(() => document.querySelector('#info')?.dataset.info), 'comparar-categoria', 'abre la comparación de la categoría');
+      igual(await pag.evaluate(() => document.querySelectorAll('#info [data-lado]').length), 2, 'con la lista de A y la de B');
+      await clic('#info-cerrar'); await espera(400);
+    }
+  });
+  await prueba('reporte PDF: el botón existe, pide confirmar con la privacidad activa y solo entonces arma la hoja e imprime', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    await irA('Resumen'); await espera(700);
+    // la impresión del sistema no se abre en las pruebas: se cuenta cuántas veces se pidió
+    await pag.evaluate(() => { window.__imprimio = 0; window.print = () => { window.__imprimio++; }; });
+    if (await pag.evaluate(() => document.documentElement.dataset.privado) !== '1') { await clic('#ojo'); }
+    igual(await hay('#reporte-pdf'), true, 'el botón del reporte está en Resumen');
+    igual(await hay('#reporte-pdf-comparador'), true, 'y el del comparador');
+    await clic('#reporte-pdf');
+    igual(await hay('#dialogo'), true, 'sale el diálogo de confirmación');
+    contiene(await pag.evaluate(() => document.querySelector('#dialogo').innerText), 'El reporte muestra las cifras', 'dice que muestra las cifras');
+    await clic('#dialogo-cancelar'); await espera(300);
+    igual(await pag.evaluate(() => window.__imprimio), 0, 'si no confirma, no imprime');
+    igual(await hay('#reporte-impresion'), false, 'ni arma la hoja');
+    await clic('#reporte-pdf'); await clic('#dialogo-aceptar'); await espera(500);
+    igual(await pag.evaluate(() => window.__imprimio), 1, 'al confirmar, pide imprimir una vez');
+    const hoja = await pag.evaluate(() => { const e = document.querySelector('#reporte-impresion'); return { texto: e?.innerText ?? e?.textContent ?? '', visible: e ? getComputedStyle(e).display : 'no' }; });
+    igual(hoja.visible, 'none', 'en pantalla la hoja no se ve');
+    igual(/•{3,}/.test(hoja.texto), false, 'la hoja lleva cifras reales, no puntos');
+    contiene(hoja.texto, 'Generado el', 'lleva la fecha de generación');
+  });
   await prueba('ventanas flotantes: Saldos abre Disponible, seguro para hoy, salud patrimonial y alertas', async () => {
     const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
     const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
@@ -781,6 +848,24 @@ try {
     igual(await pag.evaluate(() => document.querySelector('#info')?.dataset.info), 'info-meta-ahorro', 'la meta abre su ventana');
     await clic('#info-cerrar'); await espera(400);
     igual(await hay('#info'), false, 'se cierra');
+  });
+  await prueba('ventanas flotantes: las etiquetas se escriben en cualquier frase, salen en el Resumen y filtran Movimientos', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    await irA('Chat'); await espera(400);
+    await escribir('#viaje cena 14000 #claude'); await pulsar('Guardar igual');
+    await escribir('taxi de terminal a casa 6000 #viaje'); await pulsar('Guardar igual');
+    await irA('Resumen'); await espera(700);
+    igual(await hay('#tarjeta-etiquetas [data-etiqueta="viaje"]'), true, 'la tarjeta de etiquetas lista #viaje');
+    igual(await hay('#tarjeta-etiquetas [data-etiqueta="claude"]'), true, 'y #claude');
+    await clic('#tarjeta-etiquetas [data-etiqueta="viaje"]');
+    igual(await pag.evaluate(() => document.querySelector('#info')?.dataset.info), 'info-etiqueta', 'la fila abre la ventana de la etiqueta');
+    igual(await pag.evaluate(() => document.querySelectorAll('#info-movs li').length), 2, 'con los dos movimientos');
+    await clic('#info-ver-movimientos'); await espera(700);
+    igual(await pag.evaluate(() => document.querySelector('nav [aria-current=page]')?.dataset.p), 'movimientos', 'va a Movimientos');
+    igual(await pag.evaluate(() => document.querySelectorAll('li.fila[data-id]').length), 2, 'filtrado por la etiqueta');
+    igual(await pag.evaluate(() => document.querySelector('li.fila[data-id] [data-etiqueta="viaje"]') !== null), true, 'cada fila muestra su etiqueta como chip');
+    await pag.evaluate(() => document.querySelector('#limpiar')?.click()); await espera(300);
   });
   await prueba('resumen con privacidad total: las cifras de las gráficas nuevas salen ocultas', async () => {
     const estaba = await pag.evaluate(() => document.documentElement.dataset.privado === '1');

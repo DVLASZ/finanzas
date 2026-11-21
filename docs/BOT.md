@@ -277,6 +277,17 @@ Si no sabes cómo decir algo, en la Ayuda escribe tu duda en «Pregúntale cómo
 
 Agrega `#cumple-daniel` a cualquier mensaje. Para ver todo lo de ese evento, escribe solo `#cumple-daniel`.
 
+Puedes poner una o varias etiquetas (hasta 5) en cualquier frase y en cualquier posición: gasto, ingreso, deuda, pago, compartido o transferencia.
+
+```
+#viaje almuerzo 12000 #claude
+pizza 30000 con ivan #universidad
+```
+
+El hashtag no cambia el concepto, la categoría ni el monto: se quita del texto y se guarda aparte. Cada etiqueta lleva letras, números, guion o guion bajo, hasta 24 caracteres. Se guardan en minúscula y sin tildes, separadas por un espacio (`viaje claude`), en el mismo campo que ya existía, así que no hace falta migrar nada. Con `#viaje #claude` solo ves lo que lleva las dos. En la tarjeta de confirmación otra etiqueta escrita («#proyecto») reemplaza las que traía.
+
+En Movimientos, los chips de etiquetas filtran (se pueden juntar varias) y cada fila las muestra tocables. Al editar un movimiento puedes cambiarlas o quitarlas. El Resumen suma lo gastado por etiqueta en el periodo y cada fila abre sus movimientos.
+
 ## Saldo inicial y cuadre
 
 ```
@@ -453,6 +464,14 @@ Saldos, deudas y resúmenes también tienen su pantalla en la app. Desde el chat
 ## Fechas
 
 `ayer`, `anteayer`, `hoy`, `el lunes`, `el lunes pasado`, `hace 3 días`, `15/10`, `el 2 de octubre`, `a las 3pm`, `4 pm`, `4:30pm`. Un pago mixto sin total (`taxi 6000 billete y 1800 monedas`) cuesta la suma, $7.800. La hora puede ir sola (`almuerzo 12000 1 pm`) o con el día (`ayer 4 pm`). Con `a las 4` sin am ni pm toma la tarde. Una fecha que no existe se rechaza.
+
+## Reglas aprendidas
+
+Si corriges la cuenta o la categoría de un gasto o ingreso que acabas de anotar (guardado hace menos de diez minutos, o de hoy), la app pregunta: «La próxima vez que escriba Laura, ¿usar Nequi?». Con «Guardar regla» queda una regla; con «No» no pasa nada. No pregunta si esa regla ya existe igual.
+
+La regla se toma de la persona del movimiento o, si no hay, del concepto (en un ingreso, de la fuente). Al escribir un gasto o ingreso cuya frase contenga esa palabra y no diga cuenta, el bot usa la de la regla y lo avisa en la tarjeta: «Usé tu regla: Laura va a Nequi». Lo que se escribe en la frase siempre gana: una cuenta dicha («con efectivo»), el atajo que ya trae cuenta o categoría, y la categoría fija de una persona. Una regla cuya cuenta ya no existe se ignora.
+
+Las reglas se ven, se cambian y se borran en Ajustes, en «Reglas aprendidas». Se guardan en la config (`reglas_aprendidas`, un JSON de `{ id, clave, cuentaId?, categoriaId?, creada }`), así que sincronizan y entran en el respaldo sin migración. Código en `core/src/reglas.ts`.
 
 ## Corregir una tarjeta
 

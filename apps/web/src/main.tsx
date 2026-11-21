@@ -12,6 +12,7 @@ import { iniciarMascara } from './state/privacidad.ts';
 import { iniciarBloqueo } from './state/bloqueo.ts';
 import { iniciarEstado } from './state/store.ts';
 import { iniciarAjusteDeTexto } from './lib/ajustarTexto.ts';
+import { iniciarCascada } from './lib/cascada.ts';
 
 /**
  * Lo que trae la dirección con la que se abrió la app: un acceso directo del ícono («?accion=gasto|voz|saldos») o una
@@ -41,6 +42,7 @@ async function arrancar(): Promise<void> {
   activarGestoAtras();
   render(<App />, document.getElementById('raiz')!);
   iniciarAjusteDeTexto(document.getElementById('raiz')!);
+  iniciarCascada();
   iniciarMascara(document.body);
   void iniciarBloqueo();
 
