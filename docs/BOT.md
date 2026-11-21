@@ -34,6 +34,8 @@ Cada app tiene sus cuentas (ver [INSTALACIONES.md](INSTALACIONES.md)). Estas son
 | Daviplata | `daviplata`, `davi` | |
 | Dólares | `dolares`, `dolar`, `arq` | Guarda dólares |
 
+Un ingreso en dólares (`ingreso 20 usd sueldo en dolares`) sube el saldo de Dólares en USD y no cuenta en "Entró este mes". Si dices usd sin la cuenta de Dólares, el bot no guarda nada y te explica cómo anotarlo; los dólares nunca se pasan a pesos solos.
+
 La ayuda de cada app (`ayuda`) solo muestra ejemplos con las cuentas que esa app tiene.
 
 ## Gastos
@@ -47,6 +49,16 @@ compré un trident 4500
 ```
 
 Los montos pueden venir como `5000`, `5.000`, `$5.000`, `5k`, `5 mil`, `1.5k` o `2 lucas`.
+
+También se entienden montos dichos en palabras o con jerga:
+
+- `1'200.000`: el apóstrofo separa los millones y vale 1.200.000. Solo cuando une una cifra con un grupo de tres y sus miles; en texto normal no pasa nada.
+- `doscientas mil`, `quinientas lucas`: las centenas valen también en femenino (hasta novecientas).
+- `veinte y cinco mil`, `diez y seis mil`, `treinta y un mil`, `treinta y una lucas`, `veintiún mil`: la «y» une una decena con su unidad.
+- `dos millones y medio`, `1 millón y medio`, `millón y medio`: suman medio millón. `4 mil y medio` vale 4.500 y `3 lucas y media`, 3.500.
+- `medio millón` vale 500.000, `media luca` 500 y `un cuarto de millón` 250.000.
+- `mil millones` vale 1.000.000.000 y `dos mil millones`, 2.000.000.000. Lo que pasa de 2.000 millones se rechaza como demasiado grande.
+- En dólares, una coma sola con tres cifras es decimal: `1,005 usd` son 1,005 dólares y se guarda como US$1,01 (no mil cinco). Los centavos se redondean bien: 1,005 queda en 101, 0,29 en 29 y 8,285 en 829.
 
 La categoría sale del diccionario (`db/diccionario.json`). Si no conoce la palabra, pregunta en qué categoría va y aprende la respuesta para la próxima.
 
@@ -173,6 +185,27 @@ ingreso 50k chamba nequi
 
 El primero guarda un ingreso neto de $70.000. Un ingreso nunca se mezcla con el saldo inicial.
 
+### Plata que entra dicha de otras formas
+
+Estas frases son ingreso, y la fuente es la palabra que dices:
+
+```
+salario 2 millones          nómina 2.500.000        sueldo 2500000 nequi
+devolución 20k              reembolso 15k           cobro 50k
+me reembolsaron 15k         me regalaron 30k        me pagan 50k
+me van a pagar 50k          me cayó 50000 de mamá
+```
+
+`me pagan` y `me van a pagar` sin más caen en la fuente Otros. `regalo 30k` suelto sigue siendo un gasto, y `pago de luz 50k` también.
+
+`me pagaron 50k de la chamba`, `me pagaron la quincena 800k` y `Ana me pagó 50k` son ingreso si esa persona no te debe nada. Si Ana te debe, la misma frase es el cobro de la deuda. «Me pagó el almuerzo» sigue siendo un gasto que cubrió otro.
+
+`pago de ana 50k` es plata de Ana si ya la tienes registrada. Si el nombre es nuevo, el bot pregunta si te pagó o si pagaste tú. `le pagaron 50k` pide aclarar a quién.
+
+### Lo que no pasó
+
+Una frase con el «no» pegado a un verbo de plata no registra nada: `Ana no me pagó 50000`, `no compré 5000`, `todavía no me paga Pedro`, `nunca me pagó 5000 Pedro`. El bot responde que eso suena a que no pasó y no crea personas (antes «No» o «Nunca» quedaban como una). Las preguntas, como «¿cuánto no he pagado?», siguen su camino.
+
 ## Cobros del banco
 
 El banco descuenta cosas solo: el 4x1000 de los retiros y pagos, la cuota de manejo de la tarjeta. Se anotan como gasto en Costos del banco (en las apps que tienen esa categoría).
@@ -206,6 +239,8 @@ le debo 54k a sergio por la bicicleta antes del 31 de octubre
 pagué 54k a sergio nequi
 sergio me prestó 20k
 ```
+
+`pagué 54k a sergio` es un abono solo si le debes a Sergio. Si no le debes nada (`pagué 20k a netflix`, `pagué 30k a la universidad`), es un gasto normal, con la categoría que le toque al nombre.
 
 Cada persona tiene un saldo neto contigo. Si te debía y luego paga algo por ti, se compensa. `deudas` muestra lo que debes (con motivo y fecha límite) y lo que te deben.
 
@@ -302,6 +337,13 @@ El arqueo es contar lo que tienes de verdad. El bot compara con lo que calcula y
 ## Varias cosas en un mensaje
 
 Puedes escribir varios movimientos juntos. Se separan con un salto de línea, un punto y coma, o un + o un - con espacios entre dos cantidades.
+
+También se parten, en una sola línea:
+
+- Un gasto seguido de plata que entra: `gasté 5000 en mecato y me pagaron 20000`, `... y recibí 20000`, `... y cobré 20000 de ana`.
+- Una lista de «concepto monto» con coma, ` y ` o `/`: `mecato 5000, pasaje 3000 y almuerzo 12k`. Cada trozo debe tener un solo monto y un concepto. `almuerzo con ana y luis 30000`, `arroz, sal y papa 12000` o `cena 60000 entre ana y luis` no se parten.
+- `+` y `-` pegados a la cantidad: `+50000 nomina -12000 mecato` son un ingreso y un gasto. `-12000 mecato` solo es un gasto de 12.000. Un `+` entre dos gastos (`mecato 5000 + pasaje 3000`) solo los separa; es ingreso cuando va pegado (`+5000 ana`) o cuando el trozo empieza por la cantidad (`+ 500000 Ana`).
+- `pasaje 3000 - 500 descuento` no se parte: ese 500 resta del pasaje y el bot no lo adivina, te pregunta.
 
 ```
 mecato 5000

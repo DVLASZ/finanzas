@@ -12,6 +12,7 @@ import { idPersona } from './entidades.ts';
 import { PLANTILLAS, type DatosDeInstalacion } from './plantillas.ts';
 import type { Propuesta } from './parser.ts';
 import { ATAJOS_INICIALES, CONFIG_INICIAL, CUENTAS_INICIALES } from './semilla.ts';
+import { calcularSaldos } from './consultas.ts';
 import { normalizar } from './texto.ts';
 import type { Aprendido, Atajo, Compromiso, Contexto, Cuenta, Movimiento } from './tipos.ts';
 
@@ -66,7 +67,24 @@ export function contextoDe(d: Datos, ahora: Date): Contexto {
   return {
     ahora, cuentas: d.cuentas, atajos: d.atajos, aprendido: d.aprendido,
     presupuestos: d.presupuestos, config: d.config, diccionario: DICCIONARIO,
+    abiertas: cuentasAbiertas(d),
   };
+}
+
+/** Personas con saldo distinto de cero (o un compromiso activo): quién te debe y a quién le debes. */
+function cuentasAbiertas(d: Datos): { teDeben: string[]; debes: string[] } {
+  const saldos = calcularSaldos(d.movimientos, d.config.fecha_apertura ?? '2000-01-01 00:00:00');
+  const teDeben = new Set<string>();
+  const debes = new Set<string>();
+  for (const p of d.cuentas.filter(c => c.tipo === 'persona')) {
+    for (const mon of ['COP', 'USD']) {
+      const s = saldos.get(`${p.id}|${mon}`) ?? 0;
+      if (s > 0) teDeben.add(p.clave);
+      if (s < 0) debes.add(p.clave);
+    }
+    for (const c of d.compromisos.filter(x => x.personaId === p.id && x.estado === 'activa')) (c.direccion === 'me_deben' ? teDeben : debes).add(p.clave);
+  }
+  return { teDeben: [...teDeben], debes: [...debes] };
 }
 
 /** Implementación en memoria (pruebas y primeros ensayos). */

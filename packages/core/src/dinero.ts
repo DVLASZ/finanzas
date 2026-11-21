@@ -45,7 +45,10 @@ export function hallarMontos(t: string): MontoHallado[] {
     const [completo, simbolo, numero, sufijo] = m;
     const inicio = m.index ?? 0;
     let valor: number;
-    if (/^\d{1,3}([.,]\d{3})+$/.test(numero)) valor = Number(numero.replace(/[.,]/g, ''));
+    // en dólares, «1,005 usd» es un dólar con cinco milésimas, no mil cinco: una coma sola con tres cifras es decimal
+    const enDolares = simbolo === 'us$' || (sufijo !== undefined && MARCA_USD.has(sufijo));
+    if (enDolares && /^\d{1,3},\d{3}$/.test(numero)) valor = Number(numero.replace(',', '.'));
+    else if (/^\d{1,3}([.,]\d{3})+$/.test(numero)) valor = Number(numero.replace(/[.,]/g, ''));
     else valor = Number(numero.replace(',', '.'));
     if (!Number.isFinite(valor)) continue;
 
@@ -71,7 +74,8 @@ export function hallarMontos(t: string): MontoHallado[] {
 
 /** Pasa a la unidad mínima: 8 USD -> 800, 5000 COP -> 5000. */
 export function aMinor(valor: number, moneda: Moneda): number {
-  return Math.round(valor * 10 ** DECIMALES[moneda]);
+  // toPrecision quita el ruido binario: 1.005 * 100 da 100.49999999999999 y debe redondear a 101
+  return Math.round(Number((valor * 10 ** DECIMALES[moneda]).toPrecision(15)));
 }
 
 function conMiles(n: number): string {

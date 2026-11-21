@@ -121,4 +121,6 @@ export interface Contexto {
   presupuestos: Record<string, number>;
   config: Record<string, string>;
   diccionario: Diccionario;
+  /** Claves de las personas con las que hay cuentas abiertas: quién te debe y a quién le debes. Sirve para distinguir un cobro de un ingreso. */
+  abiertas?: { teDeben: string[]; debes: string[] };
 }

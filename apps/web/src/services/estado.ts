@@ -52,7 +52,8 @@ export const app = {
   ultimoSync: null as string | null,
   ultimoError: null as string | null,
   /** Cambios que el servidor no aceptó (para que la persona los vea; no traban la cola). */
-  rechazados: [] as { cuando: string; que: string; motivo: string }[],
+  /** `op` es la operación completa, para revisarla o reenviarla (las guardadas antes de este cambio no la traen). */
+  rechazados: [] as { cuando: string; que: string; motivo: string; op?: Op }[],
 };
 
 /** Carga todo lo guardado en el dispositivo. Llamar una vez al abrir la app. */

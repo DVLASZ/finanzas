@@ -5,7 +5,7 @@ import { anotarPago, leerPago } from './pago.ts';
 import { preguntarPorPersona } from './personas.ts';
 import { aMinor, formatear, type MontoHallado } from '../dinero.ts';
 import { BILLETES } from '../efectivo.ts';
-import { borrarTramos, categorizar, ejemploDeCuenta } from '../entidades.ts';
+import { borrarTramos, categorizar, cuentaEnDolares, ejemploDeCuenta } from '../entidades.ts';
 import { describirRegla, reglaParaFrase } from '../reglas.ts';
 import { capitalizar, titulo } from '../texto.ts';
 import { type Contexto, type Cuenta, type Moneda } from '../tipos.ts';
@@ -222,11 +222,24 @@ function armarCompartido(
 // Ingreso
 // ---------------------------------------------------------------------------------------
 
+/** Suma los montos de un ingreso en la moneda dada, restando las devoluciones. */
+function sumarIngreso(b: Base, usados: MontoHallado[], moneda: Moneda): { neto: number; brutos: number } {
+  let neto = 0, brutos = 0;
+  for (const m of usados) {
+    const devuelto = m.negativo || /devolv\w* (?:le |les )?$/.test(b.t.slice(Math.max(0, m.inicio - 14), m.inicio));
+    neto += (devuelto ? -1 : 1) * aMinor(m.valor, moneda);
+    if (!m.negativo) brutos += aMinor(m.valor, moneda);
+  }
+  return { neto, brutos };
+}
+
 export function ingreso(b: Base, ctx: Contexto): Resultado {
   // + montos positivos, - devoluciones ("-30k" o "le devolví 30k")
   let neto = 0;
   const usados: MontoHallado[] = [];
-  for (const m of b.montos.filter(x => x.explicito)) {
+  // con la cuenta de dólares nombrada, un 30 suelto ya es plata (30 dólares)
+  const aDolares = !!b.cuentas[0] && b.cuentas[0].id === cuentaEnDolares(ctx)?.id;
+  for (const m of b.montos.filter(x => x.explicito || aDolares)) {
     const devuelto = m.negativo || /devolv\w* (?:le |les )?$/.test(b.t.slice(Math.max(0, m.inicio - 14), m.inicio));
     neto += (devuelto ? -1 : 1) * aMinor(m.valor, 'COP');
     usados.push(m);
@@ -251,6 +264,22 @@ export function ingreso(b: Base, ctx: Contexto): Resultado {
   // regla aprendida: solo si la frase no dijo en qué cuenta entró
   const regla = b.cuentas.length ? null : reglaParaFrase(ctx.config, ctx.cuentas, ws.join(' '));
   if (regla?.cuentaId) { p.cuentaId = regla.cuentaId; p.reglaUsada = describirRegla(regla.clave, ctx.cuentas, regla.cuentaId); }
+
+  // Los dólares se quedan en dólares: nunca se pasan a pesos por su cuenta.
+  const enDolares = cuentaEnDolares(ctx);
+  if (usados.some(m => m.moneda === 'USD') && p.cuentaId !== enDolares?.id) {
+    if (!enDolares || b.cuentas.length) return error('Para anotar dólares usa la cuenta de Dólares, por ejemplo: «ingreso 20 usd sueldo en dolares».');
+    p.cuentaId = enDolares.id;
+    p.reglaUsada = undefined;
+  }
+  if (p.cuentaId === enDolares?.id) {
+    // en la cuenta de dólares el monto va en centavos de dólar
+    const usd = sumarIngreso(b, usados, 'USD');
+    if (usd.neto <= 0) return error('El ingreso neto es cero o negativo. Revisa los montos.');
+    p.monto = usd.neto; p.moneda = 'USD';
+    if (usd.brutos !== usd.neto) p.nota = `Recibiste ${formatear(usd.brutos, 'USD')} y devolviste ${formatear(usd.brutos - usd.neto, 'USD')}: se guarda el neto.`;
+    return { clase: 'movimiento', propuesta: p };
+  }
   if (brutos !== neto) p.nota = `Recibiste $${brutos} y devolviste $${brutos - neto}: se guarda el neto.`;
   return { clase: 'movimiento', propuesta: p };
 }
