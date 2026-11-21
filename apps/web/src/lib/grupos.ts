@@ -61,3 +61,8 @@ export function gastoDeCategoria(datos: Fuente, categoriaId: string, movs: Movim
   const ids = new Set(conSubcategorias(datos.config, categoriaId));
   return movs.reduce((s, m) => s + m.asientos.filter(a => a.moneda === 'COP' && ids.has(a.cuentaId)).reduce((x, a) => x + a.monto, 0), 0);
 }
+
+/** Los movimientos que llevan una etiqueta (#viaje) en el periodo, los más nuevos primero. */
+export function movimientosDeEtiqueta(datos: Fuente, etiqueta: string, desde: string, hasta: string): Movimiento[] {
+  return filtrarMovimientos(datos, { etiqueta, desde, hasta }).sort(masNuevosPrimero);
+}

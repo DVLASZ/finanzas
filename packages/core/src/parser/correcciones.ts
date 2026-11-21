@@ -8,6 +8,7 @@ import { hallarMontos, aMinor } from '../dinero.ts';
 import { borrarTramos, categoriaPorNombre, gruposDe, hallarCuentas } from '../entidades.ts';
 import { hallarFecha } from '../fechas.ts';
 import { capitalizar, limpiar, titulo } from '../texto.ts';
+import { extraerEtiquetas } from '../etiquetas.ts';
 import { type Contexto, type Cuenta, type Grupo, type Moneda } from '../tipos.ts';
 
 // ---------------------------------------------------------------------------------------
@@ -114,9 +115,12 @@ export function resolverFaltante(
  * Devuelve la propuesta corregida, o null si el texto no parece una corrección.
  */
 export function aplicarCambio(p: Propuesta, texto: string, ctx: Contexto): Propuesta | null {
-  let t = limpiar(texto);
-  if (!t) return null;
+  const ex = extraerEtiquetas(texto);
+  if (ex.error) return null;
+  let t = limpiar(ex.etiquetas.length ? ex.texto : texto);
+  if (!t && !ex.etiquetas.length) return null;
   const sig: Propuesta = { ...p, avisos: [] };
+  if (ex.etiquetas.length) sig.etiqueta = ex.etiquetas.join(' ');
   const consumir = (re: RegExp): RegExpMatchArray | null => {
     const m = t.match(re);
     if (m) t = (t.slice(0, m.index) + ' ' + t.slice((m.index ?? 0) + m[0].length)).replace(/\s+/g, ' ').trim();
@@ -124,7 +128,7 @@ export function aplicarCambio(p: Propuesta, texto: string, ctx: Contexto): Propu
   };
 
   // Evento
-  const et = consumir(/(?:^|\s)#([a-z0-9-]+)/) ?? consumir(/^etiqueta ([a-z0-9-]+)/);
+  const et = consumir(/^etiqueta ([a-z0-9-]+)/);
   if (et) sig.etiqueta = et[1];
 
   // Cómo se pagó: «con 10k», «con 2k y 800 en monedas», «vuelto 5k y 500 monedas», «justo», «sin vuelto»

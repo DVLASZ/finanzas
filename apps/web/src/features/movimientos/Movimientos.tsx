@@ -7,7 +7,7 @@ import { Ban, BarChart3, Copy, Download, Pencil, ScanLine, Share2, Camera, Image
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  aLocal, esArqueo, etiquetasUsadas, filtrarMovimientos, fraseDeOCR, movimientosACsv, movimientosAJson, describirDia, describirFecha, leerSubcategorias, leerRecurrentes, limpiar, nombreMes, rangoPeriodo,
+  aLocal, esArqueo, etiquetasUsadas, filtrarMovimientos, fraseDeOCR, movimientosACsv, movimientosAJson, describirDia, describirFecha, leerSubcategorias, leerRecurrentes, limpiar, nombreMes, rangoPeriodo, tokensDeEtiqueta,
   type Cuenta, type Movimiento,
 } from '../../../../../packages/core/src/index.ts';
 import { formatear } from '../../lib/formatear.ts';
@@ -22,6 +22,7 @@ import { anotarActividad } from '../../services/actividad.ts';
 import { bajarFoto, borrarFotoEnServidor, subirFoto } from '../../services/fotos.ts';
 import { sincronizar } from '../../services/sincronizacion.ts';
 import { subirDesdeAbajo } from '../../lib/efectos.ts';
+import { dirPeriodo, usarEntradaPeriodo, usarPildora } from '../../lib/periodoVivo.ts';
 import { abrirDetalle, atras, detalle, irA, prellenarChat } from '../../state/nav.ts';
 import { ctx as contexto, datos as datosSignal, refrescar } from '../../state/store.ts';
 import { reducirFoto } from '../../lib/imagen.ts';
@@ -196,6 +197,7 @@ function Detalle({ m }: { m: Movimiento }) {
         <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-bor" />
         <h3 class="!mt-0">{m.descripcion}</h3>
         <p class="sub">{describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora)} · {m.tipo} · {m.origen}{m.estado === 'anulado' ? ' · ANULADO' : ''}</p>
+        {m.etiqueta && <p class="sub" id="etiquetas-mov"><ChipsEtiqueta valor={m.etiqueta} alTocar={e => { atras(); setTimeout(() => verMovimientos({ etiqueta: e, periodo: 'todo' }), 90); }} /></p>}
         {m.mensajeOriginal && <p class="sub">Escribiste: «{m.mensajeOriginal}»</p>}
         <p class="sub" id="historial-mov">Anotado {describirFecha(m.creadoEn, ctx.ahora)}{m.editadoEn && <span id="editado-en"> · Editado {describirFecha(m.editadoEn, ctx.ahora)}</span>}</p>
         {filasDivision.length > 0 && (
@@ -246,10 +248,15 @@ function Detalle({ m }: { m: Movimiento }) {
 }
 
 /** Abre Movimientos ya filtrado (lo usa la Revisión del mes): el mes actual, con anulados o con una categoría. */
-export function verMovimientos(f: { anulados?: boolean; categoria?: string; cuenta?: string; persona?: string; texto?: string; periodo?: Periodo } = {}): void {
+/** Las etiquetas de un movimiento como botones: tocar una filtra la lista por ella. */
+function ChipsEtiqueta({ valor, alTocar }: { valor?: string | null; alTocar: (e: string) => void }) {
+  return <>{tokensDeEtiqueta(valor).map(e => <button type="button" key={e} class="etiq mr-1 cursor-pointer border-0" data-etiqueta={e} aria-label={`Filtrar por la etiqueta ${e}`} onClick={ev => { ev.stopPropagation(); alTocar(e); }}>#{e}</button>)}</>;
+}
+
+export function verMovimientos(f: { anulados?: boolean; categoria?: string; etiqueta?: string; cuenta?: string; persona?: string; texto?: string; periodo?: Periodo } = {}): void {
   busqueda.value = f.texto ?? '';
   verAnulados.value = Boolean(f.anulados);
-  poner({ periodo: f.periodo ?? 'mes', atras: 0, tipo: 'todos', categoria: f.categoria ?? '', cuenta: f.cuenta ?? '', persona: f.persona ?? '', etiqueta: '', desde: '', hasta: '' });
+  poner({ periodo: f.periodo ?? 'mes', atras: 0, tipo: 'todos', categoria: f.categoria ?? '', cuenta: f.cuenta ?? '', persona: f.persona ?? '', etiqueta: f.etiqueta ?? '', desde: '', hasta: '' });
   irA('movimientos');
 }
 
@@ -267,8 +274,11 @@ export function Movimientos() {
   useEffect(() => { void cargarFotos(); }, []);
   const datos = datosSignal.value;
   const ctx = contexto.value;
-  if (!datos || !ctx) return <p class="vacio">Cargando…</p>;
   const f = filtros.value;
+  // periodo vivo: la pildora deslizante y la entrada direccional (los hooks van antes del return temprano)
+  const refPestanas = usarPildora();
+  const refRaiz = usarEntradaPeriodo(`${f.periodo}|${f.atras}`);
+  if (!datos || !ctx) return <p class="vacio">Cargando…</p>;
   const q = limpiar(busqueda.value);
   const fijos = leerRecurrentes(datos.config).map(r => limpiar(r.concepto));
   const nombre = (id: string) => datos.cuentas.find(c => c.id === id)?.nombre ?? id;
@@ -279,6 +289,7 @@ export function Movimientos() {
     desde: r?.desde.slice(0, 10), hasta: r?.hasta.slice(0, 10), anulados: verAnulados.value,
   });
   const etiquetas = etiquetasUsadas(datos.movimientos);
+  const activas = tokensDeEtiqueta(f.etiqueta);
 
   // totales de lo que se está viendo (sin anulados) y en qué categorías se fue
   let gastos = 0, ingresos = 0;
@@ -334,9 +345,10 @@ export function Movimientos() {
   }
 
   return (
-    <div class="space-y-3">
-      <div class="pestanas" role="group" aria-label="Periodo">
-        {PERIODOS.map(([p, t]) => <button key={p} class={`pestana ${f.periodo === p ? 'activa' : ''}`} data-periodo={p} onClick={() => poner({ periodo: p, atras: 0 })}>{t}</button>)}
+    <div class="space-y-3" ref={refRaiz}>
+      <div class="pestanas viva" role="group" aria-label="Periodo" ref={refPestanas}>
+        <span class="pildora" aria-hidden="true" />
+        {PERIODOS.map(([p, t]) => <button key={p} class={`pestana ${f.periodo === p ? 'activa' : ''}`} data-periodo={p} onClick={() => { dirPeriodo.value = 0; poner({ periodo: p, atras: 0 }); }}>{t}</button>)}
       </div>
 
       {f.periodo === 'rango' && (
@@ -348,9 +360,9 @@ export function Movimientos() {
 
       {r && f.periodo !== 'rango' && (
         <div class="periodo" id="nav-periodo">
-          <button class="chip" id="anterior" aria-label="Ver el periodo anterior" onClick={() => poner({ atras: f.atras + 1 })}><ChevronLeft size={16} />Anterior</button>
+          <button class="chip" id="anterior" aria-label="Ver el periodo anterior" onClick={() => { dirPeriodo.value = -1; poner({ atras: f.atras + 1 }); }}><ChevronLeft size={16} />Anterior</button>
           <strong id="titulo-periodo">{tituloDelPeriodo(f.periodo, r.desde)}</strong>
-          <button class="chip" id="siguiente" aria-label="Ver el periodo siguiente" disabled={f.atras === 0} onClick={() => poner({ atras: Math.max(0, f.atras - 1) })}>Siguiente<ChevronRight size={16} /></button>
+          <button class="chip" id="siguiente" aria-label="Ver el periodo siguiente" disabled={f.atras === 0} onClick={() => { dirPeriodo.value = 1; poner({ atras: Math.max(0, f.atras - 1) }); }}>Siguiente<ChevronRight size={16} /></button>
         </div>
       )}
 
@@ -366,7 +378,7 @@ export function Movimientos() {
 
       {etiquetas.length > 0 && (
         <div class="carrusel no-scrollbar" role="group" aria-label="Etiquetas">
-          {etiquetas.map(e => <button key={e.etiqueta} class="chip" aria-pressed={limpiar(f.etiqueta).replace(/^#/, '') === limpiar(e.etiqueta)} onClick={() => poner({ etiqueta: limpiar(f.etiqueta).replace(/^#/, '') === limpiar(e.etiqueta) ? '' : e.etiqueta })}>#{e.etiqueta} <span class="tabular-nums opacity-70">{e.n}</span></button>)}
+          {etiquetas.map(e => <button key={e.etiqueta} class="chip" data-etiqueta={e.etiqueta} aria-pressed={activas.includes(e.etiqueta)} onClick={() => poner({ etiqueta: (activas.includes(e.etiqueta) ? activas.filter(x => x !== e.etiqueta) : [...activas, e.etiqueta]).join(' ') })}>#{e.etiqueta} <span class="tabular-nums opacity-70">{e.n}</span></button>)}
         </div>
       )}
 
@@ -437,7 +449,7 @@ export function Movimientos() {
                 <div class="flex min-w-0 items-center gap-3">
                   <Insignia v={visual} tam={42} />
                   <div class="min-w-0">
-                    <div class="titulo">{m.descripcion}{m.etiqueta && <span class="etiq"> #{m.etiqueta}</span>}{conFoto.value.has(m.id) && <span class="insig-foto" title="Tiene foto del recibo"><IconoFoto size={12} />recibo</span>}{marcasDe(m, fijos).map(x => <span key={x} class={`marca-mov marca-${x.toLowerCase()}`}>{x}</span>)}</div>
+                    <div class="titulo">{m.descripcion}{m.etiqueta && <> <ChipsEtiqueta valor={m.etiqueta} alTocar={e => { limite.value = 60; poner({ etiqueta: e }); }} /></>}{conFoto.value.has(m.id) && <span class="insig-foto" title="Tiene foto del recibo"><IconoFoto size={12} />recibo</span>}{marcasDe(m, fijos).map(x => <span key={x} class={`marca-mov marca-${x.toLowerCase()}`}>{x}</span>)}</div>
                     <div class="sub">{categoria}{cuenta ? ' · ' + cuenta : ''}{ruta} · {describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora)}</div>
                   </div>
                 </div>

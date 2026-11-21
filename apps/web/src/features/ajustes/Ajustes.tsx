@@ -22,6 +22,7 @@ import { cifrarRespaldo, descifrarRespaldo, estaCifrado } from '../../services/c
 import { Selector } from '../../components/ui/Selector.tsx';
 import { ponerSonidos, sonidos } from '../../lib/sonido.ts';
 import { Apariencia } from './Apariencia.tsx';
+import { Reglas } from './Reglas.tsx';
 import { EstadoSync } from '../../components/ui/EstadoSync.tsx';
 import { alternarPrivacidad, montosOcultos } from '../../state/privacidad.ts';
 
@@ -224,6 +225,9 @@ export function Ajustes() {
       <h2>Botones rápidos del chat</h2>
       <p class="sub">Los botones de arriba del cuadro de escribir los armas tú: plantillas para completar o frases listas. También puedes ocultar la barra.</p>
       <div class="acciones"><button class="secundario" id="editar-atajos" onClick={() => { editorAtajos.value = true; }}>Editar mis botones</button></div>
+
+      <h2>Reglas aprendidas</h2>
+      <Reglas />
 
       <h2>Conexión con el servidor</h2>
       <div class="mb-2"><EstadoSync /></div>

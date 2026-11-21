@@ -18,11 +18,12 @@ import { aMinor, formatear } from './dinero.ts';
 import { aLocal, describirFecha } from './fechas.ts';
 import { avisoDeExistencias } from './existencias.ts';
 import { construirMovimiento, saldoDe } from './asientos.ts';
+import { conNumeral, etiquetasDeTexto } from './etiquetas.ts';
 import { contextoDe, type Datos, type Repo } from './repo.ts';
 import type { Propuesta } from './parser/tipos.ts';
 import type { Cuenta, Moneda, Movimiento } from './tipos.ts';
 
-export type CampoEditable = 'monto' | 'cantidad' | 'cuenta' | 'cuentaDestino' | 'categoria' | 'fuente' | 'concepto' | 'fecha';
+export type CampoEditable = 'monto' | 'cantidad' | 'cuenta' | 'cuentaDestino' | 'categoria' | 'fuente' | 'concepto' | 'fecha' | 'etiqueta';
 
 /** Lo que se quiere cambiar. Todo es opcional: lo que falta se queda como estaba. `monto` va en pesos (o dólares), como se escribe. */
 export interface CambiosEdicion {
@@ -33,6 +34,8 @@ export interface CambiosEdicion {
   categoriaId?: string;
   fuenteId?: string;
   concepto?: string;
+  /** Etiquetas como las escribe quien edita («#viaje #claude»); texto vacío las quita. */
+  etiqueta?: string;
   /** 'AAAA-MM-DD HH:MM:SS' */
   ocurridoEn?: string;
 }
@@ -62,7 +65,7 @@ export type Previsualizacion =
     bloqueos: string[];
   };
 
-const TODOS: CampoEditable[] = ['monto', 'cantidad', 'cuenta', 'cuentaDestino', 'categoria', 'fuente', 'concepto', 'fecha'];
+const TODOS: CampoEditable[] = ['monto', 'cantidad', 'cuenta', 'cuentaDestino', 'categoria', 'fuente', 'concepto', 'fecha', 'etiqueta'];
 const todosCerrados = (motivo: string): Record<CampoEditable, Posibilidad> => Object.fromEntries(TODOS.map(c => [c, { editable: false, motivo }])) as Record<CampoEditable, Posibilidad>;
 
 const MOTIVO_ATADO = 'Está atado a lo que debe cada persona. Para cambiar el monto, anula el movimiento y vuelve a anotarlo: así las deudas se recalculan bien.';
@@ -85,7 +88,7 @@ export function capacidadesDeEdicion(m: Movimiento): Capacidades {
     return { editable: false, motivo: 'Un cambio de moneda no se edita desde aquí. Anúlalo y vuelve a anotarlo.', campos: todosCerrados('Es un cambio de moneda.') };
   }
   const p = propuestaDe(m);
-  const libres = (extra: Partial<Record<CampoEditable, Posibilidad>> = {}) => ({ ...todosCerrados('No aplica a este movimiento.'), concepto: { editable: true }, fecha: { editable: true }, ...extra });
+  const libres = (extra: Partial<Record<CampoEditable, Posibilidad>> = {}) => ({ ...todosCerrados('No aplica a este movimiento.'), concepto: { editable: true }, fecha: { editable: true }, etiqueta: { editable: true }, ...extra });
   // sin la tarjeta guardada (movimientos que vinieron del Excel) no se sabe cómo se armaron los asientos
   if (!p) {
     return { editable: true, campos: { ...libres(), monto: { editable: false, motivo: 'Este movimiento vino de un archivo y no guarda cómo se armó. Para cambiar el monto, anúlalo y vuelve a anotarlo.' } } };
@@ -155,12 +158,18 @@ export function previsualizarEdicion(datos: Datos, ahora: Date, id: string, camb
   const p1: Propuesta | null = p0 ? { ...p0, avisos: [], faltantes: [] } : null;
   let descripcion = original.descripcion;
   let ocurridoEn = original.ocurridoEn;
+  let etiqueta = original.etiqueta ?? null;
   let rehacerAsientos = false;
 
   if (pide('concepto', cambios.concepto?.trim(), original.descripcion)) {
     if (!cambios.concepto!.trim()) bloqueos.push('El concepto no puede quedar vacío.');
     else if (cambios.concepto!.trim().length > 80) bloqueos.push('El concepto es muy largo (hasta 80 letras).');
     else { descripcion = cambios.concepto!.trim(); if (p1) p1.concepto = descripcion; }
+  }
+  if (pide('etiqueta', cambios.etiqueta, undefined)) {
+    const r = etiquetasDeTexto(cambios.etiqueta!);
+    if (r.error) bloqueos.push(r.error);
+    else { etiqueta = r.valor; if (p1) p1.etiqueta = r.valor ?? undefined; }
   }
   if (pide('fecha', cambios.ocurridoEn, original.ocurridoEn)) {
     const f = cambios.ocurridoEn!;
@@ -224,7 +233,7 @@ export function previsualizarEdicion(datos: Datos, ahora: Date, id: string, camb
   }
 
   const movimiento: Movimiento = {
-    ...original, ocurridoEn, descripcion, asientos,
+    ...original, ocurridoEn, descripcion, etiqueta, asientos,
     ...(p1 ? { propuesta: p1 } : {}),
     editadoEn: aLocal(ahora),
   };
@@ -233,6 +242,7 @@ export function previsualizarEdicion(datos: Datos, ahora: Date, id: string, camb
   const cambiosDeCampo: CambioDeCampo[] = [];
   const nuevo = (campo: CampoEditable, etiqueta: string, antes: string, despues: string) => { if (antes !== despues) cambiosDeCampo.push({ campo, etiqueta, antes, despues }); };
   nuevo('concepto', 'Concepto', original.descripcion, descripcion);
+  nuevo('etiqueta', 'Etiquetas', conNumeral(original.etiqueta), conNumeral(etiqueta));
   nuevo('fecha', 'Fecha', describirFecha(original.ocurridoEn, ahora, original.sinHora), describirFecha(ocurridoEn, ahora, original.sinHora));
   if (p0 && p1) {
     nuevo('monto', 'Monto', formatear(p0.monto, p0.moneda), formatear(p1.monto, p1.moneda));

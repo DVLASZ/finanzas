@@ -17,7 +17,8 @@ import { hallarFecha, hallarFechaLimite } from './fechas.ts';
 import { quitarComasDeMiles, repartoEnOtroOrden } from './reparto.ts';
 import { diaDeSemana, mesDeNombre } from './recurrentes.ts';
 import { naturalizar } from './lenguaje.ts';
-import { limpiar } from './texto.ts';
+import { limpiar, normalizar } from './texto.ts';
+import { extraerEtiquetas } from './etiquetas.ts';
 import { type Contexto, type Moneda } from './tipos.ts';
 
 // ---------------------------------------------------------------------------------------
@@ -207,11 +208,19 @@ export function interpretar(texto: string, ctx: Contexto): Resultado {
 
 function interpretarPlano(texto: string, ctx: Contexto): Resultado {
   const original = texto.trim();
-  const t0 = limpiar(original);
-  if (!t0) return error('Escribe un movimiento, por ejemplo: «mecato 5000».');
+  const t00 = limpiar(original);
+  if (!t00) return error('Escribe un movimiento, por ejemplo: «mecato 5000».');
 
-  const cmd = detectarComando(t0);
+  // solo hashtags («#viaje #claude»): consulta del evento, con todas las etiquetas a la vez
+  const soloTags = normalizar(original).match(/^(?:evento |etiqueta )?((?:#[a-z0-9_-]+ ?)+)$/);
+  if (soloTags) return { clase: 'comando', comando: 'evento', arg: soloTags[1].trim().split(/s+/).map(e => e.slice(1)).join(' ') };
+  const cmd = detectarComando(t00);
   if (cmd) return { clase: 'comando', ...cmd };
+
+  // los hashtags de cualquier parte de la frase se quitan antes de analizar: no tocan concepto, categoría ni monto
+  const ex = extraerEtiquetas(original);
+  if (ex.error) return error(ex.error);
+  const t0 = ex.etiquetas.length ? limpiar(ex.texto) : t00;
 
   if (/^(apertura|saldo inicial|saldos iniciales)\b/.test(t0)) return declaraciones('apertura', original, t0, ctx);
   if (/^(arqueo|cuadre|cuadrar)\b/.test(t0)) return declaraciones('ajuste', original, t0, ctx);
@@ -225,6 +234,7 @@ function interpretarPlano(texto: string, ctx: Contexto): Resultado {
     tBase = fl.resto;
   }
   const b = prepararBase(original, tBase, ctx);
+  if (ex.etiquetas.length) b.etiqueta = ex.etiquetas.join(' ');
   if (b.fechaInvalida) return error('Esa fecha no existe. Revísala (por ejemplo «el 15/10» o «ayer»).');
   const suelto = vueltoSuelto(b);
   if (suelto) return suelto;

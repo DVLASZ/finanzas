@@ -6,6 +6,7 @@
  * en la app sin conexión.
  */
 import { limpiar } from './texto.ts';
+import { tieneEtiquetas, tokensDeEtiqueta } from './etiquetas.ts';
 import type { Saldos } from './asientos.ts';
 import type { Compromiso, Cuenta, Moneda, Movimiento } from './tipos.ts';
 
@@ -122,10 +123,11 @@ export function totalIngresos(movs: Movimiento[], cuentas: Cuenta[], desde: stri
   return total;
 }
 
-/** Movimientos de un evento (#etiqueta) con su total gastado. */
+/** Movimientos de un evento con su total gastado. `etiqueta` puede traer varias («viaje claude»): salen los que llevan todas. */
 export function porEtiqueta(movs: Movimiento[], cuentas: Cuenta[], etiqueta: string) {
   const cats = new Set(cuentas.filter(c => c.tipo === 'categoria').map(c => c.id));
-  const lista = activos(movs).filter(m => m.etiqueta === etiqueta);
+  const buscadas = tokensDeEtiqueta(etiqueta);
+  const lista = buscadas.length ? activos(movs).filter(m => tieneEtiquetas(m.etiqueta, buscadas)) : [];
   const total = lista.reduce((s, m) => s + m.asientos.filter(a => cats.has(a.cuentaId) && a.moneda === 'COP').reduce((x, a) => x + a.monto, 0), 0);
   return { movimientos: lista.sort((a, b) => a.ocurridoEn.localeCompare(b.ocurridoEn)), total };
 }

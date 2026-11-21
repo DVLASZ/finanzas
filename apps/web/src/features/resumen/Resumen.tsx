@@ -16,6 +16,7 @@ import { avisar } from '../../components/ui/Dialogo.tsx';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { fechaAtras } from '../../lib/periodos.ts';
 import { TarjetaHormiga } from './Hormiga.tsx';
+import { TarjetaEtiquetas } from './Etiquetas.tsx';
 import { abrirBalance, abrirCategoria, abrirComparativa, abrirConcepto, abrirMedio, abrirTotal, type Periodos } from './aperturas.tsx';
 import { ComparativaMes } from './ComparativaMes.tsx';
 import { Ritmo } from '../../components/charts/graficos.tsx';
@@ -25,10 +26,13 @@ import { BarrasMeses, MapaCalor } from '../../components/charts/Calendario.tsx';
 import { PresupuestoSemana } from '../saldos/PresupuestoSemana.tsx';
 import { abrirMetas } from '../metas/aperturas.tsx';
 import { tocable } from '../../lib/tocable.ts';
+import { dirPeriodo, usarEntradaPeriodo, usarPildora } from '../../lib/periodoVivo.ts';
 import { BotonesCorte, HojaCorte } from './CorteTurno.tsx';
 import { vendeProductos, aLocal as aLocalHoy, gastoDelMes, ingresosGastosPorMes, flujoAcumulado, gastoPorMedio, topConceptos } from '../../../../../packages/core/src/index.ts';
 import { AnilloMedios, FlujoMes, RankingConceptos } from '../../components/charts/Flujo.tsx';
 import { GraficasResumen } from '../../components/charts/GraficasResumen.tsx';
+import { ComparadorFechas } from './Comparador.tsx';
+import { imprimirReporte } from './reportePdf.tsx';
 
 type Periodo = 'semana' | 'mes' | 'anio';
 const periodo = signal<Periodo>('mes');
@@ -116,6 +120,9 @@ function Comparativa({ nombre, ahora, antes, bueno, alTocar, id }: { nombre: str
 export function Resumen() {
   const datos = datosSignal.value;
   const ctx = contexto.value;
+  // periodo vivo: pildora deslizante y entrada direccional (los hooks van antes del return temprano)
+  const refPestanas = usarPildora();
+  const refRaiz = usarEntradaPeriodo(`${periodo.value}|${atras.value}`);
   if (!datos || !ctx) return <p class="vacio">Cargando…</p>;
   const p = periodo.value;
   const a = atras.value;
@@ -213,14 +220,15 @@ export function Resumen() {
   // el mapa de calor es del mes que se está viendo (o del actual si se mira una semana o un año)
   const mesCalor = p === 'mes' ? desde.slice(0, 7) : aLocalHoy(ctx.ahora).slice(0, 7);
   return (
-    <div class="space-y-3">
-      <div class="pestanas" role="tablist">
-        {(['semana', 'mes', 'anio'] as const).map(x => <button key={x} class={`pestana ${x === p ? 'activa' : ''}`} data-p={x} onClick={() => cambiar(x)}>{x === 'anio' ? 'Año' : x[0].toUpperCase() + x.slice(1)}</button>)}
+    <div class="space-y-3" ref={refRaiz}>
+      <div class="pestanas viva" role="tablist" ref={refPestanas}>
+        <span class="pildora" aria-hidden="true" />
+        {(['semana', 'mes', 'anio'] as const).map(x => <button key={x} class={`pestana ${x === p ? 'activa' : ''}`} data-p={x} onClick={() => { dirPeriodo.value = 0; cambiar(x); }}>{x === 'anio' ? 'Año' : x[0].toUpperCase() + x.slice(1)}</button>)}
       </div>
       <div class="periodo">
-        <button class="chip" aria-label="Ver el periodo anterior" onClick={() => { atras.value = a + 1; }}><ChevronLeft size={16} />Anterior</button>
+        <button class="chip" aria-label="Ver el periodo anterior" onClick={() => { dirPeriodo.value = -1; atras.value = a + 1; }}><ChevronLeft size={16} />Anterior</button>
         <h2 class="!m-0">{titulo(p, desde)}</h2>
-        <button class="chip" aria-label="Ver el periodo siguiente" disabled={a === 0} onClick={() => { atras.value = Math.max(0, a - 1); }}>Siguiente<ChevronRight size={16} /></button>
+        <button class="chip" aria-label="Ver el periodo siguiente" disabled={a === 0} onClick={() => { dirPeriodo.value = 1; atras.value = Math.max(0, a - 1); }}>Siguiente<ChevronRight size={16} /></button>
       </div>
 
       <Escalonado class="grid grid-cols-2 gap-3">
@@ -286,7 +294,7 @@ export function Resumen() {
         <BarrasMeses meses={ingresosGastosPorMes(datos, ctx.ahora, 6)} />
       </section>
 
-      <GraficasResumen datos={datos} ahora={ctx.ahora} />
+      <GraficasResumen datos={datos} ahora={ctx.ahora} desde={desde} hasta={hasta} />
 
       {verRitmo && <ComparativaMes datos={datos} ahora={ctx.ahora} />}
 
@@ -301,6 +309,8 @@ export function Resumen() {
       )}
 
       <TarjetaHormiga movs={datos.movimientos} cuentas={datos.cuentas} desde={desde} hasta={hasta} dias={Math.max(1, Math.round((Date.parse(hasta.replace(' ', 'T') + 'Z') - Date.parse(desde.replace(' ', 'T') + 'Z')) / 86400000))} alTocar={x => abrirConcepto(datos, x, per, true)} />
+
+      <TarjetaEtiquetas datos={datos} p={per} />
 
       <div class="grid gap-3 sm:grid-cols-2">
         <Comparativa id="comp-gastos" nombre="Gastos contra el periodo anterior" ahora={total} antes={totalPrevio} bueno="baja" alTocar={() => abrirComparativa(datos, 'gastos', per)} />
@@ -328,7 +338,10 @@ export function Resumen() {
         </div>
       </section>
 
+      <ComparadorFechas datos={datos} ahora={ctx.ahora} />
+
       <div class="acciones">
+        <button class="secundario" id="reporte-pdf" onClick={() => void imprimirReporte(datos, ctx.ahora, `Reporte: ${titulo(p, desde)}`, titulo(p, desde), desde, hasta)}><FileText size={18} />Reporte PDF</button>
         <button class="secundario" id="informe" onClick={abrirInforme}><FileText size={18} />Informe para imprimir o guardar en PDF</button>
         <button class="secundario" id="compartir-resumen" onClick={() => void compartirResumen()}><Share2 size={18} />Compartir el resumen</button>
         <button class="secundario" id="resumen-csv" onClick={descargarCsv}><Download size={18} />Bajar los movimientos (CSV)</button>

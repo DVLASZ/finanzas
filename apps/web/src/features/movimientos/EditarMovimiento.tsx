@@ -12,9 +12,12 @@ import { AlertTriangle, Ban, Check, Pencil, X } from 'lucide-preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  aLocal, capacidadesDeEdicion, describirFecha, formatear, hallarMontos, previsualizarEdicion, aplicarEdicion, type CambiosEdicion, type CampoEditable, type Movimiento, type Propuesta,
+  aLocal, capacidadesDeEdicion, conNumeral, etiquetasDeTexto, describirFecha, formatear, hallarMontos, previsualizarEdicion, aplicarEdicion, type CambiosEdicion, type CampoEditable, type Movimiento, type Propuesta,
 } from '../../../../../packages/core/src/index.ts';
+import { agregarRegla, leerReglas, reglaSugerida } from '../../../../../packages/core/src/index.ts';
 import { mostrarConfirmacion } from '../../components/ui/Confirmacion.tsx';
+import { confirmar } from '../../components/ui/Dialogo.tsx';
+import { guardarReglas } from '../../state/reglas.ts';
 import { Selector } from '../../components/ui/Selector.tsx';
 import { subirDesdeAbajo } from '../../lib/efectos.ts';
 import { app } from '../../services/estado.ts';
@@ -42,6 +45,16 @@ const deCampoFecha = (valor: string, original: string, sinHora: boolean): string
   // si no se tocó la hora, se conservan los segundos originales
   return valor.slice(0, 16) === original.slice(0, 10) + 'T' + original.slice(11, 16) ? original : `${valor.slice(0, 10)} ${valor.slice(11, 16)}:00`;
 };
+
+/** Si la corrección de cuenta o categoría se puede volver regla («Laura va a Nequi»), lo pregunta en un cuadro de la app. */
+async function ofrecerRegla(editado: Movimiento, cambios: CambiosEdicion, ahora: Date): Promise<void> {
+  const datos = await app.repo.cargar();
+  const s = reglaSugerida(datos, editado, { cuentaId: cambios.cuentaId, categoriaId: cambios.categoriaId }, ahora);
+  if (!s) return;
+  if (await confirmar({ titulo: s.pregunta, texto: 'Se guarda como regla y la puedes cambiar o borrar en Ajustes. Lo que escribas en la frase siempre gana.', aceptar: 'Guardar regla', cancelar: 'No' })) {
+    await guardarReglas(agregarRegla(leerReglas(datos.config), s, ahora));
+  }
+}
 
 function Campo({ etiqueta, motivo, children }: { etiqueta: string; motivo?: string; children: preact.ComponentChildren }) {
   return (
@@ -71,6 +84,7 @@ export function EditarMovimiento() {
   const [fuenteId, setFuenteId] = useState('');
   const [concepto, setConcepto] = useState('');
   const [fecha, setFecha] = useState('');
+  const [etiquetas, setEtiquetas] = useState('');
 
   // al abrir otro movimiento, el formulario parte de sus datos
   useEffect(() => {
@@ -84,6 +98,7 @@ export function EditarMovimiento() {
     setCategoriaId(p?.categoriaId ?? '');
     setFuenteId(datos.cuentas.find(c => c.tipo === 'fuente' && c.nombre === p?.fuente)?.id ?? '');
     setConcepto(m.descripcion);
+    setEtiquetas(conNumeral(m.etiqueta));
     setFecha(aCampoFecha(m.ocurridoEn, m.sinHora));
     if (hoja.current) subirDesdeAbajo(hoja.current);
   }, [id]);
@@ -112,6 +127,7 @@ export function EditarMovimiento() {
     if (cap.campos.fuente.editable && fuenteId && fuenteId !== datos.cuentas.find(c => c.tipo === 'fuente' && c.nombre === p0.fuente)?.id) cambios.fuenteId = fuenteId;
   }
   if (concepto.trim() !== m.descripcion) cambios.concepto = concepto;
+  if (conNumeral(etiquetas) !== conNumeral(m.etiqueta) || etiquetasDeTexto(etiquetas).error) cambios.etiqueta = etiquetas;
   const nuevaFecha = deCampoFecha(fecha, m.ocurridoEn, m.sinHora);
   if (nuevaFecha !== m.ocurridoEn) cambios.ocurridoEn = nuevaFecha;
 
@@ -123,10 +139,13 @@ export function EditarMovimiento() {
     setGuardando(true); setError('');
     try {
       const original = structuredClone(m); // para poder deshacer: la edición reemplaza el movimiento entero, y esto lo devuelve a como estaba
-      await guardarCambio(async () => { await aplicarEdicion(app.repo, new Date(), m.id, cambios); anotarActividad('edicion', 'Se editó un movimiento'); });
+      const ahora = new Date();
+      let editado: Movimiento | null = null;
+      await guardarCambio(async () => { editado = (await aplicarEdicion(app.repo, ahora, m.id, cambios)).movimiento; anotarActividad('edicion', 'Se editó un movimiento'); });
       cerrar();
       mostrarConfirmacion('Cambios guardados');
       mostrarDeshacer('Movimiento editado', () => guardarCambio(() => app.repo.editarMovimiento(original, [])));
+      if (editado) void ofrecerRegla(editado, cambios, ahora);
     } catch (e) {
       setError((e as Error).message);
       setPaso('formulario');
@@ -170,6 +189,10 @@ export function EditarMovimiento() {
 
             <Campo etiqueta="Concepto" motivo={motivo('concepto')}>
               <input type="text" id="e-concepto" maxLength={80} value={concepto} onInput={e => setConcepto((e.target as HTMLInputElement).value)} disabled={!cap.campos.concepto.editable} />
+            </Campo>
+
+            <Campo etiqueta="Etiquetas (#viaje #claude)" motivo={motivo('etiqueta')}>
+              <input type="text" id="e-etiquetas" maxLength={160} value={etiquetas} placeholder="#viaje #claude" onInput={e => setEtiquetas((e.target as HTMLInputElement).value)} disabled={!cap.campos.etiqueta.editable} />
             </Campo>
 
             {visible('monto') && (

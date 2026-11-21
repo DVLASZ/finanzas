@@ -65,6 +65,8 @@ export interface Propuesta {
   formaPago?: 'justo' | 'mayor';
   billeteMayor?: number;
   etiqueta?: string;
+  /** Si la cuenta o la categoría salió de una regla aprendida: «Laura va a Nequi». Se muestra en la tarjeta. */
+  reglaUsada?: string;
   desde?: string;
   hasta?: string;
   fechaLimite?: string;

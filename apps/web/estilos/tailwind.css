@@ -862,3 +862,137 @@
   .ahorro-pista { height: .7rem; }
   .ahorro-relleno { display: block; height: 100%; border-radius: 999px; transform-origin: left; animation: crece-x .9s cubic-bezier(.22, 1, .36, 1) both; }
 }
+
+/* obsidiana chat */
+/* Tarjetas del chat y alertas con la doble tarjeta dorada y el destello de Saldos. Solo Obsidiana. El corrimiento (5 px) cabe
+   en el relleno del chat (p-4) y de las alertas (mx-4), asi que no se recorta ni cambia el ancho de nada. */
+html[data-piel="obsidiana"] :is(.burbuja.carta, .burbuja.guia, .alerta) {
+  position: relative;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--marca) 38%, transparent), 0 0 0 1px color-mix(in srgb, var(--marca) 24%, var(--anillo)),
+    5px 5px 0 -1px color-mix(in srgb, var(--marca-2) 55%, transparent) !important;
+}
+html[data-piel="obsidiana"][data-tema="claro"] :is(.burbuja.carta, .burbuja.guia, .alerta) {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--marca) 55%, transparent), 0 0 0 1px color-mix(in srgb, var(--marca-2) 38%, var(--anillo)),
+    5px 5px 0 -1px color-mix(in srgb, var(--marca) 62%, transparent) !important;
+}
+/* En las tarjetas el destello va en ::after. En las alertas va en ::before, porque ::after ya lo usa el pulso de urgente y aviso. */
+html[data-piel="obsidiana"] :is(.burbuja.carta, .burbuja.guia)::after, html[data-piel="obsidiana"] .alerta::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(115deg, transparent 32%, color-mix(in srgb, var(--marca) 26%, transparent) 50%, transparent 68%);
+  opacity: 0; animation: obs-destello 1.5s cubic-bezier(.22, 1, .36, 1) .15s 1 both;
+}
+
+/* composer chat */
+.entrada-compacta { align-items: flex-end; }
+.entrada-compacta > textarea#texto {
+  flex: 1 1 0; min-width: 0; min-height: 40px; box-sizing: border-box;
+  line-height: 1.35; padding-block: .5rem; resize: none; overflow-y: auto;
+  /* cuatro lineas y luego scroll interno */
+  max-height: calc(4 * 1.35em + 1rem);
+}
+.entrada-compacta > textarea#texto::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entrada-compacta > div { flex-shrink: 0; }
+.entrada-compacta > div > button { flex-shrink: 0; }
+
+/* privacidad viva */
+@layer components {
+  /* barrido de luz sobre cada tarjeta al mostrar u ocultar las cifras: solo transform y opacity, en una capa fija */
+  .barrido-privacidad { position: fixed; inset: 0; z-index: 70; pointer-events: none; }
+  .barrido-privacidad > span { position: absolute; overflow: hidden; }
+  .barrido-privacidad > span > i { position: absolute; inset: 0 auto 0 0; width: 45%; opacity: 0; will-change: transform, opacity;
+    background: linear-gradient(100deg, transparent 0%, color-mix(in srgb, var(--marca) 55%, transparent) 45%, color-mix(in srgb, #fff 70%, var(--marca)) 52%, color-mix(in srgb, var(--marca) 55%, transparent) 60%, transparent 100%); }
+  /* el ojo se hace casi transparente mientras hay scroll, salvo si el dedo, el cursor o el teclado lo tienen */
+  .boton-ojo { transform-style: preserve-3d; transition: transform .3s cubic-bezier(.34, 1.56, .64, 1), color .2s ease, opacity .25s ease; }
+  .boton-ojo.tenue:not(:hover):not(:active):not(:focus-visible) { opacity: .35; }
+  @media (prefers-reduced-motion: reduce) { .boton-ojo { transition: opacity 0s; } }
+  /* los porcentajes de variacion nunca se parten ni se salen de su tarjeta, ni con letra extra grande */
+  .var-chip { white-space: nowrap; max-width: 100%; }
+  .fila > .min-w-0 { min-width: 0; }
+  .fila > .var-chip { margin-inline-start: auto; }
+  html:is([data-letra="grande"],[data-letra="extra"]) .var-chip { padding-inline: .45rem; gap: .12rem; }
+  html[data-letra="extra"] .var-chip { font-size: .7rem; }
+  .impacto-fila b { white-space: nowrap; }
+}
+
+/* periodo vivo */
+/* Una sola pildora absoluta que viaja hasta la pestaña activa. periodoVivo.ts mide la pestaña y deja --px, --py, --sx y --ph en la barra;
+   aquí solo se mueve con transform (translate + scaleX), con un resorte que se pasa un poco y vuelve. */
+.pestanas.viva { position: relative; flex-wrap: wrap; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--marca) 22%, var(--bor)); isolation: isolate; }
+.pestanas.viva > .pestana { position: relative; z-index: 1; flex: 1 1 auto; min-width: 0; padding-inline: .6rem; white-space: nowrap; overflow-wrap: normal; word-break: keep-all; }
+.pestanas.viva > .pestana.activa { background: transparent; box-shadow: none; color: var(--tx); }
+.pestanas.viva > .pildora {
+  position: absolute; left: 0; top: 0; z-index: 0; width: 100px; height: var(--ph, 0px); pointer-events: none;
+  border-radius: calc(var(--radio-b) - 3px); background: var(--sup); opacity: 0;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 55%, var(--anillo)), 0 6px 18px -8px var(--brillo);
+  transform-origin: 0 0; transform: translate(var(--px, 0px), var(--py, 0px)) scaleX(var(--sx, 1));
+}
+.pestanas.viva.lista > .pildora { opacity: 1; transition: transform .46s cubic-bezier(.34, 1.45, .5, 1), opacity .2s ease; }
+/* micro-brillo: un destello corto del acento cuando una opcion pasa a estar activa (la animacion arranca al aplicarse la clase) */
+.pestanas.viva > .pestana.activa::after, .carrusel .chip[aria-pressed="true"]::after, .filtro-tipos .chip[aria-pressed="true"]::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--marca) 45%, transparent), transparent 72%);
+  animation: pv-destello .55s ease-out 1;
+}
+.carrusel .chip[aria-pressed="true"], .filtro-tipos .chip[aria-pressed="true"] { position: relative; }
+@keyframes pv-destello { 0% { opacity: 0; } 28% { opacity: .9; } 100% { opacity: 0; } }
+/* bordes con el acento del tema en Anterior / Siguiente y en los selectores */
+.periodo > .chip:not([aria-pressed="true"]) { box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 30%, var(--anillo)); }
+.periodo > .chip:not(:disabled):not([aria-pressed="true"]):hover { box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 65%, var(--anillo)), 0 6px 16px -8px var(--brillo); }
+.periodo > .chip:not(:disabled):active { transform: scale(.95); }
+.carrusel .chip:not([aria-pressed="true"]) { box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 18%, var(--anillo)); }
+.select-btn { box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 22%, var(--anillo)); }
+.select-btn:hover, .select-btn[aria-expanded="true"] { box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 60%, var(--anillo)), 0 6px 16px -10px var(--brillo); }
+.select-btn:focus-visible { box-shadow: 0 0 0 2px var(--marca), 0 0 0 6px var(--brillo); }
+@media (prefers-reduced-motion: reduce) { .pestanas.viva.lista > .pildora { transition: none; } }
+
+/* dia semana y comparador */
+.ds-fila { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .35rem; align-items: end; }
+.ds-col { display: grid; gap: .3rem; justify-items: center; align-content: end; padding: .25rem .1rem; border-radius: .7rem; color: var(--tx2); cursor: pointer; min-width: 0; }
+.ds-col:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+.ds-col.top { background: color-mix(in srgb, var(--marca) 12%, transparent); color: var(--tx); }
+.ds-barra-caja { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: 7rem; }
+.ds-barra { display: block; width: min(1.6rem, 70%); border-radius: .4rem .4rem .1rem .1rem; transform-origin: bottom; background: color-mix(in srgb, var(--marca) 45%, transparent); animation: sube .6s cubic-bezier(.22, 1, .36, 1) backwards; }
+.ds-col.top .ds-barra { background: linear-gradient(180deg, var(--marca), color-mix(in srgb, var(--marca) 55%, transparent)); }
+.ds-nombre { font-size: .72rem; font-weight: 700; line-height: 1.2; white-space: nowrap; word-break: keep-all; overflow-wrap: normal; }
+.cmp-rangos { display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); }
+.cmp-rango { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: .5rem; margin: 0; padding: .5rem .65rem .65rem; border: 1px solid var(--bor); border-radius: .9rem; min-width: 0; }
+.cmp-rango legend { padding: 0 .35rem; font-size: .75rem; font-weight: 700; color: var(--tx2); }
+.cmp-campo { display: grid; gap: .2rem; font-size: .72rem; font-weight: 600; color: var(--tx2); min-width: 0; }
+.cmp-campo input { width: 100%; min-width: 0; }
+.cmp-error { margin: .6rem 0 0; color: var(--neg); font-size: .85rem; font-weight: 600; }
+.cmp-totales { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); margin-top: .75rem; }
+.cmp-total { display: grid; gap: .15rem; align-content: start; padding: .55rem .65rem; border-radius: .9rem; background: var(--elev); min-width: 0; }
+.cmp-par { display: flex; align-items: baseline; gap: .4rem; font-size: .8rem; min-width: 0; }
+.cmp-lado { flex: none; width: 1rem; font-size: .7rem; font-weight: 700; color: var(--tx2); }
+.cmp-subtitulo { margin: 1rem 0 0; font-size: .85rem; }
+.cmp-barra { display: flex; align-items: center; gap: .4rem; margin-top: .3rem; font-size: .75rem; }
+.cmp-barra .barra-fondo { flex: 1; min-width: 0; }
+.cmp-valor { flex: none; min-width: 5.5rem; text-align: right; }
+
+/* reporte para imprimir: fuera de la impresión no se ve; al imprimir es lo único que queda, en hoja A4 blanca */
+#reporte-impresion { display: none; }
+@page { size: A4; margin: 14mm; }
+@media print {
+  html, body { background: #fff !important; color: #000 !important; height: auto !important; overflow: visible !important; }
+  body > *:not(#reporte-impresion) { display: none !important; }
+  #reporte-impresion { display: block !important; position: static; color: #000; background: #fff; font: 11pt/1.4 system-ui, sans-serif; }
+  #reporte-impresion .rp-cabeza { border-bottom: 2px solid #000; margin-bottom: 4mm; padding-bottom: 2mm; }
+  #reporte-impresion h1 { margin: 0; font-size: 20pt; color: #000; }
+  #reporte-impresion .rp-cabeza p { margin: 1mm 0 0; color: #333; }
+  #reporte-impresion h2 { margin: 6mm 0 2mm; font-size: 13pt; color: #000; break-after: avoid; }
+  #reporte-impresion section { break-inside: auto; }
+  #reporte-impresion table { width: 100%; border-collapse: collapse; margin: 0 0 3mm; }
+  #reporte-impresion tr { break-inside: avoid; }
+  #reporte-impresion th, #reporte-impresion td { padding: 1.2mm 2mm; border-bottom: .3mm solid #bbb; text-align: left; color: #000; background: none; }
+  #reporte-impresion th.num, #reporte-impresion td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #reporte-impresion tr.total td { font-weight: 700; border-top: .5mm solid #000; }
+  #reporte-impresion .rp-pie { margin-top: 8mm; color: #444; font-size: 9pt; }
+}
+
+/* ajustes de letra grande en el comparador y el día de la semana */
+.cmp-par { flex-wrap: wrap; }
+.cmp-par b { white-space: nowrap; min-width: 0; }
+.ds-fila { gap: .15rem; }
+.ds-col { padding-inline: 0; }
+.ds-nombre { font-size: .62rem; letter-spacing: -.02em; }
+html[data-letra="extra"] .ds-nombre { font-size: .54rem; letter-spacing: -.04em; }

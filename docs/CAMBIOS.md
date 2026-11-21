@@ -4,6 +4,18 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-24
+
+- Etiquetas: puedes escribir uno o varios #hashtags en cualquier frase del chat (#viaje, #claude, #universidad) sin que cambie la categoría ni el concepto. En Movimientos se filtran por etiqueta y cada fila las muestra como chips, y Resumen tiene una tarjeta con lo gastado por etiqueta que abre sus movimientos. Hasta 5 por movimiento.
+- Reglas aprendidas: si cambias la cuenta o la categoría de un movimiento de hoy, la app ofrece guardarlo como regla («la próxima vez que escriba Laura, usar Nequi»). Las reglas se editan y se borran en Ajustes, y una cuenta o categoría escrita en la frase siempre gana.
+- Dos gráficas nuevas en Resumen: gasto por día de la semana (cada barra abre sus movimientos) y un comparador de dos rangos de fechas elegidos por ti. El reporte PDF del periodo sale por el diálogo de impresión del teléfono, con una hoja limpia en blanco y negro.
+- Obsidiana: las tarjetas del chat y las alertas tienen la misma doble tarjeta dorada y el destello diagonal que Saldos y Resumen.
+- Los periodos tienen una píldora que se desliza hasta la opción activa, bordes con el color del tema y un destello al activar. El contenido entra por el lado según vayas a Siguiente o a Anterior.
+- Saldos, Movimientos, Resumen y Más entran en cascada, una tarjeta tras otra.
+- El botón del ojo gira al tocarlo y las cifras se aclaran con un barrido de color. Se vuelve translúcido mientras haces scroll para no tapar montos.
+- El campo del chat crece hasta cuatro líneas, para dictados largos y alertas pegadas. Enter envía y Shift más Enter baja de línea.
+- Los porcentajes de variación ya no se parten con letra extra grande, y se corrigieron dos desbordes del comparador y del día de la semana.
+
 ## 2026-11-23
 
 - Obsidiana es ahora el tema de una instalación nueva (quien ya eligió otro lo conserva). Sus tarjetas llevan detrás una segunda tarjeta corrida en dorado champán, como la de Kinetix pero en oro, con un filete de 1 px, botones y cifras clave en dorado luminoso y un destello que pasa una vez cuando una tarjeta aparece. Los íconos de categoría siguen con su brillo de color.

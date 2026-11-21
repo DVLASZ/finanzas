@@ -32,27 +32,55 @@ export function momentanea(clase: string, ms = 450): void {
   window.setTimeout(() => h.classList.remove(clase), ms);
 }
 
-/** Una onda que sale de un botón y cruza toda la pantalla, para marcar un cambio general (el modo privado). */
-export function ondaDesde(origen: Element): void {
-  if (menosMovimiento()) return;
-  const r = origen.getBoundingClientRect();
-  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-  const radio = Math.hypot(Math.max(cx, innerWidth - cx), Math.max(cy, innerHeight - cy));
-  const onda = document.createElement('div');
-  onda.className = 'onda-privacidad';
-  Object.assign(onda.style, { left: `${cx - radio}px`, top: `${cy - radio}px`, width: `${radio * 2}px`, height: `${radio * 2}px` });
-  document.body.appendChild(onda);
-  animate(onda, { transform: ['scale(.03)', 'scale(1)'], opacity: [0.55, 0] }, { duration: 0.7, ease: [0.22, 1, 0.36, 1] });
-  window.setTimeout(() => onda.remove(), 800);
-}
-
-/** Las tarjetas y filas que se ven en pantalla pasan de borrosas a nítidas una tras otra, como cuando se revelan las cifras. */
-export function desenfocarCifras(): void {
-  if (menosMovimiento()) return;
-  const piezas = [...document.querySelectorAll<HTMLElement>('#contenido .tarjeta, #contenido .fila, #contenido .alerta')]
+/** Las tarjetas y filas que se ven ahora mismo (hasta 24), de arriba abajo. Sin las que viven dentro de otra tarjeta. */
+function piezasVisibles(): HTMLElement[] {
+  return [...document.querySelectorAll<HTMLElement>('#contenido .tarjeta, #contenido .fila, #contenido .alerta, #dialogo .tarjeta')]
     .filter(e => { const r = e.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && !e.parentElement?.closest('.tarjeta'); })
     .slice(0, 24);
-  piezas.forEach((e, i) => animate(e, { filter: ['blur(8px)', 'blur(0px)'], opacity: [0.4, 1] }, { duration: 0.5, delay: i * 0.035, ease: [0.22, 1, 0.36, 1] }));
+}
+
+let turno = 0;
+
+/**
+ * Desenfoque cristalino con barrido de luz. `cambiar` es lo que de verdad muestra u oculta las cifras (cambia la señal y
+ * con ella el texto). Se llama SIEMPRE con las piezas ya borrosas (blur 8px, opacidad baja), así ninguna cifra legible
+ * se ve ni un instante nuevo: al mostrar, el texto real aparece bajo el desenfoque y luego se enfoca; al ocultar, primero
+ * se desenfoca lo que ya estaba visible, entonces el texto pasa a puntos y los puntos se enfocan.
+ */
+export function transicionCifras(cambiar: () => void, ocultando: boolean): void {
+  if (menosMovimiento()) { cambiar(); return; }
+  const mio = ++turno;
+  const piezas = piezasVisibles();
+  const rects = piezas.map(e => e.getBoundingClientRect());
+  const radios = piezas.map(e => getComputedStyle(e).borderRadius);
+  const velar = (e: HTMLElement) => { e.style.filter = 'blur(8px)'; e.style.opacity = '.4'; };
+  const limpiar = (e: HTMLElement) => { e.style.filter = ''; e.style.opacity = ''; };
+  const enfocar = () => {
+    if (mio !== turno) { piezas.forEach(limpiar); return; }
+    const capa = document.createElement('div');
+    capa.className = 'barrido-privacidad';
+    document.body.appendChild(capa);
+    piezas.forEach((e, i) => {
+      const r = rects[i], delay = i * 0.035;
+      const hoja = document.createElement('span');
+      Object.assign(hoja.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, borderRadius: radios[i] });
+      const brillo = document.createElement('i');
+      hoja.appendChild(brillo);
+      capa.appendChild(hoja);
+      animate(e, { filter: ['blur(8px)', 'blur(0px)'], opacity: [0.4, 1] }, { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }).finished.then(() => { if (mio === turno) limpiar(e); });
+      animate(brillo, { transform: ['translateX(-120%)', 'translateX(260%)'], opacity: [0, 1, 0] }, { duration: 0.6, delay, ease: [0.4, 0, 0.2, 1] });
+    });
+    window.setTimeout(() => capa.remove(), 900 + piezas.length * 35);
+  };
+  if (ocultando && piezas.length) {
+    // primero se difumina lo que se ve, y solo entonces las cifras pasan a puntos
+    piezas.forEach((e, i) => animate(e, { filter: ['blur(0px)', 'blur(8px)'], opacity: [1, 0.4] }, { duration: 0.16, delay: Math.min(i, 6) * 0.01, ease: 'easeIn' }));
+    window.setTimeout(() => { piezas.forEach(velar); cambiar(); requestAnimationFrame(enfocar); }, 190);
+  } else {
+    piezas.forEach(velar);
+    cambiar();
+    requestAnimationFrame(enfocar);
+  }
 }
 
 /** Un cuadro de ayuda que sube desde abajo (el detalle de un movimiento). */
