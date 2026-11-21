@@ -10,15 +10,16 @@ import { error, type Comando, type Resultado } from './parser/tipos.ts';
 import { dentroDe, prepararBase, type Base } from './parser/comun.ts';
 import { leerPago, pagoSinTotal } from './parser/pago.ts';
 import { alcancia, gasto, ingreso, transferencia, vueltoSuelto } from './parser/movimientos.ts';
-import { deuda, mePago, pagoDeDeuda, prestamo, regalo, ventaDelCatalogo } from './parser/personas.ts';
+import { deuda, mePago, pagoDeDeuda, prestamo, regalo, personaConocida, ventaDelCatalogo } from './parser/personas.ts';
 import { compraConLineas } from './parser/compras.ts';
 import { declaraciones } from './parser/declaraciones.ts';
 import { hallarFecha, hallarFechaLimite } from './fechas.ts';
 import { quitarComasDeMiles, repartoEnOtroOrden } from './reparto.ts';
 import { diaDeSemana, mesDeNombre } from './recurrentes.ts';
 import { naturalizar } from './lenguaje.ts';
-import { limpiar, normalizar } from './texto.ts';
+import { capitalizar, limpiar, normalizar } from './texto.ts';
 import { extraerEtiquetas } from './etiquetas.ts';
+import { categorizar, hallarCuentas } from './entidades.ts';
 import { type Contexto, type Moneda } from './tipos.ts';
 
 // ---------------------------------------------------------------------------------------
@@ -163,22 +164,45 @@ export function repartoEntre(texto: string): string {
   return `${m[1]} pagué por ${nombres.join(' y ')}`;
 }
 
+/** ¿El resto de la frase trae plata? «llegaron 35 galletas» es mercancía: hace falta una cuenta, «mil» o una cifra de miles. */
+function esPlata(resto: string): boolean {
+  if (!/\d/.test(resto)) return false;
+  const cifra = Number((/\d[\d.]*/.exec(resto)?.[0] ?? '0').replace(/\./g, ''));
+  return cifra >= 1000 || /\d\s?(?:mil|k|lucas?|lukas?|barras?|palos?)\b|\b(?:mil|lucas?|pesos)\b|nequi|daviplata|bancolombia|bogot|banco|efectivo|cuenta/i.test(resto);
+}
+
 /**
  * «Hoy entraron 80 mil a Nequi», «me llegaron 50000 de trabajo»: plata que entra dicha con el verbo en vez de «ingreso».
  * Se vuelve «ingreso 80 mil nequi hoy». Devuelve null si la frase no es de ese estilo.
  */
 export function ingresoPorVerbo(texto: string): string | null {
-  const m = texto.trim().match(/^(?:(hoy|ayer|anteayer|antier)\s+)?(?:me\s+)?(?:entr(?:o|ó|aron)|lleg(?:o|ó|aron)|ingresaron|consignaron|depositaron|transfirieron|giraron|pasaron|soltaron|mandaron|enviaron|cayeron)\s+(.+)$/i);
-  if (!m || !/\d/.test(m[2])) return null;
-  // «llegaron 35 galletas» es mercancía, no plata: hace falta una cuenta, «mil» o una cifra de miles
-  const cifra = Number((/\d[\d.]*/.exec(m[2])?.[0] ?? '0').replace(/\./g, ''));
-  if (!(cifra >= 1000 || /\d\s?(?:mil|k|lucas?|lukas?|barras?|palos?)\b|\b(?:mil|lucas?|pesos)\b|nequi|daviplata|bancolombia|bogot|banco|efectivo|cuenta/i.test(m[2]))) return null;
+  // «me pagan 50k», «me van a pagar 50k de la chamba», «me reembolsaron 15k», «me regalaron 30k»: el verbo dice de dónde viene
+  const sin = texto.trim().match(/^(?:(hoy|ayer|anteayer|antier)\s+)?me\s+(pagan|van a pagar|reembolsaron|regalaron)\s+(.+)$/i);
+  if (sin && esPlata(sin[3])) {
+    const v = limpiar(sin[2]);
+    const fuente = v === 'reembolsaron' ? ' reembolso' : v === 'regalaron' ? ' regalo' : '';
+    return `ingreso ${sin[3].trim()}${fuente}${sin[1] ? ' ' + sin[1] : ''}`;
+  }
+  const m = texto.trim().match(/^(?:(hoy|ayer|anteayer|antier)\s+)?(?:me\s+)?(?:entr(?:o|ó|aron)|lleg(?:o|ó|aron)|ingresaron|consignaron|depositaron|transfirieron|giraron|pasaron|soltaron|mandaron|enviaron|cay(?:o|ó|eron))\s+(.+)$/i);
+  if (!m || !esPlata(m[2])) return null;
   // «a», «en» y «por» sobran: «80 mil a Nequi» es «80 mil nequi»
   const resto = m[2].replace(/\s+(?:a|al|en|por|de la|de)\s+(?=nequi|daviplata|bancolombia|bogota|bogotá|efectivo|monedas|banco|davi)/gi, ' ').replace(/\s+/g, ' ').trim();
   return `ingreso ${resto}${m[1] ? ' ' + m[1] : ''}`;
 }
 
+/**
+ * «Ana no me pagó», «no compré nada 5000», «todavía no pagué»: algo que no pasó. Sin esto el verbo se lee solo y se guarda
+ * justo lo contrario (y «no» o «nunca» se vuelven una persona). Solo cuenta si el «no» va pegado al verbo de plata,
+ * con a lo sumo un «me», «le» o «ha» en medio; «no tengo plata hoy» o «Nora me pagó» no entran. Las preguntas se dejan pasar.
+ */
+function negada(texto: string): boolean {
+  const t = limpiar(texto);
+  if (/[?¿]/.test(texto) || /^(?:cuanto|cuantos|cuanta|cuantas|que|quien|quienes|cual|cuales)\b/.test(t)) return false;
+  return /\b(?:no|nunca|jamas|tampoco)\s+(?:(?:me|le|les|te|se|lo|la|nos|ha|han|he|hemos|haya|hayan)\s+)*(?:(?:pag|compr|gast|deb|prest|cobr|recib|transfer|consign)\w*|dio|dieron)\b/.test(t);
+}
+
 export function interpretar(texto: string, ctx: Contexto): Resultado {
+  if (negada(texto)) return error('Eso suena a que no pasó, así que no anoté nada ni creé ninguna persona. Si quieres anotar algo, escríbelo sin el «no».');
   // el lenguaje natural primero: modismos, jerga de plata y gastos compartidos dichos de mil maneras (ver lenguaje.ts)
   const nat = naturalizar(texto, ctx);
   if (nat?.pregunta) return { clase: 'pregunta', ...nat.pregunta };
@@ -206,6 +230,9 @@ export function interpretar(texto: string, ctx: Contexto): Resultado {
   return res;
 }
 
+/** Cosas que se pagan y que no son una persona: «pago de luz» es un gasto aunque el diccionario no la tenga. */
+const SERVICIOS = /^(luz|agua|gas|internet|arriendo|alquiler|celular|plan|cuota|cuotas|tarjeta|seguro|impuesto|impuestos|predial|matricula|parqueadero|administracion|factura|recibo|recibos|credito|servicios|telefono|cable|renta|multa|suscripcion|pension)$/;
+
 function interpretarPlano(texto: string, ctx: Contexto): Resultado {
   const original = texto.trim();
   const t00 = limpiar(original);
@@ -213,7 +240,7 @@ function interpretarPlano(texto: string, ctx: Contexto): Resultado {
 
   // solo hashtags («#viaje #claude»): consulta del evento, con todas las etiquetas a la vez
   const soloTags = normalizar(original).match(/^(?:evento |etiqueta )?((?:#[a-z0-9_-]+ ?)+)$/);
-  if (soloTags) return { clase: 'comando', comando: 'evento', arg: soloTags[1].trim().split(/s+/).map(e => e.slice(1)).join(' ') };
+  if (soloTags) return { clase: 'comando', comando: 'evento', arg: soloTags[1].trim().split(/\s+/).map(e => e.slice(1)).join(' ') };
   const cmd = detectarComando(t00);
   if (cmd) return { clase: 'comando', ...cmd };
 
@@ -245,8 +272,22 @@ function interpretarPlano(texto: string, ctx: Contexto): Resultado {
 
   // Ingreso: "+mamá 100k", "ingreso 50k chamba", "mamá me dio 100k"
   const sujetoPrimero = /^(?:\+?[a-z]+ ){0,3}me (dio|dieron|deposito|transfirio|mando|envio)\b/.test(b.t);
-  if (/^\+/.test(b.t) || /^(ingreso|recibi|cobre|gane|mesada)\b/.test(b.t) || (sujetoPrimero && sinVuelto && !conBillete)) {
+  // Palabras que ya dicen que es plata que entra: «salario 2 millones», «reembolso 15k», «cobro 50k»
+  const palabraDeIngreso = /^(salario|sueldo|nomina|devolucion|reembolso|cobro)\b/.test(b.t);
+  if (/^\+/.test(b.t) || /^(ingreso|recibi|cobre|gane|mesada)\b/.test(b.t) || palabraDeIngreso || (sujetoPrimero && sinVuelto && !conBillete)) {
     return ingreso(b, ctx);
+  }
+  // «le pagaron 50k»: no se sabe a quién, y no tiene por qué ser a ti
+  if (/^(?:hoy |ayer |anteayer |antier )?(?:le|les) pagaron\b/.test(b.t)) return error('¿A quién le pagaron? Si te pagaron a ti, escribe «me pagaron 50k» o «Ana me pagó 50k».');
+  // «pago de ana 50k» es plata de Ana si la conoces; «pago de luz 50k» sigue siendo un gasto. Si no se sabe, se pregunta.
+  const pagoDe = b.t.match(/^pago de ([a-z]+)\b/);
+  if (pagoDe && !SERVICIOS.test(pagoDe[1]) && !categorizar(pagoDe[1], ctx) && hallarCuentas(pagoDe[1], ctx).length === 0 && b.montos[0]) {
+    if (personaConocida(pagoDe[1], ctx)) return ingreso(b, ctx);
+    const nombre = capitalizar(pagoDe[1]);
+    return { clase: 'pregunta', mensaje: `¿«Pago de ${nombre}» es plata que te pagó o algo que pagaste?`, opciones: [
+      { titulo: `${nombre} me pagó`, frase: `${nombre} me pagó ${b.montos[0].valor}` },
+      { titulo: 'Pagué yo', frase: `pagué ${b.montos[0].valor} a ${nombre}` },
+    ] };
   }
 
   // Transferencia entre tus cuentas

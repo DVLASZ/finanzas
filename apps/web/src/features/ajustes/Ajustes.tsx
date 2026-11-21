@@ -13,7 +13,7 @@ import { cabeceraJson, urlBase } from '../../services/http.ts';
 import { crearHashPin, intentarPin, textoDeFallo } from '../../services/seguridad.ts';
 import { modoBloqueo, ponerModoBloqueo, type ModoBloqueo } from '../../state/bloqueo.ts';
 import { leerSalud } from '../../services/servidor.ts';
-import { sincronizar } from '../../services/sincronizacion.ts';
+import { reenviarRechazado, sincronizar } from '../../services/sincronizacion.ts';
 import { guardarCambio } from '../../state/acciones.ts';
 import { refrescar, datos as datosSignal, pendientes } from '../../state/store.ts';
 import { editorAtajos } from '../../state/atajos.ts';
@@ -243,7 +243,7 @@ export function Ajustes() {
       {app.rechazados.length > 0 && <>
         <h2>Cambios que el servidor no aceptó</h2>
         <Nota>Estos cambios no se pudieron guardar en el servidor. Anótalos de nuevo si hacen falta.</Nota>
-        <ul class="lista">{app.rechazados.map(x => <li key={`${x.cuando}${x.que}`} class="fila"><div><div class="titulo">{x.que}</div><div class="sub">{x.motivo}</div></div></li>)}</ul>
+        <ul class="lista">{app.rechazados.map((x, i) => <li key={`${x.cuando}${x.que}${i}`} class="fila"><div><div class="titulo">{x.que}</div><div class="sub">{x.motivo}</div></div>{x.op && <button class="secundario" onClick={() => void reenviarRechazado(i).then(otra)}>Reenviar</button>}</li>)}</ul>
         <div class="acciones"><button class="secundario" onClick={() => void limpiarRechazados().then(otra)}>Borrar esta lista</button></div>
       </>}
 

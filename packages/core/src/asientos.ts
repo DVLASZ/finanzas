@@ -145,15 +145,15 @@ export function construirMovimiento(
       break;
     }
     case 'ingreso': {
-      mov({ cuentaId: fuente(p.fuente!), monto: -p.monto, moneda: 'COP' });
+      mov({ cuentaId: fuente(p.fuente!), monto: -p.monto, moneda: M });
       if (p.fiado && p.persona) {
         // Venta a crédito: no entra plata; el cliente queda debiendo.
         const pid = persona(p.persona);
-        mov({ cuentaId: pid, monto: p.monto, moneda: 'COP' });
-        nuevoCompromiso(pid, 'me_deben', p.monto, 'COP', p.concepto);
+        mov({ cuentaId: pid, monto: p.monto, moneda: M });
+        nuevoCompromiso(pid, 'me_deben', p.monto, M, p.concepto);
         break;
       }
-      mov({ cuentaId: cuenta, monto: p.monto, moneda: 'COP' });
+      mov({ cuentaId: cuenta, monto: p.monto, moneda: M });
       if (p.persona) persona(p.persona); // venta a alguien: queda registrada, con su grupo
       break;
     }

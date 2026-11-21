@@ -134,6 +134,8 @@ sequenceDiagram
   A->>A: reemplaza la copia y repone lo pendiente
 ```
 
+La app envía la cola en lotes de 100 operaciones, en orden, y antes de enviar deja una sola operación `config` por clave (la última). El servidor distingue dos tipos de fallo. Una operación inválida o que los datos no admiten (forma mala, asientos que no suman cero, llave foránea, clave de config no permitida) va en `rechazadas`: sale de la cola y la app guarda la operación completa en Ajustes, con un botón para reenviarla. Si D1 falla un instante (red interna, sobrecarga, tiempo agotado), el servidor se detiene en esa operación y devuelve su índice y el de todas las siguientes en `reintentar`, sin aplicarlas, para no aplicar "anular B" si "guardar B" no entró. La app las deja en la cola, no las cuenta como rechazos, muestra el estado de reintento y no envía el lote siguiente; si una misma operación falla 5 veces seguidas se pasa a rechazadas. Un campo `reintentar` que un cliente viejo no conoce se ignora, y un servidor viejo que no lo manda se trata como antes. Editar un movimiento anulado cuenta como ya aplicado solo si la misma petición anula ese movimiento más adelante (reenvío de una cola cuya respuesta se perdió); en cualquier otro caso sigue siendo un rechazo. Cada petición lleva un tiempo máximo de 20 segundos.
+
 1. La app guarda primero en el celular (IndexedDB) y anota cada cambio en una cola.
 2. Cuando hay internet (al abrir, al recuperar la red, al volver a la app, cada minuto) manda la cola a `/api/sync`.
 3. El servidor aplica las operaciones, que son idempotentes: repetirlas no duplica. Responde con todos los datos.

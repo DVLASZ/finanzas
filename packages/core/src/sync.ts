@@ -38,6 +38,11 @@ export interface RespuestaSync {
   parcial?: boolean;
   /** Operaciones que el servidor NO aceptó (la app las saca de la cola y avisa, para que una sola mala no trabe las demás). */
   rechazadas?: Rechazo[];
+  /**
+   * Índices de operaciones que NO se aplicaron porque la base falló un instante (y de todas las que iban detrás).
+   * La app las conserva en su cola y reintenta. Un servidor viejo no manda este campo y una app vieja lo ignora.
+   */
+  reintentar?: number[];
 }
 export interface Rechazo { indice: number; motivo: string }
 
@@ -114,9 +119,37 @@ export function validarOp(op: unknown): string | null {
   return null;
 }
 
-/** Aplica las operaciones sobre un repositorio (sirve en el servidor y en las pruebas). */
-export async function aplicarOps(repo: Repo, ops: Op[]): Promise<Rechazo[]> {
+/** Resultado de aplicar una tanda de operaciones. */
+export interface ResultadoAplicar {
+  /** Operaciones inválidas o que los datos no admiten: no se reintentan. */
+  rechazadas: Rechazo[];
+  /** Índices de las que NO se aplicaron porque la base falló un instante, y de todas las que venían detrás. */
+  reintentar: number[];
+}
+
+/**
+ * ¿El error es por los datos (permanente) y no por la base que no respondió? Las restricciones de la base
+ * (llave foránea, único, no nulo) y los mensajes propios del repositorio («no existe o está anulado») lo son.
+ * Todo lo demás (D1_ERROR de red, timeout, sobrecarga, cuota) se toma como pasajero: es más seguro reintentar
+ * que perder un cambio.
+ */
+export function esErrorPermanente(e: unknown): boolean {
+  const m = e instanceof Error ? e.message : String(e);
+  return /constraint|foreign key|unique|not null|datatype|no existe|anulad/i.test(m);
+}
+
+/**
+ * Aplica las operaciones en orden. Una inválida se rechaza y sigue con las demás. Si la base falla de forma
+ * pasajera, se detiene: esa operación y las siguientes quedan en `reintentar` sin aplicarse, porque saltarse
+ * una (guardar B) y aplicar la que depende de ella (anular B) rompería el orden de la cola.
+ *
+ * Una edición de un movimiento anulado cuenta como ya aplicada si más adelante en la misma tanda viene la
+ * anulación de ese mismo movimiento: es lo que pasa al reenviar una cola cuya respuesta se perdió. Sin esa
+ * anulación después, editar algo anulado sigue siendo un rechazo.
+ */
+export async function aplicarOpsDetallado(repo: Repo, ops: Op[]): Promise<ResultadoAplicar> {
   const rechazadas: Rechazo[] = [];
+  const reintentar: number[] = [];
   for (const [indice, o] of ops.entries()) {
     const motivo = validarOp(o);
     if (motivo) { rechazadas.push({ indice, motivo }); continue; }
@@ -133,11 +166,66 @@ export async function aplicarOps(repo: Repo, ops: Op[]): Promise<Rechazo[]> {
         case 'cuenta': await repo.guardarCuenta(o.cuenta); break;
       }
     } catch (e) {
-      // una operación que la base no acepta (cuenta que no existe...) no debe trabar las que vienen detrás
-      rechazadas.push({ indice, motivo: 'La base de datos no la aceptó.' });
+      if (o.op === 'editar' && ops.slice(indice + 1).some(x => x?.op === 'anular' && x.id === o.movimiento.id) && esErrorPermanente(e)) continue;
+      if (esErrorPermanente(e)) { rechazadas.push({ indice, motivo: 'La base de datos no la aceptó.' }); continue; }
+      for (let i = indice; i < ops.length; i++) reintentar.push(i);
+      break;
     }
   }
-  return rechazadas;
+  return { rechazadas, reintentar };
+}
+
+/** Igual que `aplicarOpsDetallado` pero devuelve solo los rechazos (sirve para repositorios en memoria que no fallan por la red). */
+export async function aplicarOps(repo: Repo, ops: Op[]): Promise<Rechazo[]> {
+  return (await aplicarOpsDetallado(repo, ops)).rechazadas;
+}
+
+/** Operaciones por petición cuando la app envía su cola (muy por debajo de MAX_OPS, para que una cola larga no se trabe). */
+export const TAM_LOTE = 100;
+
+/**
+ * Deja una sola operación `config` por clave (la última, en su sitio) y no mueve ninguna otra. Las claves de config
+ * se pisan unas a otras, así que las anteriores no aportan nada y solo alargan la cola.
+ */
+export function fusionarConfigRepetidas(cola: Op[]): Op[] {
+  const ultima = new Map<string, Op>();
+  for (const o of cola) if (o.op === 'config') ultima.set(o.clave, o);
+  return cola.filter(o => o.op !== 'config' || ultima.get(o.clave) === o);
+}
+
+export interface ResultadoLotes {
+  /** La última respuesta recibida (la que trae los datos más al día), o null si no llegó ninguna. */
+  respuesta: RespuestaSync | null;
+  /** Operaciones que el servidor ya trató (aplicadas o rechazadas): salen de la cola. */
+  procesadas: Op[];
+  rechazadas: { op: Op; motivo: string }[];
+  /** Lo que sigue en la cola, en orden: lo que falló de forma pasajera y lo que no llegó a enviarse. */
+  pendientes: Op[];
+  /** true: el servidor devolvió operaciones en `reintentar`. */
+  transitorio: boolean;
+  /** Mensaje del error de red o de HTTP que cortó el envío, si lo hubo. */
+  error?: string;
+}
+
+/**
+ * Envía la cola en lotes de `tam` operaciones, en orden, y sigue con el siguiente lote solo si el anterior
+ * terminó sin fallo pasajero. Un servidor viejo no manda `reintentar`: se trata como siempre (todo lo enviado se da por tratado).
+ */
+export async function enviarPorLotes(cola: Op[], enviar: (lote: Op[]) => Promise<RespuestaSync>, tam = TAM_LOTE): Promise<ResultadoLotes> {
+  const res: ResultadoLotes = { respuesta: null, procesadas: [], rechazadas: [], pendientes: [...cola], transitorio: false };
+  // aun sin operaciones se hace una petición, para traer los datos
+  for (let desde = 0; desde < Math.max(cola.length, 1); desde += tam) {
+    const lote = cola.slice(desde, desde + tam);
+    let r: RespuestaSync;
+    try { r = await enviar(lote); } catch (e) { res.error = (e as Error).message; return res; }
+    res.respuesta = r;
+    const otra = new Set(r.reintentar ?? []);
+    for (const x of r.rechazadas ?? []) if (lote[x.indice] && !otra.has(x.indice)) res.rechazadas.push({ op: lote[x.indice], motivo: x.motivo });
+    for (const [i, o] of lote.entries()) if (!otra.has(i)) res.procesadas.push(o);
+    res.pendientes = cola.filter(o => !res.procesadas.includes(o));
+    if (otra.size) { res.transitorio = true; return res; }
+  }
+  return res;
 }
 
 /**

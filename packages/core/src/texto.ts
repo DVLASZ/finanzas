@@ -19,6 +19,8 @@ export function normalizar(s: string): string {
  */
 export function limpiar(s: string): string {
   return normalizar(s)
+    // «1'200.000»: el apóstrofo colombiano separa los millones. Solo cuando une una cifra con un grupo de tres y sus miles
+    .replace(/(\d)['’](?=\d{3}(?:[.,]\d{3})+(?!\d))/g, '$1.')
     .replace(/[^a-z0-9$.,\-/#+><= ]/g, ' ')
     .replace(/,(?!\d)/g, ' ') // una coma que no es decimal separa elementos de una lista
     .replace(/\.(?!\d)/g, ' ') // un punto que no es de miles/decimal es solo puntuación
