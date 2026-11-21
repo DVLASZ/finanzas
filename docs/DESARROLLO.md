@@ -35,7 +35,7 @@
 - Node borra los tipos sin compilar, así que no se usan `enum`, `namespace` ni parámetros-propiedad en constructores, y los imports llevan la extensión `.ts`. `tsconfig.json` lo vigila con `erasableSyntaxOnly`.
 - `packages/core` no importa nada de Cloudflare ni del navegador. Cada plataforma se conecta por la interfaz `Repo`.
 - El dinero va en enteros y las fechas son la hora de Colombia como texto.
-- Las pantallas de cifras importan `formatear` de `lib/formatear.ts`, no del núcleo: así el modo privacidad (el ojo de Saldos y Resumen) esconde los montos. Un texto con montos adentro pasa por `verTexto`. Los flujos que la persona abre a propósito (cuadre, edición, informes) usan el del núcleo.
+- Las pantallas de cifras importan `formatear` de `lib/formatear.ts`, no del núcleo: así el modo privacidad (el botón flotante del ojo) esconde los montos. Un texto con montos adentro pasa por `verTexto`. Los flujos que la persona abre a propósito (cuadre, edición, informes) usan el del núcleo.
 - Antes de subir, `npm run check` ahora incluye `npm run seguridad`. Si agregas una consulta a D1, va con `?` y `.bind()`, nunca con `${}`. Si agregas un script a la página, va en un archivo y no en línea: la política de contenido del Worker lo prohíbe, y `servir-web.mjs` ya sirve con esas mismas cabeceras para que `e2e` lo note.
 - Nada de `alert`, `confirm` ni `prompt`: salen con el cuadro del navegador y rompen el diseño. Se usan `confirmar`, `avisar` y `pedir` de `components/ui/Dialogo.tsx`, que siguen el tema y la letra grande. Una prueba lo vigila.
 - Los commits van a nombre de quien los hace, en español, cortos y en minúscula.
@@ -123,6 +123,10 @@ El service worker, que es lo que da el modo sin internet, solo se registra en HT
 ## Movimiento
 
 Todo lo que se mueve anima solo `transform` y `opacity` (más colores en fundidos cortos), para que corra fluido en el celular. Las animaciones de CSS están al final de `apps/web/estilos/tailwind.css`, en la sección de movimiento, y las que necesitan código (entrada de pantallas, cuentas que suben, confeti) están en `lib/efectos.ts`. La regla global de `prefers-reduced-motion` las apaga todas, y `efectos.ts` también comprueba ese ajuste antes de animar. Los avisos de arriba (`.pila-superior`) alojan el aviso de deshacer y la píldora de sincronización. Para un fundido que dura un instante (cambio de tema, mostrar cifras) se usa `momentanea('clase')`, que pone una clase en `<html>` y la quita sola.
+
+## Ventanas flotantes
+
+Lo que se abre al tocar un bloque informativo pasa por `components/ui/HojaInfo.tsx`: `abrirInfo({ id, titulo, sub, cuerpo, movimientos, acciones })`. Es una entrada más del historial (`infoAbierta` en `state/nav.ts`), así que atrás la cierra. Sus movimientos salen de `lib/grupos.ts`, que usa las mismas claves que el núcleo, y lo que cada pantalla abre vive en un `aperturas.tsx` de su carpeta. El detalle, la edición y el duplicado de un movimiento se montan en la raíz (`DetalleGlobal` en `App.tsx`), para abrirse desde cualquier pantalla. Las capas, de abajo hacia arriba: ventana informativa 54, detalle 56, editar y duplicar 60, selector 95, diálogos 90 a 120. Un selector abierto desde una hoja tiene que quedar siempre por encima de ella.
 
 ## Temas
 

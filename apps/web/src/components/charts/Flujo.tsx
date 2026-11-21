@@ -69,13 +69,13 @@ export function FlujoMes({ puntos }: { puntos: PuntoDeFlujo[] }) {
   );
 }
 
-export function RankingConceptos({ top }: { top: ConceptoTop[] }) {
+export function RankingConceptos({ top, alTocar }: { top: ConceptoTop[]; alTocar?: (concepto: string) => void }) {
   if (!top.length) return null;
   const max = Math.max(1, top[0].total);
   return (
     <ul class="m-0 grid list-none gap-2.5 p-0" id="ranking-lista">
       {top.map((x, i) => (
-        <li key={x.concepto} class="barra-fila !my-0" style={{ gridTemplateColumns: 'minmax(7rem, 10rem) 1fr auto' }}>
+        <li key={x.concepto} class="barra-fila toque !my-0" role="button" tabIndex={0} data-concepto={x.concepto} style={{ gridTemplateColumns: 'minmax(7rem, 10rem) 1fr auto' }} onClick={() => alTocar?.(x.concepto)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alTocar?.(x.concepto); } }}>
           <span class="flex items-center gap-2"><Insignia v={visualDeNombre(x.concepto)} tam={28} /><span class="min-w-0"><span class="block truncate">{x.concepto}</span><span class="text-[.7rem] text-tx2">{x.veces} {x.veces === 1 ? 'vez' : 'veces'} · {x.pct} %</span></span></span>
           <span class="barra-fondo"><span class="barra-relleno" style={{ width: `${Math.max(4, (x.total / max) * 100)}%`, animationDelay: `${i * 70}ms` }} /></span>
           <span class="tabular-nums">{verMonto(formatear(x.total))}</span>
@@ -85,7 +85,7 @@ export function RankingConceptos({ top }: { top: ConceptoTop[] }) {
   );
 }
 
-export function AnilloMedios({ medios }: { medios: MedioDePago[] }) {
+export function AnilloMedios({ medios, alTocar }: { medios: MedioDePago[]; alTocar?: (titulo: string, nombres: string[]) => void }) {
   if (!medios.length) return null;
   const efectivo = medios.filter(m => m.efectivo).reduce((s, m) => s + m.total, 0);
   const digital = medios.filter(m => !m.efectivo).reduce((s, m) => s + m.total, 0);
@@ -106,10 +106,10 @@ export function AnilloMedios({ medios }: { medios: MedioDePago[] }) {
         </g>
       </svg>
       <ul class="m-0 grid w-full list-none gap-1.5 p-0 text-sm">
-        <li class="flex items-center gap-2"><Banknote size={16} style={{ color: 'var(--adv)' }} /><span class="flex-1">Efectivo</span><b class="tabular-nums">{verMonto(formatear(efectivo))}</b></li>
-        <li class="flex items-center gap-2"><Smartphone size={16} style={{ color: 'var(--info)' }} /><span class="flex-1">Digital</span><b class="tabular-nums">{verMonto(formatear(digital))}</b></li>
+        <li class="toque flex items-center gap-2" role="button" tabIndex={0} data-medio="efectivo" onClick={() => alTocar?.('Efectivo', medios.filter(m => m.efectivo).map(m => m.nombre))}><Banknote size={16} style={{ color: 'var(--adv)' }} /><span class="flex-1">Efectivo</span><b class="tabular-nums">{verMonto(formatear(efectivo))}</b></li>
+        <li class="toque flex items-center gap-2" role="button" tabIndex={0} data-medio="digital" onClick={() => alTocar?.('Digital', medios.filter(m => !m.efectivo).map(m => m.nombre))}><Smartphone size={16} style={{ color: 'var(--info)' }} /><span class="flex-1">Digital</span><b class="tabular-nums">{verMonto(formatear(digital))}</b></li>
         {medios.length > 2 && medios.map(m => (
-          <li key={m.nombre} class="flex items-center gap-2 pl-6 text-xs text-tx2"><span class="flex-1">{m.nombre}</span><span class="tabular-nums">{m.pct} %</span></li>
+          <li key={m.nombre} class="toque flex items-center gap-2 pl-6 text-xs text-tx2" role="button" tabIndex={0} data-medio={m.nombre} onClick={() => alTocar?.(m.nombre, [m.nombre])}><span class="flex-1">{m.nombre}</span><span class="tabular-nums">{m.pct} %</span></li>
         ))}
       </ul>
     </div>

@@ -7,7 +7,7 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
-import { ocultarMontos } from './_ojo.mjs';
+import { mostrarMontos, ocultarMontos } from './_ojo.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CANDIDATOS = [process.env.CHROME_PATH, 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].filter(Boolean);
@@ -261,6 +261,32 @@ try {
     await clic('#cerrar');
     contiene(await pag.evaluate(() => document.querySelector('#lista').innerText), '$6.000', 'la lista muestra el monto nuevo');
   });
+  await prueba('editar la cuenta de un gasto: el selector abre por encima de la hoja, se elige con un toque real y se guarda', async () => {
+    const clic = async sel => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, sel); if (!ok) throw new Error(`no hay ${sel}`); await espera(450); };
+    await irA('Chat'); await escribir('almuerzo 7300'); await pulsar('Confirmar');
+    await irA('Movimientos'); await espera(500);
+    await pag.evaluate(() => [...document.querySelectorAll('#lista .fila')].find(f => f.innerText.includes('7.300'))?.click()); await espera(500);
+    await clic('#editar-mov'); await clic('#editar-si');
+    const antes = await pag.evaluate(() => document.querySelector('#e-cuenta').dataset.valor);
+    await clic('#e-cuenta');
+    // la capa del selector tiene que quedar por encima de la hoja de edición, y la opción tiene que ser lo que se toca de verdad
+    const arriba = await pag.evaluate(() => {
+      const op = [...document.querySelectorAll('#selector-capa [role=option]')].find(o => o.dataset.valor !== document.querySelector('#e-cuenta').dataset.valor);
+      const r = op.getBoundingClientRect();
+      const tocado = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { valor: op.dataset.valor, x: r.left + r.width / 2, y: r.top + r.height / 2, ok: op.contains(tocado) };
+    });
+    igual(arriba.ok, true, 'la opción del selector queda por encima de la hoja de edición');
+    await pag.mouse.click(arriba.x, arriba.y); await espera(500);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#selector-capa'))), false, 'el selector se cerró');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#editar'))), true, 'la hoja de edición sigue abierta');
+    igual(await pag.evaluate(() => document.querySelector('#e-cuenta').dataset.valor), arriba.valor, 'la cuenta cambió');
+    igual(await pag.evaluate(() => document.querySelector('#e-guardar').disabled), false, 'se puede guardar');
+    await clic('#e-guardar'); await clic('#r-confirmar');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#editar'))), false, 'se guardó y se cerró');
+    igual(antes !== arriba.valor, true, 'la cuenta era otra');
+    await clic('#cerrar');
+  });
   await prueba('chat: la barra no trae botones inventados (nada de «Pasaje» con monto), solo Ayuda y el +', async () => {
     await irA('Chat'); await espera(400);
     // los pagos fijos que ya tocan sí salen solos (llevan monto y cuenta reales); lo demás lo arma la persona
@@ -378,6 +404,8 @@ try {
     await otra.close();
     igual(JSON.stringify(quedan), JSON.stringify({ libro: 'midnight', zafiro: 'midnight', oceano: 'midnight', abyss: 'midnight', mocha: 'tierra', veltro: 'esmeralda', aether: 'kinetix', onyx: 'obsidiana', atardecer: 'bordeaux', inventado: 'midnight' }), 'cada tema viejo pasa al suyo');
     igual(errores.length, 0, 'sin errores de JavaScript al migrar');
+    // abrir otra pestaña esconde los montos (así debe ser); el resto de la visita mira cifras
+    await pag.bringToFront(); await mostrarMontos(pag);
   });
   await prueba('resumen: compara cada categoría con el mes pasado', async () => {
     await irA('Resumen'); await espera(700);
@@ -477,6 +505,7 @@ try {
     igual(await pag.evaluate(() => Boolean(document.querySelector('#cambiar-tema'))), false, 'el botón de tema ya no está arriba');
     const alto = await pag.evaluate(() => document.querySelector('#contenido').getBoundingClientRect().top);
     igual(alto < 8, true, 'el contenido arranca arriba del todo');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#ojo'))), false, 'en el chat no hay botón de privacidad');
     await irA('Saldos'); await espera(500);
     igual(await pag.evaluate(() => Boolean(document.querySelector('#ojo'))), true, 'el ojo está en Saldos');
     await irA('Resumen'); await espera(500);
@@ -486,6 +515,28 @@ try {
     igual(Boolean(r.texto), true, 'el estado de sincronización está en Ajustes');
     igual(r.sw, true, 'el interruptor de privacidad está en Ajustes');
     igual(r.modo, true, 'el modo claro y oscuro está junto a los temas');
+    await irA('Chat');
+  });
+  await prueba('botón flotante de privacidad: fijo sobre la barra, en tres pantallas, y al minimizar todo vuelve a ocultarse', async () => {
+    const caja = () => pag.evaluate(() => { const o = document.querySelector('#ojo'); if (!o) return null; const r = o.getBoundingClientRect(); const n = document.querySelector('#nav').getBoundingClientRect(); return { fijo: getComputedStyle(o).position, abajo: r.bottom, navArriba: n.top, derecha: innerWidth - r.right }; });
+    for (const nombre of ['Saldos', 'Movimientos', 'Resumen']) {
+      await irA(nombre); await espera(500);
+      const c = await caja();
+      igual(Boolean(c), true, 'hay botón en ' + nombre);
+      igual(c.fijo, 'fixed', 'es flotante en ' + nombre);
+      igual(c.abajo <= c.navArriba, true, 'queda encima de la barra en ' + nombre);
+    }
+    await ocultarMontos(pag);
+    await pag.evaluate(() => document.querySelector('#ojo').click()); await espera(500);
+    igual(await pag.evaluate(() => document.documentElement.dataset.privado), '0', 'el botón muestra los montos');
+    // se simula que la app pasa a segundo plano
+    await pag.evaluate(() => window.dispatchEvent(new Event('pagehide'))); await espera(300);
+    igual(await pag.evaluate(() => document.documentElement.dataset.privado), '1', 'al minimizar vuelve a ocultarse');
+    await pag.evaluate(() => document.querySelector('#ojo').click()); await espera(300);
+    await pag.evaluate(() => window.dispatchEvent(new Event('blur'))); await espera(300);
+    igual(await pag.evaluate(() => document.documentElement.dataset.privado), '1', 'al perder el foco vuelve a ocultarse');
+    // el resto de la visita mira cifras: se dejan a la vista
+    await pag.evaluate(() => document.querySelector('#ojo').click()); await espera(300);
     await irA('Chat');
   });
   await prueba('aviso de deshacer: sale arriba, no tapa la caja de escribir ni la barra, y se cierra con la equis', async () => {
@@ -581,6 +632,57 @@ try {
     await pag.evaluate(() => { const s = document.querySelector('#flujo-mes svg').getBoundingClientRect(); window.__r = s; });
     await pag.mouse.move(150, await pag.evaluate(() => window.__r.top + 20)); await espera(200);
     contiene((await pag.evaluate(() => document.querySelector('#flujo-dato')?.innerText ?? '')).toLowerCase(), 'balance acumulado', 'el dato del día');
+  });
+  await prueba('ventanas flotantes: tocar una fila del Resumen abre sus movimientos, un movimiento abre su detalle encima y atrás cierra de a una', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    const capa = (s) => pag.evaluate(x => { const e = document.querySelector(x); return e ? Number(getComputedStyle(e).zIndex) : -1; }, s);
+    await irA('Resumen'); await espera(700);
+    // el ranking de conceptos
+    await clic('#ranking-lista [data-concepto]');
+    igual(await hay('#info'), true, 'el ranking abre la ventana');
+    igual(await pag.evaluate(() => document.querySelectorAll('#info-movs li').length > 0), true, 'con los movimientos del concepto');
+    // un movimiento de la ventana abre su detalle por encima, sin cerrar la ventana
+    await clic('#info-movs li');
+    igual(await hay('#detalle'), true, 'el movimiento abre su detalle');
+    igual(await hay('#info'), true, 'la ventana sigue debajo');
+    igual((await capa('#detalle')) > (await capa('#info')), true, 'el detalle queda por encima de la ventana');
+    await clic('#cerrar');
+    igual(await hay('#detalle'), false, 'cerrar el detalle');
+    igual(await hay('#info'), true, 'la ventana sigue abierta');
+    await clic('#info-cerrar'); await espera(400);
+    igual(await hay('#info'), false, 'la ventana se cierra');
+    // las categorías, los medios de pago y las comparativas
+    for (const [sel, id] of [['[data-categoria]', 'categoria'], ['#anillo-medios [data-medio="efectivo"]', 'medio'], ['#comp-gastos', 'comparativa-gastos']]) {
+      await clic(sel);
+      igual(await pag.evaluate(i => document.querySelector('#info')?.dataset.info, id), id, 'abre ' + id);
+      await clic('#info-cerrar'); await espera(400);
+    }
+    // el atajo a Movimientos filtra de verdad
+    await clic('[data-categoria]'); await clic('#info-ver-movimientos'); await espera(700);
+    igual(await pag.evaluate(() => document.querySelector('nav [aria-current=page]')?.dataset.p), 'movimientos', 'va a Movimientos');
+    igual(await hay('#info'), false, 'y la ventana ya no está');
+  });
+  await prueba('ventanas flotantes: una cuenta de Saldos y una deuda abren sus movimientos y sus acciones', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    await irA('Saldos'); await espera(700);
+    await clic('[data-saldo-cuenta="efectivo"]');
+    igual(await pag.evaluate(() => document.querySelector('#info')?.dataset.info), 'cuenta-efectivo', 'la tarjeta de Efectivo abre su ventana');
+    for (const id of ['#info-cuadrar', '#info-desde', '#info-hacia', '#info-ver-movimientos']) igual(await hay(id), true, 'trae ' + id);
+    await clic('#info-desde'); await espera(700);
+    igual(await pag.evaluate(() => document.querySelector('nav [aria-current=page]')?.dataset.p), 'chat', 'pasar plata deja la frase en el chat');
+    contiene(await pag.evaluate(() => document.querySelector('#texto').value), 'pasé', 'la frase quedó escrita');
+    await pag.evaluate(() => { const x = document.querySelector('#texto'); x.value = ''; x.dispatchEvent(new Event('input', { bubbles: true })); });
+    // una deuda
+    await irA('Chat'); await escribir('le debo 54000 a Pedro por la bici'); await pulsar('Confirmar'); await espera(500);
+    await abrirDeMas('Deudas y préstamos'); await espera(700);
+    await clic('[data-persona]');
+    igual(await pag.evaluate(() => (document.querySelector('#info')?.dataset.info ?? '').startsWith('deuda-')), true, 'la deuda abre su ventana');
+    igual(await hay('#info-registrar'), true, 'con el botón de registrar el pago');
+    await clic('#info-cerrar'); await espera(400);
+    igual(await hay('#info'), false, 'se cierra');
+    await irA('Chat');
   });
   await prueba('resumen con privacidad total: las cifras de las gráficas nuevas salen ocultas', async () => {
     const estaba = await pag.evaluate(() => document.documentElement.dataset.privado === '1');

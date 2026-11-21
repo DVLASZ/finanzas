@@ -70,10 +70,22 @@ try {
 
   await irA('Saldos');
   await foto('saldos');
+  // una cuenta abre su ventana flotante
+  await pag.evaluate(() => document.querySelector('[data-saldo-cuenta="efectivo"]')?.click());
+  await espera(1100);
+  await pag.screenshot({ path: join(salida, 'hoja-cuenta.png') }); console.log('  hoja-cuenta');
+  await pag.evaluate(() => document.querySelector('#info-cerrar')?.click()); await espera(500);
   await irA('Movimientos');
   await foto('movimientos');
   await irA('Resumen');
   await foto('resumen');
+  // una fila del ranking abre los movimientos que la forman
+  await pag.evaluate(() => document.querySelector('#ranking-lista [data-concepto]')?.scrollIntoView({ block: 'center' }));
+  await espera(500);
+  await pag.evaluate(() => document.querySelector('#ranking-lista [data-concepto]')?.click());
+  await espera(1100);
+  await pag.screenshot({ path: join(salida, 'hoja-resumen.png') }); console.log('  hoja-resumen');
+  await pag.evaluate(() => document.querySelector('#info-cerrar')?.click()); await espera(500);
   await irA('Más');
   await pag.evaluate(() => document.querySelector('[data-ir=deudas]')?.click());
   await espera(1500);
@@ -111,6 +123,8 @@ try {
     await h.close();
   }
   await pag.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  // abrir otra pestaña esconde los montos: se vuelven a mostrar para el resto de las fotos
+  await pag.bringToFront(); await mostrarMontos(pag);
   // los seis temas, uno por uno (los de color en su modo más característico)
   for (const [piel, modo] of [['obsidiana', 'oscuro'], ['midnight', 'oscuro'], ['tierra', 'claro'], ['esmeralda', 'oscuro'], ['bordeaux', 'oscuro'], ['kinetix', 'oscuro']]) {
     await tema(piel, modo); await irA('Saldos'); await foto('tema-' + piel);

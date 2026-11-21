@@ -1,9 +1,12 @@
 /** Deudas y préstamos: quién te debe y a quién le debes. Cada fila deja la frase del pago o del cobro lista en el chat. */
-import { PartyPopper, Users } from 'lucide-preact';
+import { List, PartyPopper, Users } from 'lucide-preact';
 import { deudasPorPersona, describirDia, formatear, gruposDe } from '../../../../../packages/core/src/index.ts';
 import { Insignia, Vacio, visualDePersona } from '../../components/ui/iconos.tsx';
 import { Cargando, Nota } from '../../components/ui/piezas.tsx';
 import { irA, prellenarChat } from '../../state/nav.ts';
+import { abrirInfo, cerrarYLuego } from '../../components/ui/HojaInfo.tsx';
+import { movimientosDePersona } from '../../lib/grupos.ts';
+import { verMovimientos } from '../movimientos/Movimientos.tsx';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 
 type Deuda = ReturnType<typeof deudasPorPersona>[number];
@@ -22,6 +25,14 @@ export function Deudas() {
   const porPagar = debes.filter(d => d.moneda === 'COP').reduce((s, d) => s - d.saldo - d.deOtros, 0);
   // la tarjeta queda lista para confirmar: no hay que redactar nada
   const anotar = (frase: string) => { prellenarChat(frase, true); irA('chat'); };
+  const abrir = (d: Deuda, boton: string, frase: string, sub: string) => abrirInfo({
+    id: `deuda-${d.persona.id}`, titulo: d.persona.nombre, sub,
+    movimientos: movimientosDePersona(datos, d.persona.id),
+    acciones: [
+      { id: 'info-registrar', texto: boton, alTocar: () => cerrarYLuego(() => anotar(frase)) },
+      { id: 'info-ver-movimientos', texto: 'Ver en Movimientos', icono: <List size={18} />, alTocar: () => cerrarYLuego(() => verMovimientos({ persona: d.persona.id, periodo: 'todo' })) },
+    ],
+  });
   const personas = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`;
 
   const Fila = ({ d }: { d: Deuda }) => {
@@ -31,8 +42,9 @@ export function Deudas() {
     const monto = formatear(Math.abs(d.saldo) - (esDeuda ? d.deOtros : 0), d.moneda);
     const valor = (Math.abs(d.saldo) - (esDeuda ? d.deOtros : 0)) / (d.moneda === 'USD' ? 100 : 1);
     const accion = esDeuda ? `pagué ${valor}${d.moneda === 'USD' ? ' usd' : ''} a ${d.persona.nombre}` : `${d.persona.nombre} me pagó ${valor}${d.moneda === 'USD' ? ' usd' : ''}`;
+    const resumen = `${esDeuda ? 'Le debes' : 'Te debe'} ${monto}${motivo ? ` · ${motivo}` : ''}${limite ? ` · antes del ${describirDia(limite)}` : ''}`;
     return (
-      <li class="fila">
+      <li class="fila toque" role="button" tabIndex={0} data-persona={d.persona.id} onClick={() => abrir(d, esDeuda ? 'Registrar pago ahora' : 'Registrar abono ahora', accion, resumen)}>
         <div class="flex min-w-0 items-center gap-3">
           <Insignia v={visualDePersona(d.persona.nombre)} tam={42} />
           <div>
@@ -43,7 +55,7 @@ export function Deudas() {
         </div>
         <div>
           <div class={`monto ${esDeuda ? 'mal' : 'bien'}`}>{monto}</div>
-          <button class="chip" onClick={() => anotar(accion)}>{esDeuda ? 'Registrar pago ahora' : 'Registrar abono ahora'}</button>
+          <button class="chip" onClick={e => { e.stopPropagation(); anotar(accion); }}>{esDeuda ? 'Registrar pago ahora' : 'Registrar abono ahora'}</button>
         </div>
       </li>
     );

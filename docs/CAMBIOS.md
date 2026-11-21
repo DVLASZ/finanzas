@@ -4,6 +4,14 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-22
+
+- Arreglo: en "Editar movimiento", los selectores de cuenta (Entró a, Sale de, Pagado con) abrían por debajo de la hoja de edición y no dejaban guardar. Ahora cualquier selector que se abre desde una hoja queda por encima de ella. Hay una prueba que cambia la cuenta de un gasto y guarda.
+- El ojo de privacidad ahora es un botón flotante, fijo encima de la barra de abajo, en Saldos, Movimientos y Resumen. Ya no ocupa una fila arriba. La app arranca siempre con los montos escondidos, y vuelven a esconderse solos cuando se minimiza, se cambia de pestaña o se apaga la pantalla. Al alternar sale una onda desde el botón y las tarjetas se enfocan una tras otra. La elección ya no se recuerda.
+- Cada tema tiene su trama de fondo, en la capa que antes solo usaba Kinetix: Obsidiana micropuntos champán casi invisibles, Midnight puntos finos de cian, Tierra un tejido de papel, Esmeralda curvas de nivel, Bordeaux líneas de cuaderno con margen y Kinetix su retícula, ahora con el color del tema. En Obsidiana los íconos de categoría vuelven a tener color, como joyas luminosas con un filete y un resplandor del mismo tono.
+- Casi todo lo que muestra una cifra se puede tocar y abre una ventana flotante con lo que hay detrás. En Resumen: las filas de gastos hormiga, del ranking de conceptos, de Por categoría y de Con qué pagas abren los movimientos que las forman, y las dos tarjetas "contra el periodo anterior" abren la comparación categoría por categoría. En Saldos: cada cuenta muestra sus últimos movimientos y atajos para cuadrar el saldo o pasar plata desde o hacia ella, y Próximos 30 días lista los pagos fijos que entraron en la cuenta. En Deudas: cada persona abre sus movimientos y el botón para registrar el pago. Tocar un movimiento dentro de una ventana abre su detalle encima, con Editar, Duplicar y Anular. Las ventanas se cierran con atrás, de a una.
+- Más movimiento: las alertas urgentes y de aviso laten con un anillo, las hojas apiladas se encogen con resorte cuando se abre otra encima y todo lo que se toca rebota al presionar.
+
 ## 2026-11-21
 
 - Se quitó la barra de arriba ("Mis finanzas"). Todas las pantallas ganan alto, sobre todo el Chat con letra grande. El claro y oscuro queda solo en Ajustes, junto a los temas. El ojo de privacidad está en Saldos y en Resumen, y en Ajustes hay un interruptor con lo mismo. El estado de sincronización pasó a Ajustes; arriba solo sale una píldora cuando pasa algo real (sin internet, cambios sin enviar, sincronizando).

@@ -26,20 +26,30 @@ export const chatPrellenado = signal<{ texto: string; enviar: boolean } | null>(
 /** La hoja de un selector abierta (también es una entrada del historial). */
 export const hojaAbierta = signal(false);
 
-interface Estado { p: Pantalla; d: string | null; s?: boolean }
-const estadoActual = (): Estado => ({ p: pantalla.value, d: detalle.value, s: hojaAbierta.value });
+/** Una ventana flotante con el detalle de un bloque informativo (las filas del Resumen, una cuenta de Saldos...). Es otra entrada del historial. */
+export const infoAbierta = signal(false);
+
+interface Estado { p: Pantalla; d: string | null; s?: boolean; i?: boolean }
+const estadoActual = (): Estado => ({ p: pantalla.value, d: detalle.value, s: hojaAbierta.value, i: infoAbierta.value });
 
 /** Cambia de pantalla y deja una entrada en el historial. */
 export function irA(p: Pantalla): void {
   if (p === pantalla.value && !detalle.value) return;
   pantalla.value = p;
   detalle.value = null;
+  infoAbierta.value = false;
   history.pushState(estadoActual(), '');
 }
 
 /** Abre el cajón de detalle de un movimiento (también una entrada del historial: «atrás» lo cierra). */
 export function abrirDetalle(id: string): void {
   detalle.value = id;
+  history.pushState(estadoActual(), '');
+}
+
+/** Abre la ventana flotante de detalle (el contenido lo pone `abrirInfo`, en HojaInfo). */
+export function abrirHojaInfo(): void {
+  infoAbierta.value = true;
   history.pushState(estadoActual(), '');
 }
 
@@ -59,13 +69,14 @@ let retrocediendo = false;
  */
 export function atras(): void {
   if (retrocediendo) return;
-  const hayQueCerrar = hojaAbierta.value || detalle.value || INTERNAS.includes(pantalla.value);
+  const hayQueCerrar = hojaAbierta.value || infoAbierta.value || detalle.value || INTERNAS.includes(pantalla.value);
   if (!hayQueCerrar) return;
   const nuestra = Boolean((history.state as Estado | null)?.p);
   if (!nuestra) {
     // sin entrada propia a la que volver: se cierra a mano, sin tocar el historial
     hojaAbierta.value = false;
-    detalle.value = null;
+    // lo de más arriba se cierra primero: la hoja, luego el detalle y por último la ventana informativa
+    if (detalle.value) detalle.value = null; else infoAbierta.value = false;
     return;
   }
   retrocediendo = true;
@@ -82,6 +93,7 @@ export function iniciarHistorial(): void {
     pantalla.value = s?.p ?? 'chat';
     detalle.value = s?.d ?? null;
     hojaAbierta.value = Boolean(s?.s);
+    infoAbierta.value = Boolean(s?.i);
   });
 }
 

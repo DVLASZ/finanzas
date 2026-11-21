@@ -11,13 +11,15 @@ import { HojaSelector } from './components/ui/Selector.tsx';
 import { Confirmacion } from './components/ui/Confirmacion.tsx';
 import { Dialogo } from './components/ui/Dialogo.tsx';
 import { AvisoSync } from './components/ui/EstadoSync.tsx';
+import { BotonOjo } from './components/ui/BotonOjo.tsx';
 import { EditorAtajos } from './features/chat/EditorAtajos.tsx';
 import { Bloqueo } from './features/ajustes/Bloqueo.tsx';
 import { ToastDeshacer } from './components/ui/ToastDeshacer.tsx';
 import { ContadorEfectivo } from './features/saldos/ContadorEfectivo.tsx';
 import { Chat } from './features/chat/Chat.tsx';
 import { Saldos } from './features/saldos/Saldos.tsx';
-import { Movimientos } from './features/movimientos/Movimientos.tsx';
+import { DetalleGlobal, Movimientos } from './features/movimientos/Movimientos.tsx';
+import { HojaInfo } from './components/ui/HojaInfo.tsx';
 import { Resumen } from './features/resumen/Resumen.tsx';
 import { Mas, Subvista } from './features/mas/Mas.tsx';
 
@@ -95,6 +97,9 @@ export function App() {
       <Contenido />
       <div aria-hidden="true" class="fixed inset-x-0 bottom-0 z-30 h-[calc(env(safe-area-inset-bottom)+.7rem)] bg-vidrio backdrop-blur-xl lg:hidden" />
       <Barra />
+      <BotonOjo />
+      <HojaInfo />
+      <DetalleGlobal />
       <HojaSelector />
       <Confirmacion />
       <EditorAtajos />
