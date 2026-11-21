@@ -98,18 +98,18 @@ function Comparativa({ nombre, ahora, antes, bueno, alTocar, id }: { nombre: str
   const Flecha = dif === null || dif === 0 ? Minus : dif > 0 ? ArrowUpRight : ArrowDownRight;
   return (
     <div class="tarjeta toque !p-3.5" id={id} role="button" tabIndex={0} onClick={alTocar} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alTocar?.(); } }}>
-      <div class="mb-2 flex items-center justify-between">
-        <span class="etiqueta">{nombre}</span>
-        <span class={`inline-flex items-center gap-0.5 text-xs font-semibold ${mejor === null ? 'text-tx2' : mejor ? 'text-pos' : 'text-neg'}`}>
+      <div class="mb-2 flex items-center justify-between gap-2">
+        <span class="etiqueta min-w-0">{nombre}</span>
+        <span class={`comp-pct inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-xs font-semibold ${mejor === null ? 'text-tx2' : mejor ? 'text-pos' : 'text-neg'}`}>
           <Flecha size={14} />{dif === null ? 'sin dato anterior' : `${Math.abs(dif)} %`}
         </span>
       </div>
       <div class="space-y-1.5">
         {[['Ahora', ahora, 'var(--marca)'], ['Antes', antes, 'var(--bor)']].map(([t, v, c]) => (
-          <div key={t as string} class="flex items-center gap-2 text-xs">
-            <span class="w-10 text-tx2">{t}</span>
-            <span class="h-2.5 flex-1 overflow-hidden rounded-full bg-elev"><span class="block h-full rounded-full transition-all duration-500" style={{ width: `${Math.max(2, ((v as number) / max) * 100)}%`, background: c as string }} /></span>
-            <span class="w-24 text-right tabular-nums">{formatear(v as number)}</span>
+          <div key={t as string} class="comp-fila text-xs">
+            <span class="text-tx2">{t}</span>
+            <span class="whitespace-nowrap text-right tabular-nums">{formatear(v as number)}</span>
+            <span class="comp-barra-fondo"><span class="block h-full rounded-full transition-all duration-500" style={{ width: `${Math.max(2, ((v as number) / max) * 100)}%`, background: c as string }} /></span>
           </div>
         ))}
       </div>
