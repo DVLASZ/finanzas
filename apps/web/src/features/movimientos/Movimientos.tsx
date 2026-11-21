@@ -11,6 +11,7 @@ import {
   type Cuenta, type Movimiento,
 } from '../../../../../packages/core/src/index.ts';
 import { formatear } from '../../lib/formatear.ts';
+import { montoVisible } from '../../lib/montoMov.ts';
 import { formatear as formatearReal } from '../../../../../packages/core/src/index.ts';
 import { claves, escribir, leer } from '../../services/almacen.ts';
 import { verMonto } from '../../state/privacidad.ts';
@@ -65,19 +66,6 @@ function poner(cambio: Partial<Filtros>): void {
   filtros.value = { ...filtros.value, ...cambio };
   limite.value = 60;
   try { localStorage.setItem(CLAVE, JSON.stringify(filtros.value)); } catch { /* sin almacenamiento: no se recuerda y ya */ }
-}
-
-/** Qué monto mostrar para un movimiento y de qué clase es. */
-function montoVisible(m: Movimiento, cuentas: Cuenta[]): { texto: string; clase: 'mal' | 'bien' | 'neutro' } {
-  if (m.tipo === 'apertura') return { texto: '', clase: 'neutro' };
-  const tipoDe = (id: string) => cuentas.find(c => c.id === id)?.tipo;
-  const cop = (f: (t: string | undefined) => boolean) => m.asientos.filter(a => a.moneda === 'COP' && f(tipoDe(a.cuentaId))).reduce((s, a) => s + a.monto, 0);
-  const gasto = cop(t => t === 'categoria');
-  if (gasto !== 0) return { texto: formatear(gasto), clase: gasto > 0 ? 'mal' : 'bien' };
-  const ingreso = -cop(t => t === 'fuente');
-  if (ingreso !== 0) return { texto: '+' + formatear(ingreso), clase: 'bien' };
-  const mayor = [...m.asientos].filter(a => tipoDe(a.cuentaId) !== 'sistema').sort((a, b) => Math.abs(b.monto) - Math.abs(a.monto))[0];
-  return mayor ? { texto: formatear(Math.abs(mayor.monto), mayor.moneda), clase: 'neutro' } : { texto: '', clase: 'neutro' };
 }
 
 /** El rango de fechas que se está viendo, o null si es «Todo» (o un rango incompleto). */
@@ -203,7 +191,7 @@ function Detalle({ m }: { m: Movimiento }) {
 
   // va fuera de la pantalla: un ancestro con transform (la animación de entrada) rompería el position: fixed
   return createPortal(
-    <div id="detalle" class="fixed inset-0 z-50 flex items-end justify-center bg-black/55 backdrop-blur-[2px]" onClick={e => { if (e.target === e.currentTarget) atras(); }}>
+    <div id="detalle" class="fixed inset-0 z-[56] flex items-end justify-center bg-black/55 backdrop-blur-[2px]" onClick={e => { if (e.target === e.currentTarget) atras(); }}>
       <div ref={hoja} role="dialog" aria-modal="true" aria-label="Detalle del movimiento" class="max-h-[88%] w-full max-w-xl overflow-y-auto rounded-t-[1.8rem] bg-sup p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] shadow-[0_-20px_60px_-20px_rgba(0,0,0,.6)] ring-1 ring-anillo">
         <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-bor" />
         <h3 class="!mt-0">{m.descripcion}</h3>
@@ -258,11 +246,21 @@ function Detalle({ m }: { m: Movimiento }) {
 }
 
 /** Abre Movimientos ya filtrado (lo usa la Revisión del mes): el mes actual, con anulados o con una categoría. */
-export function verMovimientos(f: { anulados?: boolean; categoria?: string } = {}): void {
-  busqueda.value = '';
+export function verMovimientos(f: { anulados?: boolean; categoria?: string; cuenta?: string; persona?: string; texto?: string; periodo?: Periodo } = {}): void {
+  busqueda.value = f.texto ?? '';
   verAnulados.value = Boolean(f.anulados);
-  poner({ periodo: 'mes', atras: 0, tipo: 'todos', categoria: f.categoria ?? '', cuenta: '', persona: '', etiqueta: '', desde: '', hasta: '' });
+  poner({ periodo: f.periodo ?? 'mes', atras: 0, tipo: 'todos', categoria: f.categoria ?? '', cuenta: f.cuenta ?? '', persona: f.persona ?? '', etiqueta: '', desde: '', hasta: '' });
   irA('movimientos');
+}
+
+/**
+ * El cajón de detalle de un movimiento con su edición y su duplicado. Vive en la raíz de la app (no dentro de Movimientos) para que se
+ * pueda abrir desde cualquier pantalla: la lista de Movimientos, una ventana del Resumen o de Saldos.
+ */
+export function DetalleGlobal() {
+  const datos = datosSignal.value;
+  const abierta = datos && detalle.value ? datos.movimientos.find(m => m.id === detalle.value) : undefined;
+  return <>{abierta && <Detalle m={abierta} />}<EditarMovimiento /><DuplicarMovimiento /></>;
 }
 
 export function Movimientos() {
@@ -334,7 +332,6 @@ export function Movimientos() {
     const g = grupos[grupos.length - 1];
     if (g && g.dia === dia) g.items.push(m); else grupos.push({ dia, items: [m] });
   }
-  const abierta = detalle.value ? datos.movimientos.find(m => m.id === detalle.value) : undefined;
 
   return (
     <div class="space-y-3">
@@ -451,9 +448,6 @@ export function Movimientos() {
         ])}
       </ul>
       {lista.length > limite.value && <button class="secundario" id="mas" onClick={() => { limite.value += 60; }}>Ver más</button>}
-      {abierta && <Detalle m={abierta} />}
-      <EditarMovimiento />
-      <DuplicarMovimiento />
     </div>
   );
 }

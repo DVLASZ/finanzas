@@ -8,7 +8,7 @@ import { formatear } from '../../lib/formatear.ts';
 import { Insignia, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
 
-export function TarjetaHormiga({ movs, cuentas, desde, hasta, dias }: { movs: Movimiento[]; cuentas: Cuenta[]; desde: string; hasta: string; dias: number }) {
+export function TarjetaHormiga({ movs, cuentas, desde, hasta, dias, alTocar }: { movs: Movimiento[]; cuentas: Cuenta[]; desde: string; hasta: string; dias: number; alTocar?: (concepto: string) => void }) {
   const h = gastosHormiga(movs, cuentas, desde, hasta, dias);
   if (h.top.length === 0) return null;
   const max = Math.max(1, ...h.top.map(x => x.total));
@@ -27,7 +27,7 @@ export function TarjetaHormiga({ movs, cuentas, desde, hasta, dias }: { movs: Mo
       </div>
       <ul class="relative m-0 mt-4 grid list-none gap-2.5 p-0">
         {h.top.map(x => (
-          <li key={x.concepto} class="barra-fila !my-0" style={{ gridTemplateColumns: 'minmax(7rem, 11rem) 1fr auto' }}>
+          <li key={x.concepto} class="barra-fila toque !my-0" role="button" tabIndex={0} data-concepto={x.concepto} style={{ gridTemplateColumns: 'minmax(7rem, 11rem) 1fr auto' }} onClick={() => alTocar?.(x.concepto)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alTocar?.(x.concepto); } }}>
             <span class="flex items-center gap-2"><Insignia v={visualDeNombre(x.concepto)} tam={28} /><span class="min-w-0"><span class="block truncate">{x.concepto}</span><span class="text-[.7rem] text-tx2">{x.veces} veces</span></span></span>
             <span class="barra-fondo"><span class="barra-relleno aviso" style={{ width: `${Math.max(4, (x.total / max) * 100)}%` }} /></span>
             <span class="tabular-nums">{formatear(x.total)}</span>

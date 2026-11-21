@@ -16,11 +16,11 @@ import { Arco, BarraApilada, Sparkline } from '../../components/charts/graficos.
 import { Insignia, visualDeCuenta } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
 import { PresupuestoSemana } from './PresupuestoSemana.tsx';
+import { abrirCuenta } from './aperturas.tsx';
 import { contarEfectivo } from './ContadorEfectivo.tsx';
 import { LiquidezProxima } from './LiquidezProxima.tsx';
 import { avisar, confirmar, pedir } from '../../components/ui/Dialogo.tsx';
 import { verMonto, verTexto } from '../../state/privacidad.ts';
-import { BotonOjo } from '../../components/ui/BotonOjo.tsx';
 
 export function Saldos() {
   const [dias, setDias] = useState<14 | 30>(14);
@@ -86,7 +86,6 @@ export function Saldos() {
 
   return (
     <div class="space-y-3">
-      <div class="flex justify-end"><BotonOjo /></div>
       {alertas.map((a, i) => (
         <div key={i} class={`alerta ${a.nivel === 'urgente' ? 'urgente' : a.nivel === 'aviso' ? 'aviso' : ''}`}>
           {verTexto(quitarEmojis(a.texto))}
@@ -166,7 +165,7 @@ export function Saldos() {
           const nombre = cuenta.id === 'efectivo' ? 'Efectivo (billetera)' : aparte ? `${cuenta.nombre} (aparte)` : cuenta.nombre;
           const visual = visualDeCuenta(cuenta);
           return (
-            <div key={cuenta.id} class={`tarjeta ${aparte ? 'tenue' : ''}`}>
+            <div key={cuenta.id} class={`tarjeta toque ${aparte ? 'tenue' : ''}`} role="button" tabIndex={0} data-saldo-cuenta={cuenta.id} onClick={() => abrirCuenta(datos, cuenta, saldo, () => void cuadrarEfectivo())} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirCuenta(datos, cuenta, saldo, () => void cuadrarEfectivo()); } }}>
               <div class="mb-2"><Insignia v={visual} tam={40} /></div>
               <div class="etiqueta">{nombre}</div>
               <div class={`mt-0.5 text-[1.25rem] font-bold ${saldo < 0 ? 'text-neg' : ''}`}><MontoAnimado valor={saldo} moneda={cuenta.moneda} /></div>

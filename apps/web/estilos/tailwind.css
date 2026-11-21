@@ -598,9 +598,9 @@
 
   /* ------------------------------------------------------------ Obsidiana (AMOLED, minimalista)
      Nada de aurora ni de puntos: el fondo es negro puro. Las superficies son opacas, con un filete de 1 px; los íconos de
-     categoría pierden el color (el color queda para las cifras y los estados); los botones principales son champán. */
+     categoría llevan color de joya, luminoso sobre el negro; los botones principales son champán. */
   html[data-piel="obsidiana"][data-tema="oscuro"] { background: #000; }
-  html[data-piel="obsidiana"] body::before, html[data-piel="obsidiana"] body::after, html[data-piel="obsidiana"]::before { display: none; }
+  html[data-piel="obsidiana"] body::before, html[data-piel="obsidiana"]::before { display: none; }
   html[data-piel="obsidiana"] { --cristal-a: 100%; }
   html[data-piel="obsidiana"] .cristal, html[data-piel="obsidiana"] .tarjeta, html[data-piel="obsidiana"] .lista, html[data-piel="obsidiana"] .burbuja.bot,
   html[data-piel="obsidiana"] .burbuja.carta, html[data-piel="obsidiana"] .alerta, html[data-piel="obsidiana"] .dialogo-hoja, html[data-piel="obsidiana"] .vidrio {
@@ -612,7 +612,8 @@
   html[data-piel="obsidiana"] header.vidrio, html[data-piel="obsidiana"] nav#nav { background: var(--fondo); box-shadow: none; border-bottom: 1px solid var(--anillo); }
   html[data-piel="obsidiana"] nav#nav { border: 1px solid var(--anillo); }
   html[data-piel="obsidiana"] .entrada.vidrio { background: var(--sup); }
-  html[data-piel="obsidiana"] .bg-gradient-to-br { filter: grayscale(.9) brightness(1.15); }
+  /* los íconos de categoría vuelven a tener color, pero como joyas: más luminosos sobre el negro, con un filete y un resplandor del mismo tono */
+  html[data-piel="obsidiana"] .bg-gradient-to-br { filter: saturate(1.3) brightness(1.25); box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 55%, transparent), 0 0 16px -5px currentColor !important; }
   html[data-piel="obsidiana"] .primario, html[data-piel="obsidiana"] .chip[aria-pressed="true"] { box-shadow: none; }
   html[data-piel="obsidiana"] .burbuja.yo { box-shadow: none; }
   html[data-piel="obsidiana"] .toast-deshacer, html[data-piel="obsidiana"] .confirmacion-caja { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--sup); }
@@ -628,7 +629,6 @@
   html[data-piel="midnight"] .tarjeta { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--marca) 45%, transparent), 0 0 0 1px var(--anillo), 0 18px 40px -20px var(--brillo); }
 
   /* Tierra: papel. Nada de vidrio ni brillo: superficies mate, sombras cálidas y apenas una aurora de fondo. */
-  html[data-piel="tierra"] body::after { display: none; }
   html[data-piel="tierra"] body::before, html[data-piel="tierra"]::before { opacity: .5; }
   html[data-piel="tierra"] :is(.cristal, .tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta, .dialogo-hoja, header.vidrio, nav#nav, .entrada.vidrio, .toast-deshacer) { -webkit-backdrop-filter: none; backdrop-filter: none; }
   html[data-piel="tierra"] :is(.cristal, .tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta, .dialogo-hoja) { background: var(--sup); }
@@ -643,7 +643,6 @@
   /* Bordeaux: editorial. Titulares con serifa, superficies contrastadas con filete y una doble raya en la cabecera. */
   html[data-piel="bordeaux"] :is(h1, h2, .monto, .tarjeta .grande) { font-family: Georgia, 'Times New Roman', serif; letter-spacing: 0; }
   html[data-piel="bordeaux"] h3, html[data-piel="bordeaux"] .etiqueta { letter-spacing: .14em; }
-  html[data-piel="bordeaux"] body::after { display: none; }
   html[data-piel="bordeaux"] body::before, html[data-piel="bordeaux"]::before { opacity: .55; }
   html[data-piel="bordeaux"] :is(.cristal, .tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta, .dialogo-hoja, header.vidrio, nav#nav, .entrada.vidrio) { -webkit-backdrop-filter: none; backdrop-filter: none; }
   html[data-piel="bordeaux"] :is(.cristal, .tarjeta, .lista, .burbuja.bot, .burbuja.carta, .alerta, .dialogo-hoja) { background: var(--elev); }
@@ -701,9 +700,11 @@
   @keyframes gira { to { transform: rotate(360deg); } }
 
   /* ------------------------------------------------------------ el ojo y los interruptores */
-  .boton-ojo { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--sup); color: var(--tx2); box-shadow: 0 0 0 1px var(--anillo); transition: transform .15s ease, color .2s ease; }
-  .boton-ojo:active { transform: scale(.88); }
-  .boton-ojo[aria-pressed="false"] { color: var(--marca-tx); }
+  .boton-ojo { position: fixed; z-index: 40; right: 1rem; bottom: calc(env(safe-area-inset-bottom) + 6.3rem); display: grid; place-items: center; width: 52px; height: 52px; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--sup) 92%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); color: var(--tx2); box-shadow: 0 0 0 1px var(--anillo), 0 14px 30px -10px rgba(0, 0, 0, .6); transition: transform .3s cubic-bezier(.34, 1.56, .64, 1), color .2s ease; animation: toast-baja .5s cubic-bezier(.34, 1.45, .64, 1) both; }
+  .boton-ojo:active { transform: scale(.86); }
+  .boton-ojo[aria-pressed="false"] { color: var(--marca-tx); box-shadow: 0 0 0 1.5px var(--marca), 0 14px 30px -10px rgba(0, 0, 0, .6); }
+  @media (min-width: 1024px) { .boton-ojo { bottom: 1.5rem; right: 1.5rem; } }
+  .onda-privacidad { position: fixed; z-index: 80; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, transparent 58%, color-mix(in srgb, var(--marca) 55%, transparent) 78%, transparent 100%); }
   .ojo-icono { display: grid; animation: ojo-gira .38s cubic-bezier(.34, 1.45, .64, 1) both; }
   @keyframes ojo-gira { from { opacity: 0; transform: scale(.5) rotate(-40deg); } to { opacity: 1; transform: none; } }
   .fila-interruptor { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .6rem 0; }
@@ -713,9 +714,7 @@
   .interruptor:checked { background: var(--marca); }
   .interruptor:checked::after { transform: translateX(1.3rem); background: var(--sobre); }
   .interruptor:checked:active::after { transform: translateX(.9rem); }
-  /* al ocultar o mostrar los montos y al cambiar de tema: un fundido corto, solo con opacidad y color */
-  html.revelando #contenido { animation: revela .42s ease both; }
-  @keyframes revela { from { opacity: .25; } to { opacity: 1; } }
+  /* al cambiar de tema: un fundido corto de colores */
   html.cambiando-tema, html.cambiando-tema *, html.cambiando-tema *::before, html.cambiando-tema *::after { transition: background-color .4s ease, color .4s ease, border-color .4s ease, box-shadow .4s ease, fill .4s ease, stroke .4s ease !important; }
 
   /* ------------------------------------------------------------ toques con resorte */
@@ -758,4 +757,38 @@
   .dialogo-hoja, #contador > div { animation-name: hoja-resorte; animation-duration: .5s; animation-timing-function: cubic-bezier(.34, 1.3, .64, 1); animation-fill-mode: both; }
   @keyframes hoja-resorte { from { opacity: .3; transform: translateY(60px) scale(.97); } to { opacity: 1; transform: none; } }
   #editar > div, #duplicar > div, #detalle > div { animation-timing-function: cubic-bezier(.34, 1.25, .64, 1); animation-duration: .48s; }
+}
+
+@layer components {
+  /* ------------------------------------------------------------ una trama de fondo con firma propia por tema (la capa body::after, que se desvanece hacia abajo) */
+  html[data-piel="obsidiana"] body::after { background-image: radial-gradient(color-mix(in srgb, var(--marca) 26%, transparent) .6px, transparent 1px); background-size: 18px 18px; opacity: .5; -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 42%); mask-image: linear-gradient(180deg, #000 0%, transparent 42%); }
+  html[data-piel="midnight"] body::after { background-image: radial-gradient(color-mix(in srgb, var(--marca) 46%, transparent) .8px, transparent 1.25px); background-size: 14px 14px; opacity: .6; -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 75%); mask-image: linear-gradient(180deg, #000 0%, transparent 75%); }
+  html[data-piel="tierra"] body::after { background-image: repeating-linear-gradient(0deg, color-mix(in srgb, var(--tx) 6%, transparent) 0 1px, transparent 1px 4px), repeating-linear-gradient(90deg, color-mix(in srgb, var(--tx) 5%, transparent) 0 1px, transparent 1px 5px); background-size: auto; opacity: .75; -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 92%); mask-image: linear-gradient(180deg, #000 0%, transparent 92%); }
+  html[data-piel="esmeralda"] body::after { background-image: repeating-radial-gradient(ellipse at 90% 4%, transparent 0 24px, color-mix(in srgb, var(--marca) 24%, transparent) 24px 25px), repeating-radial-gradient(ellipse at 4% 98%, transparent 0 30px, color-mix(in srgb, var(--marca-2, var(--marca)) 20%, transparent) 30px 31px); background-size: auto; -webkit-mask-image: none; mask-image: none; opacity: .8; }
+  html[data-piel="bordeaux"] body::after { background-image: linear-gradient(90deg, transparent 2.1rem, color-mix(in srgb, var(--marca) 34%, transparent) 2.1rem calc(2.1rem + 1px), transparent calc(2.1rem + 1px)), repeating-linear-gradient(180deg, transparent 0 33px, color-mix(in srgb, var(--bor) 80%, transparent) 33px 34px); background-size: auto; -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 88%); mask-image: linear-gradient(180deg, #000 0%, transparent 88%); opacity: .85; }
+  html[data-piel="kinetix"] body::after { background-image: linear-gradient(color-mix(in srgb, var(--marca) 18%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--marca) 18%, transparent) 1px, transparent 1px); background-size: 28px 28px; -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 78%); mask-image: linear-gradient(180deg, #000 0%, transparent 78%); }
+}
+
+@layer components {
+  /* ------------------------------------------------------------ bloques que se tocan y ventanas flotantes */
+  .toque { cursor: pointer; border-radius: 12px; -webkit-tap-highlight-color: transparent; transition: transform .3s cubic-bezier(.34, 1.56, .64, 1), background-color .2s ease; }
+  .toque:active { transform: scale(.975); transition-duration: .08s; }
+  .toque:focus-visible { outline: 3px solid var(--marca); outline-offset: 2px; }
+  #info { animation: velo-entra .3s ease both; }
+  .info-hoja { animation: hoja-resorte .52s cubic-bezier(.34, 1.3, .64, 1) both; }
+  #info.saliendo { animation: velo-sale .26s ease both; pointer-events: none; }
+  #info.saliendo .info-hoja { animation: hoja-baja .26s cubic-bezier(.5, 0, .75, 0) both; }
+  @keyframes velo-sale { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes hoja-baja { from { opacity: 1; transform: none; } to { opacity: .4; transform: translateY(70px) scale(.98); } }
+}
+
+@layer components {
+  /* ------------------------------------------------------------ alertas que laten y hojas que se apilan con elasticidad */
+  .alerta.urgente, .alerta.aviso { position: relative; }
+  .alerta.urgente::after, .alerta.aviso::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; border: 2px solid var(--neg); opacity: 0; animation: alerta-late 2.6s ease-out infinite; }
+  .alerta.aviso::after { border-color: var(--adv); animation-duration: 3.4s; }
+  @keyframes alerta-late { 0% { opacity: .75; transform: scale(1); } 70%, 100% { opacity: 0; transform: scale(1.045); } }
+  /* la hoja de abajo se encoge y se oscurece un poco cuando se abre otra encima, y vuelve con resorte al cerrarla */
+  #info > div, #detalle > div, #selector-capa > div { transition: scale .45s cubic-bezier(.34, 1.4, .64, 1), translate .45s cubic-bezier(.34, 1.4, .64, 1), filter .3s ease; }
+  #info:has(~ #detalle) > div, #detalle:has(~ #editar) > div, #detalle:has(~ #duplicar) > div, #editar:has(~ #selector-capa) > div { scale: .95; translate: 0 -12px; filter: brightness(.72); }
 }

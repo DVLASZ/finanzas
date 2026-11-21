@@ -1,4 +1,4 @@
-// El ojo de privacidad solo está en Saldos y Resumen: este ayudante lo pulsa desde donde se esté y vuelve a la pantalla de antes.
+// El ojo de privacidad solo está en Saldos, Movimientos y Resumen: este ayudante lo pulsa desde donde se esté y vuelve a la pantalla de antes.
 const EN_PAGINA = async () => {
   const nav = document.querySelector('nav');
   const antes = nav.querySelector('[aria-current=page]')?.dataset.p;

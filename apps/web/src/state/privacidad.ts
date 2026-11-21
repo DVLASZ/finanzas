@@ -1,25 +1,30 @@
 /**
- * Modo privacidad: la app arranca con los montos grandes escondidos («••••••») y el ojo de la cabecera los muestra u
- * oculta. Por defecto están ocultos, para mirar la app en la calle sin que nadie al lado vea cuánto hay. Lo que elijas
- * se recuerda en este celular.
+ * Modo privacidad: la app arranca SIEMPRE con los montos escondidos («••••••») y el botón flotante del ojo los muestra u
+ * oculta. Nada se recuerda: cada vez que la app se minimiza, se cambia de pestaña o se apaga la pantalla, los montos
+ * vuelven a esconderse, para que al regresar nadie al lado vea cuánto hay.
  */
 import { effect, signal } from '@preact/signals';
-import { escribir, leer } from '../services/almacen.ts';
-import { momentanea } from '../lib/efectos.ts';
+import { desenfocarCifras, ondaDesde } from '../lib/efectos.ts';
 
 export const montosOcultos = signal(true);
 export const PUNTOS = '••••••';
 
-const aplicar = () => { document.documentElement.dataset.privado = montosOcultos.value ? '1' : '0'; };
-aplicar();
-void leer<boolean>('montos-ocultos').then(v => { if (v === false) { montosOcultos.value = false; aplicar(); } });
+// el atributo del <html> sigue a la señal, venga el cambio de donde venga (el botón, el bloqueo o el auto-ocultar)
+effect(() => { document.documentElement.dataset.privado = montosOcultos.value ? '1' : '0'; });
 
-export function alternarPrivacidad(): void {
-  momentanea('revelando', 420);
+/** Alterna el modo. Con el botón que lo pidió, la animación nace de ahí: una onda y las cifras que se enfocan o se difuminan. */
+export function alternarPrivacidad(origen?: unknown): void {
+  const boton = origen instanceof Element ? origen : null;
   montosOcultos.value = !montosOcultos.value;
-  aplicar();
-  void escribir('montos-ocultos', montosOcultos.value);
+  if (boton) ondaDesde(boton);
+  requestAnimationFrame(() => requestAnimationFrame(desenfocarCifras));
 }
+
+// al minimizar, cambiar de pestaña, apagar la pantalla o perder el foco, todo vuelve a esconderse
+const esconder = () => { if (!montosOcultos.value) montosOcultos.value = true; };
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') esconder(); });
+window.addEventListener('pagehide', esconder);
+window.addEventListener('blur', esconder);
 
 /** El texto de un monto, o los puntos si la privacidad está activa. */
 export const verMonto = (texto: string): string => (montosOcultos.value ? PUNTOS : texto);
