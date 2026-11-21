@@ -61,7 +61,8 @@ const entre = (concepto: string, monto: number, nombres: string[], fecha: string
 /** «dos lucas», «sesenta mil pesos», «quince quinientos», «mil barras», «un palo»: a números. */
 function jergaDeDinero(texto: string): string {
   let t = texto;
-  t = t.replace(/\b(un|una)\s+(palo|luca|luka|barra)s?\b/gi, '1 $2');
+  // «treinta y una lucas» es de numerosDeDinero: aquí solo el «una luca» suelto
+  t = t.replace(/(?<!\by\s)\b(un|una)\s+(palo|luca|luka|barra)s?\b/gi, '1 $2');
   t = corregirCuentasMalOidas(numerosDeDinero(t));
   // «15 quinientos» ya llegó como «15 500»: si el segundo es 500 y el primero es de dos cifras, son miles y quinientos
   t = t.replace(/(?<![\d.,])(\d{1,2})\s+500(?![\d.,])/g, (_m, a) => String(Number(a) * 1000 + 500));
@@ -161,7 +162,8 @@ function compartidos(t: string): Naturalizado | null {
     const resto = (primero ? m[3] : m[3]) ?? '';
     if (nombres.length && nombres.length <= 8 && monto > 0) {
       if (SENALES_PARTES_IGUALES.test(t)) return { texto: entre(concepto, monto, nombres, fecha) };
-      if (/\b(invit[eé]|yo invito|yo pago todo|lo pagu[eé] todo)\b/i.test(t)) return { texto: [concepto, monto, fecha].filter(Boolean).join(' ') };
+      // la frontera va a mano: \b no ve la é final como letra
+      if (/(?<![a-záéíóúñ])(?:invit[eé]|yo invito|yo pago todo|lo pagu[eé] todo)(?![a-záéíóúñ])/i.test(t)) return { texto: [concepto, monto, fecha].filter(Boolean).join(' ') };
       void resto;
       return { texto: t, pregunta: preguntaDeReparto(concepto, monto, nombres, fecha, 'compartida') };
     }

@@ -26,6 +26,27 @@ export const ROLES = [
 ] as const;
 type RolId = typeof ROLES[number]['id'];
 
+/** ¿Es una persona que ya tienes (o un apodo suyo)? */
+export function personaConocida(nombre: string, ctx: Contexto): boolean {
+  return personaAlInicio(limpiar(nombre).split(' '), ctx) !== null;
+}
+
+/**
+ * ¿Hay una cuenta abierta con esta persona? 'teDeben' = te debe a ti; 'debes' = tú le debes.
+ * Sin esa información en el contexto no se puede saber y se responde que sí, para no cambiar lo que ya hacía el intérprete.
+ */
+export function tieneAbierta(nombre: string, ctx: Contexto, cual: 'teDeben' | 'debes'): boolean {
+  if (!ctx.abiertas) return true;
+  const claves = ctx.abiertas[cual];
+  const clave = limpiar(nombre);
+  if (claves.includes(clave)) return true;
+  const c = personaAlInicio(clave.split(' '), ctx);
+  return !!c && claves.includes(c.cuenta.clave);
+}
+
+/** Palabras que dicen de dónde viene una plata que entra: «me pagaron la quincena», «me pagó la nómina». */
+const DE_INGRESO = /\b(quincena|nomina|sueldo|salario|chamba|trabajo|mesada|pension|honorarios|comision|prima|bono)\b/;
+
 export const NO_ES_PERSONA = 'No es una persona';
 export const ES_APODO = 'Es un apodo de...';
 
@@ -302,6 +323,10 @@ export function mePago(b: Base, ctx: Contexto, verbo: string): Resultado {
   const sobrantes = izq.length ? der : recortarBordes(der.filter(w => !persona.usadas.includes(w)));
   void verbo;
 
+  // Si esa persona no te debe nada, que te pague es plata que entra (un sueldo, un trabajo), no el abono de una deuda
+  // ni una deuda tuya. «me pagó el almuerzo» sigue su camino de abajo.
+  if (['pago', 'pagaron'].includes(verbo) && !tieneAbierta(persona.escrito, ctx, 'teDeben') && (!sobrantes.length || DE_INGRESO.test(b.t))) return ingreso(b, ctx);
+
   const mm = montosDePersona(b, cuentaId);
   if (typeof mm === 'string') return error(`${mm} Ejemplo: «Ana me pagó 40k».`);
 
@@ -340,6 +365,8 @@ export function pagoDeDeuda(b: Base, ctx: Contexto): Resultado | null {
   const nombreWs = borrarTramos(despues, [...hallarCuentas(despues, ctx), ...tramosDe(hallarMontos(despues))]).split(' ').filter(Boolean);
   const nombre = nombreEn(nombreWs.filter(w => !RELLENO.has(w)), ctx, b);
   if (!nombre) return null;
+  // sin una deuda tuya con esa persona o entidad no es un abono: es un gasto («pagué 20k a netflix»)
+  if (!tieneAbierta(nombre.escrito, ctx, 'debes')) return null;
   const conocida = ctx.cuentas.some(c => c.tipo === 'persona' && c.clave === nombre.escrito.toLowerCase());
   const sobra = recortarBordes(palabrasLibres(antes, [...hallarCuentas(antes, ctx), ...tramosDe(hallarMontos(antes))]).filter(w => !['pague', 'pagamos', 'abone', 'salde', 'pago', 'le'].includes(w)));
   // Si no es una persona conocida y hay un concepto antes ("pagué arepas a ...") es un gasto normal.

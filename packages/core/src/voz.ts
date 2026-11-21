@@ -19,6 +19,9 @@ const DECENAS: Record<string, number> = { treinta: 30, cuarenta: 40, cincuenta: 
 const CENTENAS: Record<string, number> = {
   cien: 100, ciento: 100, doscientos: 200, trescientos: 300, cuatrocientos: 400, quinientos: 500,
   seiscientos: 600, setecientos: 700, ochocientos: 800, novecientos: 900,
+  // en femenino, como se dice antes de «mil» y de «lucas»: «doscientas mil», «quinientas lucas»
+  doscientas: 200, trescientas: 300, cuatrocientas: 400, quinientas: 500,
+  seiscientas: 600, setecientas: 700, ochocientas: 800, novecientas: 900,
 };
 const esMil = (p: string | undefined): boolean => p === 'mil';
 const esMillon = (p: string | undefined): boolean => p === 'millon' || p === 'millones';
@@ -35,25 +38,50 @@ function leerNumero(p: string[], i: number): { valor: number; fin: number } | nu
   let grupo = 0; // lo que va de 0 a 999 dentro del grupo actual
   let j = i;
   let leyo = false;
+  let trasMil = false; // lo último fue «mil»: si sigue «millones» es «mil millones», no mil y luego un millón
+  const esMedio = (x: string | undefined): boolean => x === 'medio' || x === 'media';
+  /** «y medio» tras «mil» o «millón»: suma la mitad de esa unidad. */
+  const yMedio = (mitad: number): void => {
+    if (p[j] === 'y' && esMedio(p[j + 1])) { total += mitad; j += 2; }
+  };
+  /** «treinta y cinco», «diez y seis», «treinta y un mil»: la «y» solo une una decena con una unidad. */
+  const yUnidad = (): number => {
+    if (p[j] !== 'y') return 0;
+    const u = p[j + 1];
+    if (u in UNIDADES) { j += 2; return UNIDADES[u]; }
+    const sig = p[j + 2];
+    if ((u === 'un' || u === 'una') && (esMil(sig) || esMillon(sig) || SUFIJOS_DE_PLATA.has(sig))) { j += 2; return 1; }
+    return 0;
+  };
   while (j < p.length) {
     const w = p[j];
     const sig = p[j + 1];
     if (esMil(w)) {
       total += (grupo || 1) * 1000; grupo = 0; leyo = true; j++;
       if (esMil(p[j])) break; // «mil mil» no existe
+      yMedio(500);
+      trasMil = true;
       continue;
     }
     if (esMillon(w)) {
-      total += (grupo || 1) * 1_000_000; grupo = 0; leyo = true; j++;
+      if (trasMil && grupo === 0) total *= 1_000_000; // «dos mil millones»
+      else total += (grupo || 1) * 1_000_000;
+      grupo = 0; leyo = true; j++; trasMil = false;
+      yMedio(500_000);
       continue;
     }
+    trasMil = false;
+    if (esMedio(w) && esMillon(sig) && grupo === 0) { total += 500_000; leyo = true; j += 2; continue; }
     if ((w === 'un' || w === 'una') && (esMil(sig) || esMillon(sig))) { grupo = 1; leyo = true; j++; continue; }
     if (w in CENTENAS && grupo === 0) { grupo = CENTENAS[w]; leyo = true; j++; continue; }
-    if (w in ESPECIALES && grupo % 100 === 0) { grupo += ESPECIALES[w]; leyo = true; j++; continue; }
+    if (w in ESPECIALES && grupo % 100 === 0) {
+      grupo += ESPECIALES[w]; leyo = true; j++;
+      if (w === 'diez' || w === 'veinte') grupo += yUnidad(); // «diez y seis», «veinte y cinco»
+      continue;
+    }
     if (w in DECENAS && grupo % 100 === 0) {
       grupo += DECENAS[w]; leyo = true; j++;
-      // «treinta y cinco»: la «y» solo une una decena con una unidad
-      if (p[j] === 'y' && p[j + 1] in UNIDADES) j++;
+      grupo += yUnidad();
       continue;
     }
     if (w in UNIDADES && (grupo % 100 === 0 || (grupo % 100 >= 30 && grupo % 10 === 0))) { grupo += UNIDADES[w]; leyo = true; j++; continue; }
@@ -96,6 +124,18 @@ export function normalizarDictado(dictado: string): string {
   return t;
 }
 
+/**
+ * «2 millones y medio», «una luca y media», «media luca», «un cuarto de millón»: lo que viene con cifras o con «luca»
+ * se pasa a su valor antes de leer el resto. Lo que viene en palabras («dos millones y medio») lo resuelve leerNumero.
+ */
+function conMedios(texto: string): string {
+  return texto
+    .replace(/(?<![\d.,])(\d+|una?)\s*(mil|lucas?|lukas?|barras?)\s+y\s+medi[oa]\b/gi, (_m, n: string) => String((/^un/i.test(n) ? 1 : Number(n)) * 1000 + 500))
+    .replace(/(?<![\d.,])(\d+)\s+mill[oó]n(?:es)?\s+y\s+medio\b/gi, (_m, n: string) => String(Number(n) * 1_000_000 + 500_000))
+    .replace(/\bmedia\s+(?:luca|luka|barra)\b/gi, '500')
+    .replace(/\bun\s+cuarto\s+de\s+mill[oó]n\b/gi, '250000');
+}
+
 const SUFIJOS_DE_PLATA = new Set(['lucas', 'luca', 'lukas', 'luka', 'barras', 'barra', 'palos', 'palo', 'pesos', 'peso']);
 
 /**
@@ -104,7 +144,7 @@ const SUFIJOS_DE_PLATA = new Set(['lucas', 'luca', 'lukas', 'luka', 'barras', 'b
  * y «tres empanadas» se quedan como están, porque ahí el número no es plata.
  */
 export function numerosDeDinero(texto: string): string {
-  const originales = texto.split(' ');
+  const originales = conMedios(texto).split(' ');
   const claves = originales.map(base);
   const salida: string[] = [];
   for (let i = 0; i < originales.length;) {

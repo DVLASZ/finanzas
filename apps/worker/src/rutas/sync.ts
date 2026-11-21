@@ -5,7 +5,7 @@
  *   POST /api/sync    la app envía sus cambios y recibe lo que cambió (o todo)
  */
 import {
-  aLocal, aplicarOps, deLocal, MARGEN_PARCIAL_SEGUNDOS, MAX_DIAS_PARCIAL, validarOps,
+  aLocal, aplicarOpsDetallado, deLocal, MARGEN_PARCIAL_SEGUNDOS, MAX_DIAS_PARCIAL, validarOps,
   type PeticionSync, type RespuestaSync,
 } from '../../../../packages/core/src/index.ts';
 import { avisarMetas, avisarTopes } from '../avisos.ts';
@@ -39,7 +39,10 @@ export const rutaSync: Ruta = async ({ req, url, env, repo }) => {
     const cuerpo = (await req.json().catch(() => null)) as Partial<PeticionSync> | null;
     const motivo = validarOps(cuerpo?.ops);
     if (motivo) return json({ error: motivo }, 400);
-    const rechazadas = await aplicarOps(repo, cuerpo!.ops!);
+    const { rechazadas, reintentar } = await aplicarOpsDetallado(repo, cuerpo!.ops!);
+    // los avisos se calculan solo con lo que sí se aplicó
+    const pendientes = new Set(reintentar);
+    const aplicadas = cuerpo!.ops!.filter((_, i) => !pendientes.has(i));
     // la app que ya tiene todo pide solo lo que cambió; si se purgó o borró algo (otra «generación»), o hace mucho
     // que no se sincroniza, se le manda todo como siempre
     let datos: Awaited<ReturnType<typeof repo.cargar>>;
@@ -54,8 +57,8 @@ export const rutaSync: Ruta = async ({ req, url, env, repo }) => {
       datos = await repo.cargar();
     }
     // un aviso que no sale nunca debe tumbar la sincronización
-    try { await avisarTopes(repo, datos, cuerpo!.ops!); await avisarMetas(repo, datos, cuerpo!.ops!); } catch (e) { console.error('avisos:', (e as Error).message); }
-    return json({ datos, servidorEn: aLocal(new Date()), ...(parcial ? { parcial: true } : {}), ...(rechazadas.length ? { rechazadas } : {}) } satisfies RespuestaSync);
+    try { await avisarTopes(repo, datos, aplicadas); await avisarMetas(repo, datos, aplicadas); } catch (e) { console.error('avisos:', (e as Error).message); }
+    return json({ datos, servidorEn: aLocal(new Date()), ...(parcial ? { parcial: true } : {}), ...(rechazadas.length ? { rechazadas } : {}), ...(reintentar.length ? { reintentar } : {}) } satisfies RespuestaSync);
   }
   return null;
 };
