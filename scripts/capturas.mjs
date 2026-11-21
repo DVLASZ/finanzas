@@ -94,6 +94,11 @@ try {
   await pag.evaluate(() => document.querySelector('#mapa-calor')?.scrollIntoView({ block: 'start' }));
   await espera(900);
   await pag.screenshot({ path: join(salida, 'calor.png') }); console.log('  calor');
+  for (const [id, nombre] of [['#grafica-dia-semana', 'dia-semana'], ['#comparador-fechas', 'comparador']]) {
+    await pag.evaluate(s => document.querySelector(s)?.scrollIntoView({ block: 'center' }), id);
+    await espera(1100);
+    await pag.screenshot({ path: join(salida, nombre + '.png') }); console.log('  ' + nombre);
+  }
   await irA('Chat');
   await pag.evaluate(() => document.querySelector('[data-atajo="ayuda"]')?.click());
   await espera(900);

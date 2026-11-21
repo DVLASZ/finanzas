@@ -86,7 +86,7 @@ export function abrirComparativa(datos: Datos, tipo: 'gastos' | 'ingresos', p: P
             onClick={tipo === 'gastos' ? () => abrirCategoriaComparada(datos, f.id, f.nombre, p) : undefined}
             onKeyDown={tipo === 'gastos' ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirCategoriaComparada(datos, f.id, f.nombre, p); } } : undefined}>
             <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2"><Insignia v={visualDeNombre(f.nombre)} tam={30} /><span class="titulo">{f.nombre}</span></div>
+              <div class="flex min-w-0 items-center gap-2"><Insignia v={visualDeNombre(f.nombre)} tam={30} /><span class="titulo min-w-0 truncate">{f.nombre}</span></div>
               <div class="sub">{formatear(f.ahora)} <span class="opacity-70">contra {formatear(f.antes)}</span></div>
               <div class="barra-fondo mt-1.5"><div class={`barra-relleno ${bueno === 'baja' ? (f.ahora > f.antes ? 'mal' : 'pos') : (f.ahora >= f.antes ? 'pos' : 'mal')}`} style={{ width: `${Math.max(3, Math.round((f.ahora / max) * 100))}%` }} /></div>
             </div>

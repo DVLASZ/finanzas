@@ -61,7 +61,7 @@ export function ComparativaMes({ datos, ahora }: { datos: Datos; ahora: Date }) 
             {filas.map(f => (
               <li key={f.cuentaId} class="fila toque" data-comparar={f.cuentaId} {...tocable(() => abrirCategoriaComparada(datos, f.cuentaId, f.nombre, periodosDelMes(ahora), { ahora: `Este mes, hasta el día ${c.dia}`, antes: `Mes anterior, mismos ${c.dia} días` }))}>
                 <div class="min-w-0">
-                  <div class="flex items-center gap-2"><Insignia v={visualDeNombre(f.nombre)} tam={30} /><span class="titulo">{f.nombre}</span></div>
+                  <div class="flex min-w-0 items-center gap-2"><Insignia v={visualDeNombre(f.nombre)} tam={30} /><span class="titulo min-w-0 truncate">{f.nombre}</span></div>
                   <div class="sub">{formatear(f.actual)} <span class="opacity-70">contra {formatear(f.anterior)}</span></div>
                   <div class="barra-fondo mt-1.5"><div class={`barra-relleno ${f.variacion !== null && f.variacion > 0 ? 'mal' : 'pos'}`} style={{ width: `${Math.max(3, Math.round((f.actual / maxFila) * 100))}%` }} /></div>
                 </div>

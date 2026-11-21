@@ -130,6 +130,10 @@ Cada pantalla tiene su `aperturas.tsx` (resumen, saldos, metas, recurrentes) con
 
 Lo que se abre al tocar un bloque informativo pasa por `components/ui/HojaInfo.tsx`: `abrirInfo({ id, titulo, sub, cuerpo, movimientos, acciones })`. Es una entrada más del historial (`infoAbierta` en `state/nav.ts`), así que atrás la cierra. Sus movimientos salen de `lib/grupos.ts`, que usa las mismas claves que el núcleo, y lo que cada pantalla abre vive en un `aperturas.tsx` de su carpeta. El detalle, la edición y el duplicado de un movimiento se montan en la raíz (`DetalleGlobal` en `App.tsx`), para abrirse desde cualquier pantalla. Las capas, de abajo hacia arriba: ventana informativa 54, detalle 56, editar y duplicar 60, selector 95, diálogos 90 a 120. Un selector abierto desde una hoja tiene que quedar siempre por encima de ella.
 
+## Etiquetas y reglas aprendidas
+
+Las etiquetas viven en `Movimiento.etiqueta`, en minúscula y sin tilde, separadas por espacio, y se leen por palabra entera (`core/src/etiquetas.ts`). Las reglas aprendidas son JSON en la clave de config `reglas_aprendidas` (`core/src/reglas.ts`); el parser solo las usa cuando la frase no trae cuenta ni categoría. Ninguna de las dos pide migración. El reporte PDF arma `#reporte-impresion` y llama a `window.print()`; la hoja se ve solo en `@media print`.
+
 ## Tamaño de letra y desbordes
 
 `data-letra` en `<html>` tiene cuatro valores (compacta, normal, grande, extra) y mueve `--escala` (0,85, 1, 1,15 y 1,3) en `temas.css`. Una regla pensada para letra grande se escribe para grande y extra a la vez. Nada se parte: las etiquetas usan `keep-all` y un tamaño con `clamp`, y las barras llevan el nombre y el monto en una fila y la barra debajo, a todo el ancho. `npm run e2e:letra` recorre los cuatro niveles (`LETRAS`), el ancho (`ANCHO=360`), la escala del sistema (`ESCALAS`) y los temas (`TEMAS=todos`), y marca palabras partidas, barras de menos del 60 % de su fila y el ojo pisando la barra de abajo.

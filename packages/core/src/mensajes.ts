@@ -7,6 +7,7 @@ import {
   deudasPorPersona, estadoPresupuesto, gastoPorCategoria, ingresosPorFuente, porEtiqueta, resumenSaldos, totalIngresos,
 } from './consultas.ts';
 import { formatear } from './dinero.ts';
+import { conNumeral } from './etiquetas.ts';
 import { leerMetas, totalApartado } from './metas.ts';
 import { agruparCategorias, conSubcategorias } from './subcategorias.ts';
 import { cuentaEnDolares, ejemploDeCuenta, ejemploDeSaldos, vendeProductos } from './entidades.ts';
@@ -120,7 +121,7 @@ export function tarjeta(p: Propuesta, ctx: Contexto, saldos: Saldos): string {
     l.push(`Concepto: ${p.concepto}`);
   }
   if (p.venta) l.push(`${p.venta.cantidad} × ${p.venta.presentacion} a ${formatear(p.venta.precio)}`);
-  if (p.etiqueta) l.push(`Evento: #${p.etiqueta}`);
+  if (p.etiqueta) l.push(`Evento: ${conNumeral(p.etiqueta)}`);
   if (p.tipo === 'compartido' && !p.pagoOtro && p.personas) {
     const deben = p.personas.reduce((s, x) => s + x.monto, 0);
     l.push(`Tu parte: ${formatear(p.monto - deben, p.moneda)}`);
@@ -146,6 +147,7 @@ export function tarjeta(p: Propuesta, ctx: Contexto, saldos: Saldos): string {
   if (p.cuadra) l.push(`Queda en cero con ${p.cuadra.nombre}. La diferencia va a Descuadre, no cuenta como gasto de verdad.`);
   if (p.motivo && p.tipo === 'deuda') l.push(`Motivo: ${p.motivo}`);
   if (p.nota) l.push(p.nota);
+  if (p.reglaUsada) l.push(`Usé tu regla: ${p.reglaUsada}`);
   void saldoDe;
   for (const a of p.avisos) l.push(`⚠️ ${a}`);
   for (const f of p.faltantes) l.push(`❓ ${f.pregunta}`);
@@ -284,8 +286,9 @@ export function textoCategoria(arg: string, movs: Movimiento[], ctx: Contexto): 
 
 export function textoEvento(etiqueta: string, movs: Movimiento[], ctx: Contexto): string {
   const r = porEtiqueta(movs, ctx.cuentas, etiqueta);
-  if (!r.movimientos.length) return `No hay movimientos con #${etiqueta}.`;
-  const l = [`🏷️ #${etiqueta} · ${r.movimientos.length} movimientos · total ${formatear(r.total)}`];
+  const nombre = conNumeral(etiqueta);
+  if (!r.movimientos.length) return `No hay movimientos con ${nombre}.`;
+  const l = [`🏷️ ${nombre} · ${r.movimientos.length} movimientos · total ${formatear(r.total)}`];
   for (const m of r.movimientos) l.push(`• ${m.ocurridoEn.slice(5, 10)} ${m.descripcion}`);
   return l.join('\n');
 }
