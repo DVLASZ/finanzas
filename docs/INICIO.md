@@ -99,3 +99,5 @@ Si una persona tiene dos apps (una personal y una de su negocio), se instala cad
 
 </details>
 
+
+En Ajustes puedes cambiar el tamaño de la letra entre cuatro niveles: Compacta, Normal, Grande y Extra grande. Casi todo lo que muestra una cifra se puede tocar para ver de dónde sale.

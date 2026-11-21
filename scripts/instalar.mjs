@@ -79,7 +79,7 @@ function preparar() {
   const r = spawnSync(process.execPath, [
     join(raiz, 'scripts', 'build-web.mjs'), '--out', join(carpeta, 'dist'),
     '--nombre', cfg.nombreApp ?? 'Mis finanzas', '--corto', cfg.nombreCorto ?? 'Finanzas', '--color', cfg.color ?? '#1f7a5a',
-    '--piel', cfg.piel ?? 'midnight', '--tema', cfg.tema ?? 'oscuro', '--letra', cfg.letra ?? 'normal', '--matiz', cfg.matiz ?? '', '--plantilla', cfg.plantilla,
+    '--piel', cfg.piel ?? 'obsidiana', '--tema', cfg.tema ?? 'oscuro', '--letra', cfg.letra ?? 'normal', '--matiz', cfg.matiz ?? '', '--plantilla', cfg.plantilla,
   ], { stdio: 'inherit' });
   if (r.status !== 0) throw new Error('Falló la compilación de la web.');
   console.log(`\nListo, sin tocar la nube: ${carpeta}\n  seed.sql  wrangler.toml  dist/`);

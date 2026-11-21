@@ -16,16 +16,19 @@ import { avisar } from '../../components/ui/Dialogo.tsx';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { fechaAtras } from '../../lib/periodos.ts';
 import { TarjetaHormiga } from './Hormiga.tsx';
-import { abrirCategoria, abrirComparativa, abrirConcepto, abrirMedio, type Periodos } from './aperturas.tsx';
+import { abrirBalance, abrirCategoria, abrirComparativa, abrirConcepto, abrirMedio, abrirTotal, type Periodos } from './aperturas.tsx';
 import { ComparativaMes } from './ComparativaMes.tsx';
 import { Ritmo } from '../../components/charts/graficos.tsx';
 import { BarraAvance, Insignia, Vacio, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
 import { BarrasMeses, MapaCalor } from '../../components/charts/Calendario.tsx';
 import { PresupuestoSemana } from '../saldos/PresupuestoSemana.tsx';
+import { abrirMetas } from '../metas/aperturas.tsx';
+import { tocable } from '../../lib/tocable.ts';
 import { BotonesCorte, HojaCorte } from './CorteTurno.tsx';
 import { vendeProductos, aLocal as aLocalHoy, gastoDelMes, ingresosGastosPorMes, flujoAcumulado, gastoPorMedio, topConceptos } from '../../../../../packages/core/src/index.ts';
 import { AnilloMedios, FlujoMes, RankingConceptos } from '../../components/charts/Flujo.tsx';
+import { GraficasResumen } from '../../components/charts/GraficasResumen.tsx';
 
 type Periodo = 'semana' | 'mes' | 'anio';
 const periodo = signal<Periodo>('mes');
@@ -221,9 +224,9 @@ export function Resumen() {
       </div>
 
       <Escalonado class="grid grid-cols-2 gap-3">
-        <div class="tarjeta"><div class="etiqueta flex items-center gap-1"><TrendingDown size={14} />Gastos</div><div class="monto mal mt-0.5"><MontoAnimado valor={total} /></div></div>
-        {ingresos > 0 && <div class="tarjeta"><div class="etiqueta flex items-center gap-1"><TrendingUp size={14} />Ingresos</div><div class="monto bien mt-0.5"><MontoAnimado valor={ingresos} /></div></div>}
-        {ingresos > 0 && <div class="tarjeta"><div class="etiqueta flex items-center gap-1"><Scale size={14} />Balance</div><div class={`monto mt-0.5 ${ingresos - total < 0 ? 'mal' : 'bien'}`}><MontoAnimado valor={ingresos - total} /></div></div>}
+        <div class="tarjeta toque" id="card-gastos" {...tocable(() => abrirTotal(datos, 'gastos', per, a === 0 ? p : 'todo'))}><div class="etiqueta flex items-center gap-1"><TrendingDown size={14} />Gastos</div><div class="monto mal mt-0.5"><MontoAnimado valor={total} /></div></div>
+        {ingresos > 0 && <div class="tarjeta toque" id="card-ingresos" {...tocable(() => abrirTotal(datos, 'ingresos', per, a === 0 ? p : 'todo'))}><div class="etiqueta flex items-center gap-1"><TrendingUp size={14} />Ingresos</div><div class="monto bien mt-0.5"><MontoAnimado valor={ingresos} /></div></div>}
+        {ingresos > 0 && <div class="tarjeta toque" id="card-balance" {...tocable(() => abrirBalance(datos, per, a === 0 ? p : 'todo'))}><div class="etiqueta flex items-center gap-1"><Scale size={14} />Balance</div><div class={`monto mt-0.5 ${ingresos - total < 0 ? 'mal' : 'bien'}`}><MontoAnimado valor={ingresos - total} /></div></div>}
         {ingresos > 0 && p !== 'semana' && <div class="tarjeta"><div class="etiqueta flex items-center gap-1"><PiggyBank size={14} />Meta de ahorro ({meta}%)</div><div class="monto mt-0.5"><MontoAnimado valor={Math.round((ingresos * meta) / 100)} /></div></div>}
       </Escalonado>
 
@@ -243,7 +246,7 @@ export function Resumen() {
           })}
         </section>
       )}
-      {apartado > 0 && <p class="sub">Apartado para metas: <b>{formatear(apartado)}</b> (ya está dentro de tus saldos)</p>}
+      {apartado > 0 && <p class="sub toque" id="apartado-metas" {...tocable(() => abrirMetas(datos))}>Apartado para metas: <b>{formatear(apartado)}</b> (ya está dentro de tus saldos)</p>}
 
       {total > 0 && (
         <section class="tarjeta">
@@ -282,6 +285,8 @@ export function Resumen() {
         <h3 class="!mt-0">Ingresos y gastos: seis meses</h3>
         <BarrasMeses meses={ingresosGastosPorMes(datos, ctx.ahora, 6)} />
       </section>
+
+      <GraficasResumen datos={datos} ahora={ctx.ahora} />
 
       {verRitmo && <ComparativaMes datos={datos} ahora={ctx.ahora} />}
 

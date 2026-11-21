@@ -13,6 +13,8 @@ import { celebrar } from '../../lib/efectos.ts';
 import { vibrar } from '../../lib/haptico.ts';
 import { app } from '../../services/estado.ts';
 import { sincronizar } from '../../services/sincronizacion.ts';
+import { tocable } from '../../lib/tocable.ts';
+import { abrirMeta, abrirMetas } from './aperturas.tsx';
 import { ctx as contexto, datos as datosSignal, refrescar } from '../../state/store.ts';
 
 /** Un color distinto para cada alcancía, según su lugar en la lista. */
@@ -63,7 +65,7 @@ function Tarjeta({ meta, indice, metas, hoy }: { meta: Meta; indice: number; met
   return (
     <article class="tarjeta relative overflow-hidden" data-meta={meta.nombre}>
       <div class={`pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full opacity-60 blur-2xl ${tema.fondo}`} />
-      <div class="relative flex items-center gap-3">
+      <div class="relative flex items-center gap-3 toque" data-meta-abrir={meta.nombre} {...tocable(() => abrirMeta(meta, hoy))}>
         <Insignia v={{ Icono: lograda ? PartyPopper : PiggyBank, ...tema }} tam={46} />
         <div class="min-w-0 flex-1"><b class="block truncate">{meta.nombre}</b><span class="sub">{lograda ? 'Lograda' : `Faltan ${formatear(meta.meta - meta.apartado)}`}</span></div>
         <b class="text-lg tabular-nums">{pct} %</b>
@@ -124,7 +126,7 @@ export function Alcancias() {
 
   return (
     <div class="space-y-3 pb-10">
-      <div class="tarjeta flex items-center justify-between">
+      <div class="tarjeta toque flex items-center justify-between" id="total-apartado" {...tocable(() => abrirMetas(datos))}>
         <div><div class="etiqueta">Total apartado</div><div class="monto mt-0.5"><MontoAnimado valor={apartado} /></div></div>
         <span class="text-xs text-tx2">{metas.length} {metas.length === 1 ? 'alcancía' : 'alcancías'}</span>
       </div>

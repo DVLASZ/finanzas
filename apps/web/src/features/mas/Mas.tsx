@@ -77,7 +77,7 @@ export function Mas() {
         return (
           <section key={g.titulo}>
             <h3 class="!mt-5 !mb-2 px-1 first:!mt-0">{g.titulo}</h3>
-            <Escalonado class={`grid gap-3 ${g.destacadas ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
+            <Escalonado class={`grid gap-3 ${g.destacadas ? '[grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5rem),1fr))]' : 'grid-cols-1 sm:grid-cols-2'}`}>
               {visibles.map(e => <Ficha key={e.id} e={e} grande={Boolean(g.destacadas)} alAbrir={() => abrir(e.id)} />)}
             </Escalonado>
           </section>

@@ -240,10 +240,10 @@
   .pestana.activa { background: var(--sup); color: var(--tx); box-shadow: 0 0 0 1px var(--anillo), 0 4px 12px -6px rgba(0, 0, 0, .4); }
   .periodo { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: .7rem 0 .5rem; }
   /* con letra grande no caben las tres piezas en una fila: el título pasa arriba y los botones se reparten abajo */
-  html[data-letra="grande"] .periodo { flex-wrap: wrap; }
-  html[data-letra="grande"] .periodo > :nth-child(2) { flex: 1 1 100%; order: -1; text-align: center; }
-  html[data-letra="grande"] .periodo > .chip { flex: 1 1 0; min-width: 0; padding-inline: .6rem; }
-  html[data-letra="grande"] nav#nav button span { font-size: .62rem; letter-spacing: -.01em; }
+  html:is([data-letra="grande"],[data-letra="extra"]) .periodo { flex-wrap: wrap; }
+  html:is([data-letra="grande"],[data-letra="extra"]) .periodo > :nth-child(2) { flex: 1 1 100%; order: -1; text-align: center; }
+  html:is([data-letra="grande"],[data-letra="extra"]) .periodo > .chip { flex: 1 1 0; min-width: 0; padding-inline: .6rem; }
+  html:is([data-letra="grande"],[data-letra="extra"]) nav#nav button span { font-size: .62rem; letter-spacing: -.01em; }
   .periodo h2 { margin: 0; text-align: center; flex: 1; font-size: 1.05rem; }
   .filtro-tipos { flex-wrap: wrap; margin: .5rem 0; background: transparent; padding: 0; }
   .fila-tope { display: flex; justify-content: space-between; gap: .75rem; margin-bottom: .35rem; font-size: .92rem; }
@@ -265,7 +265,11 @@
   .tema-sup { display: flex; flex-direction: column; gap: .22rem; padding: .4rem; border-radius: .5rem; }
   .tema-sup i { display: block; height: .3rem; border-radius: 99px; } .tema-sup b { display: block; height: .5rem; width: 38%; border-radius: 99px; padding: 0; margin: .1rem 0 0; }
   .barra-relleno.aviso { background: var(--adv); } .barra-relleno.mal { background: var(--neg); }
-  .barra-fila { display: grid; grid-template-columns: minmax(7rem, 9.5rem) 1fr auto; align-items: center; gap: .6rem; margin: .45rem 0; font-size: .9rem; }
+  /* nombre y monto arriba, la barra en su propia línea con todo el ancho: con letra grande nunca queda en unos pocos px */
+  .barra-fila { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "n v" "b b"; align-items: center; gap: .3rem .6rem; margin: .45rem 0; font-size: .9rem; }
+  .barra-fila > :nth-child(1) { grid-area: n; min-width: 0; }
+  .barra-fila > :nth-child(2) { grid-area: b; min-width: 0; }
+  .barra-fila > :nth-child(3) { grid-area: v; white-space: nowrap; text-align: right; }
   .barra-valor { font-variant-numeric: tabular-nums; }
   .desglose summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; }
   dialog { border: 0; border-radius: var(--radio); background: var(--sup); color: var(--tx); max-width: min(92vw, 460px); width: 100%; box-shadow: 0 0 0 1px var(--anillo), 0 30px 80px -20px rgba(0, 0, 0, .6); }
@@ -283,6 +287,8 @@
   .carta-cab { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .55rem .95rem; font-size: .72rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
   .carta-cab.entendi { background: linear-gradient(90deg, color-mix(in srgb, var(--info) 26%, transparent), transparent); color: var(--info); }
   .carta-cab.guardado { background: linear-gradient(90deg, color-mix(in srgb, var(--pos) 28%, transparent), transparent); color: var(--pos); }
+  .carta-cab { flex-wrap: wrap; row-gap: .25rem; }
+  .carta-cab > * { white-space: nowrap; flex: 0 0 auto; }
   .carta-cab .tipo { padding: .12rem .65rem; border-radius: 999px; background: var(--elev); color: var(--tx); letter-spacing: .02em; text-transform: none; font-size: .8rem; }
   .carta-cuerpo { padding: .85rem .95rem .95rem; display: flex; flex-direction: column; gap: .6rem; }
   .carta .monto-g { font-size: 2.5rem; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
@@ -379,9 +385,12 @@
   .entrada { flex-wrap: wrap; }
   .entrada > input[type=text] { flex: 1 1 11rem; min-width: 11rem; }
   .kpis { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); }
-  .kpi-v { white-space: normal; overflow-wrap: anywhere; }
-  .etiqueta { overflow-wrap: anywhere; }
+  .kpi-v { white-space: normal; overflow-wrap: normal; word-break: keep-all; hyphens: none; }
+  /* una palabra nunca se parte; si no cabe, se reduce la etiqueta */
+  .etiqueta { overflow-wrap: normal; word-break: keep-all; hyphens: none; letter-spacing: .03em; font-size: clamp(.58rem, 2.7vw, .72rem); }
   .lbl-corto { display: none; }
+  /* el botón de una fila baja a dos líneas antes que salirse de la tarjeta */
+  .fila .chip { white-space: normal; text-align: center; line-height: 1.15; padding-block: .4rem; max-width: 100%; }
   nav#nav button { min-width: 0; padding-inline: .1rem; }
   nav#nav button > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   nav#nav.apretada .lbl-largo.tiene-corto { position: absolute; visibility: hidden; }
@@ -577,7 +586,8 @@
   .mes-barras span { display: block; width: 36%; max-width: .9rem; border-radius: .3rem .3rem .1rem .1rem; transform-origin: bottom; animation: sube .6s cubic-bezier(.22, 1, .36, 1) backwards; }
   .mes-in { background: linear-gradient(180deg, var(--pos), color-mix(in srgb, var(--pos) 40%, transparent)); }
   .mes-out { background: linear-gradient(180deg, var(--neg), color-mix(in srgb, var(--neg) 40%, transparent)); }
-  .mes-nombre { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .mes-nombre { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0; max-width: 100%; }
+  html:is([data-letra="grande"],[data-letra="extra"]) .mes-nombre { font-size: .58rem; }
 
   .probar { order: 3; flex-basis: 100%; justify-self: start; display: inline-flex; align-items: center; min-height: 32px; width: fit-content; padding: .15rem .7rem; border-radius: 999px; border: 0; font-size: .78rem; font-weight: 700; color: var(--sobre); background: linear-gradient(135deg, var(--marca), var(--marca-2)); }
   .probar:active { transform: scale(.95); }
@@ -587,7 +597,7 @@
   .entrada-compacta > input[type=text] { flex: 1 1 0; min-width: 0; }
   .entrada-compacta > div { flex-shrink: 0; gap: .3rem; }
   .entrada-compacta #texto { text-overflow: ellipsis; }
-  html[data-letra="grande"] .entrada-compacta #texto { font-size: 1rem; }
+  html:is([data-letra="grande"],[data-letra="extra"]) .entrada-compacta #texto { font-size: 1rem; }
 
   /* la barra de «Deshacer»: flota sobre la barra de abajo y se vacía en ocho segundos */
   .toast-boton { display: inline-flex; align-items: center; gap: .35rem; flex: none; min-height: 40px; padding: 0 .9rem; border: 0; border-radius: 999px; font-weight: 700; color: var(--sobre); background: linear-gradient(135deg, var(--marca), var(--marca-2)); }
@@ -618,6 +628,41 @@
   html[data-piel="obsidiana"] .burbuja.yo { box-shadow: none; }
   html[data-piel="obsidiana"] .toast-deshacer, html[data-piel="obsidiana"] .confirmacion-caja { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--sup); }
   html[data-piel="obsidiana"] .tarjeta.relative .blur-2xl, html[data-piel="obsidiana"] [class*="blur-2xl"] { display: none; }
+
+  /* Obsidiana, lujo dorado. Tarjeta carbón sobre negro puro con una segunda tarjeta detrás, corrida abajo a la derecha en oro
+     champán (la misma técnica de sombra dura de Kinetix, pero en oro y más fina). Filete de 1 px y un reflejo arriba. */
+  html[data-piel="obsidiana"] :is(.tarjeta, .lista, .hero-saldo) {
+    background: var(--sup);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--marca) 38%, transparent), 0 0 0 1px color-mix(in srgb, var(--marca) 24%, var(--anillo)),
+      5px 5px 0 -1px color-mix(in srgb, var(--marca-2) 34%, transparent);
+  }
+  html[data-piel="obsidiana"][data-tema="claro"] :is(.tarjeta, .lista, .hero-saldo) {
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--marca) 55%, transparent), 0 0 0 1px color-mix(in srgb, var(--marca-2) 38%, var(--anillo)),
+      5px 5px 0 -1px color-mix(in srgb, var(--marca) 62%, transparent);
+  }
+  html[data-piel="obsidiana"] .hero-saldo { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--marca) 45%, transparent), 0 0 0 1px color-mix(in srgb, var(--marca) 34%, var(--anillo)), 6px 6px 0 -1px color-mix(in srgb, var(--marca-2) 42%, transparent) !important; }
+  html[data-piel="obsidiana"] :is(.cristal, .alerta, .dialogo-hoja, .burbuja.bot, .burbuja.carta) { box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 22%, var(--anillo)); }
+  html[data-piel="obsidiana"] nav#nav { border-color: color-mix(in srgb, var(--marca) 26%, var(--anillo)); }
+  /* botones y fichas principales: oro luminoso con un filete y un reflejo metálico arriba */
+  html[data-piel="obsidiana"] .primario, html[data-piel="obsidiana"] .chip[aria-pressed="true"] {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--marca) 68%, #fff), var(--marca) 48%, var(--marca-2));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 0 0 1px color-mix(in srgb, var(--marca-2) 70%, transparent), 0 6px 18px -8px var(--brillo);
+  }
+  /* foco: filete dorado con un halo corto */
+  html[data-piel="obsidiana"] :is(input, select, textarea):focus-visible, html[data-piel="obsidiana"] .select-btn:focus-visible {
+    outline-color: var(--marca); box-shadow: 0 0 0 1px var(--marca), 0 0 14px -3px var(--brillo);
+  }
+  /* cifras clave (disponible, totales) en dorado; en claro se usa el tono oscuro de la marca para no perder contraste */
+  html[data-piel="obsidiana"] .hero-saldo [data-ajusta]:is([class*="2.6rem"], [class*="1.8rem"]), html[data-piel="obsidiana"] .carta .monto-g.neutro,
+  html[data-piel="obsidiana"] .tarjeta .monto:not(.bien):not(.mal) { color: var(--marca-tx); }
+  html[data-piel="obsidiana"][data-tema="oscuro"] .hero-saldo [data-ajusta]:is([class*="2.6rem"], [class*="1.8rem"]) { text-shadow: 0 0 22px var(--brillo); }
+  /* destello dorado de una sola pasada cuando la tarjeta aparece: solo opacity y transform, sin tocar el contenido */
+  html[data-piel="obsidiana"] :is(.tarjeta, .hero-saldo)::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(115deg, transparent 32%, color-mix(in srgb, var(--marca) 26%, transparent) 50%, transparent 68%);
+    opacity: 0; animation: obs-destello 1.5s cubic-bezier(.22, 1, .36, 1) .15s 1 both;
+  }
+  @keyframes obs-destello { 0% { opacity: 0; transform: translateX(-9%); } 35% { opacity: 1; } 100% { opacity: 0; transform: translateX(9%); } }
 
   /* ------------------------------------------------------------ Un carácter por tema
      Cada tema tiene su propia silueta (los radios están en temas.css) y su propio tratamiento de superficie, borde y sombra, para que
@@ -791,4 +836,29 @@
   /* la hoja de abajo se encoge y se oscurece un poco cuando se abre otra encima, y vuelve con resorte al cerrarla */
   #info > div, #detalle > div, #selector-capa > div { transition: scale .45s cubic-bezier(.34, 1.4, .64, 1), translate .45s cubic-bezier(.34, 1.4, .64, 1), filter .3s ease; }
   #info:has(~ #detalle) > div, #detalle:has(~ #editar) > div, #detalle:has(~ #duplicar) > div, #editar:has(~ #selector-capa) > div { scale: .95; translate: 0 -12px; filter: brightness(.72); }
+}
+
+/* ------------------------------------------------------------ graficas nuevas del Resumen: ritmo, semanas y ahorro */
+@layer components {
+  .graf-scroll { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; padding-bottom: .15rem; }
+  .ritmo-svg { display: block; width: 100%; min-width: 22rem; height: auto; touch-action: pan-x pan-y; outline: none; }
+  .ritmo-svg:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; border-radius: .5rem; }
+  .ritmo-dia { cursor: pointer; }
+  .ritmo-leyenda { display: flex; flex-wrap: wrap; gap: .25rem .9rem; margin-top: .4rem; font-size: .72rem; color: var(--tx2); }
+  .ritmo-leyenda span { display: inline-flex; align-items: center; gap: .35rem; }
+  .ritmo-leyenda i { display: inline-block; width: .7rem; height: .25rem; border-radius: 999px; }
+  .sem-fila { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(4.6rem, 1fr); gap: .4rem; align-items: end; min-width: 100%; width: max-content; }
+  .sem-col { display: grid; gap: .3rem; justify-items: center; align-content: end; background: transparent; border: 0; padding: .25rem .2rem; border-radius: .7rem; color: var(--tx2); font: inherit; cursor: pointer; }
+  .sem-col.sel { background: color-mix(in srgb, var(--marca) 12%, transparent); color: var(--tx); }
+  .sem-barras { display: flex; align-items: flex-end; justify-content: center; gap: .25rem; width: 100%; height: 7.5rem; }
+  .sem-barras span { display: block; width: 1.1rem; min-width: .9rem; border-radius: .35rem .35rem .1rem .1rem; transform-origin: bottom; animation: sube .6s cubic-bezier(.22, 1, .36, 1) backwards; }
+  .sem-in { background: linear-gradient(180deg, var(--pos), color-mix(in srgb, var(--pos) 40%, transparent)); }
+  .sem-out { background: linear-gradient(180deg, var(--neg), color-mix(in srgb, var(--neg) 40%, transparent)); }
+  .sem-nombre { font-size: .7rem; font-weight: 700; line-height: 1.2; text-align: center; overflow-wrap: normal; word-break: keep-all; }
+  .ahorro-lista { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
+  .ahorro-fila { display: grid; grid-template-columns: minmax(0, 1fr); gap: .3rem; width: 100%; padding: .45rem .5rem; border: 0; border-radius: .8rem; background: transparent; color: var(--tx); font: inherit; text-align: left; cursor: pointer; }
+  .ahorro-nombre { display: flex; align-items: center; gap: .5rem; font-weight: 600; overflow-wrap: break-word; min-width: 0; }
+  .ahorro-valor { font-size: .78rem; color: var(--tx2); overflow-wrap: break-word; }
+  .ahorro-pista { height: .7rem; }
+  .ahorro-relleno { display: block; height: 100%; border-radius: 999px; transform-origin: left; animation: crece-x .9s cubic-bezier(.22, 1, .36, 1) both; }
 }

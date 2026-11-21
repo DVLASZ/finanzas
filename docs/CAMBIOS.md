@@ -4,6 +4,15 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-23
+
+- Obsidiana es ahora el tema de una instalación nueva (quien ya eligió otro lo conserva). Sus tarjetas llevan detrás una segunda tarjeta corrida en dorado champán, como la de Kinetix pero en oro, con un filete de 1 px, botones y cifras clave en dorado luminoso y un destello que pasa una vez cuando una tarjeta aparece. Los íconos de categoría siguen con su brillo de color.
+- El tamaño de letra tiene cuatro niveles en Ajustes: Compacta 85 %, Normal 100 %, Grande 115 % y Extra grande 130 %. Se revisaron los seis temas, claro y oscuro, a 393 y a 360 px.
+- Ya no se parten palabras en las tarjetas pequeñas (Ingresos, Gastos, Balance). Las barras de Dónde se concentra, Por categoría y el ranking pasaron a dos filas: el nombre y el monto arriba y la barra debajo, a todo el ancho, así que no se aplastan al subir la letra.
+- Se puede tocar casi todo lo informativo. Gastos, Ingresos, Balance, Disponible, Seguro para hoy, Salud patrimonial, Por cobrar y Por pagar, cada alerta, las alcancías, los pagos fijos y las deudas abren una ventana con lo que los compone. En "Contra el periodo anterior", tocar una categoría compara sus movimientos de este periodo con los del anterior.
+- Tres gráficas nuevas en Resumen: el ritmo de gasto del mes contra los topes o contra el mes anterior (con proyección y zona segura o de alerta, tocable día por día), las últimas seis semanas de ingresos contra gastos, y el avance de las metas y de los topes. Las barras crecen al aparecer y la línea se dibuja.
+- Arreglos de la revisión: la zona del ritmo compara solo las categorías con tope, las tarjetas tocables ya no esconden su cifra a los lectores de pantalla y la ventana de una alerta sigue la privacidad.
+
 ## 2026-11-22
 
 - Arreglo: en "Editar movimiento", los selectores de cuenta (Entró a, Sale de, Pagado con) abrían por debajo de la hoja de edición y no dejaban guardar. Ahora cualquier selector que se abre desde una hoja queda por encima de ella. Hay una prueba que cambia la cuenta de un gasto y guarda.

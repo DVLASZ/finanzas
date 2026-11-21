@@ -402,7 +402,7 @@ try {
     }
     await otra.evaluate(() => localStorage.removeItem('apariencia'));
     await otra.close();
-    igual(JSON.stringify(quedan), JSON.stringify({ libro: 'midnight', zafiro: 'midnight', oceano: 'midnight', abyss: 'midnight', mocha: 'tierra', veltro: 'esmeralda', aether: 'kinetix', onyx: 'obsidiana', atardecer: 'bordeaux', inventado: 'midnight' }), 'cada tema viejo pasa al suyo');
+    igual(JSON.stringify(quedan), JSON.stringify({ libro: 'midnight', zafiro: 'midnight', oceano: 'midnight', abyss: 'midnight', mocha: 'tierra', veltro: 'esmeralda', aether: 'kinetix', onyx: 'obsidiana', atardecer: 'bordeaux', inventado: 'obsidiana' }), 'cada tema viejo pasa al suyo');
     igual(errores.length, 0, 'sin errores de JavaScript al migrar');
     // abrir otra pestaña esconde los montos (así debe ser); el resto de la visita mira cifras
     await pag.bringToFront(); await mostrarMontos(pag);
@@ -683,6 +683,104 @@ try {
     await clic('#info-cerrar'); await espera(400);
     igual(await hay('#info'), false, 'se cierra');
     await irA('Chat');
+  });
+  await prueba('ventanas flotantes: las tarjetas de Resumen y la comparativa por categoría abren su desglose', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    const id = () => pag.evaluate(() => document.querySelector('#info')?.dataset.info);
+    await irA('Resumen'); await espera(700);
+    igual(await pag.evaluate(() => document.querySelector('#card-gastos')?.getAttribute('role')), 'button', 'la tarjeta de gastos es un botón');
+    for (const [sel, esperado] of [['#card-gastos', 'info-gastos'], ['#card-ingresos', 'info-ingresos'], ['#card-balance', 'info-balance']]) {
+      if (!(await hay(sel))) continue;
+      await clic(sel); igual(await id(), esperado, 'abre ' + esperado);
+      await clic('#info-cerrar'); await espera(400);
+    }
+    // la comparativa: tocar una categoría la compara contra el periodo anterior, con las dos listas
+    await clic('#comp-gastos'); igual(await id(), 'comparativa-gastos', 'abre la comparativa');
+    await clic('#info [data-comparar]'); igual(await id(), 'comparar-categoria', 'una categoría abre su comparación');
+    igual(await hay('#info-movs-ahora, #info-movs-ahora-vacio'), true, 'la lista de ahora');
+    igual(await hay('#info-movs-antes, #info-movs-antes-vacio'), true, 'la lista de antes');
+    await clic('#info-cerrar'); await espera(400);
+    igual(await hay('#info'), false, 'un solo atrás cierra la ventana');
+    // la tarjeta «Contra el mes pasado» abre lo mismo
+    if (await hay('#contra-mes-pasado [data-comparar]')) {
+      await clic('#contra-mes-pasado [data-comparar]'); igual(await id(), 'comparar-categoria', 'la tarjeta del mes abre la comparación');
+      await clic('#info-cerrar'); await espera(400);
+    }
+  });
+  await prueba('ventanas flotantes: Saldos abre Disponible, seguro para hoy, salud patrimonial y alertas', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    const id = () => pag.evaluate(() => document.querySelector('#info')?.dataset.info);
+    await irA('Saldos'); await espera(700);
+    for (const [sel, esperado, calculo] of [['#hero-disponible', 'info-disponible', '#info-disponible-calculo'], ['#seguro-hoy', 'info-seguro', '#info-seguro-calculo'], ['#salud-patrimonial', 'info-salud', '#info-salud-calculo']]) {
+      await clic(sel); igual(await id(), esperado, 'abre ' + esperado);
+      igual(await hay(calculo), true, 'trae el cálculo de ' + esperado);
+      await clic('#info-cerrar'); await espera(400);
+      igual(await hay('#info'), false, 'se cierra ' + esperado);
+    }
+    // lo de adentro no abre lo de afuera: «entró» y «salió» tienen su propia ventana, y los chips no abren nada
+    await clic('#hero-salio'); igual(await id(), 'info-gastos', 'salió abre los gastos del mes');
+    await clic('#info-cerrar'); await espera(400);
+    await clic('#salud-cobrar'); igual(await id(), 'info-por-cobrar', 'te deben abre su lista');
+    await clic('#info-cerrar'); await espera(400);
+    if (await hay('[data-alerta]')) {
+      await clic('[data-alerta]'); igual(await id(), 'info-alerta', 'la alerta abre su porqué');
+      contiene(await pag.evaluate(() => (document.querySelector('#info-alerta-detalle')?.innerText ?? '').toLowerCase()), 'por qué sale', 'explica el motivo');
+      await clic('#info-cerrar'); await espera(400);
+    }
+  });
+  await prueba('ventanas flotantes: alcancías, pagos fijos y deudas abren su detalle desde sus tarjetas', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    const id = () => pag.evaluate(() => document.querySelector('#info')?.dataset.info);
+    await abrirDeMas('Alcancías'); await espera(700);
+    await clic('#total-apartado'); igual(await id(), 'info-metas', 'el total apartado abre las metas');
+    await clic('#info-cerrar'); await espera(400);
+    if (await hay('[data-meta-abrir]')) {
+      await clic('[data-meta-abrir]'); igual(await id(), 'info-meta', 'una alcancía abre sus aportes');
+      igual(await hay('#info-meta-detalle'), true, 'con su avance');
+      await clic('#info-cerrar'); await espera(400);
+    }
+    await abrirDeMas('Pagos fijos'); await espera(700);
+    await clic('#kpi-fijos-mes'); igual(await id(), 'info-fijos-mes', 'el total del mes abre sus pagos');
+    await clic('#info-cerrar'); await espera(400);
+    await clic('#kpi-fijos-pendiente'); igual(await id(), 'info-fijos-pendientes', 'lo que falta abre sus pagos');
+    await clic('#info-cerrar'); await espera(400);
+    if (await hay('li[data-fijo]')) {
+      await clic('li[data-fijo]'); igual(await id(), 'info-fijo', 'un pago fijo abre su detalle');
+      await clic('#info-cerrar'); await espera(400);
+    }
+    await abrirDeMas('Deudas y préstamos'); await espera(700);
+    await clic('#kpi-por-cobrar'); igual(await id(), 'info-por-cobrar', 'por cobrar abre su lista');
+    await clic('#info-cerrar'); await espera(400);
+    await clic('#kpi-por-pagar'); igual(await id(), 'info-por-pagar', 'por pagar abre su lista');
+    await clic('#info-cerrar'); await espera(400);
+    igual(await hay('#info'), false, 'todo cerrado');
+    await irA('Chat');
+  });
+  await prueba('ventanas flotantes: un día del ritmo, una semana y una meta de las gráficas del Resumen abren sus ventanas', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.dispatchEvent(new MouseEvent('click', { bubbles: true })); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    await irA('Resumen'); await espera(700);
+    for (const id of ['#grafica-ritmo', '#grafica-semanal', '#grafica-ahorro']) igual(await hay(id), true, 'la tarjeta ' + id);
+    // un día del ritmo: el de hoy, que ya tiene el acumulado
+    const hoy = await pag.evaluate(() => Number(document.querySelector('#ritmo-dato .etiqueta')?.textContent.match(/\d+/)?.[0]));
+    await clic(`#grafica-ritmo [data-dia="${hoy}"]`);
+    igual(await pag.evaluate(() => document.querySelector('#info')?.dataset.info), 'info-ritmo-dia', 'el día abre su ventana');
+    igual(await hay('#info-ritmo-cifras'), true, 'con el acumulado del mes');
+    await clic('#info-cerrar'); await espera(400);
+    igual(await hay('#info'), false, 'se cierra');
+    // una semana
+    await clic('#grafica-semanal [data-semana]:last-child');
+    igual(await pag.evaluate(() => document.querySelector('#info')?.dataset.info), 'info-semana', 'la semana abre su ventana');
+    igual(await hay('#info-semana-cifras'), true, 'con ingresos y gastos');
+    await clic('#info-cerrar'); await espera(400);
+    // una meta
+    await clic('#grafica-ahorro [data-meta-grafica]');
+    igual(await pag.evaluate(() => document.querySelector('#info')?.dataset.info), 'info-meta-ahorro', 'la meta abre su ventana');
+    await clic('#info-cerrar'); await espera(400);
+    igual(await hay('#info'), false, 'se cierra');
   });
   await prueba('resumen con privacidad total: las cifras de las gráficas nuevas salen ocultas', async () => {
     const estaba = await pag.evaluate(() => document.documentElement.dataset.privado === '1');

@@ -4,10 +4,11 @@
  * los bloques, así lo que suma la lista es lo que se tocó.
  */
 import { ArrowDownRight, ArrowUpRight, List, Minus } from 'lucide-preact';
+import type { ComponentChildren } from 'preact';
 import { formatear, gastoPorCategoria, ingresosPorFuente, type Datos } from '../../../../../packages/core/src/index.ts';
-import { cerrarYLuego, abrirInfo } from '../../components/ui/HojaInfo.tsx';
+import { cerrarYLuego, abrirInfo, ListaMovimientos } from '../../components/ui/HojaInfo.tsx';
 import { Insignia, visualDeNombre } from '../../components/ui/iconos.tsx';
-import { movimientosDeCategoria, movimientosDeConcepto, movimientosDeMedio, gastoDe } from '../../lib/grupos.ts';
+import { movimientosDeCategoria, movimientosDeConcepto, movimientosDeMedio, movimientosDeTipos, gastoDeCategoria, gastoDe } from '../../lib/grupos.ts';
 import { verMovimientos } from '../movimientos/Movimientos.tsx';
 import type { Movimiento } from '../../../../../packages/core/src/index.ts';
 
@@ -67,9 +68,9 @@ export function abrirComparativa(datos: Datos, tipo: 'gastos' | 'ingresos', p: P
   const cuentas = datos.cuentas;
   const ahora = tipo === 'gastos' ? gastoPorCategoria(datos.movimientos, cuentas, p.desde, p.hasta) : ingresosPorFuente(datos.movimientos, cuentas, p.desde, p.hasta);
   const antes = tipo === 'gastos' ? gastoPorCategoria(datos.movimientos, cuentas, p.previoDesde, p.previoHasta) : ingresosPorFuente(datos.movimientos, cuentas, p.previoDesde, p.previoHasta);
-  const filas = new Map<string, { nombre: string; ahora: number; antes: number }>();
-  for (const x of ahora) filas.set(x.cuenta.id, { nombre: x.cuenta.nombre, ahora: x.total, antes: 0 });
-  for (const x of antes) { const f = filas.get(x.cuenta.id) ?? { nombre: x.cuenta.nombre, ahora: 0, antes: 0 }; f.antes = x.total; filas.set(x.cuenta.id, f); }
+  const filas = new Map<string, { id: string; nombre: string; ahora: number; antes: number }>();
+  for (const x of ahora) filas.set(x.cuenta.id, { id: x.cuenta.id, nombre: x.cuenta.nombre, ahora: x.total, antes: 0 });
+  for (const x of antes) { const f = filas.get(x.cuenta.id) ?? { id: x.cuenta.id, nombre: x.cuenta.nombre, ahora: 0, antes: 0 }; f.antes = x.total; filas.set(x.cuenta.id, f); }
   const lista = [...filas.values()].sort((a, b) => Math.max(b.ahora, b.antes) - Math.max(a.ahora, a.antes));
   const bueno = tipo === 'gastos' ? 'baja' : 'sube';
   const max = Math.max(1, ...lista.map(f => Math.max(f.ahora, f.antes)));
@@ -80,7 +81,10 @@ export function abrirComparativa(datos: Datos, tipo: 'gastos' | 'ingresos', p: P
     cuerpo: lista.length === 0 ? <p class="sub">No hay nada en estos dos periodos.</p> : (
       <ul class="lista !mt-2" id="info-comparativa">
         {lista.map(f => (
-          <li key={f.nombre} class="fila" style={{ cursor: 'default' }}>
+          <li key={f.nombre} class={`fila ${tipo === 'gastos' ? 'toque' : ''}`} style={tipo === 'gastos' ? undefined : { cursor: 'default' }} data-comparar={tipo === 'gastos' ? f.id : undefined}
+            role={tipo === 'gastos' ? 'button' : undefined} tabIndex={tipo === 'gastos' ? 0 : undefined}
+            onClick={tipo === 'gastos' ? () => abrirCategoriaComparada(datos, f.id, f.nombre, p) : undefined}
+            onKeyDown={tipo === 'gastos' ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirCategoriaComparada(datos, f.id, f.nombre, p); } } : undefined}>
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2"><Insignia v={visualDeNombre(f.nombre)} tam={30} /><span class="titulo">{f.nombre}</span></div>
               <div class="sub">{formatear(f.ahora)} <span class="opacity-70">contra {formatear(f.antes)}</span></div>
@@ -92,5 +96,64 @@ export function abrirComparativa(datos: Datos, tipo: 'gastos' | 'ingresos', p: P
       </ul>
     ),
     acciones: [verTodos('Ver en Movimientos', () => verMovimientos({ periodo: 'mes' }))],
+  });
+}
+
+/** Una categoría contra sí misma: lo de este periodo y lo del anterior, con el total de cada uno, la variación y las dos listas. */
+export function abrirCategoriaComparada(datos: Datos, categoriaId: string, nombre: string, p: Periodos, rotulos: { ahora: string; antes: string } = { ahora: 'Este periodo', antes: 'El periodo anterior' }): void {
+  const movsAhora = movimientosDeCategoria(datos, categoriaId, p.desde, p.hasta);
+  const movsAntes = movimientosDeCategoria(datos, categoriaId, p.previoDesde, p.previoHasta);
+  const ahora = gastoDeCategoria(datos, categoriaId, movsAhora), antes = gastoDeCategoria(datos, categoriaId, movsAntes);
+  const dif = ahora - antes;
+  const frase = antes === 0 ? (ahora === 0 ? 'No hubo gasto en ninguno de los dos periodos.' : 'Antes no había gasto en esta categoría.')
+    : `${dif === 0 ? 'Igual que antes' : `${dif > 0 ? 'Subió' : 'Bajó'} ${formatear(Math.abs(dif))}`} (${dif > 0 ? '+' : ''}${Math.round((dif / antes) * 100)} %).`;
+  const Bloque = ({ titulo, total, movs, id }: { titulo: string; total: number; movs: Movimiento[]; id: string }): ComponentChildren => (
+    <div class="mt-3" data-lado={id}>
+      <div class="flex items-baseline justify-between gap-2"><h3 class="!m-0">{titulo}</h3><b class="tabular-nums">{formatear(total)}</b></div>
+      <p class="sub !mt-0">{veces(movs.length)}</p>
+      <ListaMovimientos movs={movs} id={`info-movs-${id}`} vacio="Sin movimientos en este periodo." />
+    </div>
+  );
+  abrirInfo({
+    id: 'comparar-categoria', titulo: nombre, sub: frase,
+    cuerpo: <div id="info-comparar"><Bloque titulo={rotulos.ahora} total={ahora} movs={movsAhora} id="ahora" /><Bloque titulo={rotulos.antes} total={antes} movs={movsAntes} id="antes" /></div>,
+    acciones: [verTodos('Ver en Movimientos', () => verMovimientos({ categoria: categoriaId, periodo: 'todo' }))],
+  });
+}
+
+const sumaTipo = (movs: Movimiento[], datos: Datos, tipo: 'gastos' | 'ingresos'): number => {
+  if (tipo === 'gastos') return sumaGasto(datos, movs);
+  const fuentes = new Set(datos.cuentas.filter(c => c.tipo === 'fuente').map(c => c.id));
+  return movs.reduce((s, m) => s + m.asientos.filter(a => fuentes.has(a.cuentaId) && a.moneda === 'COP').reduce((x, a) => x - a.monto, 0), 0);
+};
+
+/** La tarjeta de Gastos o de Ingresos: los movimientos que suman la cifra en el periodo. */
+export function abrirTotal(datos: Datos, tipo: 'gastos' | 'ingresos', p: Periodos, periodoMov: 'semana' | 'mes' | 'anio' | 'todo' = 'mes'): void {
+  const movimientos = movimientosDeTipos(datos, tipo === 'gastos' ? ['gasto', 'compartido'] : ['ingreso'], p.desde, p.hasta);
+  abrirInfo({
+    id: `info-${tipo}`, titulo: tipo === 'gastos' ? 'Gastos del periodo' : 'Ingresos del periodo',
+    sub: `${veces(movimientos.length)} suman ${formatear(sumaTipo(movimientos, datos, tipo))}.`,
+    movimientos, acciones: [
+      { id: 'info-comparar-previo', texto: 'Contra el periodo anterior', icono: <ArrowUpRight size={18} />, alTocar: () => abrirComparativa(datos, tipo, p) },
+      verTodos('Ver en Movimientos', () => verMovimientos({ periodo: periodoMov })),
+    ],
+  });
+}
+
+/** El balance: lo que entró menos lo que salió, con las dos listas juntas. */
+export function abrirBalance(datos: Datos, p: Periodos, periodoMov: 'semana' | 'mes' | 'anio' | 'todo' = 'mes'): void {
+  const ingresos = movimientosDeTipos(datos, ['ingreso'], p.desde, p.hasta), gastos = movimientosDeTipos(datos, ['gasto', 'compartido'], p.desde, p.hasta);
+  const entro = sumaTipo(ingresos, datos, 'ingresos'), salio = sumaTipo(gastos, datos, 'gastos');
+  const movimientos = [...ingresos, ...gastos].sort((a, b) => b.ocurridoEn.localeCompare(a.ocurridoEn));
+  abrirInfo({
+    id: 'info-balance', titulo: 'Balance del periodo', sub: entro - salio < 0 ? 'Salió más de lo que entró.' : 'Entró más de lo que salió.',
+    cuerpo: (
+      <dl class="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 text-sm" id="info-balance-calculo">
+        <dt class="text-tx2">Ingresos</dt><dd class="tabular-nums text-pos">{formatear(entro)}</dd>
+        <dt class="text-tx2">Gastos</dt><dd class="tabular-nums text-neg">-{formatear(salio)}</dd>
+        <dt class="border-t border-white/10 pt-1.5 font-semibold">Balance</dt><dd class="border-t border-white/10 pt-1.5 font-bold tabular-nums">{formatear(entro - salio)}</dd>
+      </dl>
+    ),
+    movimientos, acciones: [verTodos('Ver en Movimientos', () => verMovimientos({ periodo: periodoMov }))],
   });
 }
