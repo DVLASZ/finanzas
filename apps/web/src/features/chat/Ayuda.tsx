@@ -143,9 +143,9 @@ export function Ayuda({ texto, alElegir }: { texto: string; alElegir: (ejemplo: 
       </>}
       {tema && (
         <div ref={cuerpo} class="ayuda-detalle" id="ayuda-detalle" data-tema={tema.id}>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
             <button type="button" class="chip !min-h-9 !px-3" id="ayuda-volver" aria-label="Volver a los temas" onClick={() => setAbierto(null)}><ArrowLeft size={16} />Temas</button>
-            <h4 class="!m-0 min-w-0 flex-1 text-[.95rem] font-bold">{tema.titulo}</h4>
+            <h4 class="!m-0 min-w-0 flex-[1_1_8rem] text-[.95rem] font-bold">{tema.titulo}</h4>
           </div>
           {tema.lineas.length > 0 && (
             <section class="ayuda-bloque">

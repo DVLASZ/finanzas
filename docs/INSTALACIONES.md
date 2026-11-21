@@ -29,7 +29,7 @@ La plantilla `familia` trae un gasto "Aporte Cooperativa" para un pago mensual q
 
 Cada instalación trae un aspecto por defecto y cada persona lo cambia en Más, Ajustes, Letra y colores.
 
-- `piel`: `obsidiana` (negro puro para pantallas AMOLED, sin adorno), `midnight` (azul noche de vidrio, con cian eléctrico), `tierra` (café y arena, mate, con terracota), `esmeralda` (verde bosque y jade), `bordeaux` (vino burdeos y coral, editorial) o `kinetix` (morado y lima, angular). Cada una existe en claro y en oscuro y trae sus propios radios, bordes y superficies. Dentro de la app se elige en Ajustes, Letra y colores, donde cada tema muestra una píldora con sus proporciones 60-30-10. Todos pasan `npm run contraste` y la revisión de letra grande. Si una instalación o un celular tenía un tema que ya no existe (por ejemplo `libro`), la app lo cambia sola por el más parecido.
+- `piel`: `obsidiana` (el de fábrica: negro puro para pantallas AMOLED con doble tarjeta y filetes dorados), `midnight` (azul noche de vidrio, con cian eléctrico), `tierra` (café y arena, mate, con terracota), `esmeralda` (verde bosque y jade), `bordeaux` (vino burdeos y coral, editorial) o `kinetix` (morado y lima, angular). Cada una existe en claro y en oscuro y trae sus propios radios, bordes y superficies. Dentro de la app se elige en Ajustes, Letra y colores, donde cada tema muestra una píldora con sus proporciones 60-30-10. Todos pasan `npm run contraste` y la revisión de letra grande. Si una instalación o un celular tenía un tema que ya no existe (por ejemplo `libro`), la app lo cambia sola por el más parecido.
 - `tema`: `claro`, `oscuro` o `auto`.
 - `letra`: `normal` o `grande`.
 - `matiz` (opcional): `azulado` sobre la piel `tierra`.

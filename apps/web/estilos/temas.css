@@ -127,7 +127,9 @@ html[data-piel="tierra"] { --base: 17px; --radio: 22px; --radio-b: 18px; --alto-
 html[data-piel="esmeralda"] { --base: 16px; --radio: 20px; --radio-b: 14px; --alto-btn: 50px; }
 html[data-piel="bordeaux"] { --base: 16px; --radio: 12px; --radio-b: 8px; --alto-btn: 50px; }
 html[data-piel="kinetix"] { --base: 16px; --radio: 10px; --radio-b: 6px; --alto-btn: 50px; }
-html[data-letra="grande"] { --escala: 1.18; }
+html[data-letra="compacta"] { --escala: .85; }
+html[data-letra="grande"] { --escala: 1.15; }
+html[data-letra="extra"] { --escala: 1.3; }
 html { font-size: calc(var(--base, 16px) * var(--escala, 1)); }
 html[data-tema="claro"] { color-scheme: light; }
 html[data-tema="oscuro"] { color-scheme: dark; }

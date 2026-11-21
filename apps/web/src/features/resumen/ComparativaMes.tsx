@@ -3,11 +3,24 @@
  * hacia dónde va el cierre del mes si el ritmo sigue igual. Lo calcula `comparativaMensual` (núcleo).
  */
 import { ArrowDownRight, ArrowUpRight, Minus, TrendingUp } from 'lucide-preact';
-import { comparativaMensual, textoProyeccion, type Datos } from '../../../../../packages/core/src/index.ts';
+import { aLocal, comparativaMensual, textoProyeccion, type Datos } from '../../../../../packages/core/src/index.ts';
 import { formatear } from '../../lib/formatear.ts';
 import { verTexto } from '../../state/privacidad.ts';
 import { BarraAvance, Insignia, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
+import { tocable } from '../../lib/tocable.ts';
+import { abrirCategoriaComparada, type Periodos } from './aperturas.tsx';
+
+const p2 = (n: number) => String(n).padStart(2, '0');
+/** Los mismos periodos que usa `comparativaMensual`: lo que va del mes y los mismos días del mes pasado (el fin es el día siguiente, sin incluir). */
+function periodosDelMes(ahora: Date): Periodos {
+  const hoy = aLocal(ahora);
+  const anio = Number(hoy.slice(0, 4)), mes = Number(hoy.slice(5, 7)), dia = Number(hoy.slice(8, 10));
+  const anioAnt = mes === 1 ? anio - 1 : anio, mesAnt = mes === 1 ? 12 : mes - 1;
+  const diaAnt = Math.min(dia, new Date(Date.UTC(anioAnt, mesAnt, 0)).getUTCDate());
+  const siguiente = (y: number, m: number, d: number) => `${new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10)} 00:00:00`;
+  return { desde: `${anio}-${p2(mes)}-01 00:00:00`, hasta: siguiente(anio, mes, dia), previoDesde: `${anioAnt}-${p2(mesAnt)}-01 00:00:00`, previoHasta: siguiente(anioAnt, mesAnt, diaAnt) };
+}
 
 function Variacion({ v, nuevo }: { v: number | null; nuevo: boolean }) {
   // gastar más es lo malo: sube en coral, baja en verde
@@ -46,7 +59,7 @@ export function ComparativaMes({ datos, ahora }: { datos: Datos; ahora: Date }) 
           <p class="sub !mt-0">Lo que llevas hasta hoy contra los mismos {c.dia} días del mes anterior.</p>
           <ul class="lista !m-0" style={{ boxShadow: 'none', background: 'transparent' }}>
             {filas.map(f => (
-              <li key={f.cuentaId} class="fila" style={{ cursor: 'default' }}>
+              <li key={f.cuentaId} class="fila toque" data-comparar={f.cuentaId} {...tocable(() => abrirCategoriaComparada(datos, f.cuentaId, f.nombre, periodosDelMes(ahora), { ahora: `Este mes, hasta el día ${c.dia}`, antes: `Mes anterior, mismos ${c.dia} días` }))}>
                 <div class="min-w-0">
                   <div class="flex items-center gap-2"><Insignia v={visualDeNombre(f.nombre)} tam={30} /><span class="titulo">{f.nombre}</span></div>
                   <div class="sub">{formatear(f.actual)} <span class="opacity-70">contra {formatear(f.anterior)}</span></div>

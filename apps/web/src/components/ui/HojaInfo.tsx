@@ -31,14 +31,45 @@ const LIMITE = 40;
 export const info = signal<ContenidoInfo | null>(null);
 
 export function abrirInfo(c: ContenidoInfo): void {
+  // si ya hay una ventana abierta (una comparativa que abre una categoría), solo cambia su contenido: «atrás» sigue cerrando de una vez
+  const yaAbierta = infoAbierta.value;
   info.value = c;
-  abrirHojaInfo();
+  if (!yaAbierta) abrirHojaInfo();
+  else document.querySelector('.info-hoja')?.scrollTo(0, 0);
 }
 
 /** Cierra la ventana y, un instante después (cuando el historial ya retrocedió), hace lo que sigue: ir a otra pantalla, por ejemplo. */
 export function cerrarYLuego(f: () => void): void {
   atras();
   setTimeout(f, 90);
+}
+
+/** La lista de movimientos de una ventana: cada fila abre su detalle encima. Se puede usar también dentro de un cuerpo libre (la comparativa pone dos). */
+export function ListaMovimientos({ movs, id = 'info-movs', vacio = 'No hay movimientos para mostrar.' }: { movs: Movimiento[]; id?: string; vacio?: string }) {
+  const datos = datosSignal.value;
+  const ctx = contexto.value;
+  if (!datos || !ctx) return null;
+  return (
+    <>
+      {movs.length === 0
+        ? <p class="sub" id={`${id}-vacio`}>{vacio}</p>
+        : <ul class="lista !mt-2" id={id}>
+            {movs.slice(0, LIMITE).map((m, i) => {
+              const v = montoVisible(m, datos.cuentas);
+              return (
+                <li key={m.id} class="fila fila-entra" style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} data-id={m.id} onClick={() => abrirDetalle(m.id)}>
+                  <div class="flex min-w-0 items-center gap-3">
+                    <Insignia v={visualDeMovimiento(m, datos.cuentas)} tam={38} />
+                    <div class="min-w-0"><div class="titulo">{m.descripcion}</div><div class="sub">{describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora)}</div></div>
+                  </div>
+                  <div class={`monto tabular-nums ${v.clase}`}>{v.texto ? verMonto(v.texto) : ''}</div>
+                </li>
+              );
+            })}
+          </ul>}
+      {movs.length > LIMITE && <p class="sub">Y {movs.length - LIMITE} más. Míralos todos en Movimientos.</p>}
+    </>
+  );
 }
 
 export function HojaInfo() {
@@ -75,23 +106,7 @@ export function HojaInfo() {
         <h3 class="!mt-0">{c.titulo}</h3>
         {c.sub && <p class="sub">{c.sub}</p>}
         {c.cuerpo}
-        {c.movimientos && (movs.length === 0
-          ? <p class="sub" id="info-vacio">No hay movimientos para mostrar.</p>
-          : <ul class="lista !mt-2" id="info-movs">
-              {movs.slice(0, LIMITE).map((m, i) => {
-                const v = montoVisible(m, datos.cuentas);
-                return (
-                  <li key={m.id} class="fila fila-entra" style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} data-id={m.id} onClick={() => abrirDetalle(m.id)}>
-                    <div class="flex min-w-0 items-center gap-3">
-                      <Insignia v={visualDeMovimiento(m, datos.cuentas)} tam={38} />
-                      <div class="min-w-0"><div class="titulo">{m.descripcion}</div><div class="sub">{describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora)}</div></div>
-                    </div>
-                    <div class={`monto tabular-nums ${v.clase}`}>{v.texto ? verMonto(v.texto) : ''}</div>
-                  </li>
-                );
-              })}
-            </ul>)}
-        {movs.length > LIMITE && <p class="sub">Y {movs.length - LIMITE} más. Míralos todos en Movimientos.</p>}
+        {c.movimientos && <ListaMovimientos movs={movs} />}
         <div class="acciones">
           {(c.acciones ?? []).map(a => <button key={a.id} id={a.id} class="secundario" onClick={a.alTocar}>{a.icono}{a.texto}</button>)}
           <button class="secundario" id="info-cerrar" onClick={atras}><X size={18} />Cerrar</button>

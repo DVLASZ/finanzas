@@ -12,6 +12,8 @@ import { Insignia, Vacio, visualDeNombre } from '../../components/ui/iconos.tsx'
 import { Selector } from '../../components/ui/Selector.tsx';
 import { irA, prellenarChat } from '../../state/nav.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
+import { tocable } from '../../lib/tocable.ts';
+import { abrirFijos, abrirPagoFijo } from './aperturas.tsx';
 
 const FRECUENCIAS: { valor: Frecuencia; etiqueta: string }[] = [
   { valor: 'mensual', etiqueta: 'Cada mes' }, { valor: 'quincenal', etiqueta: 'Cada quincena' }, { valor: 'semanal', etiqueta: 'Cada semana' }, { valor: 'anual', etiqueta: 'Cada año' },
@@ -60,8 +62,8 @@ export function PagosFijos() {
   return (
     <div class="space-y-3 pb-10">
       <div class="kpis !mb-0">
-        <div class="tarjeta kpi"><div class="etiqueta">Este mes</div><div class="kpi-v">{formatear(total)}</div></div>
-        <div class="tarjeta kpi"><div class="etiqueta">Falta por pagar</div><div class="kpi-v" style={{ color: 'var(--adv)' }}>{formatear(pendiente)}</div></div>
+        <div class="tarjeta kpi toque" id="kpi-fijos-mes" {...tocable(() => abrirFijos(datos, lista, hoy, 'mes'))}><div class="etiqueta">Este mes</div><div class="kpi-v">{formatear(total)}</div></div>
+        <div class="tarjeta kpi toque" id="kpi-fijos-pendiente" {...tocable(() => abrirFijos(datos, lista, hoy, 'pendiente'))}><div class="etiqueta">Falta por pagar</div><div class="kpi-v" style={{ color: 'var(--adv)' }}>{formatear(pendiente)}</div></div>
       </div>
 
       {lista.length === 0 ? <Vacio Icono={CalendarClock} titulo="Sin pagos fijos" detalle="Agrega el arriendo, el internet o lo que pagas cada mes." tono="ambar" /> : (
@@ -70,14 +72,14 @@ export function PagosFijos() {
             const hecho = yaRegistrado(r, datos.movimientos, hoy);
             const toca = estaPendiente(r, datos.movimientos, hoy);
             return (
-              <li key={r.frase} class="fila" style={{ cursor: 'default' }}>
+              <li key={r.frase} class="fila toque" data-fijo={r.concepto} {...tocable(() => abrirPagoFijo(datos, r, hoy))}>
                 <div class="flex min-w-0 items-center gap-3">
                   <Insignia v={visualDeNombre(r.concepto)} tam={42} />
                   <div class="min-w-0"><div class="titulo">{r.concepto}</div>
                     <div class="sub flex items-center gap-1">{hecho ? <><Check size={13} class="text-pos" />Pagado {periodoDe(r)}</> : toca ? <><Clock size={13} class="text-adv" />Toca {periodoDe(r)} · {describirFrecuencia(r)}</> : <>{describirFrecuencia(r).replace(/^./, c => c.toUpperCase())}</>}</div></div>
                 </div>
                 <div class="text-right"><div class="monto">{formatear(r.monto)}</div>
-                  {!hecho && <button class="chip !min-h-10 mt-1" onClick={() => registrar(r.frase)}>Registrar pago ahora</button>}
+                  {!hecho && <button class="chip !min-h-10 mt-1" onClick={e => { e.stopPropagation(); registrar(r.frase); }}>Registrar pago ahora</button>}
                 </div>
               </li>
             );

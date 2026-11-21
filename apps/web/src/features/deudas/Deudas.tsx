@@ -8,6 +8,8 @@ import { abrirInfo, cerrarYLuego } from '../../components/ui/HojaInfo.tsx';
 import { movimientosDePersona } from '../../lib/grupos.ts';
 import { verMovimientos } from '../movimientos/Movimientos.tsx';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
+import { tocable } from '../../lib/tocable.ts';
+import { abrirPorCobrarPagar } from '../saldos/aperturas.tsx';
 
 type Deuda = ReturnType<typeof deudasPorPersona>[number];
 
@@ -80,8 +82,8 @@ export function Deudas() {
   return (
     <div class="pb-10">
       <div class="kpis">
-        <div class="tarjeta kpi"><div class="etiqueta">Por cobrar</div><div class="kpi-v bien">{formatear(porCobrar)}</div><div class="sub">{personas(teDeben.length)}</div></div>
-        <div class="tarjeta kpi"><div class="etiqueta">Por pagar</div><div class="kpi-v mal">{formatear(porPagar)}</div><div class="sub">{personas(debes.length)}</div></div>
+        <div class="tarjeta kpi toque" id="kpi-por-cobrar" {...tocable(() => abrirPorCobrarPagar(datos, 'cobrar'))}><div class="etiqueta">Por cobrar</div><div class="kpi-v bien">{formatear(porCobrar)}</div><div class="sub">{personas(teDeben.length)}</div></div>
+        <div class="tarjeta kpi toque" id="kpi-por-pagar" {...tocable(() => abrirPorCobrarPagar(datos, 'pagar'))}><div class="etiqueta">Por pagar</div><div class="kpi-v mal">{formatear(porPagar)}</div><div class="sub">{personas(debes.length)}</div></div>
       </div>
       {deOtros.length > 0 && <>
         <h2>Plata de otros</h2>

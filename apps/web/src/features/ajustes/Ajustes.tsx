@@ -299,7 +299,7 @@ export function Ajustes() {
       <div class="acciones"><button class="secundario" onClick={() => void descargarExcel()}>Descargar Excel</button></div>
 
       <h2>Historial del Excel</h2>
-      <Nota>Carga el archivo <code>importacion/historial.json</code> que genera el importador. Es seguro repetirlo: no duplica.</Nota>
+      <Nota>Carga el archivo <code>importacion/<wbr />historial.<wbr />json</code> que genera el importador. Es seguro repetirlo: no duplica.</Nota>
       <div class="acciones"><label class="secundario archivo">Importar historial<input type="file" accept="application/json" hidden onChange={importarHistorial} /></label></div>
       <p class="sub" aria-live="polite">{msgHistorial}</p>
 

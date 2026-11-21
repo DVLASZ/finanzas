@@ -7,7 +7,7 @@
  */
 import { momentanea } from '../lib/efectos.ts';
 export type Tema = 'claro' | 'oscuro' | 'auto';
-export type Letra = 'normal' | 'grande';
+export type Letra = 'compacta' | 'normal' | 'grande' | 'extra';
 export type Piel = 'obsidiana' | 'midnight' | 'tierra' | 'esmeralda' | 'bordeaux' | 'kinetix';
 
 /**
@@ -23,7 +23,7 @@ const VIGENTES: string[] = ['obsidiana', 'midnight', 'tierra', 'esmeralda', 'bor
 /** Un nombre de tema guardado o de fábrica, llevado a uno que existe. */
 export function pielValida(p: string | undefined): Piel {
   if (p && VIGENTES.includes(p)) return p as Piel;
-  return (p && LEGADO[p]) || 'midnight';
+  return (p && LEGADO[p]) || 'obsidiana';
 }
 
 interface Elegido { tema?: Tema; letra?: Letra; piel?: Piel }
