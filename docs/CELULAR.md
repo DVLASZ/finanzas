@@ -49,7 +49,7 @@ scrcpy
 
 ## Letra grande en un celular angosto
 
-La app instalada no tiene la barra del navegador, y la letra grande de la app (x1,18) se suma a la del sistema, que Chrome en Android aplica al texto y no a las cajas. Por eso un celular de 393 px de ancho (el Redmi Note 14, por ejemplo) con letra grande desborda lo que no se diseñó para eso. `npm run e2e:letra` compila la app de una instalación, la abre con ese tamaño de pantalla, sube el texto x1, x1,15 y x1,3 y revisa cada pantalla: cajas que se salen, texto cortado y etiquetas pegadas. Con `CAPTURAS=carpeta` guarda una foto de cada pantalla para mirarlas.
+La app instalada no tiene la barra del navegador, y la letra grande de la app (x1,15, o x1,3 en Extra grande) se suma a la del sistema, que Chrome en Android aplica al texto y no a las cajas. Por eso un celular de 393 px de ancho (el Redmi Note 14, por ejemplo) con letra grande desborda lo que no se diseñó para eso. `npm run e2e:letra` compila la app de una instalación, la abre con ese tamaño de pantalla, sube el texto x1, x1,15 y x1,3 y revisa cada pantalla: cajas que se salen, texto cortado y etiquetas pegadas. Con `CAPTURAS=carpeta` guarda una foto de cada pantalla para mirarlas.
 
 ## Lo que no se puede probar así
 

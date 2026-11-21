@@ -44,7 +44,7 @@ La contabilidad es de partida doble, funciona sin internet y corre gratis en Clo
   </tr>
 </table>
 
-El Worker sirve con política de contenido estricta y límites de peticiones, el PIN se guarda con PBKDF2 y puede bloquear la app, y hay respaldo con contraseña (AES-GCM); todo se revisa con `npm run seguridad` (ver [SECURITY.md](SECURITY.md)). Puedes dictar varios movimientos en una frase, pegar la alerta de tu banco y deshacer con un toque durante ocho segundos. Las cifras arrancan escondidas (el botón flotante del ojo las muestra), el chat entiende preguntas como «¿cuánto hay en Nequi?» o «¿quién me debe plata?», los botones rápidos los armas tú, la ayuda te guía por temas, hay un recordatorio opcional de la noche y seis temas, cada uno en claro y en oscuro y con su propia silueta (Obsidiana, Midnight, Tierra, Esmeralda, Bordeaux y Kinetix), todos hechos con la regla 60-30-10. También hay alcancías con fecha estimada, pagos fijos con aviso antes del cobro, efectivo con billetes y vuelto, y una revisión del mes con botones que llevan a donde se arregla cada hallazgo.
+El Worker sirve con política de contenido estricta y límites de peticiones, el PIN se guarda con PBKDF2 y puede bloquear la app, y hay respaldo con contraseña (AES-GCM); todo se revisa con `npm run seguridad` (ver [SECURITY.md](SECURITY.md)). Puedes dictar varios movimientos en una frase, pegar la alerta de tu banco y deshacer con un toque durante ocho segundos. Las cifras arrancan escondidas (el botón flotante del ojo las muestra), el chat entiende preguntas como «¿cuánto hay en Nequi?» o «¿quién me debe plata?», los botones rápidos los armas tú, la ayuda te guía por temas, hay un recordatorio opcional de la noche, letra de cuatro tamaños (del 85 al 130 %), casi todo tocable para ver de dónde sale cada cifra, tres gráficas nuevas en Resumen y seis temas, cada uno en claro y en oscuro y con su propia silueta (Obsidiana, Midnight, Tierra, Esmeralda, Bordeaux y Kinetix), todos hechos con la regla 60-30-10. También hay alcancías con fecha estimada, pagos fijos con aviso antes del cobro, efectivo con billetes y vuelto, y una revisión del mes con botones que llevan a donde se arregla cada hallazgo.
 
 ## ¿Qué puedes escribirle al chat?
 
@@ -82,7 +82,7 @@ Más ejemplos, con todos los casos: [docs/BOT.md](docs/BOT.md).
   <tr>
     <td align="center"><img src="docs/screenshots/ayuda.png" alt="Ayuda por temas" width="230" /><br /><b>Ayuda guiada</b><br /><sub>Temas y recorrido de 4 pasos</sub></td>
     <td align="center"><img src="docs/screenshots/selector-temas.png" alt="Selector de temas con la píldora 60-30-10" width="230" /><br /><b>Selector de temas</b><br /><sub>Cada tema muestra su 60-30-10</sub></td>
-    <td align="center"><img src="docs/screenshots/tema-obsidiana.png" alt="Tema Obsidiana AMOLED" width="230" /><br /><b>Obsidiana</b><br /><sub>Negro puro para AMOLED</sub></td>
+    <td align="center"><img src="docs/screenshots/tema-obsidiana.png" alt="Tema Obsidiana AMOLED" width="230" /><br /><b>Obsidiana</b><br /><sub>Negro AMOLED con doble tarjeta dorada, el tema de fábrica</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/hoja-resumen.png" alt="Ventana flotante con los movimientos de una fila del Resumen" width="230" /><br /><b>Ventanas flotantes</b><br /><sub>Toca una fila y mira qué hay detrás</sub></td>

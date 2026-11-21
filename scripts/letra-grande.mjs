@@ -3,6 +3,7 @@
 // grande de la app (1,18) se suma a la del sistema, que Chrome aplica solo al texto, no a las cajas.
 //   npm run e2e:letra            (compila la app de la mamá y revisa cada pantalla con varias escalas de texto)
 //   ESCALAS=1,1.3 npm run e2e:letra
+//   LETRAS=grande,extra TEMAS=obsidiana:oscuro npm run e2e:letra   (LETRAS: los niveles de data-letra; por defecto los cuatro)
 //   INSTALACION=personal npm run e2e:letra
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
@@ -17,11 +18,16 @@ const chrome = CANDIDATOS.find(p => existsSync(p));
 if (!chrome) { console.error('No encuentro Chrome. Pon su ruta en CHROME_PATH.'); process.exit(1); }
 
 const instalacion = process.env.INSTALACION ?? 'mama';
-const escalas = (process.env.ESCALAS ?? '1,1.15,1.3').split(',').map(Number);
+const escalas = (process.env.ESCALAS ?? '1,1.3').split(',').map(Number);
+// los cuatro niveles de la letra de la app (data-letra en <html>); LETRAS=grande,extra revisa solo esos
+const letras = (process.env.LETRAS ?? 'compacta,normal,grande,extra').split(',').map(x => x.trim()).filter(Boolean);
+const ANCHO = Number(process.env.ANCHO ?? 393);
 const capturas = process.env.CAPTURAS;
-// los temas que se revisan (piel:tema). Por defecto los seis, en claro y en oscuro; TEMAS=obsidiana:oscuro,tierra:claro revisa solo esos
+// los temas que se revisan (piel:tema). TEMAS=obsidiana:oscuro,tierra:claro revisa solo esos
 const TODOS = 'obsidiana:oscuro,obsidiana:claro,midnight:oscuro,midnight:claro,tierra:oscuro,tierra:claro,esmeralda:oscuro,esmeralda:claro,bordeaux:oscuro,bordeaux:claro,kinetix:oscuro,kinetix:claro';
-const temas = (process.env.TEMAS === 'todos' || !process.env.TEMAS ? TODOS : process.env.TEMAS).split(',').map(x => x.split(':'));
+// por defecto cuatro (cada combinación tarda un minuto): TEMAS=todos recorre los doce
+const RAPIDOS = 'obsidiana:oscuro,tierra:claro,kinetix:oscuro,bordeaux:claro';
+const temas = (process.env.TEMAS === 'todos' ? TODOS : process.env.TEMAS ?? RAPIDOS).split(',').map(x => x.split(':'));
 if (capturas) mkdirSync(capturas, { recursive: true });
 
 const prep = spawnSync('npm', ['run', 'instalar', '--', 'preparar', instalacion], { cwd: raiz, encoding: 'utf8', shell: true });
@@ -51,6 +57,7 @@ const EN_PAGINA = {
   revisar: () => {
     const ancho = innerWidth;
     const hallazgos = [];
+    const texto2 = el => (el.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 40);
     // el compositor del chat con el campo y los tres botones en la misma fila
     const aviso = document.querySelector('#toast-deshacer')?.getBoundingClientRect();
     const caja = document.querySelector('#form')?.getBoundingClientRect();
@@ -61,6 +68,33 @@ const EN_PAGINA = {
     if (document.documentElement.dataset.privado === '1') {
       const visible = document.body.innerText.match(/[-+]?(?:US)?\$\s?\d[\d.,]*|[-+]?\d+(?:[.,]\d+)?\s?%/);
       if (visible) hallazgos.push({ tipo: 'con la privacidad activa se ve una cifra', el: 'body', texto: visible[0], dato: '' });
+    }
+    // palabras partidas: una palabra sin espacios que ocupa dos líneas (INGRES / OS)
+    const partidas = new Set();
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) {
+      const pe = n.parentElement;
+      if (!pe || pe.closest('svg,script,style,textarea,input,[hidden],[aria-hidden="true"],.sr-only') || getComputedStyle(pe).display === 'none' || getComputedStyle(pe).visibility === 'hidden') continue;
+      const t = n.textContent;
+      for (const m of t.matchAll(/[\p{L}\p{N}]{4,}/gu)) {
+        const rg = document.createRange(); rg.setStart(n, m.index); rg.setEnd(n, m.index + m[0].length);
+        const rs = [...rg.getClientRects()].filter(r => r.width > 0);
+        if (rs.length > 1 && rs[0].bottom <= rs[rs.length - 1].top + 2 && !partidas.has(m[0])) { partidas.add(m[0]); hallazgos.push({ tipo: 'palabra partida', el: pe.tagName.toLowerCase() + (typeof pe.className === 'string' && pe.className ? '.' + pe.className.trim().split(/\s+/)[0] : ''), texto: m[0], dato: '' }); }
+      }
+    }
+    // las barras de gráfica deben tener al menos 60 % del ancho de su tarjeta
+    for (const f of document.querySelectorAll('.barra-fila')) {
+      const b = f.querySelector('.barra-fondo'); if (!b || !f.getBoundingClientRect().width) continue;
+      if (b.getBoundingClientRect().width < f.getBoundingClientRect().width * 0.6) hallazgos.push({ tipo: 'barra angosta', el: 'barra-fila', texto: texto2(f), dato: `${Math.round(b.getBoundingClientRect().width)} de ${Math.round(f.getBoundingClientRect().width)} px` });
+    }
+    // el botón flotante del ojo no debe tapar campos, botones ni cifras, ni pisar la barra de abajo
+    const ojo = document.querySelector('#ojo'); const ro = ojo?.getBoundingClientRect();
+    if (ro && ro.width && getComputedStyle(ojo).display !== 'none') {
+      const cruza = (a, c) => Math.min(a.right, c.right) - Math.max(a.left, c.left) > 3 && Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top) > 3;
+      const nav = document.querySelector('nav#nav')?.getBoundingClientRect();
+      if (nav && cruza(ro, nav)) hallazgos.push({ tipo: 'el ojo pisa la barra de abajo', el: '#ojo', texto: '', dato: '' });
+      const clave = [...document.querySelectorAll('#form, #toast-deshacer')].find(x => x !== ojo && !ojo.contains(x) && !x.closest('nav#nav') && getComputedStyle(x).visibility !== 'hidden' && x.getBoundingClientRect().width && cruza(ro, x.getBoundingClientRect()));
+      if (clave) hallazgos.push({ tipo: 'el ojo tapa contenido', el: '#ojo', texto: texto2(clave), dato: clave.tagName.toLowerCase() });
     }
     const nombre = el => `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}${typeof el.className === 'string' && el.className ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.') : ''}`;
     const texto = el => (el.innerText || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 50);
@@ -119,7 +153,7 @@ try {
   for (const escala of escalas) {
     const pag = await navegador.newPage();
     // el Redmi Note 14: la app instalada ocupa el alto de la pantalla menos la barra de estado y los botones de abajo
-    await pag.setViewport({ width: 393, height: 790, deviceScaleFactor: 2.75, isMobile: true, hasTouch: true });
+    await pag.setViewport({ width: ANCHO, height: 790, deviceScaleFactor: 2.75, isMobile: true, hasTouch: true });
     let nativos = 0;
     pag.on('dialog', d => { nativos++; void d.dismiss(); });
     const errores = [];
@@ -235,14 +269,14 @@ try {
       if (n === 'Ayuda' || pantallas.some(([p]) => n.includes(p) || p.includes(n))) continue;
       pantallas.push([n, async () => abrirDeMas(n)]);
     }
-    for (const [piel, tema] of temas) {
-    await pag.evaluate((p, t) => { document.documentElement.dataset.piel = p; document.documentElement.dataset.tema = t; window.dispatchEvent(new Event('apariencia')); }, piel, tema);
+    for (const letra of letras) for (const [piel, tema] of temas) {
+    await pag.evaluate((p, t, l) => { document.documentElement.dataset.piel = p; document.documentElement.dataset.tema = t; document.documentElement.dataset.letra = l; window.dispatchEvent(new Event('apariencia')); }, piel, tema, letra);
     await espera(300);
-    console.log(`\n=== ${instalacion}: texto x${escala}, tema ${piel} ${tema} (letra de la app: ${await pag.evaluate(() => document.documentElement.dataset.letra)}) ===`);
+    console.log(`\n=== ${instalacion}: texto x${escala}, letra ${letra}, tema ${piel} ${tema} ===`);
     for (const [nombre, ir] of pantallas) {
       try { await ir(); } catch (e) { console.log(`  ${nombre}: no pude abrirla (${e.message})`); continue; }
       await espera(400); const h = await pag.evaluate(EN_PAGINA.revisar);
-      if (capturas) await pag.screenshot({ path: join(capturas, `x${escala}-${piel}-${tema}-${nombre.replace(/[^a-z0-9]+/gi, '-')}.png`) });
+      if (capturas) await pag.screenshot({ path: join(capturas, `x${escala}-${letra}-${piel}-${tema}-${nombre.replace(/[^a-z0-9]+/gi, '-')}.png`) });
       await pag.evaluate(() => { document.querySelector('#at-cerrar')?.click(); document.querySelector('#ayuda-volver')?.click(); document.querySelector('#contador-cancelar')?.click(); document.querySelector('#corte-cerrar')?.click(); for (const id of ['dialogo', 'duplicar', 'editar']) document.querySelector('#' + id)?.remove(); });
       await espera(200);
       total += h.length;

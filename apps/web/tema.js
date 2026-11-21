@@ -9,6 +9,6 @@
   var p = e.piel || d.pielDefecto;
   var nuevo = { libro: 'midnight', oceano: 'midnight', zafiro: 'midnight', abyss: 'midnight', mocha: 'tierra', veltro: 'esmeralda', aether: 'kinetix', onyx: 'obsidiana', atardecer: 'bordeaux' };
   var vigentes = ['obsidiana', 'midnight', 'tierra', 'esmeralda', 'bordeaux', 'kinetix'];
-  d.piel = vigentes.indexOf(p) >= 0 ? p : (nuevo[p] || 'midnight'); // lo mismo que pielValida() de apariencia.ts
+  d.piel = vigentes.indexOf(p) >= 0 ? p : (nuevo[p] || 'obsidiana'); // lo mismo que pielValida() de apariencia.ts
   d.letra = e.letra || d.letraDefecto || 'normal';
 })();

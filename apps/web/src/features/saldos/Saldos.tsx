@@ -16,7 +16,10 @@ import { Arco, BarraApilada, Sparkline } from '../../components/charts/graficos.
 import { Insignia, visualDeCuenta } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
 import { PresupuestoSemana } from './PresupuestoSemana.tsx';
-import { abrirCuenta } from './aperturas.tsx';
+import { abrirAlerta, abrirCuenta, abrirDisponible, abrirPorCobrarPagar, abrirSalud, abrirSeguro } from './aperturas.tsx';
+import { abrirTotal } from '../resumen/aperturas.tsx';
+import { fechaAtras } from '../../lib/periodos.ts';
+import { tocable } from '../../lib/tocable.ts';
 import { contarEfectivo } from './ContadorEfectivo.tsx';
 import { LiquidezProxima } from './LiquidezProxima.tsx';
 import { avisar, confirmar, pedir } from '../../components/ui/Dialogo.tsx';
@@ -33,6 +36,8 @@ export function Saldos() {
 
   // lo que entró y salió en lo que va del mes
   const mes = rangoPeriodo('mes', ctx.ahora);
+  const previoMes = rangoPeriodo('mes', fechaAtras(ctx.ahora, 'mes', 1));
+  const periodosMes = { desde: mes.desde, hasta: mes.hasta, previoDesde: previoMes.desde, previoHasta: previoMes.hasta };
   const entro = totalIngresos(datos.movimientos, datos.cuentas, mes.desde, mes.hasta);
   const salio = gastoPorCategoria(datos.movimientos, datos.cuentas, mes.desde, mes.hasta).reduce((s, x) => s + x.total, 0);
 
@@ -87,17 +92,17 @@ export function Saldos() {
   return (
     <div class="space-y-3">
       {alertas.map((a, i) => (
-        <div key={i} class={`alerta ${a.nivel === 'urgente' ? 'urgente' : a.nivel === 'aviso' ? 'aviso' : ''}`}>
+        <div key={i} class={`alerta toque ${a.nivel === 'urgente' ? 'urgente' : a.nivel === 'aviso' ? 'aviso' : ''}`} data-alerta={i} {...tocable(() => abrirAlerta(a, quitarEmojis(a.texto)))}>
           {verTexto(quitarEmojis(a.texto))}
           {a.acciones?.length ? (
             <div class="botones">{a.acciones.map((x, j) => (
-              <button key={j} class="chip" data-aviso={`${i}.${j}`} onClick={() => { prellenarChat(x.texto, x.enviar); irA('chat'); }}>{x.titulo}</button>
+              <button key={j} class="chip" data-aviso={`${i}.${j}`} onClick={e => { e.stopPropagation(); prellenarChat(x.texto, x.enviar); irA('chat'); }}>{x.titulo}</button>
             ))}</div>
           ) : null}
         </div>
       ))}
 
-      <section class="tarjeta grande hero-saldo relative overflow-hidden !p-5 ring-1 ring-white/25">
+      <section class="tarjeta grande hero-saldo toque relative overflow-hidden !p-5 ring-1 ring-white/25" id="hero-disponible" {...tocable(() => abrirDisponible(r, seguro))}>
         <div class="pointer-events-none absolute inset-0 opacity-60" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.22) 1px, transparent 1.2px)', backgroundSize: '15px 15px', maskImage: 'linear-gradient(120deg, transparent 10%, #000 55%, transparent 95%)', WebkitMaskImage: 'linear-gradient(120deg, transparent 10%, #000 55%, transparent 95%)' }} />
         <div class="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
         <div class="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-white/20 blur-2xl" />
@@ -106,17 +111,17 @@ export function Saldos() {
           <div class="flex items-center justify-between"><div class="text-xs font-semibold uppercase tracking-[.09em] opacity-85">Disponible</div><Nfc size={22} class="opacity-80" /></div>
           <div data-ajusta class="mt-1 text-[2.6rem] font-extrabold leading-none tracking-tight"><MontoAnimado valor={r.disponibleCop} /></div>
           <div class="mt-2 text-[.8rem] opacity-85">{cuentasEnDisponible} · sin las monedas{r.cuentas.some(x => x.cuenta.moneda === 'USD') ? ' ni los dólares' : ''}</div>
-          <div class="-mx-1 mt-3"><Sparkline valores={evolucion} etiquetas={etiquetasEvolucion} /></div>
+          <div class="-mx-1 mt-3" onClick={e => e.stopPropagation()}><Sparkline valores={evolucion} etiquetas={etiquetasEvolucion} /></div>
           <div class="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
             <span class="opacity-90">{cambio === 0 ? 'Sin cambios' : `${cambio > 0 ? '+' : '-'}${formatear(Math.abs(cambio))}`} en {dias} días</span>
-            <span class="flex shrink-0 gap-1 whitespace-nowrap">{([14, 30] as const).map(n => <button key={n} class={`rounded-full px-2.5 py-1 font-semibold transition active:scale-95 ${dias === n ? 'bg-marca text-sobre' : 'bg-tx/10'}`} aria-pressed={dias === n} onClick={() => setDias(n)}>{n} d</button>)}</span>
+            <span class="flex shrink-0 gap-1 whitespace-nowrap">{([14, 30] as const).map(n => <button key={n} class={`rounded-full px-2.5 py-1 font-semibold transition active:scale-95 ${dias === n ? 'bg-marca text-sobre' : 'bg-tx/10'}`} aria-pressed={dias === n} onClick={e => { e.stopPropagation(); setDias(n); }}>{n} d</button>)}</span>
           </div>
           <div class="grid grid-cols-2 gap-2">
-            <div class="rounded-2xl bg-tx/[.07] px-3 py-2">
+            <div class="rounded-2xl bg-tx/[.07] px-3 py-2 toque" id="hero-entro" {...tocable(() => abrirTotal(datos, 'ingresos', periodosMes), true)}>
               <div class="flex items-center gap-1 text-[.7rem] font-semibold uppercase tracking-wider opacity-85"><ArrowDownLeft size={14} />Entró este mes</div>
               <div data-ajusta class="mt-0.5 text-lg font-bold"><MontoAnimado valor={entro} /></div>
             </div>
-            <div class="rounded-2xl bg-tx/[.07] px-3 py-2">
+            <div class="rounded-2xl bg-tx/[.07] px-3 py-2 toque" id="hero-salio" {...tocable(() => abrirTotal(datos, 'gastos', periodosMes), true)}>
               <div class="flex items-center gap-1 text-[.7rem] font-semibold uppercase tracking-wider opacity-85"><ArrowUpRight size={14} />Salió este mes</div>
               <div data-ajusta class="mt-0.5 text-lg font-bold"><MontoAnimado valor={salio} /></div>
             </div>
@@ -124,7 +129,7 @@ export function Saldos() {
         </div>
       </section>
 
-      <section class="tarjeta" aria-label="Seguro para gastar hoy">
+      <section class="tarjeta toque" id="seguro-hoy" {...tocable(() => abrirSeguro(seguro))}>
         <div class="flex items-center justify-between gap-2">
           <h3 class="!m-0 flex items-center gap-1.5"><ShieldCheck size={14} />Seguro para gastar hoy</h3>
           <span class="text-xs text-tx2">{seguro.dias} {seguro.dias === 1 ? 'día' : 'días'} de mes</span>
@@ -135,15 +140,15 @@ export function Saldos() {
             <span class="text-xs text-tx2">{seguro.enRojo ? 'Los compromisos ya cubren lo disponible' : `de ${formatear(seguro.porDia)} para hoy`}</span>
           </Arco>
         </div>
-        <dl class="mt-4 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1.5 text-sm">
+        <dl class="mt-4 grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 text-sm">
           <dt class="text-tx2">Disponible</dt><dd class="tabular-nums">{formatear(seguro.disponible)}</dd>
           <dt class="text-tx2">Pagos fijos que faltan</dt><dd class="tabular-nums text-adv">-{formatear(seguro.fijos)}</dd>
           <dt class="text-tx2">Apartado en alcancías</dt><dd class="tabular-nums text-info">-{formatear(seguro.apartado)}</dd>
           <dt class="border-t border-white/10 pt-1.5 font-semibold">Libre este mes</dt><dd class="border-t border-white/10 pt-1.5 font-bold tabular-nums">{formatear(seguro.libre)}</dd>
         </dl>
         <div class="botones">
-          <button class="chip" onClick={() => irA('pagosfijos')}><CalendarClock size={16} />Pagos fijos</button>
-          <button class="chip" onClick={() => irA('alcancias')}><PiggyBank size={16} />Alcancías</button>
+          <button class="chip" onClick={e => { e.stopPropagation(); irA('pagosfijos'); }}><CalendarClock size={16} />Pagos fijos</button>
+          <button class="chip" onClick={e => { e.stopPropagation(); irA('alcancias'); }}><PiggyBank size={16} />Alcancías</button>
         </div>
       </section>
 
@@ -175,11 +180,11 @@ export function Saldos() {
         })}
       </Escalonado>
 
-      <section class="tarjeta !p-0 overflow-hidden" aria-label="Lo que te deben y lo que debes">
+      <section class="tarjeta toque !p-0 overflow-hidden" id="salud-patrimonial" {...tocable(() => abrirSalud(r, liquidez))}>
         <div class="p-4 pb-1"><div class="etiqueta mb-0.5">Salud patrimonial</div><div class="sub !mt-0 mb-2.5">Liquidez inmediata, por cobrar y por pagar. Neto: <b class="text-tx">{verMonto(formatear(liquidez + Math.abs(r.teDeben.COP) - Math.abs(r.debes.COP)))}</b></div><BarraApilada tramos={[{ nombre: 'Liquidez inmediata', valor: liquidez, color: 'var(--pos)' }, { nombre: 'Por cobrar', valor: Math.abs(r.teDeben.COP), color: 'var(--info)' }, { nombre: 'Por pagar', valor: Math.abs(r.debes.COP), color: 'var(--neg)' }]} /></div>
         <div class="grid grid-cols-2 divide-x divide-white/10">
-          <div class="p-4"><div class="etiqueta flex items-center gap-1.5"><span class="grid h-6 w-6 place-items-center rounded-lg bg-pos/15 text-pos"><HandCoins size={14} /></span>Te deben</div><div class="monto bien mt-1.5">{deuda(r.teDeben)}</div></div>
-          <div class="p-4"><div class="etiqueta flex items-center gap-1.5"><span class="grid h-6 w-6 place-items-center rounded-lg bg-neg/15 text-neg"><Scale size={14} /></span>Debes</div><div class="monto mal mt-1.5">{deuda(r.debes)}</div></div>
+          <div class="p-4" id="salud-cobrar" {...tocable(() => abrirPorCobrarPagar(datos, 'cobrar'), true)}><div class="etiqueta flex items-center gap-1.5"><span class="grid h-6 w-6 place-items-center rounded-lg bg-pos/15 text-pos"><HandCoins size={14} /></span>Te deben</div><div class="monto bien mt-1.5">{deuda(r.teDeben)}</div></div>
+          <div class="p-4" id="salud-pagar" {...tocable(() => abrirPorCobrarPagar(datos, 'pagar'), true)}><div class="etiqueta flex items-center gap-1.5"><span class="grid h-6 w-6 place-items-center rounded-lg bg-neg/15 text-neg"><Scale size={14} /></span>Debes</div><div class="monto mal mt-1.5">{deuda(r.debes)}</div></div>
         </div>
       </section>
       {r.deOtros > 0 && (

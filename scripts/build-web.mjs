@@ -24,7 +24,7 @@ const dist = arg('out', join(web, 'dist'));
 const nombreApp = arg('nombre', 'Mis finanzas');
 const nombreCorto = arg('corto', 'Finanzas');
 const colorApp = arg('color', '#1f7a5a');
-const pielApp = arg('piel', 'midnight');
+const pielApp = arg('piel', 'obsidiana');
 const temaApp = arg('tema', 'oscuro');
 const letraApp = arg('letra', 'normal');
 const matizApp = arg('matiz', '');
@@ -62,7 +62,7 @@ writeFileSync(join(dist, 'index.html'), readFileSync(join(web, 'index.html'), 'u
   .replace('data-plantilla="personal"', `data-plantilla="${plantillaApp}"`)
   .replace('<title>Mis finanzas</title>', `<title>${nombreApp}</title>`)
   // lo de fábrica de esta instalación (la persona puede cambiarlo dentro de la app)
-  .replace('data-piel-defecto="midnight" data-tema-defecto="oscuro" data-letra-defecto="normal" data-piel="midnight" data-tema="oscuro" data-letra="normal"', `data-piel-defecto="${pielApp}" data-tema-defecto="${temaApp}" data-letra-defecto="${letraApp}" data-piel="${pielApp}" data-tema="${temaApp === 'auto' ? 'claro' : temaApp}" data-letra="${letraApp}"${matizApp ? ` data-matiz="${matizApp}"` : ''}`));
+  .replace('data-piel-defecto="obsidiana" data-tema-defecto="oscuro" data-letra-defecto="normal" data-piel="obsidiana" data-tema="oscuro" data-letra="normal"', `data-piel-defecto="${pielApp}" data-tema-defecto="${temaApp}" data-letra-defecto="${letraApp}" data-piel="${pielApp}" data-tema="${temaApp === 'auto' ? 'claro' : temaApp}" data-letra="${letraApp}"${matizApp ? ` data-matiz="${matizApp}"` : ''}`));
 writeFileSync(join(dist, 'manifest.webmanifest'), JSON.stringify({ ...JSON.parse(readFileSync(join(web, 'manifest.webmanifest'), 'utf8')), name: nombreApp, short_name: nombreCorto, theme_color: fondoApp, background_color: fondoApp }, null, 2));
 writeFileSync(join(dist, 'tema.js'), readFileSync(join(web, 'tema.js'), 'utf8'));
 writeFileSync(join(dist, 'sw.js'), readFileSync(join(web, 'sw.js'), 'utf8').replaceAll('__VERSION__', Date.now().toString(36)));

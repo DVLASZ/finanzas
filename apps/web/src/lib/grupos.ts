@@ -4,6 +4,7 @@
  * la suma de la lista coincide con la cifra que se tocó.
  */
 import { filtrarMovimientos, limpiar, TOPE_HORMIGA, type Datos, type Movimiento } from '../../../../packages/core/src/index.ts';
+import { conSubcategorias } from '../../../../packages/core/src/subcategorias.ts';
 
 type Fuente = Pick<Datos, 'movimientos' | 'cuentas' | 'config'>;
 
@@ -48,4 +49,15 @@ export function movimientosDeCuenta(datos: Fuente, cuentaId: string, n = 12): Mo
 /** Los movimientos de deuda o préstamo de una persona. */
 export function movimientosDePersona(datos: Fuente, personaId: string): Movimiento[] {
   return filtrarMovimientos(datos, { persona: personaId }).sort(masNuevosPrimero);
+}
+
+/** Los movimientos de ciertos tipos (ingresos, gastos) en el periodo, los más nuevos primero. */
+export function movimientosDeTipos(datos: Fuente, tipos: Movimiento['tipo'][], desde: string, hasta: string): Movimiento[] {
+  return filtrarMovimientos(datos, { tipos, desde, hasta }).sort(masNuevosPrimero);
+}
+
+/** Lo gastado en una categoría (con sus subcategorías) dentro de una lista de movimientos suyos. */
+export function gastoDeCategoria(datos: Fuente, categoriaId: string, movs: Movimiento[]): number {
+  const ids = new Set(conSubcategorias(datos.config, categoriaId));
+  return movs.reduce((s, m) => s + m.asientos.filter(a => a.moneda === 'COP' && ids.has(a.cuentaId)).reduce((x, a) => x + a.monto, 0), 0);
 }

@@ -126,7 +126,13 @@ Todo lo que se mueve anima solo `transform` y `opacity` (más colores en fundido
 
 ## Ventanas flotantes
 
+Cada pantalla tiene su `aperturas.tsx` (resumen, saldos, metas, recurrentes) con lo que se abre al tocar un bloque. `lib/tocable.ts` da el rol de botón y el teclado (Enter y Espacio); en un bloque dentro de otro se usa `tocable(f, true)`, que corta la propagación. Si ya hay una ventana abierta, `abrirInfo` solo cambia su contenido, para que un solo atrás la cierre. Las gráficas nuevas de Resumen viven en `components/charts/` (RitmoPresupuesto, Semanal, AhorroTopes) y sus números en `lib/graficasResumen.ts`.
+
 Lo que se abre al tocar un bloque informativo pasa por `components/ui/HojaInfo.tsx`: `abrirInfo({ id, titulo, sub, cuerpo, movimientos, acciones })`. Es una entrada más del historial (`infoAbierta` en `state/nav.ts`), así que atrás la cierra. Sus movimientos salen de `lib/grupos.ts`, que usa las mismas claves que el núcleo, y lo que cada pantalla abre vive en un `aperturas.tsx` de su carpeta. El detalle, la edición y el duplicado de un movimiento se montan en la raíz (`DetalleGlobal` en `App.tsx`), para abrirse desde cualquier pantalla. Las capas, de abajo hacia arriba: ventana informativa 54, detalle 56, editar y duplicar 60, selector 95, diálogos 90 a 120. Un selector abierto desde una hoja tiene que quedar siempre por encima de ella.
+
+## Tamaño de letra y desbordes
+
+`data-letra` en `<html>` tiene cuatro valores (compacta, normal, grande, extra) y mueve `--escala` (0,85, 1, 1,15 y 1,3) en `temas.css`. Una regla pensada para letra grande se escribe para grande y extra a la vez. Nada se parte: las etiquetas usan `keep-all` y un tamaño con `clamp`, y las barras llevan el nombre y el monto en una fila y la barra debajo, a todo el ancho. `npm run e2e:letra` recorre los cuatro niveles (`LETRAS`), el ancho (`ANCHO=360`), la escala del sistema (`ESCALAS`) y los temas (`TEMAS=todos`), y marca palabras partidas, barras de menos del 60 % de su fila y el ojo pisando la barra de abajo.
 
 ## Temas
 
