@@ -16,6 +16,7 @@ import { avisar } from '../../components/ui/Dialogo.tsx';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { fechaAtras } from '../../lib/periodos.ts';
 import { TarjetaHormiga } from './Hormiga.tsx';
+import { abrirCategoria, abrirComparativa, abrirConcepto, abrirMedio, type Periodos } from './aperturas.tsx';
 import { ComparativaMes } from './ComparativaMes.tsx';
 import { Ritmo } from '../../components/charts/graficos.tsx';
 import { BarraAvance, Insignia, Vacio, visualDeNombre } from '../../components/ui/iconos.tsx';
@@ -25,7 +26,6 @@ import { PresupuestoSemana } from '../saldos/PresupuestoSemana.tsx';
 import { BotonesCorte, HojaCorte } from './CorteTurno.tsx';
 import { vendeProductos, aLocal as aLocalHoy, gastoDelMes, ingresosGastosPorMes, flujoAcumulado, gastoPorMedio, topConceptos } from '../../../../../packages/core/src/index.ts';
 import { AnilloMedios, FlujoMes, RankingConceptos } from '../../components/charts/Flujo.tsx';
-import { BotonOjo } from '../../components/ui/BotonOjo.tsx';
 
 type Periodo = 'semana' | 'mes' | 'anio';
 const periodo = signal<Periodo>('mes');
@@ -84,13 +84,13 @@ function Dona({ trozos, total }: { trozos: Trozo[]; total: number }) {
 }
 
 /** Dos barras, la de ahora y la del periodo anterior, con la diferencia al lado. */
-function Comparativa({ nombre, ahora, antes, bueno }: { nombre: string; ahora: number; antes: number; bueno: 'sube' | 'baja' }) {
+function Comparativa({ nombre, ahora, antes, bueno, alTocar, id }: { nombre: string; ahora: number; antes: number; bueno: 'sube' | 'baja'; alTocar?: () => void; id?: string }) {
   const max = Math.max(1, ahora, antes);
   const dif = antes ? Math.round(((ahora - antes) / antes) * 100) : null;
   const mejor = dif === null || dif === 0 ? null : (dif > 0) === (bueno === 'sube');
   const Flecha = dif === null || dif === 0 ? Minus : dif > 0 ? ArrowUpRight : ArrowDownRight;
   return (
-    <div class="tarjeta !p-3.5">
+    <div class="tarjeta toque !p-3.5" id={id} role="button" tabIndex={0} onClick={alTocar} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alTocar?.(); } }}>
       <div class="mb-2 flex items-center justify-between">
         <span class="etiqueta">{nombre}</span>
         <span class={`inline-flex items-center gap-0.5 text-xs font-semibold ${mejor === null ? 'text-tx2' : mejor ? 'text-pos' : 'text-neg'}`}>
@@ -161,6 +161,7 @@ export function Resumen() {
   const llevo = verRitmo ? ritmoAhora[Math.min(diaHoy, ritmoAhora.length) - 1] ?? 0 : 0;
   const pctRitmo = esperado > 0 ? Math.round((Math.abs(llevo - esperado) / esperado) * 100) : null;
 
+  const per: Periodos = { desde, hasta, previoDesde: previo.desde, previoHasta: previo.hasta };
   const cambiar = (nuevo: Periodo) => { periodo.value = nuevo; atras.value = 0; };
 
   const nombreArchivo = (ext: string) => `resumen-${desde.slice(0, 7)}.${ext}`;
@@ -210,9 +211,9 @@ export function Resumen() {
   const mesCalor = p === 'mes' ? desde.slice(0, 7) : aLocalHoy(ctx.ahora).slice(0, 7);
   return (
     <div class="space-y-3">
-      <div class="flex items-center gap-2"><div class="pestanas min-w-0 flex-1" role="tablist">
+      <div class="pestanas" role="tablist">
         {(['semana', 'mes', 'anio'] as const).map(x => <button key={x} class={`pestana ${x === p ? 'activa' : ''}`} data-p={x} onClick={() => cambiar(x)}>{x === 'anio' ? 'Año' : x[0].toUpperCase() + x.slice(1)}</button>)}
-      </div><BotonOjo /></div>
+      </div>
       <div class="periodo">
         <button class="chip" aria-label="Ver el periodo anterior" onClick={() => { atras.value = a + 1; }}><ChevronLeft size={16} />Anterior</button>
         <h2 class="!m-0">{titulo(p, desde)}</h2>
@@ -267,8 +268,8 @@ export function Resumen() {
         const top = topConceptos(datos, desde, hasta, 5);
         const medios = gastoPorMedio(datos, desde, hasta);
         return <>
-          {top.length > 0 && <section class="tarjeta" id="ranking-conceptos"><h3 class="!mt-0">Dónde más se va la plata</h3><RankingConceptos top={top} /></section>}
-          {medios.length > 0 && <section class="tarjeta" id="medios-pago"><h3 class="!mt-0">Con qué pagas</h3><AnilloMedios medios={medios} /></section>}
+          {top.length > 0 && <section class="tarjeta" id="ranking-conceptos"><h3 class="!mt-0">Dónde más se va la plata</h3><RankingConceptos top={top} alTocar={x => abrirConcepto(datos, x, per)} /></section>}
+          {medios.length > 0 && <section class="tarjeta" id="medios-pago"><h3 class="!mt-0">Con qué pagas</h3><AnilloMedios medios={medios} alTocar={(titulo, nombres) => abrirMedio(datos, titulo, nombres, per)} /></section>}
         </>;
       })()}
 
@@ -294,11 +295,11 @@ export function Resumen() {
         </section>
       )}
 
-      <TarjetaHormiga movs={datos.movimientos} cuentas={datos.cuentas} desde={desde} hasta={hasta} dias={Math.max(1, Math.round((Date.parse(hasta.replace(' ', 'T') + 'Z') - Date.parse(desde.replace(' ', 'T') + 'Z')) / 86400000))} />
+      <TarjetaHormiga movs={datos.movimientos} cuentas={datos.cuentas} desde={desde} hasta={hasta} dias={Math.max(1, Math.round((Date.parse(hasta.replace(' ', 'T') + 'Z') - Date.parse(desde.replace(' ', 'T') + 'Z')) / 86400000))} alTocar={x => abrirConcepto(datos, x, per, true)} />
 
       <div class="grid gap-3 sm:grid-cols-2">
-        <Comparativa nombre="Gastos contra el periodo anterior" ahora={total} antes={totalPrevio} bueno="baja" />
-        {(ingresos > 0 || ingresosPrevio > 0) && <Comparativa nombre="Ingresos contra el periodo anterior" ahora={ingresos} antes={ingresosPrevio} bueno="sube" />}
+        <Comparativa id="comp-gastos" nombre="Gastos contra el periodo anterior" ahora={total} antes={totalPrevio} bueno="baja" alTocar={() => abrirComparativa(datos, 'gastos', per)} />
+        {(ingresos > 0 || ingresosPrevio > 0) && <Comparativa id="comp-ingresos" nombre="Ingresos contra el periodo anterior" ahora={ingresos} antes={ingresosPrevio} bueno="sube" alTocar={() => abrirComparativa(datos, 'ingresos', per)} />}
       </div>
 
       <section class="tarjeta">
@@ -306,13 +307,13 @@ export function Resumen() {
         <div class="barras">
           {grupos.length === 0 && <Vacio Icono={Receipt} titulo="Sin gastos en este periodo" detalle="Cuando anotes gastos, aquí ves en qué se fueron." tono="esmeralda" />}
           {grupos.map(c => [
-            <div key={c.cuenta.id} class="barra-fila">
+            <div key={c.cuenta.id} class="barra-fila toque" role="button" tabIndex={0} data-categoria={c.cuenta.id} onClick={() => abrirCategoria(datos, c.cuenta.id, c.cuenta.nombre, per)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirCategoria(datos, c.cuenta.id, c.cuenta.nombre, per); } }}>
               <span class="barra-nombre flex items-center gap-2"><Insignia v={visualDeNombre(c.cuenta.nombre)} tam={26} /><span class="truncate">{c.cuenta.nombre}</span></span>
               <div class="barra-fondo"><div class="barra-relleno" style={{ width: `${Math.max(2, (c.total / maximo) * 100)}%` }} /></div>
               <span class="barra-valor tabular-nums">{formatear(c.total)}</span>
             </div>,
             ...c.hijos.map(h => (
-              <div key={h.cuenta.id} class="barra-fila sub-fila" style={{ marginLeft: `${(h.nivel - 1) * 1.2}rem` }}>
+              <div key={h.cuenta.id} class="barra-fila sub-fila toque" role="button" tabIndex={0} data-categoria={h.cuenta.id} style={{ marginLeft: `${(h.nivel - 1) * 1.2}rem` }} onClick={() => abrirCategoria(datos, h.cuenta.id, h.cuenta.nombre, per)}>
                 <span class="barra-nombre">· {h.cuenta.nombre}</span>
                 <div class="barra-fondo"><div class="barra-relleno" style={{ width: `${Math.max(2, (h.total / maximo) * 100)}%` }} /></div>
                 <span class="barra-valor tabular-nums">{formatear(h.total)}</span>

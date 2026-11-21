@@ -78,7 +78,7 @@ export function HojaSelector() {
     const alto = Math.min(340, h.opciones.length * 52 + 16);
     const arriba = r.bottom + alto + 12 > innerHeight && r.top > alto;
     return createPortal(
-      <div class="fixed inset-0 z-50" onClick={e => { if (e.target === e.currentTarget) atras(); }}>
+      <div id="selector-capa" class="fixed inset-0 z-[95]" onClick={e => { if (e.target === e.currentTarget) atras(); }}>
         <div ref={caja} class="fixed overflow-y-auto rounded-2xl border border-white/10 bg-sup shadow-[0_20px_60px_-15px_rgba(0,0,0,.6)]"
           style={{ left: `${Math.min(r.left, innerWidth - Math.max(r.width, 260) - 8)}px`, top: arriba ? undefined : `${r.bottom + 6}px`, bottom: arriba ? `${innerHeight - r.top + 6}px` : undefined, width: `${Math.max(r.width, 260)}px`, maxHeight: '340px' }}>
           {lista}
@@ -89,7 +89,7 @@ export function HojaSelector() {
   }
 
   return createPortal(
-    <div class="fixed inset-0 z-50 flex items-end bg-black/55 backdrop-blur-[2px]" onClick={e => { if (e.target === e.currentTarget) atras(); }}>
+    <div id="selector-capa" class="fixed inset-0 z-[95] flex items-end bg-black/55 backdrop-blur-[2px]" onClick={e => { if (e.target === e.currentTarget) atras(); }}>
       <div ref={caja} class="flex max-h-[75%] w-full flex-col rounded-t-[1.6rem] border-t border-white/10 bg-sup pb-[calc(env(safe-area-inset-bottom)+.75rem)] shadow-[0_-20px_60px_-20px_rgba(0,0,0,.6)]">
         <div class="mx-auto mb-1 mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-bor" />
         <div class="shrink-0 px-5 pb-1 pt-1 text-xs font-semibold uppercase tracking-[.09em] text-tx2">{h.titulo}</div>

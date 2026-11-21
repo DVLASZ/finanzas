@@ -32,6 +32,29 @@ export function momentanea(clase: string, ms = 450): void {
   window.setTimeout(() => h.classList.remove(clase), ms);
 }
 
+/** Una onda que sale de un botón y cruza toda la pantalla, para marcar un cambio general (el modo privado). */
+export function ondaDesde(origen: Element): void {
+  if (menosMovimiento()) return;
+  const r = origen.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const radio = Math.hypot(Math.max(cx, innerWidth - cx), Math.max(cy, innerHeight - cy));
+  const onda = document.createElement('div');
+  onda.className = 'onda-privacidad';
+  Object.assign(onda.style, { left: `${cx - radio}px`, top: `${cy - radio}px`, width: `${radio * 2}px`, height: `${radio * 2}px` });
+  document.body.appendChild(onda);
+  animate(onda, { transform: ['scale(.03)', 'scale(1)'], opacity: [0.55, 0] }, { duration: 0.7, ease: [0.22, 1, 0.36, 1] });
+  window.setTimeout(() => onda.remove(), 800);
+}
+
+/** Las tarjetas y filas que se ven en pantalla pasan de borrosas a nítidas una tras otra, como cuando se revelan las cifras. */
+export function desenfocarCifras(): void {
+  if (menosMovimiento()) return;
+  const piezas = [...document.querySelectorAll<HTMLElement>('#contenido .tarjeta, #contenido .fila, #contenido .alerta')]
+    .filter(e => { const r = e.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && !e.parentElement?.closest('.tarjeta'); })
+    .slice(0, 24);
+  piezas.forEach((e, i) => animate(e, { filter: ['blur(8px)', 'blur(0px)'], opacity: [0.4, 1] }, { duration: 0.5, delay: i * 0.035, ease: [0.22, 1, 0.36, 1] }));
+}
+
 /** Un cuadro de ayuda que sube desde abajo (el detalle de un movimiento). */
 export function subirDesdeAbajo(el: Element): void {
   if (menosMovimiento()) return;

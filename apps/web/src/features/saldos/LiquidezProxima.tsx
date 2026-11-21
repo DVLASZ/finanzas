@@ -2,6 +2,7 @@
 import { CalendarClock } from 'lucide-preact';
 import { proyeccionLiquidez } from '../../../../../packages/core/src/index.ts';
 import { formatear } from '../../lib/formatear.ts';
+import { abrirProximos } from './aperturas.tsx';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 
 export function LiquidezProxima() {
@@ -11,7 +12,7 @@ export function LiquidezProxima() {
   const cuentas = proyeccionLiquidez(datos, ctx.ahora, 30);
   if (!cuentas.length) return null;
   return (
-    <section class="tarjeta" id="liquidez-30" aria-label="Próximos 30 días">
+    <section class="tarjeta toque" id="liquidez-30" aria-label="Próximos 30 días" role="button" tabIndex={0} onClick={() => abrirProximos(cuentas)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirProximos(cuentas); } }}>
       <h3 class="!mt-0 flex items-center gap-1.5"><CalendarClock size={14} />Próximos 30 días</h3>
       <ul class="m-0 list-none space-y-2.5 p-0">
         {cuentas.map(c => (
