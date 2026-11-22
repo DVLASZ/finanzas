@@ -29,7 +29,7 @@ test('fechas que no existen se rechazan en vez de saltar al otro mes', async () 
     assert.match(await di(f), /esa fecha no existe/i, f);
   }
   assert.match(await di('mecato 5000 el 28/02'), /Entendí/);
-  assert.match(await di('mecato 5000 el 29/02/2028'), /Entendí/, 'el 2028 es bisiesto');
+  assert.match(await di('mecato 5000 el 29/02/2024'), /Entendí/, 'el 2024 es bisiesto');
   assert.match(await di('mecato 5000 el 29/02/2027'), /esa fecha no existe/i);
 });
 

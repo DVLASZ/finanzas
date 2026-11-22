@@ -7,6 +7,7 @@ import {
   aLocal, describirDia, filtrarMovimientos, gastoPorCategoria, leerMetas, rangoPeriodo, estadoPresupuesto, totalIngresos,
   type Datos, type Meta, type Movimiento,
 } from '../../../../packages/core/src/index.ts';
+import { descendientes, leerSubcategorias } from '../../../../packages/core/src/subcategorias.ts';
 import { gastoDeCategoria } from './grupos.ts';
 import { fechaAtras } from './periodos.ts';
 
@@ -66,14 +67,17 @@ export function ritmoDelMes(datos: Fuente, ahora: Date): Ritmo {
     return sp;
   });
 
-  const topes = Object.values(datos.presupuestos).filter(v => v > 0);
-  const presupuesto = topes.length ? topes.reduce((s, v) => s + v, 0) : null;
+  // si una categoría y una de sus subcategorías tienen tope, el de la hija ya está dentro del de la madre: no se suma dos veces
+  const mapa = leerSubcategorias(datos.config);
+  const conPresupuesto = Object.entries(datos.presupuestos).filter(([, v]) => v > 0);
+  const raices = conPresupuesto.filter(([id]) => !conPresupuesto.some(([otro]) => otro !== id && descendientes(mapa, otro).includes(id)));
+  const presupuesto = raices.length ? raices.reduce((s, [, v]) => s + v, 0) : null;
   const referencia = presupuesto ?? anterior[anterior.length - 1] ?? 0;
   // con topes se compara solo el gasto de las categorías que tienen tope, no el de todo el mes
   let proyComparada = proyeccion;
   if (presupuesto !== null && llevo > 0) {
-    const delMes = filtrarMovimientos(datos, { desde: `${desde.slice(0, 8)}01`, hasta: diaSiguiente(`${anio}-${p2(mes)}-${p2(hoy)}`), tipos: ['gasto', 'compartido'] });
-    const conTope = Object.entries(datos.presupuestos).filter(([, v]) => v > 0).reduce((s, [id]) => s + gastoDeCategoria(datos, id, delMes), 0);
+    const delMes = filtrarMovimientos(datos, { desde: `${desde.slice(0, 8)}01`, hasta: diaSiguiente(`${anio}-${p2(mes)}-${p2(hoy)}`), tipos: ['gasto', 'compartido', 'deuda'] });
+    const conTope = raices.reduce((s, [id]) => s + gastoDeCategoria(datos, id, delMes), 0);
     proyComparada = Math.round(proyeccion * Math.min(1, conTope / llevo));
   }
   const zona = referencia <= 0 ? 'segura' : proyComparada > referencia ? 'alerta' : proyComparada > referencia * 0.85 ? 'cerca' : 'segura';
@@ -82,7 +86,7 @@ export function ritmoDelMes(datos: Fuente, ahora: Date): Ritmo {
 
 /** Los gastos de un día, de lo más nuevo a lo más viejo. */
 export function movimientosDelDia(datos: Fuente, fecha: string): Movimiento[] {
-  return filtrarMovimientos(datos, { desde: fecha, hasta: diaSiguiente(fecha), tipos: ['gasto', 'compartido'] }).sort(masNuevosPrimero);
+  return filtrarMovimientos(datos, { desde: fecha, hasta: diaSiguiente(fecha), tipos: ['gasto', 'compartido', 'deuda'] }).sort(masNuevosPrimero);
 }
 
 export interface SemanaIG { desde: string; hasta: string; ingresos: number; gastos: number; etiqueta: string; actual: boolean }
@@ -117,7 +121,7 @@ export function avanceMetas(datos: Fuente): AvanceMeta[] {
 export function avanceTopes(datos: Fuente, ahora: Date): AvanceTope[] {
   const { desde, hasta } = rangoPeriodo('mes', ahora);
   return Object.keys(datos.presupuestos).map(id => {
-    const e = estadoPresupuesto(datos.movimientos, datos.cuentas, datos.presupuestos, id, desde, hasta, datos.config.tope_arrastra === '1');
+    const e = estadoPresupuesto(datos.movimientos, datos.cuentas, datos.presupuestos, id, desde, hasta, datos.config.tope_arrastra === '1', datos.config);
     return e ? { id, nombre: datos.cuentas.find(c => c.id === id)?.nombre ?? id, gastado: e.gastado, tope: e.tope, pct: e.porcentaje } : null;
   }).filter((x): x is AvanceTope => Boolean(x)).sort((a, b) => b.pct - a.pct);
 }

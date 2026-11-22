@@ -5,7 +5,7 @@
 import { useState } from 'preact/hooks';
 import { ArrowDownLeft, ArrowUpRight, CalendarClock, HandCoins, Nfc, PiggyBank, Scale, ShieldCheck } from 'lucide-preact';
 import {
-  aLocal, calcularAlertas, describirDia, gastoPorCategoria, rangoPeriodo, resumenSaldos, seguroParaGastar, totalIngresos,
+  aLocal, calcularAlertas, describirDia, gastoPorCategoria, patrimonio, rangoPeriodo, resumenSaldos, seguroParaGastar, totalIngresos,
 } from '../../../../../packages/core/src/index.ts';
 import { formatear } from '../../lib/formatear.ts';
 import { formatear as formatearReal } from '../../../../../packages/core/src/index.ts';
@@ -42,17 +42,19 @@ export function Saldos() {
   const salio = gastoPorCategoria(datos.movimientos, datos.cuentas, mes.desde, mes.hasta).reduce((s, x) => s + x.total, 0);
 
   // el saldo disponible al cierre de cada uno de los últimos días
-  const evolucion = Array.from({ length: dias }, (_, k) => {
-    const d = new Date(ctx.ahora.getTime() - (dias - 1 - k) * 86400000);
-    const fin = `${aLocal(d).slice(0, 10)} 23:59:59`;
+  const alCierre = (atras: number) => {
+    const fin = `${aLocal(new Date(ctx.ahora.getTime() - atras * 86400000)).slice(0, 10)} 23:59:59`;
     return resumenSaldos(datos.movimientos.filter(m => m.ocurridoEn <= fin), datos.cuentas, apertura).disponibleCop;
-  });
+  };
+  const evolucion = Array.from({ length: dias }, (_, k) => alCierre(dias - 1 - k));
+  // «en N días» se mide contra el cierre de hace N días, no contra el primer punto de la gráfica (que es de hace N-1)
+  const cambioDias = evolucion[evolucion.length - 1] - alCierre(dias);
   const etiquetasEvolucion = Array.from({ length: dias }, (_, k) => describirDia(aLocal(new Date(ctx.ahora.getTime() - (dias - 1 - k) * 86400000)).slice(0, 10)));
-  const cambio = evolucion[evolucion.length - 1] - evolucion[0];
+  const cambio = cambioDias;
   const seguro = seguroParaGastar(datos, ctx.ahora);
-  const restaHoy = Math.max(0, seguro.porDia - seguro.gastadoHoy);
+  const restaHoy = seguro.quedaHoy;
   const pctHoy = seguro.porDia > 0 ? (restaHoy / seguro.porDia) * 100 : 0;
-  const liquidez = Math.max(0, r.disponibleCop);
+  const pat = patrimonio(r);
   /** Cuadre rápido: cuentas cuánto efectivo tienes y la app compara con lo anotado. Si falta, ofrece anotar el gasto que no se anotó. */
   const cuadrarEfectivo = async () => {
     // un mini-contador de billetes; si prefieres, escribes el total a mano
@@ -142,6 +144,7 @@ export function Saldos() {
         </div>
         <dl class="mt-4 grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 text-sm">
           <dt class="text-tx2">Disponible</dt><dd class="tabular-nums">{formatear(seguro.disponible)}</dd>
+          {seguro.deOtros > 0 && <><dt class="text-tx2">Plata de otros</dt><dd class="tabular-nums text-adv">-{formatear(seguro.deOtros)}</dd></>}
           <dt class="text-tx2">Pagos fijos que faltan</dt><dd class="tabular-nums text-adv">-{formatear(seguro.fijos)}</dd>
           <dt class="text-tx2">Apartado en alcancías</dt><dd class="tabular-nums text-info">-{formatear(seguro.apartado)}</dd>
           <dt class="border-t border-white/10 pt-1.5 font-semibold">Libre este mes</dt><dd class="border-t border-white/10 pt-1.5 font-bold tabular-nums">{formatear(seguro.libre)}</dd>
@@ -180,8 +183,8 @@ export function Saldos() {
         })}
       </Escalonado>
 
-      <section class="tarjeta toque !p-0 overflow-hidden" id="salud-patrimonial" {...tocable(() => abrirSalud(r, liquidez))}>
-        <div class="p-4 pb-1"><div class="etiqueta mb-0.5">Salud patrimonial</div><div class="sub !mt-0 mb-2.5">Liquidez inmediata, por cobrar y por pagar. Neto: <b class="text-tx">{verMonto(formatear(liquidez + Math.abs(r.teDeben.COP) - Math.abs(r.debes.COP)))}</b></div><BarraApilada tramos={[{ nombre: 'Liquidez inmediata', valor: liquidez, color: 'var(--pos)' }, { nombre: 'Por cobrar', valor: Math.abs(r.teDeben.COP), color: 'var(--info)' }, { nombre: 'Por pagar', valor: Math.abs(r.debes.COP), color: 'var(--neg)' }]} /></div>
+      <section class="tarjeta toque !p-0 overflow-hidden" id="salud-patrimonial" {...tocable(() => abrirSalud(r, pat))}>
+        <div class="p-4 pb-1"><div class="etiqueta mb-0.5">Salud patrimonial</div><div class="sub !mt-0 mb-2.5">Neto = todo lo que tienes menos lo que debes: <b class="text-tx">{verMonto(formatear(pat.neto))}</b></div><BarraApilada tramos={[{ nombre: 'Liquidez inmediata', valor: Math.max(0, pat.liquidez), color: 'var(--pos)' }, { nombre: 'Monedas y alcancía', valor: Math.max(0, pat.aparte), color: 'var(--acc)' }, { nombre: 'Por cobrar', valor: pat.cobrar, color: 'var(--info)' }, { nombre: 'Por pagar', valor: pat.pagar, color: 'var(--neg)' }]} /></div>
         <div class="grid grid-cols-2 divide-x divide-white/10">
           <div class="p-4" id="salud-cobrar" {...tocable(() => abrirPorCobrarPagar(datos, 'cobrar'), true)}><div class="etiqueta flex items-center gap-1.5"><span class="grid h-6 w-6 place-items-center rounded-lg bg-pos/15 text-pos"><HandCoins size={14} /></span>Te deben</div><div class="monto bien mt-1.5">{deuda(r.teDeben)}</div></div>
           <div class="p-4" id="salud-pagar" {...tocable(() => abrirPorCobrarPagar(datos, 'pagar'), true)}><div class="etiqueta flex items-center gap-1.5"><span class="grid h-6 w-6 place-items-center rounded-lg bg-neg/15 text-neg"><Scale size={14} /></span>Debes</div><div class="monto mal mt-1.5">{deuda(r.debes)}</div></div>

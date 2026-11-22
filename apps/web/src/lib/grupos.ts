@@ -22,7 +22,7 @@ export function movimientosDeConcepto(datos: Fuente, concepto: string, desde: st
   const clave = claveDe(concepto);
   return datos.movimientos
     .filter(m => {
-      if (m.estado !== 'ok' || m.tipo !== 'gasto' || m.ocurridoEn < desde || m.ocurridoEn >= hasta || claveDe(m.descripcion) !== clave) return false;
+      if (m.estado !== 'ok' || (m.tipo !== 'gasto' && m.tipo !== 'compartido') || m.ocurridoEn < desde || m.ocurridoEn >= hasta || claveDe(m.descripcion) !== clave) return false;
       const g = gastoDe(m, cats);
       return g > 0 && (!soloChicos || g <= TOPE_HORMIGA);
     })
@@ -31,7 +31,7 @@ export function movimientosDeConcepto(datos: Fuente, concepto: string, desde: st
 
 /** Los gastos de una categoría (con sus subcategorías) en el periodo. */
 export function movimientosDeCategoria(datos: Fuente, categoriaId: string, desde: string, hasta: string): Movimiento[] {
-  return filtrarMovimientos(datos, { categoria: categoriaId, tipos: ['gasto', 'compartido'], desde, hasta }).sort(masNuevosPrimero);
+  return filtrarMovimientos(datos, { categoria: categoriaId, tipos: ['gasto', 'compartido', 'deuda'], desde, hasta }).sort(masNuevosPrimero);
 }
 
 /** Los gastos que salieron de una cuenta de dinero en el periodo (el medio de pago). */

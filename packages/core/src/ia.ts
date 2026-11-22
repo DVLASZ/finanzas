@@ -6,7 +6,12 @@
  * de confirmación como cualquier mensaje, así que lo que la IA se equivoque se ve antes de guardar.
  */
 import { ejemploDeCuenta, ejemploDeSaldos, vendeProductos } from './entidades.ts';
+import { hallarMontos } from './dinero.ts';
+import { naturalizar } from './lenguaje.ts';
+import { interpretar } from './parser.ts';
+import { limpiar, normalizar } from './texto.ts';
 import type { Datos } from './repo.ts';
+import type { Contexto } from './tipos.ts';
 
 /** Cuántas frases como máximo puede devolver la IA por mensaje. */
 export const MAX_FRASES_IA = 5;
@@ -50,22 +55,95 @@ export function instruccionesIA(datos: Pick<Datos, 'cuentas' | 'config'>): strin
   return l.join('\n');
 }
 
+/** Largo máximo de una frase de la IA. */
+export const MAX_LARGO_FRASE_IA = 160;
+
+/** Texto plano: sin etiquetas, sin caracteres de control ni de formato, un solo renglón. */
+function textoPlano(x: string): string {
+  return x
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028\u2029\ufeff]/g, ' ')
+    .replace(/[<>{}[\]\\`]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /**
- * Lo que devolvió el modelo, ya limpio: una lista de frases cortas, sin saltos de línea.
- * Acepta el objeto o el texto JSON; cualquier otra cosa da una lista vacía.
+ * Lo que devolvió el modelo, ya limpio, o null si no tiene la forma pedida ({"frases": [...]}).
+ * Acepta el objeto o el texto JSON.
  */
-export function frasesDeRespuesta(bruta: unknown): string[] {
+export function leerFrasesIA(bruta: unknown): string[] | null {
   let obj: unknown = bruta;
   if (typeof obj === 'string') {
-    try { obj = JSON.parse(obj); } catch { return []; }
+    try { obj = JSON.parse(obj); } catch { return null; }
   }
   const lista = (obj as { frases?: unknown } | null)?.frases;
-  if (!Array.isArray(lista)) return [];
+  if (!Array.isArray(lista)) return null;
   return lista
     .filter((x): x is string => typeof x === 'string')
-    .map(x => x.replace(/\s+/g, ' ').trim())
-    .filter(x => x.length > 0 && x.length <= 160)
+    .map(textoPlano)
+    .filter(x => x.length > 0 && x.length <= MAX_LARGO_FRASE_IA)
     .slice(0, MAX_FRASES_IA);
+}
+
+/** Como leerFrasesIA, pero lo que no sirve da una lista vacía. */
+export function frasesDeRespuesta(bruta: unknown): string[] {
+  return leerFrasesIA(bruta) ?? [];
+}
+
+const PALABRAS_INGRESO = /\b(me pagaron|me pago|me consignaron|me giraron|me llego|me llegaron|me depositaron|me transfirieron|me abonaron|me soltaron|ingreso|ingrese|recibi|cobre|gane|salario|sueldo|nomina|vendi)\b/;
+const PALABRAS_GASTO = /\b(compre|gaste|pague|pagamos|me costo|me cobraron|almuerzo|cena|desayuno|taxi|mecato|mercado|gasto)\b/;
+
+/** Montos que se pueden armar con los que dijo la persona: ellos mismos, sumas, restas y partes iguales. */
+function montosPermitidos(original: string, ctx: Contexto): Set<number> {
+  const base = new Set<number>();
+  const natural = naturalizar(original, ctx)?.texto;
+  for (const t of [original, natural ?? '']) for (const m of hallarMontos(limpiar(t))) if (m.valor > 0) base.add(m.valor);
+  const v = [...base];
+  const ok = new Set<number>(v);
+  for (let i = 0; i < v.length; i++) {
+    for (let j = 0; j < v.length; j++) {
+      if (i === j) continue;
+      if (v[i] > v[j]) ok.add(v[i] - v[j]);
+      if (j > i) ok.add(v[i] + v[j]);
+    }
+    for (let n = 2; n <= 10; n++) if (v[i] % n === 0) ok.add(v[i] / n);
+  }
+  return ok;
+}
+
+/**
+ * Deja pasar solo las frases de la IA que son un MOVIMIENTO y que cuadran con lo que escribió la persona.
+ * Se descarta, una por una (las demás siguen), toda frase que:
+ *  - sea un comando («deshacer 3», «cerrar mes septiembre», «quitar meta moto»...) o no se entienda,
+ *  - traiga un monto que no sale del texto original,
+ *  - use una cuenta o categoría que no existe, o una persona que la persona nunca nombró,
+ *  - cambie el sentido (un ingreso donde se habló de un gasto, o al revés).
+ * Lo que pase igual va a la tarjeta de confirmación: esto solo evita que la IA invente cosas.
+ */
+export function validarFrasesIA(frases: string[], original: string, ctx: Contexto): string[] {
+  const permitidos = montosPermitidos(original, ctx);
+  const o = normalizar(original);
+  const dijoIngreso = PALABRAS_INGRESO.test(o);
+  const dijoGasto = PALABRAS_GASTO.test(o);
+  const ids = new Set(ctx.cuentas.map(c => c.id));
+  const salida: string[] = [];
+  for (const frase of frases) {
+    let r;
+    try { r = interpretar(frase, ctx); } catch { continue; }
+    if (r.clase !== 'movimiento') continue;
+    const p = r.propuesta;
+    const centavos = p.moneda === 'COP' ? 1 : 100;
+    if (!permitidos.has(p.monto) && !permitidos.has(p.monto / centavos)) continue;
+    if (p.cuentaId && !ids.has(p.cuentaId)) continue;
+    if (p.cuentaDestinoId && !ids.has(p.cuentaDestinoId)) continue;
+    if (p.categoriaId && !ids.has(p.categoriaId)) continue;
+    if (p.persona && !o.includes(normalizar(p.persona))) continue;
+    if (p.tipo === 'ingreso' && !dijoIngreso) continue;
+    if (p.tipo === 'gasto' && dijoIngreso && !dijoGasto) continue;
+    salida.push(frase);
+  }
+  return salida;
 }
 
 /** Cuántas veces al día se puede pedir ayuda a la IA (sin pasarse del plan gratuito). */

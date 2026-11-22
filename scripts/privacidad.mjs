@@ -17,7 +17,10 @@ const formas = [
   [/\b(?:sk|pk)_(?:live|test)_[A-Za-z0-9]{10,}/, 'una clave de pago'],
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, 'una llave privada'],
   [/(?<![\d.])3\d{9}(?![\d])/, 'un número de celular'],
-  [/[A-Z]:\\Users\\/i, 'una ruta del computador'],
+  // rutas con el nombre de la persona, con barras de las dos clases (Windows, Mac y Linux)
+  [/[A-Za-z]:[\\/]+Users[\\/]/, 'una ruta de usuario de Windows'],
+  [/(?<![\w.-])\/Users\/[\w.-]+/, 'una ruta de usuario de Mac'],
+  [/(?<![\w.-])\/home\/(?!runner\b|usuario\b|tu-usuario\b)[\w.-]+/, 'una ruta de usuario de Linux'],
   [/https:\/\/[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev/i, 'la dirección de un Worker (poné una de ejemplo)'],
   [/\b[0-9a-f]{40,}\b/, 'una cadena larga que parece un secreto'],
 ];
@@ -33,6 +36,7 @@ const reglas = palabras.map(p => [new RegExp(`(?<![${L}])${p.replace(/[.*+?^${}(
 let fallos = 0;
 for (const f of archivos) {
   const lineas = readFileSync(join(raiz, f), 'utf8').split('\n');
+  const antes = fallos;
   lineas.forEach((l, i) => {
     for (const [re, que] of [...formas, ...reglas]) {
       if (!re.test(l)) continue;
@@ -41,6 +45,7 @@ for (const f of archivos) {
       fallos++;
     }
   });
+  if (fallos > antes) console.log(`  -> ${f}: ${fallos - antes} hallazgo(s)`);
 }
 console.log(fallos ? `\n${fallos} hallazgo(s). Quita eso antes de subir.` : `Limpio: ${archivos.length} archivos revisados${palabras.length ? ` (con ${palabras.length} palabras privadas)` : ' (sin lista privada)'}.`);
 process.exit(fallos ? 1 : 0);

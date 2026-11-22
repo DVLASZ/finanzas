@@ -8,6 +8,7 @@
 import type {
   Aprendido, Asiento, Atajo, Compromiso, Cuenta, Datos, Movimiento, Pendiente, Repo,
 } from '../../../packages/core/src/index.ts';
+import { reconciliarCompromisos } from '../../../packages/core/src/index.ts';
 
 export interface D1Stmt {
   bind(...valores: unknown[]): D1Stmt;
@@ -134,6 +135,7 @@ export class D1Repo implements Repo {
       s.push(p('INSERT INTO asientos (movimiento_id, cuenta_id, monto, moneda) VALUES (?,?,?,?)', m.id, a.cuentaId, a.monto, a.moneda));
     }
     await this.db.batch(s);
+    await this.reconciliar(m.id, true); // los asientos viejos ya no están: se revisan todas las personas
   }
 
   async anularMovimiento(id: string, cuando: string): Promise<void> {
@@ -145,6 +147,21 @@ export class D1Repo implements Repo {
       this.db.prepare("UPDATE compromisos SET estado = 'anulada' WHERE id LIKE ? AND estado = 'activa'")
         .bind(`${id}-c%`),
     ]);
+    await this.reconciliar(id);
+  }
+
+  /**
+   * Deja los compromisos de las personas de un movimiento de acuerdo con su saldo (ver `reconciliarCompromisos`). Es
+   * idempotente: repetirlo no cambia nada, así un reintento de la sincronización no daña el estado.
+   */
+  private async reconciliar(movimientoId: string, todas = false): Promise<void> {
+    const d = await this.cargar();
+    const m = d.movimientos.find(x => x.id === movimientoId);
+    if (!m) return;
+    const personas = new Set(m.asientos.filter(a => d.cuentas.some(c => c.id === a.cuentaId && c.tipo === 'persona')).map(a => a.cuentaId));
+    if (!todas && !personas.size) return;
+    const cambios = reconciliarCompromisos(d.movimientos, d.cuentas, d.compromisos, d.config.fecha_apertura ?? '2000-01-01 00:00:00', todas ? undefined : personas);
+    await this.actualizarCompromisos(cambios);
   }
 
   async restaurarMovimiento(id: string, cuando: string): Promise<void> {
@@ -154,6 +171,7 @@ export class D1Repo implements Repo {
       this.db.prepare("UPDATE compromisos SET estado = 'activa' WHERE id LIKE ? AND estado = 'anulada'")
         .bind(`${id}-c%`),
     ]);
+    await this.reconciliar(id);
   }
 
   async actualizarCompromisos(cs: Compromiso[]): Promise<void> {

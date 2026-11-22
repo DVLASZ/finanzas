@@ -184,6 +184,94 @@ test('préstamos, deudas, pagos y gastos compartidos: solo concepto y fecha; el 
   assert.deepEqual(solo.saldos, [], 'los saldos y las deudas no cambian');
 });
 
+const saldoDeCuenta = async (bot: ReturnType<typeof nuevoBot>, cuenta: string) => saldo(bot, cuenta);
+const porTipo = async (bot: ReturnType<typeof nuevoBot>, tipo: string) => (await bot.repo.cargar()).movimientos.filter(x => x.tipo === tipo).at(-1)!;
+
+test('un préstamo pagado de Efectivo se puede pasar a Nequi: Ivan queda igual y todo suma cero', async () => {
+  const bot = nuevoBot();
+  await guardar(bot, 'saldo inicial efectivo 200000 nequi 50000');
+  await guardar(bot, 'presté 40000 a Ivan');
+  const m = await porTipo(bot, 'prestamo');
+  const ivanAntes = await saldoDeCuenta(bot, 'persona:ivan');
+  const comprAntes = JSON.stringify((await bot.repo.cargar()).compromisos);
+  assert.equal(capacidadesDeEdicion(m).campos.cuenta.editable, true);
+  assert.equal(capacidadesDeEdicion(m).campos.monto.editable, false);
+  const r = await aplicarEdicion(bot.repo, AHORA, m.id, { cuentaId: 'nequi' });
+  assert.deepEqual(r.cambios.map(c => [c.campo, c.etiqueta, c.despues]), [['cuenta', 'Salió de', 'Nequi']]);
+  assert.equal(await saldoDeCuenta(bot, 'efectivo'), 200000);
+  assert.equal(await saldoDeCuenta(bot, 'nequi'), 10000);
+  assert.equal(await saldoDeCuenta(bot, 'persona:ivan'), ivanAntes);
+  const d = await bot.repo.cargar();
+  assert.equal(JSON.stringify(d.compromisos), comprAntes, 'los compromisos no cambian');
+  assert.ok(sumaCero(d.movimientos.find(x => x.id === m.id)!.asientos));
+  // sigue siendo anulable: el deshacer devuelve la plata a Nequi
+  await bot.di('deshacer');
+  assert.equal(await saldoDeCuenta(bot, 'nequi'), 50000);
+  assert.equal(await saldoDeCuenta(bot, 'persona:ivan'), 0);
+});
+
+test('un abono recibido y una deuda recibida cambian solo la cuenta de dinero', async () => {
+  const bot = nuevoBot();
+  await guardar(bot, 'saldo inicial efectivo 100000 nequi 20000');
+  await guardar(bot, 'presté 40000 a Ivan');
+  await guardar(bot, 'Ivan me pagó 15000 efectivo');
+  const abono = await porTipo(bot, 'pago');
+  const ivan = await saldoDeCuenta(bot, 'persona:ivan');
+  const r = await aplicarEdicion(bot.repo, AHORA, abono.id, { cuentaId: 'nequi' });
+  assert.equal(r.cambios[0].etiqueta, 'Entró a');
+  assert.equal(await saldoDeCuenta(bot, 'nequi'), 35000);
+  assert.equal(await saldoDeCuenta(bot, 'efectivo'), 60000);
+  assert.equal(await saldoDeCuenta(bot, 'persona:ivan'), ivan);
+  await guardar(bot, 'me prestó Marta 30000 en efectivo');
+  const deuda = await porTipo(bot, 'deuda');
+  const marta = await saldoDeCuenta(bot, 'persona:marta');
+  assert.equal(capacidadesDeEdicion(deuda).campos.cuenta.editable, true);
+  await aplicarEdicion(bot.repo, AHORA, deuda.id, { cuentaId: 'nequi' });
+  assert.equal(await saldoDeCuenta(bot, 'nequi'), 65000);
+  assert.equal(await saldoDeCuenta(bot, 'efectivo'), 60000);
+  assert.equal(await saldoDeCuenta(bot, 'persona:marta'), marta);
+});
+
+test('en un gasto compartido solo cambia la cuenta pagadora; si pagó otro, no hay cuenta que editar', async () => {
+  const bot = nuevoBot();
+  await guardar(bot, 'saldo inicial efectivo 100000 nequi 50000');
+  const s = await bot.di('hicimos vaca de 60k con Ana y Luis para el almuerzo');
+  await bot.pulsa((s[0].botones ?? []).find(b => /Dividir entre los 3/.test(b.titulo))!.id);
+  await bot.pulsa('ok');
+  const m = await porTipo(bot, 'compartido');
+  assert.ok(m, 'el almuerzo con Ivan quedó como compartido');
+  const ana = await saldoDeCuenta(bot, 'persona:ana');
+  const r = await aplicarEdicion(bot.repo, AHORA, m.id, { cuentaId: 'nequi' });
+  assert.equal(r.cambios.length, 1);
+  assert.equal(await saldoDeCuenta(bot, 'persona:ana'), ana);
+  assert.equal(await saldoDeCuenta(bot, 'efectivo'), 100000);
+  assert.equal(await saldoDeCuenta(bot, 'nequi'), -10000);
+  const otro = previsualizarEdicion(await bot.repo.cargar(), AHORA, m.id, { cuentaId: 'daviplata', monto: 10000 });
+  assert.ok(otro.ok && otro.bloqueos.length >= 1, 'el monto sigue atado');
+});
+
+test('en un préstamo no se puede mover la plata a una cuenta de otra moneda ni a un mes cerrado', async () => {
+  const bot = nuevoBot();
+  await guardar(bot, 'saldo inicial efectivo 200000');
+  await guardar(bot, 'presté 40000 a Ivan');
+  const m = await porTipo(bot, 'prestamo');
+  const usd = previsualizarEdicion(await bot.repo.cargar(), AHORA, m.id, { cuentaId: 'arq' });
+  assert.ok(usd.ok && /otra moneda/.test(usd.bloqueos[0] ?? ''));
+  const datos = await bot.repo.cargar();
+  datos.config.cerrado_hasta = '2026-12-31';
+  const cerrado = previsualizarEdicion(datos, AHORA, m.id, { cuentaId: 'nequi' });
+  assert.ok(cerrado.ok && /cerrado/.test(cerrado.bloqueos.join(' ')));
+});
+
+test('al pasar un préstamo a una cuenta sin plata se avisa del saldo negativo', async () => {
+  const bot = nuevoBot();
+  await guardar(bot, 'saldo inicial efectivo 200000 nequi 10000');
+  await guardar(bot, 'presté 40000 a Ivan');
+  const m = await porTipo(bot, 'prestamo');
+  const r = previsualizarEdicion(await bot.repo.cargar(), AHORA, m.id, { cuentaId: 'nequi' });
+  assert.ok(r.ok && r.avisos.some(a => /Nequi quedaría en -/.test(a)));
+});
+
 const CATALOGO = { productos: [{ id: 'galletas', nombre: 'Galletas', alias: [], presentaciones: [
   { id: 'granel', nombre: 'granel', alias: ['a granel', 'granel'], precio: 500 },
   { id: 'paq10', nombre: 'paquete de 10', alias: ['paquete de 10', 'paquetes de 10', 'paq 10'], precio: 6000 },

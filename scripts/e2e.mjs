@@ -336,6 +336,17 @@ try {
     igual(await pag.evaluate(() => document.querySelector('#at-lista').innerText.includes('Recarga nequi')), false, 'se quitó');
     await clicEn('#at-cerrar'); await espera(300);
   });
+  await prueba('etiquetas en la tarjeta: se agrega una escrita, se quita con la equis y la tarjeta se corrige antes de confirmar', async () => {
+    await irA('Chat');
+    await escribir('mecato 4500'); await espera(500);
+    igual(await pag.evaluate(() => Boolean(document.querySelector('[data-etiquetas]'))), true, 'la fila de etiquetas sale siempre');
+    await pag.evaluate(() => document.querySelector('[data-etiqueta-nueva]')?.click()); await espera(200);
+    await pag.type('[data-etiqueta-campo]', 'Viaje'); await pag.keyboard.press('Enter'); await espera(800);
+    contiene(await ultima(), '#viaje', 'la tarjeta nueva trae la etiqueta');
+    await pag.evaluate(() => document.querySelector('[data-quitar-etiqueta="viaje"]')?.click()); await espera(800);
+    igual((await ultima()).includes('#viaje'), false, 'sin etiqueta otra vez');
+    await pulsar('Confirmar');
+  });
   await prueba('ayuda: primero pregunta el tema y solo al tocar uno muestra sus ejemplos', async () => {
     await irA('Chat');
     await pag.evaluate(() => document.querySelector('[data-atajo="ayuda"]')?.click()); await espera(900);
@@ -512,7 +523,7 @@ try {
     igual(await pag.evaluate(() => Boolean(document.querySelector('#cambiar-tema'))), false, 'el botón de tema ya no está arriba');
     const alto = await pag.evaluate(() => document.querySelector('#contenido').getBoundingClientRect().top);
     igual(alto < 8, true, 'el contenido arranca arriba del todo');
-    igual(await pag.evaluate(() => Boolean(document.querySelector('#ojo'))), false, 'en el chat no hay botón de privacidad');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#ojo'))), true, 'en el chat sí está el botón de privacidad');
     await irA('Saldos'); await espera(500);
     igual(await pag.evaluate(() => Boolean(document.querySelector('#ojo'))), true, 'el ojo está en Saldos');
     await irA('Resumen'); await espera(500);
@@ -691,6 +702,50 @@ try {
     igual(await hay('#info'), false, 'se cierra');
     await irA('Chat');
   });
+  await prueba('abono parcial: la hoja de Deudas precarga el saldo, avisa si es de más y deja la frase en el chat', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    const poner = async (s, v) => { await pag.evaluate((x, t) => { const e = document.querySelector(x); e.value = t; e.dispatchEvent(new Event('input', { bubbles: true })); }, s, v); await espera(250); };
+    const chipDe = async nombre => { const ok = await pag.evaluate(n => { const li = [...document.querySelectorAll('[data-persona]')].find(x => x.innerText.includes(n)); const c = li?.querySelector('.chip'); c?.click(); return Boolean(c); }, nombre); if (!ok) throw new Error('no hay chip de ' + nombre + ' | ' + (await pag.evaluate(() => document.body.innerText)).slice(0, 700).split('\n').join(' ~ ')); await espera(600); };
+    await irA('Chat'); await escribir('le debo 54000 a Marta por el mercado'); await pulsar('Comida'); await pulsar('Confirmar'); await espera(500);
+    await abrirDeMas('Deudas y préstamos'); await espera(700);
+    await chipDe('Marta');
+    igual(await hay('#hoja-abono'), true, 'el chip abre la hoja de abono');
+    contiene(await pag.evaluate(() => document.querySelector('#abono-nombre').innerText.toLowerCase()), 'marta', 'dice a quién');
+    igual(await pag.evaluate(() => document.querySelector('#abono-monto').value), '54000', 'el monto viene con el saldo');
+    igual(await pag.evaluate(() => { const r = document.querySelector('#hoja-abono > div').getBoundingClientRect(); return r.right <= innerWidth + 1 && r.left >= -1; }), true, 'no se sale de la pantalla');
+    await poner('#abono-monto', '80000');
+    igual(await hay('#abono-aviso'), true, 'avisa que es más de lo que debe');
+    await poner('#abono-monto', '0');
+    igual(await pag.evaluate(() => document.querySelector('#abono-confirmar').disabled), true, 'con cero no deja confirmar');
+    await poner('#abono-monto', '20000');
+    igual(await hay('#abono-aviso'), false, 'un abono parcial no avisa');
+    await pag.evaluate(() => history.back()); await espera(500);
+    igual(await hay('#hoja-abono'), false, 'atrás cierra la hoja');
+    await chipDe('Marta'); await poner('#abono-monto', '20000');
+    await clic('#abono-confirmar'); await espera(800);
+    igual(await pag.evaluate(() => document.querySelector('nav [aria-current=page]')?.dataset.p), 'chat', 'pasa al chat');
+    contiene(await pag.evaluate(() => document.body.innerText), 'Marta', 'la tarjeta de confirmación nombra a Marta');
+    await mostrarMontos(pag); await espera(500);
+    contiene(await pag.evaluate(() => document.body.innerText), '20.000', 'con el monto del abono');
+  });
+
+  await prueba('movimientos: Mostrar anulados vive en la ventana de opciones y el chip lo apaga rápido', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    await irA('Movimientos'); await espera(700);
+    igual(await hay('#opciones-mov'), true, 'hay botón de opciones');
+    igual(await pag.evaluate(() => Boolean(document.querySelector('#buscar')?.closest('.barra')?.querySelector('#anulados'))), false, 'la fila del buscador ya no trae la caja');
+    await clic('#opciones-mov');
+    igual(await hay('#info #anulados'), true, 'la ventana trae el interruptor');
+    await clic('#anulados');
+    igual(await pag.evaluate(() => document.querySelector('#anulados').checked), true, 'se enciende');
+    await clic('#info-cerrar'); await espera(400);
+    igual(await hay('#quitar-anulados'), true, 'queda el chip Anulados visibles');
+    await clic('#quitar-anulados');
+    igual(await hay('#quitar-anulados'), false, 'el chip lo apaga');
+  });
+
   await prueba('ventanas flotantes: las tarjetas de Resumen y la comparativa por categoría abren su desglose', async () => {
     const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
     const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };

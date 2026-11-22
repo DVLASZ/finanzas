@@ -29,8 +29,11 @@ export const hojaAbierta = signal(false);
 /** Una ventana flotante con el detalle de un bloque informativo (las filas del Resumen, una cuenta de Saldos...). Es otra entrada del historial. */
 export const infoAbierta = signal(false);
 
-interface Estado { p: Pantalla; d: string | null; s?: boolean; i?: boolean }
-const estadoActual = (): Estado => ({ p: pantalla.value, d: detalle.value, s: hojaAbierta.value, i: infoAbierta.value });
+/** La hoja rápida de abono (Deudas): otra entrada del historial, por encima de las ventanas flotantes. */
+export const abonoAbierto = signal(false);
+
+interface Estado { p: Pantalla; d: string | null; s?: boolean; i?: boolean; a?: boolean }
+const estadoActual = (): Estado => ({ p: pantalla.value, d: detalle.value, s: hojaAbierta.value, i: infoAbierta.value, a: abonoAbierto.value });
 
 /** Cambia de pantalla y deja una entrada en el historial. */
 export function irA(p: Pantalla): void {
@@ -38,6 +41,7 @@ export function irA(p: Pantalla): void {
   pantalla.value = p;
   detalle.value = null;
   infoAbierta.value = false;
+  abonoAbierto.value = false;
   history.pushState(estadoActual(), '');
 }
 
@@ -50,6 +54,12 @@ export function abrirDetalle(id: string): void {
 /** Abre la ventana flotante de detalle (el contenido lo pone `abrirInfo`, en HojaInfo). */
 export function abrirHojaInfo(): void {
   infoAbierta.value = true;
+  history.pushState(estadoActual(), '');
+}
+
+/** Abre la hoja rápida de abono (el contenido lo pone `abrirAbono`, en HojaAbono). */
+export function abrirHojaAbono(): void {
+  abonoAbierto.value = true;
   history.pushState(estadoActual(), '');
 }
 
@@ -69,12 +79,14 @@ let retrocediendo = false;
  */
 export function atras(): void {
   if (retrocediendo) return;
-  const hayQueCerrar = hojaAbierta.value || infoAbierta.value || detalle.value || INTERNAS.includes(pantalla.value);
+  const hayQueCerrar = hojaAbierta.value || abonoAbierto.value || infoAbierta.value || detalle.value || INTERNAS.includes(pantalla.value);
   if (!hayQueCerrar) return;
   const nuestra = Boolean((history.state as Estado | null)?.p);
   if (!nuestra) {
     // sin entrada propia a la que volver: se cierra a mano, sin tocar el historial
-    hojaAbierta.value = false;
+    // la hoja del selector va primero; luego el abono, el detalle y la ventana informativa
+    if (hojaAbierta.value) { hojaAbierta.value = false; return; }
+    if (abonoAbierto.value) { abonoAbierto.value = false; return; }
     // lo de más arriba se cierra primero: la hoja, luego el detalle y por último la ventana informativa
     if (detalle.value) detalle.value = null; else infoAbierta.value = false;
     return;
@@ -94,6 +106,7 @@ export function iniciarHistorial(): void {
     detalle.value = s?.d ?? null;
     hojaAbierta.value = Boolean(s?.s);
     infoAbierta.value = Boolean(s?.i);
+    abonoAbierto.value = Boolean(s?.a);
   });
 }
 

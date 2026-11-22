@@ -5,7 +5,7 @@
  */
 import { ArrowDownRight, ArrowUpRight, List, Minus } from 'lucide-preact';
 import type { ComponentChildren } from 'preact';
-import { formatear, gastoPorCategoria, ingresosPorFuente, type Datos } from '../../../../../packages/core/src/index.ts';
+import { agruparCategorias, formatear, gastoPorCategoria, ingresosPorFuente, type Datos } from '../../../../../packages/core/src/index.ts';
 import { cerrarYLuego, abrirInfo, ListaMovimientos } from '../../components/ui/HojaInfo.tsx';
 import { Insignia, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { movimientosDeCategoria, movimientosDeConcepto, movimientosDeMedio, movimientosDeTipos, gastoDeCategoria, gastoDe } from '../../lib/grupos.ts';
@@ -66,8 +66,10 @@ function Variacion({ ahora, antes, bueno }: { ahora: number; antes: number; buen
 /** La comparativa de gastos o de ingresos contra el periodo anterior, categoría por categoría (o fuente por fuente). */
 export function abrirComparativa(datos: Datos, tipo: 'gastos' | 'ingresos', p: Periodos): void {
   const cuentas = datos.cuentas;
-  const ahora = tipo === 'gastos' ? gastoPorCategoria(datos.movimientos, cuentas, p.desde, p.hasta) : ingresosPorFuente(datos.movimientos, cuentas, p.desde, p.hasta);
-  const antes = tipo === 'gastos' ? gastoPorCategoria(datos.movimientos, cuentas, p.previoDesde, p.previoHasta) : ingresosPorFuente(datos.movimientos, cuentas, p.previoDesde, p.previoHasta);
+  // los gastos van agrupados (lo de Restaurante dentro de Comida): así cada fila dice lo mismo que la ventana que abre
+  const gastos = (d: string, h: string) => agruparCategorias(gastoPorCategoria(datos.movimientos, cuentas, d, h), datos.config, cuentas);
+  const ahora = tipo === 'gastos' ? gastos(p.desde, p.hasta) : ingresosPorFuente(datos.movimientos, cuentas, p.desde, p.hasta);
+  const antes = tipo === 'gastos' ? gastos(p.previoDesde, p.previoHasta) : ingresosPorFuente(datos.movimientos, cuentas, p.previoDesde, p.previoHasta);
   const filas = new Map<string, { id: string; nombre: string; ahora: number; antes: number }>();
   for (const x of ahora) filas.set(x.cuenta.id, { id: x.cuenta.id, nombre: x.cuenta.nombre, ahora: x.total, antes: 0 });
   for (const x of antes) { const f = filas.get(x.cuenta.id) ?? { id: x.cuenta.id, nombre: x.cuenta.nombre, ahora: 0, antes: 0 }; f.antes = x.total; filas.set(x.cuenta.id, f); }
@@ -129,7 +131,7 @@ const sumaTipo = (movs: Movimiento[], datos: Datos, tipo: 'gastos' | 'ingresos')
 
 /** La tarjeta de Gastos o de Ingresos: los movimientos que suman la cifra en el periodo. */
 export function abrirTotal(datos: Datos, tipo: 'gastos' | 'ingresos', p: Periodos, periodoMov: 'semana' | 'mes' | 'anio' | 'todo' = 'mes'): void {
-  const movimientos = movimientosDeTipos(datos, tipo === 'gastos' ? ['gasto', 'compartido'] : ['ingreso'], p.desde, p.hasta);
+  const movimientos = movimientosDeTipos(datos, tipo === 'gastos' ? ['gasto', 'compartido', 'deuda'] : ['ingreso'], p.desde, p.hasta);
   abrirInfo({
     id: `info-${tipo}`, titulo: tipo === 'gastos' ? 'Gastos del periodo' : 'Ingresos del periodo',
     sub: `${veces(movimientos.length)} suman ${formatear(sumaTipo(movimientos, datos, tipo))}.`,
@@ -142,7 +144,7 @@ export function abrirTotal(datos: Datos, tipo: 'gastos' | 'ingresos', p: Periodo
 
 /** El balance: lo que entró menos lo que salió, con las dos listas juntas. */
 export function abrirBalance(datos: Datos, p: Periodos, periodoMov: 'semana' | 'mes' | 'anio' | 'todo' = 'mes'): void {
-  const ingresos = movimientosDeTipos(datos, ['ingreso'], p.desde, p.hasta), gastos = movimientosDeTipos(datos, ['gasto', 'compartido'], p.desde, p.hasta);
+  const ingresos = movimientosDeTipos(datos, ['ingreso'], p.desde, p.hasta), gastos = movimientosDeTipos(datos, ['gasto', 'compartido', 'deuda'], p.desde, p.hasta);
   const entro = sumaTipo(ingresos, datos, 'ingresos'), salio = sumaTipo(gastos, datos, 'gastos');
   const movimientos = [...ingresos, ...gastos].sort((a, b) => b.ocurridoEn.localeCompare(a.ocurridoEn));
   abrirInfo({

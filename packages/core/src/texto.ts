@@ -15,13 +15,14 @@ export function normalizar(s: string): string {
 /**
  * Prepara un mensaje para analizarlo: normaliza y reemplaza por espacios todo lo que no
  * ayuda (emojis, signos de pregunta, comillas...). Se conservan los símbolos con significado:
- * $ . , - / # + > <
+ * $ . , - / # + > < y los dos puntos de una hora («12:30»); los demás dos puntos se vuelven espacio.
  */
 export function limpiar(s: string): string {
   return normalizar(s)
     // «1'200.000»: el apóstrofo colombiano separa los millones. Solo cuando une una cifra con un grupo de tres y sus miles
     .replace(/(\d)['’](?=\d{3}(?:[.,]\d{3})+(?!\d))/g, '$1.')
-    .replace(/[^a-z0-9$.,\-/#+><= ]/g, ' ')
+    .replace(/(?<!\d):|:(?!\d{2}(?!\d))/g, ' ') // los dos puntos solo valen entre un número y dos cifras: «12:30»
+    .replace(/[^a-z0-9$.,\-/#+><=: ]/g, ' ')
     .replace(/,(?!\d)/g, ' ') // una coma que no es decimal separa elementos de una lista
     .replace(/\.(?!\d)/g, ' ') // un punto que no es de miles/decimal es solo puntuación
     .replace(/\s+/g, ' ')

@@ -1009,3 +1009,82 @@ html[data-letra="extra"] .boton-ojo { width: 40px; height: 40px; right: .5rem; }
 html:is([data-letra="grande"],[data-letra="extra"]) .fab-reserva { margin-right: 2.6rem; }
 html[data-letra="grande"] #contenido.px-4 { padding-bottom: calc(env(safe-area-inset-bottom) + 10rem); }
 html[data-letra="extra"] #contenido.px-4 { padding-bottom: calc(env(safe-area-inset-bottom) + 12rem); }
+
+/* ojo en chat */
+/* En el chat el ojo queda arriba a la derecha de la zona de escribir. BotonOjo.tsx mide el borde de la barra de atajos (o del
+   formulario si la barra esta oculta) y deja la distancia en --ojo-bajo. La lista de mensajes reserva abajo el espacio del
+   ojo para que la ultima burbuja y la tarjeta de confirmacion no queden tapadas al llegar al final. */
+.boton-ojo.en-chat { bottom: var(--ojo-bajo, 9.5rem); right: 1rem; }
+#contenido .chat#chat { padding-bottom: 3.9rem; }
+html[data-letra="extra"] #contenido .chat#chat { padding-bottom: 3.4rem; }
+@media (min-width: 1024px) { .boton-ojo.en-chat { right: 1.5rem; } }
+
+/* sin desborde lateral */
+/* Nada arrastra la pantalla hacia los lados. Se usa clip (no crea contenedor de scroll, asi no rompe sticky ni las sombras)
+   en la raiz y en los contenedores fijos; #contenido ya es el que hace scroll vertical, ahi basta hidden. Las filas con scroll
+   horizontal propio siguen moviendose dentro de su contenedor y no pasan el gesto a la pagina. */
+html, body, #raiz, #raiz-preact { max-width: 100%; overflow-x: clip; }
+#contenido { overflow-x: hidden; }
+#nav, #info, #detalle, #editar, #duplicar, #corte, #contador, #dialogo, #atajos-editor { overflow-x: clip; }
+:is(#info, #detalle, #editar, #duplicar, #corte, #contador, #dialogo, #atajos-editor) > :is([role="dialog"], [role="alertdialog"]) { overflow-x: hidden; }
+.carrusel, .atajos, .graf-scroll, .pestanas { overscroll-behavior-x: contain; }
+
+/* modales obsidiana */
+/* Hojas y cuadros de dialogo con la doble tarjeta dorada de Obsidiana. Las hojas van pegadas al borde de abajo y a los lados
+   en el movil, asi que un corrimiento hacia abajo o la derecha se perderia fuera de la pantalla: la segunda tarjeta se asoma
+   por arriba (0 -5px) y un filete dorado interior de 1 px hace de segundo marco dentro del relleno de la hoja. El brillo
+   solo cambia el fondo de un velo (sin transform), para no crear scroll horizontal dentro de la hoja. */
+html[data-piel="obsidiana"] :is(#info, #detalle, #editar, #duplicar, #corte, #contador, #dialogo, #atajos-editor) > :is([role="dialog"], [role="alertdialog"]) {
+  position: relative;
+  background-color: var(--sup);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--marca) 38%, transparent), inset 0 0 0 6px var(--sup),
+    inset 0 0 0 7px color-mix(in srgb, var(--marca-2) 34%, transparent), 0 0 0 1px color-mix(in srgb, var(--marca) 24%, var(--anillo)),
+    4px -5px 0 -1px color-mix(in srgb, var(--marca-2) 55%, transparent) !important;
+}
+html[data-piel="obsidiana"][data-tema="claro"] :is(#info, #detalle, #editar, #duplicar, #corte, #contador, #dialogo, #atajos-editor) > :is([role="dialog"], [role="alertdialog"]) {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--marca) 55%, transparent), inset 0 0 0 6px var(--sup),
+    inset 0 0 0 7px color-mix(in srgb, var(--marca) 40%, transparent), 0 0 0 1px color-mix(in srgb, var(--marca-2) 38%, var(--anillo)),
+    4px -5px 0 -1px color-mix(in srgb, var(--marca) 62%, transparent) !important;
+}
+/* la confirmacion de algo destructivo conserva el aro rojo */
+html[data-piel="obsidiana"] #dialogo > .dialogo-peligro {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--neg) 38%, transparent), inset 0 0 0 6px var(--sup),
+    inset 0 0 0 7px color-mix(in srgb, var(--neg) 34%, transparent), 0 0 0 1px color-mix(in srgb, var(--neg) 45%, var(--anillo)),
+    4px -5px 0 -1px color-mix(in srgb, var(--neg) 50%, transparent) !important;
+}
+html[data-piel="obsidiana"] :is(#info, #detalle, #editar, #duplicar, #corte, #contador, #dialogo, #atajos-editor) > :is([role="dialog"], [role="alertdialog"])::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(115deg, transparent 32%, color-mix(in srgb, var(--marca) 22%, transparent) 50%, transparent 68%) 120% 0 / 260% 100% no-repeat;
+  opacity: 0; animation: obs-hoja-brillo 1.4s cubic-bezier(.22, 1, .36, 1) .2s 1 both;
+}
+@keyframes obs-hoja-brillo { 0% { opacity: 0; background-position: 120% 0; } 35% { opacity: 1; } 100% { opacity: 0; background-position: -20% 0; } }
+html[data-piel="obsidiana"] #info.saliendo > [role="dialog"]::after { animation: none; }
+
+/* abono y anulados */
+.filtros-fila { display: flex; gap: .5rem; align-items: flex-start; }
+.filtros-fila .filtros { flex: 1; min-width: 0; }
+.chip-opciones { flex: none; min-width: var(--alto-btn); justify-content: center; padding-inline: .6rem; }
+.opcion-anulados { width: 100%; }
+#hoja-abono .campo-edicion input { width: 100%; }
+#hoja-abono .callout { margin: .6rem 0; }
+#hoja-abono .abono-error { color: var(--neg); }
+#hoja-abono #abono-confirmar:disabled { opacity: .5; }
+#quitar-anulados { max-width: 100%; white-space: normal; }
+
+/* etiquetas sugeridas y fijos */
+.etiquetas-fila { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .1rem; }
+.etq { display: inline-flex; align-items: center; gap: .3rem; max-width: 100%; min-height: 2rem; padding: .15rem .7rem; border-radius: 999px; font-size: .84rem; line-height: 1.25; overflow-wrap: anywhere; background: var(--elev); color: var(--tx); box-shadow: 0 0 0 1px var(--anillo); }
+.etq-puesta { background: color-mix(in srgb, var(--marca) 16%, var(--elev)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 45%, var(--anillo)); padding-right: .25rem; }
+.etq-quitar { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; padding: 0; border-radius: 999px; background: transparent; box-shadow: none; color: inherit; min-height: 0; }
+.etq-sugerida { cursor: pointer; border-style: dashed; }
+.etq-nueva { cursor: pointer; color: var(--tx2, var(--tx)); }
+.etq-campo { display: flex; align-items: center; gap: .4rem; flex: 1 1 11rem; min-width: 0; }
+.etq-campo input { flex: 1; min-width: 0; min-height: 2.25rem; padding: .2rem .75rem; border-radius: 999px; }
+.etq-error { flex-basis: 100%; font-size: .8rem; color: var(--neg); }
+#hoja-fijo .campo-edicion input { width: 100%; }
+#hoja-fijo .abono-error { color: var(--neg); }
+#hoja-fijo #fijo-confirmar:disabled { opacity: .5; }
+
+/* las frases sugeridas del editor de atajos pueden ser largas: bajan de línea en vez de salirse de la hoja */
+#at-sugeridas { flex-wrap: wrap; }
+#at-sugeridas .chip { max-width: 100%; white-space: normal; text-align: left; height: auto; min-height: var(--alto-btn, 44px); }

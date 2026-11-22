@@ -59,6 +59,32 @@ export function validarAsientos(asientos: Asiento[]): void {
   }
 }
 
+const enMoneda = (m: Moneda): string => (m === 'USD' ? 'dólares' : 'pesos');
+
+/**
+ * Un abono tiene que ser en la moneda de la deuda y de la cuenta con la que se paga: los dólares nunca se convierten
+ * a pesos por su cuenta. Devuelve el motivo si no se puede, o null.
+ */
+export function errorDePago(p: Propuesta, ctx: Contexto, saldos: Saldos): string | null {
+  if (p.tipo !== 'pago' || !p.persona || p.montoOtro !== undefined) return null;
+  const clave = normalizar(p.persona);
+  const per = ctx.cuentas.find(c => c.tipo === 'persona' && c.clave === clave);
+  const otra: Moneda = p.moneda === 'USD' ? 'COP' : 'USD';
+  if (per && saldoDe(saldos, per.id, p.moneda) === 0) {
+    const s = saldoDe(saldos, per.id, otra);
+    if (p.direccion === 'yo_pago' ? s < 0 : s > 0) {
+      return p.direccion === 'yo_pago'
+        ? `No le debes ${enMoneda(p.moneda)} a ${per.nombre}: la deuda es en ${enMoneda(otra)}`
+        : `${per.nombre} no te debe ${enMoneda(p.moneda)}: la deuda es en ${enMoneda(otra)}`;
+    }
+  }
+  const cuenta = ctx.cuentas.find(c => c.id === (p.cuentaId ?? 'efectivo'));
+  if (cuenta && cuenta.tipo === 'dinero' && cuenta.moneda !== p.moneda) {
+    return `${cuenta.nombre} es una cuenta en ${enMoneda(cuenta.moneda)} y el pago es en ${enMoneda(p.moneda)}`;
+  }
+  return null;
+}
+
 export function construirMovimiento(
   p: Propuesta, ctx: Contexto, saldos: Saldos, id: string, origen: 'bot' | 'app',
 ): Construido {
@@ -188,6 +214,8 @@ export function construirMovimiento(
       break;
     }
     case 'pago': {
+      const motivo = errorDePago(p, ctx, saldos);
+      if (motivo) throw new Error(motivo);
       const pid = persona(p.persona!);
       const yoPago = p.direccion === 'yo_pago';
       const signo = yoPago ? -1 : 1;

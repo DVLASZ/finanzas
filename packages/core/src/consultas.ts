@@ -7,6 +7,7 @@
  */
 import { limpiar } from './texto.ts';
 import { tieneEtiquetas, tokensDeEtiqueta } from './etiquetas.ts';
+import { conSubcategorias } from './subcategorias.ts';
 import type { Saldos } from './asientos.ts';
 import type { Compromiso, Cuenta, Moneda, Movimiento } from './tipos.ts';
 
@@ -73,12 +74,19 @@ export function resumenSaldos(movs: Movimiento[], cuentas: Cuenta[], fechaApertu
   };
 }
 
-/** Total gastado por categoría en [desde, hasta) (solo COP; incluye Descuadre). */
+/**
+ * Lo que cuenta como gasto: los movimientos de tipo gasto y compartido (tu parte) y la compra a crédito («debo 30000 a juan
+ * por mercado»), que cuenta al anotarla porque su pago no lleva categoría. Un préstamo que te hacen no tiene categoría y no suma.
+ * El Descuadre de un arqueo tampoco cuenta: así el total, las listas y las gráficas dicen lo mismo.
+ */
+export const TIPOS_GASTO: readonly string[] = ['gasto', 'compartido', 'deuda'];
+
+/** Total gastado por categoría en [desde, hasta) (solo COP, solo gasto y compartido; el Descuadre no entra). */
 export function gastoPorCategoria(movs: Movimiento[], cuentas: Cuenta[], desde: string, hasta: string): { cuenta: Cuenta; total: number }[] {
   const cats = new Map(cuentas.filter(c => c.tipo === 'categoria').map(c => [c.id, c]));
   const acum = new Map<string, number>();
   for (const m of activos(movs)) {
-    if (m.ocurridoEn < desde || m.ocurridoEn >= hasta) continue;
+    if (!TIPOS_GASTO.includes(m.tipo) || m.ocurridoEn < desde || m.ocurridoEn >= hasta) continue;
     for (const a of m.asientos) {
       if (a.moneda === 'COP' && cats.has(a.cuentaId)) acum.set(a.cuentaId, (acum.get(a.cuentaId) ?? 0) + a.monto);
     }
@@ -87,6 +95,16 @@ export function gastoPorCategoria(movs: Movimiento[], cuentas: Cuenta[], desde: 
     .map(([id, total]) => ({ cuenta: cats.get(id)!, total }))
     .filter(x => x.total !== 0)
     .sort((a, b) => b.total - a.total);
+}
+
+/** Lo que quedó en Descuadre en [desde, hasta): positivo si faltó plata, negativo si sobró. Va aparte: no es gasto. */
+export function descuadreDelPeriodo(movs: Movimiento[], desde: string, hasta: string): number {
+  let total = 0;
+  for (const m of activos(movs)) {
+    if (m.ocurridoEn < desde || m.ocurridoEn >= hasta) continue;
+    for (const a of m.asientos) if (a.cuentaId === 'cat:descuadre' && a.moneda === 'COP') total += a.monto;
+  }
+  return total;
 }
 
 /** Lo que se gasta normalmente en una categoría: promedio por gasto de los últimos 180 días antes de `hasta`. */
@@ -203,24 +221,66 @@ export function compromisosSaldados(movs: Movimiento[], cuentas: Cuenta[], compr
   return cambiados;
 }
 
-/** Cuánto llevas gastado de una categoría en el mes de `ahoraLocal` y el tope si lo hay. */
+/**
+ * Deja el estado de los compromisos de unas personas de acuerdo con su saldo, en los dos sentidos. Se corre tras anular,
+ * restaurar o editar un movimiento: «saldada» pasa a «activa» si la deuda vuelve (deshacer un pago), y «activa» a
+ * «saldada» si el saldo llegó a cero. `compromiso.monto` queda como el original: lo que falta sale siempre del saldo.
+ * Devuelve solo los compromisos que cambian. Si no se pasan `personas`, se revisan todas.
+ */
+export function reconciliarCompromisos(
+  movs: Movimiento[], cuentas: Cuenta[], compromisos: Compromiso[], fechaApertura: string, personas?: Set<string>,
+): Compromiso[] {
+  const propios = compromisos.filter(c => c.estado !== 'anulada' && (!personas || personas.has(c.personaId)));
+  const nuevo = new Map<string, Compromiso>();
+  for (const c of compromisosSaldados(movs, cuentas, propios, fechaApertura)) nuevo.set(c.id, c);
+  const saldos = calcularSaldos(movs, fechaApertura);
+  const grupos = new Map<string, Compromiso[]>();
+  for (const c of propios) {
+    const k = `${c.personaId}|${c.moneda}|${c.direccion}`;
+    grupos.set(k, [...(grupos.get(k) ?? []), c]);
+  }
+  for (const lista of grupos.values()) {
+    const { personaId, moneda, direccion } = lista[0];
+    const s = saldos.get(`${personaId}|${moneda}`) ?? 0;
+    const debido = direccion === 'debo' ? -s : s; // lo que sigue pendiente en este sentido
+    if (debido <= 0) continue;
+    const estado = (c: Compromiso) => nuevo.get(c.id)?.estado ?? c.estado;
+    let sinCubrir = debido - lista.filter(c => estado(c) === 'activa').reduce((t, c) => t + c.monto, 0);
+    // se reabren primero las más recientes: son las que un pago deshecho vuelve a dejar abiertas
+    const saldadas = lista.filter(c => estado(c) === 'saldada').sort((a, b) => b.creadoEn.localeCompare(a.creadoEn) || b.id.localeCompare(a.id));
+    for (const c of saldadas) {
+      if (sinCubrir <= 0) break;
+      nuevo.set(c.id, { ...c, estado: 'activa' });
+      sinCubrir -= c.monto;
+    }
+  }
+  return [...nuevo.values()];
+}
+
+/**
+ * Cuánto llevas gastado de una categoría en [desde, hasta) y el tope de ese rango. Con `config` suma también lo de sus
+ * subcategorías (lo de Restaurante cuenta en Comida), igual que la ventana de detalle. El tope se guarda por mes: en un
+ * rango de meses completos (un año) se multiplica por los meses; en otro rango (una semana) se prorratea por los días
+ * del mes en que empieza. El arrastre de lo que sobró solo se aplica a un mes completo.
+ */
 export function estadoPresupuesto(
   movs: Movimiento[], cuentas: Cuenta[], presupuestos: Record<string, number>, categoriaId: string,
-  desde: string, hasta: string, arrastra = false,
+  desde: string, hasta: string, arrastra = false, config: Record<string, string> = {},
 ): { gastado: number; tope: number; porcentaje: number } | null {
   const base = presupuestos[categoriaId];
   if (!base) return null;
-  let tope = base;
+  const ids = new Set(conSubcategorias(config, categoriaId));
+  const gastadoEn = (d: string, h: string) => gastoPorCategoria(movs, cuentas, d, h).filter(x => ids.has(x.cuenta.id)).reduce((s, x) => s + x.total, 0);
+  const y = Number(desde.slice(0, 4)), m = Number(desde.slice(5, 7));
+  const meses = desde.slice(8, 10) === '01' && hasta.slice(8, 10) === '01' && hasta > desde ? (Number(hasta.slice(0, 4)) - y) * 12 + Number(hasta.slice(5, 7)) - m : 0;
+  const dias = Math.round((Date.parse(`${hasta.slice(0, 10)}T00:00:00Z`) - Date.parse(`${desde.slice(0, 10)}T00:00:00Z`)) / 86400000);
+  let tope = meses > 0 ? base * meses : Math.round((base * Math.max(1, dias)) / new Date(Date.UTC(y, m, 0)).getUTCDate());
   // con arrastre, lo que sobró del mes pasado se suma (solo si la app se usó ese mes, si no no hay nada que arrastrar)
-  if (arrastra && desde.slice(8, 10) === '01' && hasta.slice(8, 10) === '01') {
-    const y = Number(desde.slice(0, 4)), m = Number(desde.slice(5, 7));
+  if (arrastra && meses === 1) {
     const antes = m === 1 ? `${y - 1}-12-01 00:00:00` : `${y}-${String(m - 1).padStart(2, '0')}-01 00:00:00`;
-    if (activos(movs).some(x => x.ocurridoEn >= antes && x.ocurridoEn < desde)) {
-      const gAntes = gastoPorCategoria(movs, cuentas, antes, desde).find(x => x.cuenta.id === categoriaId)?.total ?? 0;
-      tope += Math.max(0, base - gAntes);
-    }
+    if (activos(movs).some(x => x.ocurridoEn >= antes && x.ocurridoEn < desde)) tope += Math.max(0, base - gastadoEn(antes, desde));
   }
-  const g = gastoPorCategoria(movs, cuentas, desde, hasta).find(x => x.cuenta.id === categoriaId)?.total ?? 0;
+  const g = gastadoEn(desde, hasta);
   return { gastado: g, tope, porcentaje: Math.round((g / tope) * 100) };
 }
 

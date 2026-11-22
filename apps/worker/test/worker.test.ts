@@ -3,6 +3,7 @@
  * Sin red y sin cuentas.
  */
 import assert from 'node:assert/strict';
+import { reiniciarFrenoPin } from '../src/rutas/admin.ts';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { dirname, join } from 'node:path';
@@ -459,4 +460,60 @@ test('api: editar rechaza lo que no existe, lo anulado y asientos que no suman c
   await peticion(env, '/api/sync', { ops: [{ op: 'anular', id: h.movimiento.id, cuando: '2026-10-19 17:00:00' }] });
   const r2 = (await (await peticion(env, '/api/sync', { ops: [{ op: 'editar', movimiento: { ...h.movimiento, descripcion: 'x' }, cuentasNuevas: [] }] })).json()) as { rechazadas?: unknown[] };
   assert.equal(r2.rechazadas?.length, 1, 'no se edita lo anulado');
+});
+
+// ---------------------------------------------------------------- guardas de la IA
+
+test('ia: lo que devuelve el modelo se valida contra el texto (comandos y montos inventados no pasan)', async () => {
+  const env = entorno({ AI: iaFalsa({ frases: ['deshacer 3', 'cerrar mes septiembre', 'mecato 99000', '<b>mecato</b> 5000'] }) });
+  const r = await peticion(env, '/api/interpretar', { texto: 'gasté cinco lukas en mecato' });
+  assert.equal(r.status, 200);
+  assert.deepEqual(((await r.json()) as { frases: string[] }).frases, ['mecato 5000']);
+});
+
+test('ia: si falla (502) el uso del día no se cobra, y el motivo es corto y sin el mensaje del modelo', async () => {
+  const env = entorno({ AI: { run: async () => { throw new Error('secreto interno ' + 'x'.repeat(300)); } }, IA_TOPE: '1' });
+  const r = await peticion(env, '/api/interpretar', { texto: 'hola' });
+  assert.equal(r.status, 502);
+  const c = (await r.json()) as { motivo: string };
+  assert.ok(c.motivo.length <= 80);
+  assert.doesNotMatch(c.motivo, /secreto/);
+  const sinJson = entorno({ AI: iaFalsa('esto no es json'), IA_TOPE: '1' });
+  assert.equal((await peticion(sinJson, '/api/interpretar', { texto: 'hola' })).status, 502);
+  // con tope 1 y dos fallos seguidos, la segunda vez sigue habiendo ayuda (no se cobró)
+  assert.equal((await peticion(sinJson, '/api/interpretar', { texto: 'hola' })).status, 502);
+});
+
+test('ia: si el modelo se cuelga, responde 502 al pasar el tiempo y no se cobra', async () => {
+  const env = entorno({ AI: { run: () => new Promise(() => {}) }, IA_TOPE: '1', IA_ESPERA_MS: '50' });
+  const r = await peticion(env, '/api/interpretar', { texto: 'hola' });
+  assert.equal(r.status, 502);
+  assert.equal(((await r.json()) as { motivo: string }).motivo, 'tardó demasiado');
+  assert.equal((await peticion(env, '/api/interpretar', { texto: 'hola' })).status, 502, 'sigue sin llegar al tope');
+});
+
+// ---------------------------------------------------------------- freno al PIN de borrado
+
+test('pin de borrado: 5 equivocados bloquean esa conexión 10 minutos, aunque después acierte, y el bloqueo crece', async () => {
+  reiniciarFrenoPin();
+  const env = entorno();
+  const desde = (ip: string, pin: string) => worker.fetch(new Request('https://x.workers.dev/api/purgar', {
+    method: 'POST', body: JSON.stringify({ pin, confirmacion: 'PURGAR ANULADOS' }),
+    headers: { Authorization: 'Bearer token-api', 'Content-Type': 'application/json', 'CF-Connecting-IP': ip },
+  }), env);
+  for (let i = 0; i < 5; i++) assert.equal((await desde('7.7.7.7', '0000')).status, 403);
+  const bloqueada = await desde('7.7.7.7', '4321');
+  assert.equal(bloqueada.status, 429, 'ni el PIN correcto entra durante el bloqueo');
+  assert.equal(Number(bloqueada.headers.get('Retry-After')) > 500, true);
+  assert.equal((await desde('8.8.8.8', '4321')).status, 200, 'otra conexión no se afecta');
+  // pasan 11 minutos: se puede intentar; otros 5 fallos bloquean el doble
+  const real = Date.now;
+  Date.now = () => real() + 11 * 60_000;
+  try {
+    for (let i = 0; i < 5; i++) assert.equal((await desde('7.7.7.7', '0000')).status, 403);
+    const doble = await desde('7.7.7.7', '4321');
+    assert.equal(doble.status, 429);
+    assert.equal(Number(doble.headers.get('Retry-After')) > 1100, true, 'el segundo bloqueo dura unos 20 minutos');
+  } finally { Date.now = real; }
+  reiniciarFrenoPin();
 });

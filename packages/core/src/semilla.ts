@@ -2,12 +2,14 @@
  * Datos iniciales: cuentas, categorías y atajos. Debe coincidir con db/seed.sql
  * (hay una prueba que lo comprueba).
  */
+import { normalizar } from './texto.ts';
 import type { Atajo, Cuenta } from './tipos.ts';
 
+/** La clave de una cuenta es su nombre sin tildes ni mayúsculas: así las consultas («cuanto tengo en dolares») la encuentran. */
 export const dinero = (id: string, nombre: string, moneda: 'COP' | 'USD', enDisponible: boolean): Cuenta =>
-  ({ id, nombre, clave: nombre.toLowerCase(), tipo: 'dinero', moneda, enDisponible });
+  ({ id, nombre, clave: normalizar(nombre), tipo: 'dinero', moneda, enDisponible });
 export const categoria = (id: string, nombre: string, fijo = false): Cuenta =>
-  ({ id, nombre, clave: nombre.toLowerCase(), tipo: 'categoria', moneda: 'COP', fijo });
+  ({ id, nombre, clave: normalizar(nombre), tipo: 'categoria', moneda: 'COP', fijo });
 export const sistema = (id: string, nombre: string, clave: string, moneda: 'COP' | 'USD'): Cuenta =>
   ({ id, nombre, clave, tipo: 'sistema', moneda });
 

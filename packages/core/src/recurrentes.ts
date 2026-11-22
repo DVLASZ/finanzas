@@ -118,14 +118,28 @@ export function recurrentesPendientes(config: Record<string, string>, movs: Movi
     .sort((a, b) => a.dia - b.dia);
 }
 
-/** Cuántas veces falta pagarlo lo que resta del mes (para el «seguro para gastar»): la pendiente de ahora más las que caen después. */
+/**
+ * Las fechas que faltan por pagar desde hoy hasta `hasta` (AAAA-MM-DD). Es la única regla para saber qué ya está pagado:
+ * la ocurrencia del periodo en curso se da por cubierta si `yaRegistrado` dice que sí; las demás cuentan. Una ocurrencia
+ * vencida sin registrar sale con la fecha de hoy, porque hay que pagarla ya. La usan el seguro y la proyección de liquidez.
+ */
+export function fechasQueFaltan(r: Recurrente, movs: Movimiento[], hoy: string, hasta: string): string[] {
+  const dia = hoy.slice(0, 10);
+  // la ocurrencia del periodo en curso: la del mes si es mensual, la vigente en las demás
+  let actual: string | null;
+  if (frecuenciaDe(r) === 'mensual') actual = `${dia.slice(0, 8)}${String(r.dia).padStart(2, '0')}`;
+  else actual = vigente(r, dia);
+  const cubierta = actual !== null && yaRegistrado(r, movs, hoy);
+  const res = ocurrencias(r, dia, hasta).filter(f => !(cubierta && f === actual));
+  if (actual !== null && !cubierta && actual < dia) res.unshift(dia);
+  return res;
+}
+
+/** Cuántas veces falta pagarlo lo que resta del mes (para el «seguro para gastar»). */
 export function vecesQueFaltanEsteMes(r: Recurrente, movs: Movimiento[], hoy: string): number {
   const dia = hoy.slice(0, 10);
-  if (frecuenciaDe(r) === 'mensual') return yaRegistrado(r, movs, hoy) ? 0 : 1;
   const [a, m] = [Number(dia.slice(0, 4)), Number(dia.slice(5, 7))];
-  const finDeMes = deMs(Date.UTC(a, m, 0));
-  const futuras = ocurrencias(r, sumarDias(dia, DIAS_DE_ANTICIPO + 1), finDeMes).length;
-  return (estaPendiente(r, movs, hoy) ? 1 : 0) + futuras;
+  return fechasQueFaltan(r, movs, hoy, deMs(Date.UTC(a, m, 0))).length;
 }
 
 /** «cada mes, el 5», «cada semana, los lunes»... para mostrar. */

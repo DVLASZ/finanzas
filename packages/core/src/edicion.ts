@@ -10,7 +10,7 @@
  *   gasto, ingreso, transferencia  monto, cuentas, categoría, concepto y fecha (los asientos se rehacen)
  *   venta con catálogo             cantidad (el monto sale de ella), cuenta, concepto y fecha
  *   préstamo, deuda, pago, compartido, venta fiada, gasto con plata de otros
- *                                  solo concepto y fecha: su monto está atado a lo que debe cada persona
+ *                                  concepto, fecha y la cuenta de dinero si la hay: el monto y la persona están atados
  *   saldo inicial, arqueo, cambio de moneda: no se editan desde aquí
  */
 import { calcularSaldos } from './consultas.ts';
@@ -75,6 +75,22 @@ const propuestaDe = (m: Movimiento): Propuesta | null => {
   return p && typeof p === 'object' && typeof p.tipo === 'string' && typeof p.monto === 'number' ? p : null;
 };
 
+/** Si el movimiento mueve plata de una cuenta de dinero (un préstamo sí; una deuda que pagó otra persona, no). */
+function tieneCuentaDeDinero(m: Movimiento, p: Propuesta): boolean {
+  if (m.tipo === 'prestamo' || m.tipo === 'pago') return true;
+  if (m.tipo === 'deuda') return Boolean(p.recibeDinero);
+  if (m.tipo === 'compartido') return !p.pagoOtro;
+  return false;
+}
+
+/** El rótulo del selector de cuenta: dónde entró la plata, de dónde salió o con qué se pagó. */
+export function etiquetaDeCuenta(m: Movimiento, p: Propuesta | null): string {
+  if (m.tipo === 'transferencia') return 'Sale de';
+  if (m.tipo === 'ingreso' || (m.tipo === 'deuda' && p?.recibeDinero) || (m.tipo === 'pago' && p?.direccion !== 'yo_pago')) return 'Entró a';
+  if (m.tipo === 'prestamo' || m.tipo === 'pago' || m.tipo === 'compartido') return 'Salió de';
+  return 'Pagado con';
+}
+
 /** Qué se puede editar de un movimiento y, lo que no, por qué. */
 export function capacidadesDeEdicion(m: Movimiento): Capacidades {
   if (m.estado !== 'ok') return { editable: false, motivo: 'Un movimiento anulado no se edita.', campos: todosCerrados('Está anulado.') };
@@ -110,8 +126,9 @@ export function capacidadesDeEdicion(m: Movimiento): Capacidades {
   if (m.tipo === 'transferencia') {
     return { editable: true, campos: libres({ monto: { editable: true }, cuenta: { editable: true }, cuentaDestino: { editable: true } }) };
   }
-  // préstamo, deuda, pago, compartido, ventas fiadas: solo concepto y fecha
-  return { editable: true, campos: libres({ monto: atado, cuenta: atado }) };
+  // préstamo, deuda, pago, compartido, ventas fiadas: concepto y fecha; el monto y la persona siguen atados.
+  // Si hay una cuenta de dinero de por medio se puede cambiar solo esa (mismo monto y moneda, la persona queda igual).
+  return { editable: true, campos: libres({ monto: atado, cuenta: tieneCuentaDeDinero(m, p) ? { editable: true } : atado }) };
 }
 
 const hayNumero = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
@@ -146,6 +163,8 @@ export function previsualizarEdicion(datos: Datos, ahora: Date, id: string, camb
   const avisos: string[] = [];
   const p0 = propuestaDe(original);
   const moneda: Moneda = p0?.moneda ?? original.asientos.find(a => a.moneda)?.moneda ?? 'COP';
+  // en un pago cruzado la cuenta de dinero es la de la otra moneda (pesos por una deuda en dólares)
+  const monedaDeCuenta: Moneda = p0?.montoOtro !== undefined && p0.monedaOtra ? p0.monedaOtra : moneda;
   const cerrado = /^\d{4}-\d{2}-\d{2}$/.test(datos.config.cerrado_hasta ?? '') ? datos.config.cerrado_hasta! : null;
 
   // 1. qué campos se están tocando y cuáles se pueden
@@ -193,7 +212,7 @@ export function previsualizarEdicion(datos: Datos, ahora: Date, id: string, camb
     if (pide('cuenta', cambios.cuentaId, p1.cuentaId ?? 'efectivo')) {
       const c = datos.cuentas.find(x => x.id === cambios.cuentaId);
       if (!c || c.tipo !== 'dinero') bloqueos.push('Elige una cuenta de dinero.');
-      else if (c.moneda !== moneda) bloqueos.push(`${c.nombre} es de otra moneda: este movimiento es en ${moneda}. Para cambiar de moneda, anótalo de nuevo.`);
+      else if (c.moneda !== monedaDeCuenta) bloqueos.push(`${c.nombre} es de otra moneda: este movimiento es en ${monedaDeCuenta}. Para cambiar de moneda, anótalo de nuevo.`);
       else { p1.cuentaId = c.id; rehacerAsientos = true; }
     }
     if (pide('cuentaDestino', cambios.cuentaDestinoId, p1.cuentaDestinoId)) {
@@ -247,7 +266,7 @@ export function previsualizarEdicion(datos: Datos, ahora: Date, id: string, camb
   if (p0 && p1) {
     nuevo('monto', 'Monto', formatear(p0.monto, p0.moneda), formatear(p1.monto, p1.moneda));
     nuevo('cantidad', 'Cantidad', String(p0.venta?.cantidad ?? ''), String(p1.venta?.cantidad ?? ''));
-    nuevo('cuenta', original.tipo === 'ingreso' ? 'Entró a' : original.tipo === 'transferencia' ? 'Sale de' : 'Pagado con', nombreCuenta(datos.cuentas, p0.cuentaId ?? 'efectivo'), nombreCuenta(datos.cuentas, p1.cuentaId ?? 'efectivo'));
+    nuevo('cuenta', etiquetaDeCuenta(original, p0), nombreCuenta(datos.cuentas, p0.cuentaId ?? 'efectivo'), nombreCuenta(datos.cuentas, p1.cuentaId ?? 'efectivo'));
     nuevo('cuentaDestino', 'Entra a', nombreCuenta(datos.cuentas, p0.cuentaDestinoId), nombreCuenta(datos.cuentas, p1.cuentaDestinoId));
     nuevo('categoria', 'Categoría', nombreCuenta(datos.cuentas, p0.categoriaId), nombreCuenta(datos.cuentas, p1.categoriaId));
     nuevo('fuente', 'Fuente', p0.fuente ?? '', p1.fuente ?? '');

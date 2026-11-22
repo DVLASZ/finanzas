@@ -6,6 +6,7 @@ import { preguntarPorPersona } from './personas.ts';
 import { aMinor, formatear, type MontoHallado } from '../dinero.ts';
 import { BILLETES } from '../efectivo.ts';
 import { borrarTramos, categorizar, cuentaEnDolares, ejemploDeCuenta } from '../entidades.ts';
+import { heredarDeFijo } from '../fijosHeredar.ts';
 import { describirRegla, reglaParaFrase } from '../reglas.ts';
 import { capitalizar, titulo } from '../texto.ts';
 import { type Contexto, type Cuenta, type Moneda } from '../tipos.ts';
@@ -84,7 +85,9 @@ export function gasto(b: Base, ctx: Contexto): Resultado {
   const atajo = ctx.atajos.find(a => libresAtajo[0] === a.palabra);
   // Regla aprendida (core/src/reglas.ts): solo rellena lo que la frase no dijo. La cuenta escrita y el atajo con cuenta ganan.
   const regla = mc ? null : reglaParaFrase(ctx.config, ctx.cuentas, palabrasLibres(b.t, [...tramos, ...tramosDe(b.montos)]).join(' '));
-  const reglaCuenta = !cuentas.length && !atajo?.cuentaId ? regla?.cuentaId : undefined;
+  // un pago fijo con el mismo concepto («claude 65000») pone su cuenta y su categoría de siempre si la frase no dijo otra
+  const fijo = mc ? null : heredarDeFijo(palabrasLibres(b.t, [...tramos, ...tramosDe(b.montos)]).join(' '), ctx);
+  const reglaCuenta = !cuentas.length && !atajo?.cuentaId ? (regla?.cuentaId ?? fijo?.cuentaId) : undefined;
 
   if (principales.length === 1 && principales[0].negativo) return error('Un gasto no puede ser negativo. Si te devolvieron plata, anótalo como ingreso: «+mamá 30k».');
 
@@ -119,11 +122,12 @@ export function gasto(b: Base, ctx: Contexto): Resultado {
   const libres = recortarBordes(palabrasLibres(b.t, todosLosTramos));
   const textoCategoria = recortarBordes(borrarTramos(b.t, todosLosTramos).split(' ').filter(Boolean)).join(' ');
 
-  let categoriaId: string | null = null;
-  if (atajo && libres[0] === atajo.palabra && atajo.categoriaId) categoriaId = atajo.categoriaId;
-  const reglaCategoria = regla?.categoriaId;
-  if (!categoriaId && reglaCategoria) categoriaId = reglaCategoria;
-  categoriaId ??= categorizar(textoCategoria || b.t, ctx);
+  // Orden de prioridad: la categoría que dicen las palabras de la frase (si junto al atajo hay otra palabra, como «pasaje taxi»,
+  // gana la más específica), después la del atajo y al final la regla aprendida, que solo rellena lo que no se dijo.
+  const delAtajo = !!atajo && libres[0] === atajo.palabra && !!atajo.categoriaId;
+  const reglaCategoria = regla?.categoriaId ?? fijo?.categoriaId;
+  const dicha = delAtajo ? (libres.length > 1 ? categorizar(libres.slice(1).join(' '), ctx) : null) : categorizar(textoCategoria || b.t, ctx);
+  let categoriaId: string | null = dicha ?? (delAtajo ? atajo!.categoriaId! : null) ?? reglaCategoria ?? null;
   // «moto 180000» no es un pasaje: una cifra grande de moto, carro o camioneta sin recorrido es un arreglo.
   if (categoriaId === 'cat:transporte' && moneda === 'COP' && monto >= 50_000 && ctx.cuentas.some(c => c.id === 'cat:reparaciones')) {
     const lug = lugares(b.t, todosLosTramos, b);
@@ -148,8 +152,12 @@ export function gasto(b: Base, ctx: Contexto): Resultado {
     }
   } else {
     p.concepto = capitalizar(libres.length ? conOriginales(libres, b) : (atajo?.concepto ?? ''));
+    // «gasté 5000» dice que se gastó pero no en qué: se anota como «Gasto» y se pregunta la categoría
+    if (!p.concepto && /\b(gaste|gastamos|pague|pagamos)\b/.test(b.t)) p.concepto = 'Gasto';
     if (!p.concepto) return error('Me falta decirme en qué fue el gasto. Escríbelo completo, por ejemplo: «mecato 5000».');
     if (atajo && libres[0] === atajo.palabra && libres.length === 1) p.concepto = atajo.concepto;
+    // con el concepto del fijo, el pago cuenta como hecho este mes
+    if (fijo) p.concepto = fijo.fijo.concepto;
   }
 
   if (!categoriaId) {

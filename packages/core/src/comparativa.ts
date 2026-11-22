@@ -9,6 +9,7 @@
 import { gastoPorCategoria } from './consultas.ts';
 import { formatear } from './dinero.ts';
 import { aLocal } from './fechas.ts';
+import { agruparCategorias } from './subcategorias.ts';
 import type { Datos } from './repo.ts';
 
 export interface FilaComparativa {
@@ -42,7 +43,7 @@ export const DIAS_PARA_PROYECTAR = 5;
 const p2 = (n: number) => String(n).padStart(2, '0');
 const pct = (actual: number, anterior: number): number | null => (anterior > 0 ? Math.round(((actual - anterior) / anterior) * 100) : null);
 
-export function comparativaMensual(datos: Pick<Datos, 'movimientos' | 'cuentas'>, ahora: Date): ComparativaMensual {
+export function comparativaMensual(datos: Pick<Datos, 'movimientos' | 'cuentas'> & { config?: Record<string, string> }, ahora: Date): ComparativaMensual {
   const hoy = aLocal(ahora);
   const anio = Number(hoy.slice(0, 4)), mes = Number(hoy.slice(5, 7)), dia = Number(hoy.slice(8, 10));
   const diasDelMes = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
@@ -55,8 +56,10 @@ export function comparativaMensual(datos: Pick<Datos, 'movimientos' | 'cuentas'>
   const finMesAnt = `${anioAnt}-${p2(mesAnt)}-${p2(diasMesAnt)} 23:59:59`;
 
   const sumar = (l: { total: number }[]) => l.reduce((s, x) => s + x.total, 0);
-  const actual = gastoPorCategoria(datos.movimientos, datos.cuentas, inicio, manana);
-  const anterior = gastoPorCategoria(datos.movimientos, datos.cuentas, inicioAnt, hastaAnt);
+  // cada fila es una categoría principal con lo de sus subcategorías, igual que la ventana que se abre al tocarla
+  const agrupado = (desde: string, hasta: string) => agruparCategorias(gastoPorCategoria(datos.movimientos, datos.cuentas, desde, hasta), datos.config ?? {}, datos.cuentas);
+  const actual = agrupado(inicio, manana);
+  const anterior = agrupado(inicioAnt, hastaAnt);
   const totalActual = sumar(actual);
   const totalAnteriorMismosDias = sumar(anterior);
   const totalMesAnterior = sumar(gastoPorCategoria(datos.movimientos, datos.cuentas, inicioAnt, finMesAnt));
