@@ -53,8 +53,9 @@ Cada movimiento mueve plata entre cuentas y sus asientos suman cero. Un gasto re
 | Módulo | Qué calcula |
 |---|---|
 | `consultas.ts` | Saldos, gasto por categoría, ingresos por fuente, deudas y topes. |
-| `seguro.ts` | El «seguro para gastar hoy»: disponible, menos pagos fijos que faltan, menos lo apartado en alcancías, repartido entre los días que quedan del mes. Nunca da negativo. |
-| `hormiga.ts` | Gastos hormiga: compras de 15.000 o menos que se repiten tres veces o más, agrupadas por concepto, con la proyección a un año. |
+| `seguro.ts` | El «seguro para gastar hoy»: disponible, menos la plata de otros, menos los pagos fijos que faltan, menos lo apartado en alcancías, repartido entre los días que quedan del mes. Nunca da negativo. El tope del día se fija con lo libre más lo gastado hoy, así que «te queda hoy» es ese tope menos lo gastado, sin descontarlo dos veces. Lo gastado hoy es solo tu parte de gastos y compartidos que sacaron plata de tus cuentas: ni deudas ni cuadres. También calcula `patrimonio`: Neto = todo lo que tienes (disponible sin la plata de otros, más monedas y alcancía) más lo que te deben, menos lo que debes. |
+| `hormiga.ts` | Gastos hormiga: compras de 15.000 o menos que se repiten tres veces o más, agrupadas por concepto, con la proyección a un año sobre los días que ya pasaron del periodo (`diasTranscurridos`), no sobre el mes entero. |
+| `recurrentes.ts`, `liquidez.ts` | `fechasQueFaltan` decide qué pagos fijos siguen sin pagar (comparando sin tildes ni mayúsculas) y lo usan el seguro y los próximos 30 días. Un pago ya hecho este periodo no se resta; uno vencido y sin anotar sí. |
 | `metas.ts` | Alcancías: lo apartado y los aportes con fecha. Con ellos estima cuántos días faltan al ritmo de los últimos 60. |
 | `recurrentes.ts` | Pagos fijos de cada mes y cuáles faltan por registrar. |
 | `alertas.ts`, `revision.ts` | Qué conviene avisar y qué revisar al cerrar el mes. |

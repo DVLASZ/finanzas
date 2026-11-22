@@ -1,9 +1,12 @@
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { mostrarMontos } from './_ojo.mjs';
 const chrome = ['C:/Program Files/Google/Chrome/Application/chrome.exe'].find(existsSync);
-const out = 'C:/Users/edwar/AppData/Local/Temp/claude/b387cb9e8eb93630/4cfde460-32f1-497b-a047-f251c6f7d0f1/scratchpad';
+// Carpeta de las capturas: la que se pase en SALIDA, o la temporal del sistema.
+const out = process.env.SALIDA || join(tmpdir(), 'finanzas-hojas');
 mkdirSync(out, { recursive: true });
 const PUERTO = 5950 + Math.floor(Math.random() * 40);
 const srv = spawn('node', ['scripts/servir-web.mjs'], { env: { ...process.env, PORT: String(PUERTO) }, stdio: 'ignore' });

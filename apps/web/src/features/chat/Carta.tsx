@@ -2,10 +2,10 @@
  * La tarjeta «Entendí / Guardado»: un pequeño widget financiero con cabecera de estado, el monto grande con
  * color según sea gasto o ingreso, pastillas con ícono, avisos y botones táctiles.
  */
-import { AlertTriangle, BarChart3, CalendarDays, Check, HelpCircle, Info, PartyPopper, Pencil, Tag, Undo2, Wallet, X } from 'lucide-preact';
+import { AlertTriangle, BarChart3, CalendarDays, Check, HelpCircle, Info, PartyPopper, Pencil, Plus, Tag, Undo2, Wallet, X } from 'lucide-preact';
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef } from 'preact/hooks';
-import { estadoPresupuesto, formatear, rangoPeriodo, resumenSaldos, type Boton } from '../../../../../packages/core/src/index.ts';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { estadoPresupuesto, etiquetasDeTexto, formatear, MAX_ETIQUETAS, MAX_LARGO_ETIQUETA, rangoPeriodo, resumenSaldos, sugerirEtiquetas, tokensDeEtiqueta, type Boton } from '../../../../../packages/core/src/index.ts';
 import { sentidoDelMonto, sinEmoji, type DatosCarta, type NotaCarta } from '../../lib/carta.ts';
 import { ctx, datos as datosSignal } from '../../state/store.ts';
 import { BarraAvance, Insignia, visualDeCuenta, visualDeNombre } from '../../components/ui/iconos.tsx';
@@ -55,7 +55,7 @@ function calcularImpacto(pildoras: string[]) {
   const cat = d.cuentas.find(x => x.tipo === 'categoria' && pildoras.includes(x.nombre));
   const cta = d.cuentas.find(x => x.tipo === 'dinero' && pildoras.includes(x.nombre));
   const mes = rangoPeriodo('mes', c.ahora);
-  const tope = cat ? estadoPresupuesto(d.movimientos, d.cuentas, d.presupuestos, cat.id, mes.desde, mes.hasta, d.config.tope_arrastra === '1') : null;
+  const tope = cat ? estadoPresupuesto(d.movimientos, d.cuentas, d.presupuestos, cat.id, mes.desde, mes.hasta, d.config.tope_arrastra === '1', d.config) : null;
   const saldo = cta ? resumenSaldos(d.movimientos, d.cuentas, d.config.fecha_apertura ?? '2000-01-01 00:00:00').cuentas.find(x => x.cuenta.id === cta.id)?.saldo : undefined;
   if (!tope && saldo === undefined) return null;
   return { tope, cat, cta, saldo };
@@ -79,7 +79,68 @@ function Impacto({ info }: { info: NonNullable<ReturnType<typeof calcularImpacto
   );
 }
 
-export function Carta({ datos, hijos, impacto = false }: { datos: DatosCarta; hijos?: ComponentChildren; impacto?: boolean }) {
+/** Las etiquetas que ya trae la tarjeta («Evento: #viaje #claude») y la nota que las dice. */
+function etiquetasDeCarta(datos: DatosCarta): { puestas: string[]; nota?: NotaCarta } {
+  const nota = datos.notas.find(n => n.texto.startsWith('Evento: #'));
+  return { puestas: nota ? tokensDeEtiqueta(nota.texto.slice('Evento: '.length)) : [], nota };
+}
+
+/** Con qué se parece este movimiento, leído de la tarjeta: concepto, categoría y persona. Sirve para sugerir etiquetas. */
+function baseDeSugerencia(datos: DatosCarta, puestas: string[]) {
+  const d = datosSignal.value;
+  if (!d) return { etiquetas: puestas };
+  const cat = d.cuentas.find(c => c.tipo === 'categoria' && datos.pildoras.includes(c.nombre));
+  const concepto = datos.notas.find(n => n.texto.startsWith('Concepto: '))?.texto.slice('Concepto: '.length) ?? cat?.nombre ?? '';
+  const textos = [...datos.pildoras, ...datos.notas.map(n => n.texto)].join(' | ');
+  const persona = d.cuentas.find(c => c.tipo === 'persona' && textos.includes(c.nombre));
+  return { concepto, categoriaId: cat?.id, persona: persona?.nombre, etiquetas: puestas };
+}
+
+/**
+ * Fila rápida de etiquetas de la tarjeta por confirmar: las puestas (con ✕), una o dos sugerencias y «Etiqueta» para escribir
+ * otra. No arma asientos: manda el conjunto completo («#viaje #claude») como una corrección más de la tarjeta.
+ */
+function FilaEtiquetas({ puestas, base, alCambiar }: { puestas: string[]; base: ReturnType<typeof baseDeSugerencia>; alCambiar: (texto: string) => void }) {
+  const [abierto, setAbierto] = useState(false);
+  const [valor, setValor] = useState('');
+  const [error, setError] = useState('');
+  const lleno = puestas.length >= MAX_ETIQUETAS;
+  const sugeridas = lleno ? [] : sugerirEtiquetas(datosSignal.value?.movimientos ?? [], base, 2);
+  const enviar = (lista: string[]) => alCambiar(lista.length ? lista.map(e => `#${e}`).join(' ') : 'sin etiquetas');
+  const agregar = () => {
+    const r = etiquetasDeTexto(valor);
+    if (r.error) { setError(r.error); return; }
+    const nuevas = tokensDeEtiqueta(r.valor).filter(e => !puestas.includes(e));
+    if (!nuevas.length) { setAbierto(false); setValor(''); return; }
+    if (puestas.length + nuevas.length > MAX_ETIQUETAS) { setError(`Máximo ${MAX_ETIQUETAS} etiquetas por movimiento.`); return; }
+    enviar([...puestas, ...nuevas]);
+  };
+  return (
+    <div class="etiquetas-fila" data-etiquetas>
+      {puestas.map(e => (
+        <span key={e} class="etq etq-puesta" data-etiqueta={e}>
+          #{e}
+          <button type="button" class="etq-quitar" aria-label={`Quitar la etiqueta ${e}`} data-quitar-etiqueta={e} onClick={() => enviar(puestas.filter(x => x !== e))}><X size={13} aria-hidden="true" /></button>
+        </span>
+      ))}
+      {sugeridas.map(e => (
+        <button key={e} type="button" class="etq etq-sugerida" data-sugerida={e} aria-label={`Agregar la etiqueta ${e}`} onClick={() => enviar([...puestas, e])}>#{e}</button>
+      ))}
+      {!lleno && !abierto && <button type="button" class="etq etq-nueva" data-etiqueta-nueva onClick={() => setAbierto(true)}><Plus size={13} aria-hidden="true" />Etiqueta</button>}
+      {abierto && (
+        <form class="etq-campo" onSubmit={e => { e.preventDefault(); agregar(); }}>
+          <input type="text" aria-label="Escribe una etiqueta" placeholder="viaje" maxLength={MAX_LARGO_ETIQUETA + 1} autoCapitalize="none" autoComplete="off" enterkeyhint="done" data-etiqueta-campo value={valor}
+            onInput={e => { setValor((e.target as HTMLInputElement).value); setError(''); }} />
+          <button type="submit" class="etq etq-sugerida" aria-label="Agregar etiqueta"><Check size={14} aria-hidden="true" /></button>
+          <button type="button" class="etq" aria-label="Cancelar" onClick={() => { setAbierto(false); setValor(''); setError(''); }}><X size={14} aria-hidden="true" /></button>
+        </form>
+      )}
+      {error && <div class="etq-error" role="alert">{error}</div>}
+    </div>
+  );
+}
+
+export function Carta({ datos, hijos, impacto = false, alEtiquetar }: { datos: DatosCarta; hijos?: ComponentChildren; impacto?: boolean; alEtiquetar?: (texto: string) => void }) {
   const monto = useRef<HTMLDivElement>(null);
   useEffect(() => { if (monto.current && datos.guardado) entrar(monto.current); }, [datos.guardado]);
   const sentido = sentidoDelMonto(datos);
@@ -87,7 +148,10 @@ export function Carta({ datos, hijos, impacto = false }: { datos: DatosCarta; hi
   const pesos = /^\$\d{1,3}(\.\d{3})*$/.test(datos.monto ?? '') ? Number((datos.monto ?? '').replace(/\D/g, '')) : 0;
   const info = impacto && datos.guardado ? calcularImpacto(datos.pildoras) : null;
   // lo que dice la tarjeta de impacto no se repite en las notas de texto
-  const notas = info ? datos.notas.filter(n => !(info.cat && n.texto.startsWith(`${info.cat.nombre}: llevas`)) && !(info.cta && n.texto.startsWith(`${info.cta.nombre}: `))) : datos.notas;
+  const { puestas, nota: notaEtiquetas } = etiquetasDeCarta(datos);
+  const conFila = Boolean(alEtiquetar) && !datos.guardado && !/^(saldo inicial|contar la plata|cuadrar con)/i.test(datos.tipo);
+  const notas = conFila && notaEtiquetas ? datos.notas.filter(n => n !== notaEtiquetas) : datos.notas;
+  const notasSinImpacto = info ? notas.filter(n => !(info.cat && n.texto.startsWith(`${info.cat.nombre}: llevas`)) && !(info.cta && n.texto.startsWith(`${info.cta.nombre}: `))) : notas;
   return (
     <>
       <div class={`carta-cab ${datos.guardado ? 'guardado' : 'entendi'}`}>
@@ -97,7 +161,8 @@ export function Carta({ datos, hijos, impacto = false }: { datos: DatosCarta; hi
       <div class="carta-cuerpo">
         {datos.monto && <div ref={monto} class={`monto-g ${sentido}`}>{pesos ? <MontoAnimado valor={pesos} /> : datos.monto}</div>}
         {datos.pildoras.length > 0 && <div class="pildoras">{datos.pildoras.map(p => <Pildora key={p} texto={p} />)}</div>}
-        {notas.map((n, i) => <Nota key={i} n={n} />)}
+        {notasSinImpacto.map((n, i) => <Nota key={i} n={n} />)}
+        {conFila && alEtiquetar && <FilaEtiquetas puestas={puestas} base={baseDeSugerencia(datos, puestas)} alCambiar={alEtiquetar} />}
         {info && <Impacto info={info} />}
         {hijos}
       </div>

@@ -19,6 +19,8 @@ export interface Env extends EnvRespaldo, EnvBuzon {
   AI?: { run(modelo: string, entrada: unknown): Promise<unknown> };
   /** Tope de ayudas de la IA por día. Por defecto 30. */
   IA_TOPE?: string;
+  /** Cuánto esperar al modelo en milisegundos (por defecto 20000). Solo se cambia en pruebas. */
+  IA_ESPERA_MS?: string;
   /** Otro modelo de Workers AI, si el de siempre se retira. */
   IA_MODELO?: string;
   /** Otro modelo con visión para leer comprobantes. */

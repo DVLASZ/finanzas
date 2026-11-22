@@ -134,6 +134,10 @@ Lo que se abre al tocar un bloque informativo pasa por `components/ui/HojaInfo.t
 
 Las etiquetas viven en `Movimiento.etiqueta`, en minúscula y sin tilde, separadas por espacio, y se leen por palabra entera (`core/src/etiquetas.ts`). Las reglas aprendidas son JSON en la clave de config `reglas_aprendidas` (`core/src/reglas.ts`); el parser solo las usa cuando la frase no trae cuenta ni categoría. Ninguna de las dos pide migración. El reporte PDF arma `#reporte-impresion` y llama a `window.print()`; la hoja se ve solo en `@media print`.
 
+## Cuentas del gasto y los topes
+
+`gastoPorCategoria` solo suma movimientos de `TIPOS_GASTO` (gasto y compartido): es la única definición de gasto, y la usan los totales, las listas, la dona, el ritmo y las comparativas. `estadoPresupuesto` recibe al final la `config` para sumar las subcategorías (sin ella cuenta solo la categoría suelta) y escala el tope según el rango: meses completos por el número de meses, otro rango prorrateado por días, y el arrastre solo en un mes. Cualquier comparación entre periodos se agrupa con `agruparCategorias` en los dos lados, si no una categoría con subcategorías se compara contra el periodo anterior sin ellas. Las pruebas están en `packages/core/test/topes-gasto.test.ts`.
+
 ## Tamaño de letra y desbordes
 
 `data-letra` en `<html>` tiene cuatro valores (compacta, normal, grande, extra) y mueve `--escala` (0,85, 1, 1,15 y 1,3) en `temas.css`. Una regla pensada para letra grande se escribe para grande y extra a la vez. Nada se parte: las etiquetas usan `keep-all` y un tamaño con `clamp`, y las barras llevan el nombre y el monto en una fila y la barra debajo, a todo el ancho. `npm run e2e:letra` recorre los cuatro niveles (`LETRAS`), el ancho (`ANCHO=360`), la escala del sistema (`ESCALAS`) y los temas (`TEMAS=todos`), y marca palabras partidas, barras de menos del 60 % de su fila y el ojo pisando la barra de abajo.

@@ -34,11 +34,16 @@ function detectarComando(t: string): { comando: Comando; arg?: string } | null {
     [/^(ano|este ano|anio|resumen ano|resumen del ano)$/, 'anio'],
     [/^(deudas|debo|cuanto debo|deudas pendientes)$/, 'deudas'],
     [/^(deshacer|undo|anular|anular ultimo|deshacer ultimo)$/, 'deshacer'],
+    // «anula el último», «borra», «elimina el ultimo», «quita el último»: se dicen como se hablan y deshacen lo último
+    [/^(?:anula|anular|borra|borrar|elimina|eliminar|quita|quitar|deshaz|revierte|revertir)(?: (?:el|lo|ese|este))?(?: ultim[oa])?(?: (?:movimiento|gasto|ingreso|registro))?$/, 'deshacer'],
     [/^(ayuda|help|hola|menu|comandos|\?)$/, 'ayuda'],
     [/^(editar ultimo|corregir ultimo|editar)$/, 'editar_ultimo'],
     [/^(ultimos|movimientos|historial|ultimos movimientos)$/, 'ultimos'],
   ];
   for (const [re, comando] of simples) if (re.test(t)) return { comando };
+  // «cambia el monto a 7000», «corrige a 7000», «era 7000», «mejor 7000»: corrige el monto del último movimiento
+  const cambioMonto = t.match(/^(?:(?:cambia|cambiar|cambie|corrige|corregir|modifica|modificar|edita|editar|actualiza|actualizar)(?: (?:el|la))?(?: (?:monto|valor|precio))?(?: (?:a|por|en))?|era|mejor)\s+(\d[\d.,]*\s?(?:k|mil|lucas?|palos?)?)$/);
+  if (cambioMonto) return { comando: 'editar_ultimo', arg: `monto ${cambioMonto[1]}` };
   // Cierre de meses: «cerrar mes octubre», «meses cerrados», «abrir meses»
   const cerrar = t.match(/^cerrar(?: el)? mes (?:de )?([a-z]+)(?: (?:de )?(\d{4}))?$/);
   if (cerrar) return { comando: 'cierre_cerrar', arg: `${cerrar[1]}|${cerrar[2] ?? ''}` };
@@ -201,13 +206,51 @@ function negada(texto: string): boolean {
   return /\b(?:no|nunca|jamas|tampoco)\s+(?:(?:me|le|les|te|se|lo|la|nos|ha|han|he|hemos|haya|hayan)\s+)*(?:(?:pag|compr|gast|deb|prest|cobr|recib|transfer|consign)\w*|dio|dieron)\b/.test(t);
 }
 
+const AVISO_NEGADO = 'Eso suena a que no pasó, así que no anoté nada ni creé ninguna persona. Si quieres anotar algo, escríbelo sin el «no».';
+// Lo que separa una cláusula de otra: coma (no la decimal), punto y coma, salto de línea, « / », « pero » y « y ».
+const SEPARADOR_CLAUSULA = /(\s*(?:,(?!\d)|;|\n|\s\/\s|\s+pero\s+|\s+y\s+)\s*)/i;
+
+/**
+ * La negación se evalúa por cláusula: «gasté 5000, no pagué propina» guarda los 5.000 y deja la propina fuera.
+ * Si no queda ninguna cláusula con plata y con palabras propias («Ana no me pagó, 50000»), la frase entera se tiene por negada.
+ */
+function sinNegadas(texto: string): { texto: string; ignoradas: string[]; todas: boolean } {
+  if (!negada(texto)) return { texto, ignoradas: [], todas: false };
+  const trozos = texto.split(SEPARADOR_CLAUSULA); // las cláusulas en las posiciones pares, los separadores en las impares
+  const clausulas = trozos.filter((_, i) => i % 2 === 0);
+  const niega = clausulas.map(c => negada(c));
+  const quedan = clausulas.filter((_, i) => !niega[i]);
+  const conPlata = quedan.filter(c => /\d/.test(c));
+  const todas = !niega.some(Boolean) || !conPlata.length || conPlata.some(c => !/[a-záéíóúñ]{3,}/i.test(c));
+  if (todas) return { texto, ignoradas: [], todas: true };
+  let salida = '';
+  let primera = true;
+  clausulas.forEach((c, i) => {
+    if (niega[i]) return;
+    salida += primera ? c : trozos[i * 2 - 1] + c;
+    primera = false;
+  });
+  return { texto: salida, ignoradas: clausulas.filter((_, i) => niega[i]).map(c => c.trim()), todas: false };
+}
+
 export function interpretar(texto: string, ctx: Contexto): Resultado {
-  if (negada(texto)) return error('Eso suena a que no pasó, así que no anoté nada ni creé ninguna persona. Si quieres anotar algo, escríbelo sin el «no».');
+  const neg = sinNegadas(texto);
+  if (neg.todas) return error(AVISO_NEGADO);
+  const r = interpretarAfirmado(neg.texto, ctx);
+  if (neg.ignoradas.length && r.clase === 'movimiento') {
+    r.propuesta.avisos.push(...neg.ignoradas.map(c => `Ignoré «${c}», porque dice que no pasó.`));
+  }
+  return r;
+}
+
+function interpretarAfirmado(texto: string, ctx: Contexto): Resultado {
   // el lenguaje natural primero: modismos, jerga de plata y gastos compartidos dichos de mil maneras (ver lenguaje.ts)
   const nat = naturalizar(texto, ctx);
   if (nat?.pregunta) return { clase: 'pregunta', ...nat.pregunta };
+  if (nat?.error) return error(nat.error);
   if (nat && nat.texto !== texto.trim()) {
     const r = interpretar(nat.texto, ctx);
+    if (r.clase === 'movimiento' && nat.avisos?.length) r.propuesta.avisos.push(...nat.avisos);
     if (r.clase !== 'error') return r;
     // lo que reescribimos no se entendió: se prueba con lo que escribió la persona
   }
@@ -262,7 +305,7 @@ function interpretarPlano(texto: string, ctx: Contexto): Resultado {
   }
   const b = prepararBase(original, tBase, ctx);
   if (ex.etiquetas.length) b.etiqueta = ex.etiquetas.join(' ');
-  if (b.fechaInvalida) return error('Esa fecha no existe. Revísala (por ejemplo «el 15/10» o «ayer»).');
+  if (b.fechaInvalida) return error(b.fechaMotivo ?? 'Esa fecha no existe. Revísala (por ejemplo «el 15/10» o «ayer»).');
   const suelto = vueltoSuelto(b);
   if (suelto) return suelto;
   // Alcancía de monedas (solo en las apps que la tienen): «metí 5 monedas de 500 y 3 de mil a la alcancía»

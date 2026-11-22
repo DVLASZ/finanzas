@@ -13,6 +13,15 @@ La app lo hace sola cuando el bot responde que no entendió, hay servidor config
 
 Las reglas del bot corren primero y sin red, y entienden los modismos de uso diario (ver «Como lo dice la gente» en BOT.md). La IA entra solo con lo que las reglas no pudieron leer. Sus instrucciones llevan las formas canónicas de los gastos repartidos, la jerga de deudas y los verbos de mover plata, y le piden que responda `{"frases": []}` en vez de inventar cuando no sabe entre cuántos se repartió algo o qué cuenta es. Lo que devuelve vuelve a pasar por el bot y por la tarjeta de confirmación.
 
+Lo que devuelve la IA se revisa dos veces, en el servidor y otra vez en la app (`validarFrasesIA`, en `core/src/ia.ts`), frase por frase:
+
+- Solo pasan movimientos. Un comando que la IA se invente (`deshacer 3`, `cerrar mes septiembre`, `quitar meta moto`) se descarta: nunca se ejecuta sin tarjeta.
+- Cada monto tiene que salir de lo que escribiste (o de una suma, una resta o una parte igual de tus montos). Una persona que no nombraste, una cuenta o categoría que no existe, o un ingreso donde hablaste de un gasto, también se descartan.
+- Si una frase no se entiende se descarta solo esa; las demás siguen.
+- Se limpia la salida: sin HTML ni saltos ni caracteres de control, hasta 5 frases de 160 letras como máximo.
+
+Si la IA tarda más de 20 s (15 s desde la app) o falla, no se cuenta esa ayuda del día. El error 502 trae un motivo corto (`tardó demasiado`, `el modelo falló`, `respuesta sin formato`), nunca el texto interno del modelo.
+
 Sin internet no hay ayuda de la IA: el bot dice lo que no entendió y reescribes la frase más simple.
 
 ## Leer comprobantes
@@ -85,4 +94,4 @@ Las pruebas usan una IA falsa, así que no gastan cuota. La calidad del modelo s
 
 ## Sin internet
 
-Si el bot no entiende una frase y no hay conexión, la app la guarda (hasta 10) y avisa que la pensará cuando vuelva el internet. Al volver, la IA la lee y la app ofrece en el chat: «Cuando no había internet escribiste X. Ahora la entendí como Y. ¿La anoto?». Con el botón Anotar sale la tarjeta de siempre para confirmar. La frase lleva el día y la hora en que se escribió, para que no quede con la hora de ahora.
+Si el bot no entiende una frase y no hay conexión, la app la guarda (hasta 10) y avisa que la pensará cuando vuelva el internet. Al volver, la IA la lee y la app ofrece en el chat: «Cuando no había internet escribiste X. Ahora la entendí como Y. ¿La anoto?». Con el botón Anotar sale la tarjeta de siempre para confirmar. La frase lleva el día y la hora en que se escribió, para que no quede con la hora de ahora. Si al volver la IA responde que no tiene cupo (429) o falla (502), la frase se queda en la cola para otro intento (hasta una semana); si responde pero no entiende, se suelta.

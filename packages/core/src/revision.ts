@@ -84,7 +84,7 @@ export function revisarMes(d: Datos, ahora: Date): PuntoRevision[] {
 
   // topes que ya se pasaron este mes
   for (const id of Object.keys(d.presupuestos)) {
-    const e = estadoPresupuesto(d.movimientos, d.cuentas, d.presupuestos, id, desde, hasta, d.config.tope_arrastra === '1');
+    const e = estadoPresupuesto(d.movimientos, d.cuentas, d.presupuestos, id, desde, hasta, d.config.tope_arrastra === '1', d.config);
     if (!e || e.porcentaje < 100) continue;
     const nombre = d.cuentas.find(c => c.id === id)?.nombre ?? id;
     res.push({ nivel: 'aviso', tipo: 'tope', titulo: 'Tope superado', categoriaId: id, texto: `Superaste el tope de ${nombre}: ${formatear(e.gastado)} de ${formatear(e.tope)} (${e.porcentaje} %).` });

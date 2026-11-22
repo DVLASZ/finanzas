@@ -41,6 +41,8 @@ export interface Base {
   originales: Map<string, string>;
   /** Dijo una fecha que no existe. */
   fechaInvalida?: boolean;
+  /** Por qué no sirve la fecha o la hora que dijo. */
+  fechaMotivo?: string;
 }
 
 export function prepararBase(original: string, t0: string, ctx: Contexto): Base {
@@ -54,7 +56,7 @@ export function prepararBase(original: string, t0: string, ctx: Contexto): Base 
   const f = hallarFecha(t, ctx.ahora);
   t = f.resto;
   return {
-    original, t, ocurridoEn: f.fecha, etiqueta, fechaInvalida: f.invalida,
+    original, t, ocurridoEn: f.fecha, etiqueta, fechaInvalida: f.invalida, fechaMotivo: f.motivo,
     cuentas: hallarCuentas(t, ctx), montos: hallarMontos(t), originales: palabrasOriginales(original),
   };
 }

@@ -190,13 +190,48 @@ export function apodosDePersonas(ctx: Contexto): Record<string, string[]> {
 // Categorías
 // ---------------------------------------------------------------------------------------
 
-/** Categoría cuyo nombre aparece tal cual en el texto ("mecato", "viaje semanal"). */
+/** Formas de una palabra suelta en singular y plural: «suscripciones» da «suscripcion»; «comida» da «comidas». */
+function formasDe(w: string): string[] {
+  const f = new Set([w, `${w}s`, `${w}es`]);
+  if (w.endsWith('z')) f.add(`${w.slice(0, -1)}ces`);
+  if (w.length > 4 && w.endsWith('es')) f.add(w.slice(0, -2));
+  if (w.length > 3 && w.endsWith('s')) f.add(w.slice(0, -1));
+  return [...f];
+}
+
+/** Las frases con que se puede nombrar un texto: la última palabra en singular o plural («viaje semanales» no importa, «viajes semanal» tampoco). */
+function variantesDeNombre(clave: string): string[] {
+  const ws = clave.split(' ');
+  const ultima = ws.pop() ?? '';
+  return formasDe(ultima).map(u => [...ws, u].join(' '));
+}
+
+/** ¿El texto trae esta frase como palabras completas? «bus» está en «bus 3000» y no en «busqueda 3000». */
+function traePalabras(t: string, frase: string): boolean {
+  return ` ${t} `.includes(` ${frase} `);
+}
+
+/**
+ * Categoría cuyo nombre aparece en el texto ("mecato", "viaje semanal"), en singular o plural y sin tildes:
+ * «suscripción» y «suscripciones» son la categoría Suscripciones.
+ */
 export function categoriaPorNombre(t: string, ctx: Contexto): Cuenta | null {
   const cats = ctx.cuentas.filter(c => c.tipo === 'categoria' && c.id !== 'cat:descuadre');
   for (const c of cats) {
-    if (new RegExp(`(^| )${c.clave}( |$)`).test(t)) return c;
+    // «otro» suelto aparece en demasiadas frases: de «Otros» solo vale el nombre tal cual
+    if (c.clave === 'otros' ? traePalabras(t, c.clave) : variantesDeNombre(c.clave).some(v => traePalabras(t, v))) return c;
   }
   return null;
+}
+
+/** Palabras del diccionario que son una raíz y valen como inicio de palabra: «droguer» da droguería, droguerías. */
+const RAICES = new Set(['droguer', 'peluque']);
+
+/** ¿Esta palabra clave del diccionario aparece en el texto como palabra completa (o como raíz marcada)? */
+function coincidePalabraClave(t: string, palabra: string): boolean {
+  const p = normalizar(palabra);
+  if (RAICES.has(p)) return t.split(' ').some(w => w.startsWith(p));
+  return variantesDeNombre(p).some(v => traePalabras(t, v));
 }
 
 /**
@@ -211,10 +246,12 @@ export function categorizar(t: string, ctx: Contexto): string | null {
     const a = ctx.aprendido[w];
     if (a?.categoriaId && existe(a.categoriaId)) return a.categoriaId;
   }
-  const porNombre = categoriaPorNombre(t, ctx);
-  if (porNombre) return porNombre.id;
+  // el nombre tal cual gana al diccionario; el nombre en singular o plural («suscripción») va después, para que
+  // «reparación de la bicicleta» siga el orden del diccionario como siempre
+  const exacta = ctx.cuentas.find(c => c.tipo === 'categoria' && c.id !== 'cat:descuadre' && traePalabras(t, c.clave));
+  if (exacta) return exacta.id;
   for (const cat of ctx.diccionario.categorias) {
-    if (existe(cat.id) && cat.palabras.some(p => t.includes(normalizar(p)))) return cat.id;
+    if (existe(cat.id) && cat.palabras.some(p => coincidePalabraClave(t, p))) return cat.id;
   }
-  return null;
+  return categoriaPorNombre(t, ctx)?.id ?? null;
 }

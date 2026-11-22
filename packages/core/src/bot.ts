@@ -7,10 +7,13 @@
  * Flujo: mensaje -> tarjeta "Entendí: ..." -> [Confirmar] [Editar] [Cancelar]. Nada se guarda
  * hasta confirmar. Tras confirmar quedan [Editar] [Deshacer]. El bot nunca borra: solo anula.
  */
-import { calcularSaldos, compromisosSaldados, gastoHabitual } from './consultas.ts';
-import { construirMovimiento } from './asientos.ts';
+import { calcularSaldos, compromisosSaldados, gastoHabitual, resumenSaldos } from './consultas.ts';
+import { construirMovimiento, errorDePago } from './asientos.ts';
 import { ejemploDeCuenta } from './entidades.ts';
-import { AVISO_APERTURA, AVISO_FALTA, faltaPlata, movimientosQueSePierden, quedaNegativoSin, type Falta } from './guardas.ts';
+import {
+  abonosHuerfanos, AVISO_APERTURA, AVISO_EXCESO, AVISO_FALTA, AVISO_MONEDA, excesoDePago, faltaPlata, movimientosQueSePierden,
+  quedaNegativoSin, type Falta,
+} from './guardas.ts';
 import { aLocal, deLocal, describirDia, indiceMes, nombreMes } from './fechas.ts';
 import { billetesSugeridos } from './efectivo.ts';
 import {
@@ -26,12 +29,17 @@ import { hallarMontos, aMinor, formatear } from './dinero.ts';
 import { contextoDe, type Datos, type Pendiente, type Repo } from './repo.ts';
 import { dividirLinea, MAX_MOVIMIENTOS_POR_MENSAJE } from './lineas.ts';
 import { descendientes, leerSubcategorias, MAX_NIVELES, puedeIrDentro } from './subcategorias.ts';
-import { leerMetas, textoAvance, textoMetas, type Meta } from './metas.ts';
+import { leerMetas, textoAvance, textoMetas, totalApartado, type Meta } from './metas.ts';
 import { describirFrecuencia, leerRecurrentes, type Frecuencia, type Recurrente } from './recurrentes.ts';
 import { avisoDeExistencias, conConteo, existencias, existenciasDe, productoPorNombre } from './existencias.ts';
 import { leerCatalogo } from './ventas.ts';
 
 const PREFIJO_EXISTENCIAS = '📦 ';
+
+const MENSAJE_APERTURA = 'El saldo inicial no se deshace: ajusta lo que tienes con un arqueo (por ejemplo «arqueo efectivo 80000 monedas 11500») o cámbialo con el botón Editar.';
+const propuestaDe = (m: Movimiento): Partial<Propuesta> | undefined => m.propuesta as Partial<Propuesta> | undefined;
+
+const botonExacto =(debido: number, moneda: 'COP' | 'USD'): Boton => ({ id: 'exacto', titulo: `Registrar solo ${formatear(debido, moneda)}` });
 
 const EJEMPLOS_RECURRENTES: Record<Frecuencia, string> = {
   mensual: 'Ejemplo: «cada mes el 5 internet 60000».',
@@ -163,6 +171,18 @@ class Motor {
       else { propuesta.formaPago = undefined; propuesta.billeteMayor = Number(forma); }
       return this.mostrar({ ...this.pend, propuesta });
     }
+    // «Registrar solo lo justo» de un abono que pasaba de lo que se debe
+    if (id === 'exacto') {
+      if (!this.pend) return [{ texto: 'Eso ya no está pendiente.' }];
+      const ex = excesoDePago(this.pend.propuesta, this.ctx, this.saldosPara(this.pend));
+      if (!ex) return this.mostrar(this.pend);
+      const propuesta = { ...this.pend.propuesta, monto: ex.debido };
+      propuesta.pagoCon = propuesta.pagoMonedas = propuesta.restoEnMonedas = undefined;
+      propuesta.vuelto = undefined; propuesta.formaPago = undefined; propuesta.billeteMayor = undefined;
+      return this.mostrar({ ...this.pend, propuesta });
+    }
+    if (id.startsWith('undometa:')) return this.deshacerAporte(id.slice(9));
+    if (id.startsWith('metaok:')) return this.moverMeta(id.slice(7), 1, true);
     if (id.startsWith('lista+:')) return this.agregarALista(id.slice(7));
     // una frase que la IA entendió cuando volvió el internet: se trata como si se acabara de escribir
     // «ia:=texto» no es una frase para el bot sino una indicación para la persona (por ejemplo, cómo decir un reparto distinto)
@@ -317,6 +337,7 @@ class Motor {
     const saldos = this.saldosPara(p);
     const faltas = this.avisarFaltaPlata(p, saldos);
     const pierde = this.avisarSegundoSaldoInicial(p);
+    const exceso = this.avisarAbono(p, saldos);
     this.avisarExistencias(p);
     await this.repo.guardarPendiente(p);
     this.pend = p;
@@ -335,6 +356,7 @@ class Motor {
       const cubrir = this.formaDeCubrir(faltas[0], saldos);
       const botones: Boton[] = [
         ...(cubrir ? [{ id: 'cubrir', titulo: `↔️ Pasar ${formatear(faltas[0].faltan, faltas[0].moneda)} de ${cubrir.nombre} a ${faltas[0].nombre}` }] : []),
+        ...(exceso ? [botonExacto(exceso.debido, exceso.moneda)] : []),
         { id: 'edit', titulo: '✏️ Editar' },
         { id: 'ok', titulo: '⚠️ Guardar igual' },
         { id: 'no', titulo: '❌ Cancelar' },
@@ -342,9 +364,23 @@ class Motor {
       ];
       return [{ texto: prefijo + texto, botones }];
     }
+    if (exceso) {
+      return [{ texto: prefijo + texto, botones: [botonExacto(exceso.debido, exceso.moneda), { id: 'ok', titulo: '⚠️ Guardar igual' }, { id: 'edit', titulo: '✏️ Editar' }, { id: 'no', titulo: '❌ Cancelar' }] }];
+    }
     // en un mensaje con varios movimientos, un botón para guardarlos todos de una vez
     const todos: Boton[] = p.siguientes?.length ? [{ id: 'okall', titulo: `✅ Confirmar los ${p.siguientes.length + 1}` }] : [];
     return [{ texto: prefijo + texto, botones: [...todos, ...BOTONES_TARJETA, ...this.atajosDePago(p.propuesta)] }];
+  }
+
+  /** Un abono en otra moneda se avisa como imposible; uno que pasa de lo que se debe, con el resto a favor de alguien. */
+  private avisarAbono(p: Pendiente, saldos: ReturnType<typeof calcularSaldos>): ReturnType<typeof excesoDePago> {
+    p.propuesta.avisos = p.propuesta.avisos.filter(a => !a.startsWith(AVISO_EXCESO) && !a.startsWith(AVISO_MONEDA));
+    if (p.propuesta.faltantes.length) return null;
+    const imposible = errorDePago(p.propuesta, this.ctx, saldos);
+    if (imposible) { p.propuesta.avisos.push(`${AVISO_MONEDA}${imposible}.`); return null; }
+    const ex = excesoDePago(p.propuesta, this.ctx, saldos);
+    if (ex) p.propuesta.avisos.push(ex.aviso);
+    return ex;
   }
 
   /** Una venta de un producto que lleva cuenta de existencias avisa si no alcanzan o si quedan pocas. */
@@ -443,8 +479,11 @@ class Motor {
     } catch (err) {
       return [{ texto: `No pude guardarlo: ${(err as Error).message.replace(/[.]$/, '')}. Pulsa Editar para corregirlo.`, botones: BOTONES_TARJETA }];
     }
-    if (p.reemplazaId) await this.repo.anularMovimiento(p.reemplazaId, aLocal(this.ctx.ahora));
+    // Primero se guarda lo nuevo y después se anula el original: si algo falla en medio, no se pierde nada (a lo sumo queda repetido).
+    // El nuevo recuerda a quién reemplazó para que «Deshacer» pueda devolver el original.
+    if (p.reemplazaId) hecho.movimiento.propuesta = { ...p.propuesta, reemplazaA: p.reemplazaId };
     await this.repo.guardarMovimiento(hecho.movimiento, hecho.cuentasNuevas, hecho.compromisos);
+    if (p.reemplazaId) await this.repo.anularMovimiento(p.reemplazaId, aLocal(this.ctx.ahora));
     if (p.propuesta.tipo === 'apertura') await this.repo.setConfig('fecha_apertura', p.propuesta.ocurridoEn);
     const ap = p.propuesta.apodoNuevo;
     if (ap) {
@@ -458,8 +497,11 @@ class Motor {
     // Con lo guardado: cierra deudas ya pagadas, calcula saldo y alerta de tope
     const d2 = await this.repo.cargar();
     const apertura2 = d2.config.fecha_apertura ?? '2000-01-01 00:00:00';
-    const saldados = compromisosSaldados(d2.movimientos, d2.cuentas, d2.compromisos, apertura2);
-    if (saldados.length) await this.repo.actualizarCompromisos(saldados);
+    const porSaldar = compromisosSaldados(d2.movimientos, d2.cuentas, d2.compromisos, apertura2);
+    if (porSaldar.length) await this.repo.actualizarCompromisos(porSaldar);
+    // los que ya quedaron saldados al anular el original (editar un pago) también se celebran
+    const activas = new Set(this.datos.compromisos.filter(c => c.estado === 'activa').map(c => c.id));
+    const saldados = [...porSaldar, ...d2.compromisos.filter(c => c.estado === 'saldada' && activas.has(c.id) && !porSaldar.some(x => x.id === c.id))];
     const ctx2 = contextoDe(d2, this.ctx.ahora);
     const saldos2 = calcularSaldos(d2.movimientos, apertura2);
 
@@ -501,9 +543,15 @@ class Motor {
     if (m.estado === 'anulado') return [{ texto: 'Ese movimiento ya estaba anulado.' }];
     const cerrado = this.avisoSiCerrado(m.ocurridoEn, m.descripcion);
     if (cerrado) return [{ texto: cerrado }];
+    if (m.tipo === 'apertura') return [{ texto: MENSAJE_APERTURA }];
+    // Si este movimiento reemplazó a otro al editarlo, deshacer devuelve el original.
+    const original = this.originalReemplazado(m);
+    if (original) return this.devolverOriginal(m, original, aunqueQuedeNegativo);
+    const abonos = this.avisoDeAbonos([m]);
+    if (abonos) return abonos;
     // Anular algo de lo que otros movimientos dependen (unas monedas que luego fueron a la alcancía)
     // dejaría una cuenta en negativo: se avisa antes y se deja anular igual si la persona insiste.
-    const falta = aunqueQuedeNegativo || m.tipo === 'apertura' ? [] : quedaNegativoSin(this.datos.movimientos, this.ctx.cuentas, this.apertura, [id]);
+    const falta = aunqueQuedeNegativo ? [] : quedaNegativoSin(this.datos.movimientos, this.ctx.cuentas, this.apertura, [id]);
     if (falta.length) {
       const l = falta.map(f => `${f.nombre} quedaría en -${formatear(f.faltan, f.moneda)}`).join(' y ');
       return [{
@@ -512,7 +560,45 @@ class Motor {
       }];
     }
     await this.repo.anularMovimiento(id, aLocal(this.ctx.ahora));
+    await this.olvidarUltimaMeta();
     return [{ texto: `↩️ Anulado: ${m.descripcion}. (No se borró: queda marcado como anulado.)` }];
+  }
+
+  /** El movimiento que este reemplazó al editarlo, si todavía está anulado y se puede devolver. */
+  private originalReemplazado(m: Movimiento): Movimiento | undefined {
+    const id = (m.propuesta as { reemplazaA?: string } | undefined)?.reemplazaA;
+    return id ? this.datos.movimientos.find(x => x.id === id && x.estado === 'anulado') : undefined;
+  }
+
+  /** Deshacer una edición: se anula la versión nueva y vuelve a contar la que había antes. */
+  private async devolverOriginal(m: Movimiento, original: Movimiento, aunqueQuedeNegativo: boolean): Promise<Salida[]> {
+    const cerrado = this.avisoSiCerrado(original.ocurridoEn, original.descripcion);
+    if (cerrado) return [{ texto: cerrado }];
+    const conOriginal = this.datos.movimientos.map(x => (x.id === original.id ? { ...x, estado: 'ok' as const } : x));
+    const falta = aunqueQuedeNegativo ? [] : quedaNegativoSin(conOriginal, this.ctx.cuentas, this.apertura, [m.id]);
+    if (falta.length) {
+      return [{
+        texto: `⚠️ Si deshaces la edición de «${m.descripcion}», ${falta.map(f => `${f.nombre} quedaría en -${formatear(f.faltan, f.moneda)}`).join(' y ')}: hay movimientos posteriores que usaron esa plata. ¿La deshago igual?`,
+        botones: [{ id: `undo!:${m.id}`, titulo: '↩️ Anular igual' }, { id: 'nada', titulo: 'No anular' }],
+      }];
+    }
+    await this.repo.restaurarMovimiento(original.id, aLocal(this.ctx.ahora));
+    await this.repo.anularMovimiento(m.id, aLocal(this.ctx.ahora));
+    await this.olvidarUltimaMeta();
+    return [{ texto: `↩️ Deshice la edición: volvió el original (${original.descripcion}, ${formatear(propuestaDe(original)?.monto ?? 0, propuestaDe(original)?.moneda ?? 'COP')}).` }];
+  }
+
+  /** Si algo de lo que se anula dejó abonos hechos después, anular solo eso dejaría una deuda al revés: se ofrece anular todo junto. */
+  private avisoDeAbonos(ms: Movimiento[]): Salida[] | null {
+    const huerfanos = abonosHuerfanos(this.datos.movimientos, this.ctx.cuentas, this.apertura, ms.map(m => m.id));
+    if (!huerfanos.length) return null;
+    const quienes = [...new Set(huerfanos.map(h => h.persona))].join(' y ');
+    const cuantos = huerfanos.length === 1 ? 'un abono' : `${huerfanos.length} abonos`;
+    const todos = [...ms.map(m => m.id), ...huerfanos.map(h => h.abono.id)];
+    return [{
+      texto: `⚠️ «${ms.map(m => m.descripcion).join(', ')}» ya tiene ${cuantos} de ${quienes} (${huerfanos.map(h => formatear(propuestaDe(h.abono)?.monto ?? 0, propuestaDe(h.abono)?.moneda ?? 'COP')).join(', ')}). Si lo anulas solo, ${quienes} quedaría con una deuda al revés. Anula todo junto o deja el movimiento como está.`,
+      botones: [{ id: `unds!:${todos.join(',')}`, titulo: '↩️ Anular todo junto' }, { id: 'nada', titulo: 'No anular' }],
+    }];
   }
 
   private async reabrir(id: string): Promise<Salida[]> {
@@ -541,7 +627,10 @@ class Motor {
     for (const m of ms) {
       const cerrado = this.avisoSiCerrado(m.ocurridoEn, m.descripcion);
       if (cerrado) return [{ texto: cerrado }];
+      if (m.tipo === 'apertura') return [{ texto: MENSAJE_APERTURA }];
     }
+    const abonos = this.avisoDeAbonos(ms);
+    if (abonos) return abonos;
     const falta = forzar ? [] : quedaNegativoSin(this.datos.movimientos, this.ctx.cuentas, this.apertura, ms.map(m => m.id));
     if (falta.length) {
       return [{
@@ -549,7 +638,11 @@ class Motor {
         botones: [{ id: `unds!:${ms.map(m => m.id).join(',')}`, titulo: '↩️ Anular igual' }, { id: 'nada', titulo: 'No anular' }],
       }];
     }
-    for (const m of ms) await this.repo.anularMovimiento(m.id, aLocal(this.ctx.ahora));
+    for (const m of ms) {
+      const original = this.originalReemplazado(m); // si era una edición, vuelve lo que había antes
+      if (original) await this.repo.restaurarMovimiento(original.id, aLocal(this.ctx.ahora));
+      await this.repo.anularMovimiento(m.id, aLocal(this.ctx.ahora));
+    }
     return [{ texto: `↩️ Anulé ${ms.length} movimiento${ms.length > 1 ? 's' : ''}: ${ms.map(m => m.descripcion).join(', ')}. (No se borró nada: quedan marcados como anulados.)` }];
   }
 
@@ -620,11 +713,30 @@ class Motor {
       }
       case 'deshacer': {
         const m = this.ultimoPropio();
+        const aporte = this.ultimoAporte();
+        if (aporte) {
+          const { meta, ultimo } = aporte;
+          return [{
+            texto: `El último comando fue de una meta: ${ultimo.m > 0 ? `apartaste ${formatear(ultimo.m)} para` : `sacaste ${formatear(-ultimo.m)} de`} ${meta.nombre}. ¿Qué quieres deshacer?`,
+            botones: [
+              { id: `undometa:${ultimo.id}`, titulo: '↩️ Deshacer aporte' },
+              ...(m ? [{ id: `undo:${m.id}`, titulo: `Anular «${m.descripcion}»` }] : []),
+              { id: 'nada', titulo: 'Ninguno' },
+            ],
+          }];
+        }
         return m ? this.deshacer(m.id) : [{ texto: 'No hay nada que deshacer.' }];
       }
       case 'editar_ultimo': {
         const m = this.ultimoPropio();
-        return m ? this.reabrir(m.id) : [{ texto: 'No hay nada que editar.' }];
+        if (!m) return [{ texto: 'No hay nada que editar.' }];
+        const abierta = await this.reabrir(m.id);
+        // «cambia el monto a 7000»: con la tarjeta ya abierta se aplica el cambio dicho («monto 7000»)
+        if (arg && this.pend) {
+          const cambio = aplicarCambio(this.pend.propuesta, arg, this.ctx);
+          if (cambio) return this.mostrar({ ...this.pend, propuesta: cambio });
+        }
+        return abierta;
       }
     }
     return [{ texto: textoAyuda(this.ctx) }];
@@ -724,7 +836,7 @@ class Motor {
   }
 
   /** signo +1 aparta, -1 saca. «moto|50000». La plata no cambia de cuenta: solo se anota cuánto está apartado. */
-  private async moverMeta(arg: string, signo: 1 | -1): Promise<Salida[]> {
+  private async moverMeta(arg: string, signo: 1 | -1, forzar = false): Promise<Salida[]> {
     const [nombre, monto] = arg.split('|');
     const m = hallarMontos(monto ?? '')[0];
     const metas = leerMetas(this.datos.config);
@@ -733,10 +845,57 @@ class Motor {
     if (!m || !(m.valor > 0)) return [{ texto: 'No entendí el monto. Ejemplo: «ahorré 50000 para moto».' }];
     const cantidad = aMinor(m.valor, 'COP');
     if (signo < 0 && cantidad > meta.apartado) return [{ texto: `Solo hay ${formatear(meta.apartado)} apartados en ${meta.nombre}.` }];
+    // apartar más de lo que hay libre (lo que tienes en cuentas menos lo ya apartado) se confirma antes
+    const apertura = this.datos.config.fecha_apertura;
+    if (signo > 0 && !forzar && apertura && !apertura.startsWith('2000-01-01')) {
+      const libre = resumenSaldos(this.datos.movimientos, this.datos.cuentas, this.apertura).disponibleCop - totalApartado(metas);
+      if (cantidad > libre) {
+        return [{
+          texto: `⚠️ Apartar ${formatear(cantidad)} es más de lo que tienes libre: te quedan ${formatear(Math.max(libre, 0))} sin apartar. ¿Lo aparto igual?`,
+          botones: [{ id: `metaok:${meta.nombre}|${cantidad}`, titulo: 'Apartar igual' }, { id: 'nada', titulo: 'No apartar' }],
+        }];
+      }
+    }
     meta.apartado += signo * cantidad;
     meta.aportes = [...(meta.aportes ?? []), { f: aLocal(this.ctx.ahora).slice(0, 10), m: signo * cantidad }].slice(-40);
+    for (const x of metas) delete x.ultimo;
+    const ultimo = { id: crypto.randomUUID(), m: signo * cantidad, n: this.datos.movimientos.length };
+    meta.ultimo = ultimo;
     await this.repo.setConfig('metas', JSON.stringify(metas));
-    return [{ texto: textoAvance(meta, signo > 0 ? `🎯 Apartaste ${formatear(cantidad)} para` : `🎯 Sacaste ${formatear(cantidad)} de`) }];
+    return [{
+      texto: textoAvance(meta, signo > 0 ? `🎯 Apartaste ${formatear(cantidad)} para` : `🎯 Sacaste ${formatear(cantidad)} de`),
+      botones: [{ id: `undometa:${ultimo.id}`, titulo: '↩️ Deshacer aporte' }],
+    }];
+  }
+
+  /** El último aporte a una meta, si fue lo último que se hizo (después no se guardó ningún movimiento). */
+  private ultimoAporte(): { meta: Meta; ultimo: NonNullable<Meta['ultimo']> } | null {
+    for (const meta of leerMetas(this.datos.config)) {
+      if (meta.ultimo && meta.ultimo.n === this.datos.movimientos.length) return { meta, ultimo: meta.ultimo };
+    }
+    return null;
+  }
+
+  /** Quita la marca del último aporte: «deshacer» vuelve a hablar de movimientos. */
+  private async olvidarUltimaMeta(): Promise<void> {
+    const metas = leerMetas(this.datos.config);
+    if (!metas.some(x => x.ultimo)) return;
+    for (const x of metas) delete x.ultimo;
+    await this.repo.setConfig('metas', JSON.stringify(metas));
+  }
+
+  /** «Deshacer aporte»: revierte solo ese aporte a la meta, una sola vez. */
+  private async deshacerAporte(token: string): Promise<Salida[]> {
+    const metas = leerMetas(this.datos.config);
+    const meta = metas.find(x => x.ultimo?.id === token);
+    if (!meta?.ultimo) return [{ texto: 'Ese aporte ya no se puede deshacer desde aquí. Si hace falta, saca la plata: «saqué 20000 de la meta moto».' }];
+    const { m } = meta.ultimo;
+    meta.apartado = Math.max(0, meta.apartado - m);
+    const aportes = meta.aportes ?? [];
+    if (aportes.at(-1)?.m === m) meta.aportes = aportes.slice(0, -1);
+    delete meta.ultimo;
+    await this.repo.setConfig('metas', JSON.stringify(metas));
+    return [{ texto: textoAvance(meta, m > 0 ? `↩️ Deshice el aporte de ${formatear(m)} a` : `↩️ Devolví los ${formatear(-m)} que sacaste de`) }];
   }
 
   private async quitarMeta(nombre: string): Promise<Salida[]> {
@@ -801,7 +960,7 @@ class Motor {
     if (!cat || !m) return [{ texto: 'No entendí. Ejemplo: «tope mecato 60000».' }];
     if (!(m.valor > 0) || m.valor > 2_000_000_000) return [{ texto: `El tope tiene que ser mayor que cero. Para quitarlo escribe «quitar tope ${cat.clave}».` }];
     await this.repo.setPresupuesto(cat.id, aMinor(m.valor, 'COP'));
-    return [{ texto: `📊 Tope de ${cat.nombre}: ${formatear(aMinor(m.valor, 'COP'))} al mes. Te aviso cuando te acerques.` }];
+    return [{ texto: `📊 Tope de ${cat.nombre}: ${formatear(aMinor(m.valor, 'COP'))} al mes. Lo verás en las tarjetas de Saldos y Resumen.` }];
   }
 
   private async quitarTope(categoria: string): Promise<Salida[]> {

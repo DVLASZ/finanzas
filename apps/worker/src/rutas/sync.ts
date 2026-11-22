@@ -8,7 +8,7 @@ import {
   aLocal, aplicarOpsDetallado, deLocal, MARGEN_PARCIAL_SEGUNDOS, MAX_DIAS_PARCIAL, validarOps,
   type PeticionSync, type RespuestaSync,
 } from '../../../../packages/core/src/index.ts';
-import { avisarMetas, avisarTopes } from '../avisos.ts';
+import { avisarMetas } from '../avisos.ts';
 import type { Suscripcion } from '../push.ts';
 import { json, type Ruta } from '../comun.ts';
 
@@ -57,7 +57,7 @@ export const rutaSync: Ruta = async ({ req, url, env, repo }) => {
       datos = await repo.cargar();
     }
     // un aviso que no sale nunca debe tumbar la sincronización
-    try { await avisarTopes(repo, datos, aplicadas); await avisarMetas(repo, datos, aplicadas); } catch (e) { console.error('avisos:', (e as Error).message); }
+    try { await avisarMetas(repo, datos, aplicadas); } catch (e) { console.error('avisos:', (e as Error).message); }
     return json({ datos, servidorEn: aLocal(new Date()), ...(parcial ? { parcial: true } : {}), ...(rechazadas.length ? { rechazadas } : {}), ...(reintentar.length ? { reintentar } : {}) } satisfies RespuestaSync);
   }
   return null;

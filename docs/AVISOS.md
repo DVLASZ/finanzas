@@ -9,7 +9,6 @@ La app puede avisarte en el celular, aunque esté cerrada, cuando hay algo que m
 **A las 8 de la mañana** (Colombia), si hay algo, un solo aviso con lo más importante:
 
 - una deuda tuya venció o vence en los próximos 10 días
-- un tope mensual ya pasó o va por el 80 %
 - llevas 5 días o más sin anotar nada
 - un gasto que se repite cada mes (`cada mes el 5 internet 60000`) toca en dos días o ya tocó y no lo has anotado
 - los lunes, un resumen de la semana pasada; el primer día del mes, el del mes que pasó
@@ -21,13 +20,14 @@ La app puede avisarte en el celular, aunque esté cerrada, cuando hay algo que m
 
 **Al momento:**
 
-- un tope que acaba de llegar al 80 % o al 100 % este mes (una sola vez por nivel y por mes, aunque sigas anotando gastos)
 - una meta de ahorro que llega a su valor («Llegaste a la meta Moto»), una vez; si baja y vuelve a llegar, otra vez
 - un giro que llega por el buzón de otra app (`Aviso de Mamá: $150.000`)
 
 **Una vez por semana, si hace falta:** las fotos de recibos ocupan 3 GB o más de los 5 GB que da la base gratis.
 
 **Los domingos:** si la copia de seguridad en la nube falla, con el motivo.
+
+Los topes de gasto no mandan avisos al celular: solo salen como tarjeta dentro de Saldos y Resumen y en el chat al guardar un gasto.
 
 Si no hay nada, no manda nada. El aviso de «falta decir cuánta plata tienes» no se manda por aquí, solo sale dentro de la app.
 

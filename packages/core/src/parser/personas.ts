@@ -26,6 +26,16 @@ export const ROLES = [
 ] as const;
 type RolId = typeof ROLES[number]['id'];
 
+/**
+ * La cuenta de un movimiento con una persona: la que dijiste, y si no dijiste ninguna pero el monto viene en dólares
+ * («presté 12.50 usd a ana») y existe la cuenta de dólares, esa. Sin eso caería en Efectivo y quedaría en negativo.
+ */
+export function cuentaDeLaPersona(b: Base, ctx: Contexto): string {
+  if (b.cuentas[0]) return b.cuentas[0].id;
+  const usd = ctx.cuentas.find(c => c.tipo === 'dinero' && c.moneda === 'USD');
+  return usd && b.montos.some(m => m.moneda === 'USD') ? usd.id : 'efectivo';
+}
+
 /** ¿Es una persona que ya tienes (o un apodo suyo)? */
 export function personaConocida(nombre: string, ctx: Contexto): boolean {
   return personaAlInicio(limpiar(nombre).split(' '), ctx) !== null;
@@ -58,7 +68,7 @@ export function ventaDelCatalogo(b: Base, ctx: Contexto): Resultado | null {
   const v = buscarVenta(b.t, ctx);
   if (!v) return null;
   if ('error' in v) return /\b(vendi|vendimos|venta)\b/.test(b.t) || /\d/.test(b.t) ? error(v.error) : null;
-  const cuentaId = b.cuentas[0]?.id ?? 'efectivo';
+  const cuentaId = cuentaDeLaPersona(b, ctx);
   const total = v.cantidad * v.precio;
   const p = propuestaBase(b, 'ingreso', `Venta de ${v.producto.nombre}`, total, 'COP');
   p.cuentaId = cuentaId;
@@ -206,7 +216,7 @@ export function aplicarRol(sig: Propuesta, rol: RolId, ctx: Contexto): Propuesta
 export function regalo(b0: Base, ctx: Contexto): Resultado {
   const pg = leerPago(b0.t, b0.montos);
   const b: Base = { ...b0, montos: pg.montos, cuentas: b0.cuentas.filter(c => !dentroDe(c, pg.tramos)), t: blanquear(b0.t, pg.tramos) };
-  const cuentaId = b.cuentas[0]?.id ?? 'efectivo';
+  const cuentaId = cuentaDeLaPersona(b, ctx);
   const mm = montosDePersona(b, cuentaId);
   if (typeof mm === 'string') return error(`${mm} Ejemplo: «le regalé 50k a jorge».`);
   const ws = palabrasLibres(b.t, [...b.cuentas, ...tramosDe(b.montos)]).filter(w => !['regale', 'regalo', 'le', 'a'].includes(w));
@@ -238,7 +248,7 @@ export function prestamo(b0: Base, ctx: Contexto): Resultado {
   // Lo del pago ("con 5k", "vuelto 200 monedas") se lee primero y se saca del texto.
   const pg = leerPago(b0.t, b0.montos);
   const b: Base = { ...b0, montos: pg.montos, cuentas: b0.cuentas.filter(c => !dentroDe(c, pg.tramos)), t: blanquear(b0.t, pg.tramos) };
-  const cuentaId = b.cuentas[0]?.id ?? 'efectivo';
+  const cuentaId = cuentaDeLaPersona(b, ctx);
   const mm = montosDePersona(b, cuentaId);
   if (typeof mm === 'string') return error(`${mm} Ejemplo: «presté 40k a Ana».`);
   const persona = personaDe(b, ctx, ['preste', 'prestamo', 'a', 'le'], ['para']);
@@ -268,7 +278,7 @@ export function prestamo(b0: Base, ctx: Contexto): Resultado {
 export function deuda(b: Base, ctx: Contexto, recibeDinero: boolean, fechaLimite: string | null): Resultado {
   const fl = { fecha: fechaLimite };
   const b2: Base = b;
-  const cuentaId = b2.cuentas[0]?.id ?? 'efectivo';
+  const cuentaId = cuentaDeLaPersona(b2, ctx);
   const mm = montosDePersona(b2, cuentaId);
   if (typeof mm === 'string') return error(`${mm} Ejemplo: «le debo 54k a sergio por la bicicleta».`);
 
@@ -312,7 +322,7 @@ export function deuda(b: Base, ctx: Contexto, recibeDinero: boolean, fechaLimite
 
 /** "ivan me pagó 40k" (cobro) o "ivan me pagó el almuerzo 6000" (gasto que pagó otro). */
 export function mePago(b: Base, ctx: Contexto, verbo: string): Resultado {
-  const cuentaId = b.cuentas[0]?.id ?? 'efectivo';
+  const cuentaId = cuentaDeLaPersona(b, ctx);
   // Lo que hay antes de «me pagó» es quién; lo de después, en qué ("me pagó el almuerzo").
   const m = b.t.match(/\bme (pago|pagaron|devolvio|devolvieron|regreso|abono|salde|invito)\b/)!;
   const limpio = borrarTramos(b.t, [...b.cuentas, ...tramosDe(b.montos)]);
@@ -325,7 +335,8 @@ export function mePago(b: Base, ctx: Contexto, verbo: string): Resultado {
 
   // Si esa persona no te debe nada, que te pague es plata que entra (un sueldo, un trabajo), no el abono de una deuda
   // ni una deuda tuya. «me pagó el almuerzo» sigue su camino de abajo.
-  if (['pago', 'pagaron'].includes(verbo) && !tieneAbierta(persona.escrito, ctx, 'teDeben') && (!sobrantes.length || DE_INGRESO.test(b.t))) return ingreso(b, ctx);
+  // (abonó, devolvió y regresó dicen lo mismo que pagó: sin cuenta abierta con esa persona es plata que entra)
+  if (['pago', 'pagaron', 'abono', 'devolvio', 'devolvieron', 'regreso'].includes(verbo) && !tieneAbierta(persona.escrito, ctx, 'teDeben') && (!sobrantes.length || DE_INGRESO.test(b.t))) return ingreso(b, ctx);
 
   const mm = montosDePersona(b, cuentaId);
   if (typeof mm === 'string') return error(`${mm} Ejemplo: «Ana me pagó 40k».`);
@@ -358,7 +369,7 @@ export function mePago(b: Base, ctx: Contexto, verbo: string): Resultado {
 
 /** "pagué 54k a sergio" -> abono a una deuda. Devuelve null si parece un gasto normal. */
 export function pagoDeDeuda(b: Base, ctx: Contexto): Resultado | null {
-  const cuentaId = b.cuentas[0]?.id ?? 'efectivo';
+  const cuentaId = cuentaDeLaPersona(b, ctx);
   const i = b.t.search(/\ba [a-z]/);
   const antes = b.t.slice(0, i);
   const despues = b.t.slice(i + 2);

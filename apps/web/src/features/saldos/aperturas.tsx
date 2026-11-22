@@ -6,7 +6,7 @@ import type { ComponentChildren } from 'preact';
 import { ArrowDownToLine, ArrowUpFromLine, CalendarClock, HandCoins, List, PiggyBank, Scale, Users } from 'lucide-preact';
 import { deudasPorPersona, describirDia, formatear, type Alerta, type Cuenta, type Datos, type resumenSaldos } from '../../../../../packages/core/src/index.ts';
 import type { CuentaProyectada } from '../../../../../packages/core/src/liquidez.ts';
-import type { SeguroHoy } from '../../../../../packages/core/src/seguro.ts';
+import type { Patrimonio, SeguroHoy } from '../../../../../packages/core/src/seguro.ts';
 import { abrirInfo, cerrarYLuego } from '../../components/ui/HojaInfo.tsx';
 import { movimientosDeCuenta } from '../../lib/grupos.ts';
 import { irA, prellenarChat } from '../../state/nav.ts';
@@ -100,12 +100,13 @@ export function abrirSeguro(seguro: SeguroHoy): void {
     cuerpo: (
       <dl class="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 text-sm" id="info-seguro-calculo">
         {fila('Disponible', formatear(seguro.disponible))}
+        {seguro.deOtros > 0 && fila('Plata de otros', `-${formatear(seguro.deOtros)}`, 'text-adv')}
         {fila('Pagos fijos que faltan', `-${formatear(seguro.fijos)}`, 'text-adv')}
         {fila('Apartado en alcancías', `-${formatear(seguro.apartado)}`, 'text-info')}
         {total('Libre este mes', formatear(seguro.libre))}
-        {fila(`Por día (${seguro.dias})`, formatear(seguro.porDia))}
+        {fila(`Tope de hoy (${seguro.dias} ${seguro.dias === 1 ? 'día' : 'días'})`, formatear(seguro.porDia))}
         {fila('Ya gastado hoy', formatear(seguro.gastadoHoy), 'text-neg')}
-        {total('Te queda hoy', formatear(Math.max(0, seguro.porDia - seguro.gastadoHoy)))}
+        {total('Te queda hoy', formatear(seguro.quedaHoy))}
       </dl>
     ),
     acciones: [
@@ -115,21 +116,23 @@ export function abrirSeguro(seguro: SeguroHoy): void {
   });
 }
 
-/** «Salud patrimonial»: lo que tienes, lo que te deben y lo que debes, hasta llegar al neto. */
-export function abrirSalud(r: Resumen, liquidez: number): void {
-  const cobrar = Math.abs(r.teDeben.COP), pagar = Math.abs(r.debes.COP);
+/** «Salud patrimonial»: lo que tienes, lo que te deben y lo que debes, hasta llegar al neto (cuenta en core: `patrimonio`). */
+export function abrirSalud(r: Resumen, pat: Patrimonio): void {
+  const { liquidez, aparte, cobrar, pagar } = pat;
   abrirInfo({
     id: 'info-salud', titulo: 'Salud patrimonial', sub: 'Todo en pesos: los dólares y las deudas en dólares no se convierten.',
     cuerpo: (
       <div id="info-salud-calculo">
         <h3>Lo que tienes</h3>
         <dl class="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 text-sm">
-          {fila('Liquidez inmediata', formatear(liquidez), 'text-pos')}
+          {fila('Liquidez inmediata', formatear(liquidez), liquidez < 0 ? 'text-neg' : 'text-pos')}
+          {aparte !== 0 && fila('Monedas y alcancía', formatear(aparte), 'text-pos')}
           {fila('Por cobrar', formatear(cobrar), 'text-info')}
         </dl>
         <h3>Lo que debes</h3>
         <dl class="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 text-sm">{fila('Por pagar', `-${formatear(pagar)}`, 'text-neg')}</dl>
-        <dl class="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 text-sm">{total('Neto', formatear(liquidez + cobrar - pagar))}</dl>
+        <dl class="mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 text-sm">{total('Neto', formatear(pat.neto))}</dl>
+        <p class="sub">Neto = todo lo que tienes menos lo que debes. La plata que tienes de otros para gastarla por ellos no cuenta.</p>
         {(r.teDeben.USD > 0 || r.debes.USD > 0) && <p class="sub">Aparte, en dólares: te deben {formatear(r.teDeben.USD, 'USD')} y debes {formatear(r.debes.USD, 'USD')}.</p>}
       </div>
     ),

@@ -2,7 +2,7 @@
  * Datos para las gráficas del Resumen: el flujo del mes día a día, los conceptos donde más se va la plata y con qué se paga
  * (efectivo o digital). Son cuentas sobre lo que ya hay en pantalla; no se guarda nada.
  */
-import { gastoPorCategoria, totalIngresos } from './consultas.ts';
+import { gastoPorCategoria, TIPOS_GASTO, totalIngresos } from './consultas.ts';
 import { limpiar } from './texto.ts';
 import type { Datos } from './repo.ts';
 
@@ -39,7 +39,7 @@ export function topConceptos(datos: Fuente, desde: string, hasta: string, n = 5)
   const grupos = new Map<string, { concepto: string; veces: number; total: number }>();
   let suma = 0;
   for (const m of datos.movimientos) {
-    if (m.estado !== 'ok' || m.tipo !== 'gasto' || m.ocurridoEn < desde || m.ocurridoEn >= hasta) continue;
+    if (m.estado !== 'ok' || !TIPOS_GASTO.includes(m.tipo) || m.ocurridoEn < desde || m.ocurridoEn >= hasta) continue;
     const monto = m.asientos.filter(a => a.moneda === 'COP' && cats.has(a.cuentaId)).reduce((s, a) => s + a.monto, 0);
     if (monto <= 0) continue;
     const clave = limpiar(m.descripcion).replace(/\d+/g, '').trim() || limpiar(m.descripcion);

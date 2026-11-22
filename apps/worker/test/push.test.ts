@@ -143,7 +143,8 @@ test('push: la prueba manda un aviso cifrado con la firma del servidor', async (
   assert.deepEqual(r, { enviados: 1, suscritos: 1 });
 });
 
-/** Una instalación con un tope superado, para que haya algo que avisar. */
+/** Una instalación con un tope superado y un gasto viejo: a los 7 días hay un aviso de días sin anotar. El tope no cuenta. */
+const SIETE_DIAS = new Date(AHORA.getTime() + 7 * 86400000);
 async function conAlerta(env: Env) {
   const ctx = contextoDe({ cuentas: structuredClone(CUENTAS_INICIALES), movimientos: [], compromisos: [], atajos: [], aprendido: {}, presupuestos: {}, config: {} }, AHORA);
   const r = interpretar('mecato 5000', ctx);
@@ -162,7 +163,7 @@ test('push: la tarea diaria avisa si hay algo, y no molesta si no hay nada', asy
     assert.deepEqual(await avisarAlCelular(env, AHORA), { enviados: 0, quitados: 0 });
     assert.equal(llamadas.length, 0, 'sin alertas no se manda nada');
     await conAlerta(env);
-    assert.deepEqual(await avisarAlCelular(env, AHORA), { enviados: 1, quitados: 0 });
+    assert.deepEqual(await avisarAlCelular(env, SIETE_DIAS), { enviados: 1, quitados: 0 });
     assert.equal(llamadas.length, 1);
   });
 });
@@ -172,7 +173,7 @@ test('push: un celular dado de baja por el servicio de avisos (410) se quita de 
   await llamar(env, '/api/push/suscribir', { suscripcion: celular().suscripcion });
   await conAlerta(env);
   await conRed(410, async () => {
-    assert.deepEqual(await avisarAlCelular(env, AHORA), { enviados: 0, quitados: 1 });
+    assert.deepEqual(await avisarAlCelular(env, SIETE_DIAS), { enviados: 0, quitados: 1 });
   });
   assert.equal((await new D1Repo(env.DB).leerSecreto<Suscripcion[]>('suscripciones'))!.length, 0);
 });
@@ -182,7 +183,7 @@ test('push: si el servicio de avisos falla (500) el celular se conserva para ma�
   await llamar(env, '/api/push/suscribir', { suscripcion: celular().suscripcion });
   await conAlerta(env);
   await conRed(500, async () => {
-    assert.deepEqual(await avisarAlCelular(env, AHORA), { enviados: 0, quitados: 0 });
+    assert.deepEqual(await avisarAlCelular(env, SIETE_DIAS), { enviados: 0, quitados: 0 });
   });
   assert.equal((await new D1Repo(env.DB).leerSecreto<Suscripcion[]>('suscripciones'))!.length, 1);
 });
@@ -233,13 +234,12 @@ test('push de la tarde: si ya contó la billetera hoy, no insiste', async () => 
   });
 });
 
-test('push al momento: un tope que llega al 80 % o al 100 % avisa una sola vez por nivel', async () => {
+test('push: un tope que llega al 80 % o al 100 % ya no avisa al celular, ni al momento ni por la mañana', async () => {
   const env = entorno();
   const c = celular();
   await llamar(env, '/api/push/suscribir', { suscripcion: c.suscripcion });
   await new D1Repo(env.DB).setPresupuesto('cat:mecato', 10000);
   const gasto = async (texto: string) => {
-    // con el reloj de verdad: el servidor mide el mes de ahora
     const ctx = contextoDe(await new D1Repo(env.DB).cargar(), new Date());
     const r = interpretar(texto, ctx);
     if (r.clase !== 'movimiento') throw new Error('no es movimiento');
@@ -247,18 +247,11 @@ test('push al momento: un tope que llega al 80 % o al 100 % avisa una sola vez p
     await llamar(env, '/api/sync', { ops: [{ op: 'guardar', movimiento: h.movimiento, cuentasNuevas: h.cuentasNuevas, compromisos: h.compromisos } satisfies Op] });
   };
   await conAvisos(c, async textos => {
-    await gasto('mecato 5000');
-    assert.equal(textos.length, 0, 'al 50 % no se avisa');
-    await gasto('mecato 3500');
-    assert.equal(textos.length, 1);
-    assert.match(textos[0], /Mecato va al 85% del tope: \$8\.500 de \$10\.000/);
-    await gasto('mecato 500');
-    assert.equal(textos.length, 1, 'sigue en el 80 %: no se repite');
-    await gasto('mecato 2000');
-    assert.equal(textos.length, 2);
-    assert.match(textos[1], /Superaste el tope de Mecato/);
-    await gasto('mecato 1000');
-    assert.equal(textos.length, 2, 'ya se avisó que lo superó');
+    await gasto('mecato 8500');
+    await gasto('mecato 3000');
+    assert.equal(textos.length, 0, 'al 85 % y al 115 % no sale ningún aviso al momento');
+    assert.deepEqual(await avisarAlCelular(env, new Date(), 'manana'), { enviados: 0, quitados: 0 });
+    assert.equal(textos.length, 0, 'la tarea de la mañana tampoco menciona topes');
   });
 });
 

@@ -4,8 +4,10 @@
  * anotar algo antes (un vuelto, un depósito, una transferencia). La app avisa en la tarjeta con
  * los números y ofrece arreglarlo, pero no inventa nada por su cuenta.
  */
-import { construirMovimiento, saldoDe, type Saldos } from './asientos.ts';
+import { construirMovimiento, errorDePago, saldoDe, type Saldos } from './asientos.ts';
 import { calcularSaldos } from './consultas.ts';
+import { formatear } from './dinero.ts';
+import { normalizar } from './texto.ts';
 import type { Propuesta } from './parser.ts';
 import type { Contexto, Cuenta, Moneda, Movimiento } from './tipos.ts';
 
@@ -68,6 +70,59 @@ export function quedaNegativoSin(movs: Movimiento[], cuentas: Cuenta[], apertura
     faltas.push({ cuentaId: c.id, nombre: c.nombre, moneda: c.moneda, tiene: antes, sale: antes - despues, faltan: -despues });
   }
   return faltas;
+}
+
+/** Marcas de los avisos de un abono (para quitarlos y volverlos a calcular cuando cambia la tarjeta). */
+export const AVISO_EXCESO = 'Es más de lo que ';
+export const AVISO_MONEDA = 'No se puede: ';
+
+export interface Exceso { nombre: string; moneda: Moneda; debido: number; sobra: number; aviso: string }
+
+/** Un abono mayor que lo que se debe: lo que sobra acabaría como una deuda al revés. Un abono a quien no debe nada no entra aquí. */
+export function excesoDePago(p: Propuesta, ctx: Contexto, saldos: Saldos): Exceso | null {
+  if (p.tipo !== 'pago' || !p.persona || p.montoOtro !== undefined || errorDePago(p, ctx, saldos)) return null;
+  const clave = normalizar(p.persona);
+  const per = ctx.cuentas.find(c => c.tipo === 'persona' && c.clave === clave);
+  if (!per) return null;
+  const s = saldoDe(saldos, per.id, p.moneda);
+  const yoPago = p.direccion === 'yo_pago';
+  const debido = yoPago ? -s : s;
+  if (debido <= 0 || p.monto <= debido) return null;
+  const sobra = p.monto - debido;
+  const f = (n: number) => formatear(n, p.moneda);
+  const aviso = yoPago
+    ? `${AVISO_EXCESO}le debes a ${per.nombre}: le debes ${f(debido)} y esto son ${f(p.monto)}. Si guardas igual, los ${f(sobra)} de más quedan a tu favor (${per.nombre} te los debería).`
+    : `${AVISO_EXCESO}te debe ${per.nombre}: te debe ${f(debido)} y esto son ${f(p.monto)}. Si guardas igual, los ${f(sobra)} de más quedan a favor de ${per.nombre} (se los debes).`;
+  return { nombre: per.nombre, moneda: p.moneda, debido, sobra, aviso };
+}
+
+/**
+ * Abonos activos que quedarían huérfanos si se anularan estos movimientos: pagos hechos después de un préstamo, una
+ * deuda o un compartido que, sin ese movimiento, dejarían a la persona con una deuda al revés.
+ */
+export function abonosHuerfanos(movs: Movimiento[], cuentas: Cuenta[], apertura: string, ids: string[]): { abono: Movimiento; persona: string }[] {
+  const fuera = new Set(ids);
+  const sin = calcularSaldos(movs.filter(m => !fuera.has(m.id)), apertura);
+  const res = new Map<string, { abono: Movimiento; persona: string }>();
+  for (const id of ids) {
+    const m = movs.find(x => x.id === id);
+    if (!m || !['prestamo', 'deuda', 'compartido', 'ingreso'].includes(m.tipo)) continue;
+    const aportes = new Map<string, number>(); // lo que este movimiento dejó con cada persona
+    for (const a of m.asientos) {
+      if (cuentas.some(c => c.id === a.cuentaId && c.tipo === 'persona')) aportes.set(`${a.cuentaId}|${a.moneda}`, (aportes.get(`${a.cuentaId}|${a.moneda}`) ?? 0) + a.monto);
+    }
+    for (const [k, d] of aportes) {
+      const resto = sin.get(k) ?? 0;
+      if (d === 0 || resto === 0 || Math.sign(resto) !== -Math.sign(d)) continue;
+      const [personaId, moneda] = k.split('|');
+      for (const x of movs) {
+        if (x.estado !== 'ok' || x.tipo !== 'pago' || fuera.has(x.id) || x.creadoEn < m.creadoEn) continue;
+        const toca = x.asientos.some(a => a.cuentaId === personaId && a.moneda === moneda && Math.sign(a.monto) === -Math.sign(d));
+        if (toca) res.set(x.id, { abono: x, persona: cuentas.find(c => c.id === personaId)?.nombre ?? '' });
+      }
+    }
+  }
+  return [...res.values()];
 }
 
 /** Marca del aviso de un segundo saldo inicial. */

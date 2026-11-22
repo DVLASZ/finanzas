@@ -115,9 +115,32 @@ function cortarPorSignos(fila: string): string[] | null {
   return trozos.map(t => (t.signo === '+' && (t.pegado || /^\d/.test(t.texto)) ? 'ingreso ' + t.texto : t.texto));
 }
 
+/** Una línea corta sin monto ni verbo («nequi», «ayer», «de ana») es un dato del movimiento de al lado, no un movimiento. */
+function esFragmento(s: string): boolean {
+  if (/\d/.test(s) || s.length > 40 || /:\s*$/.test(s)) return false;
+  const palabras = s.toLowerCase().match(new RegExp(`[${L}]+`, 'g')) ?? [];
+  if (!palabras.length || palabras.length > 4) return false;
+  return !palabras.some(p => PRONOMBRES.has(p) || (/[éíó]$/.test(p) && p.length > 3 && !NOMBRES_CON_TILDE.has(p)));
+}
+
+/**
+ * «mecato 5000» y debajo «nequi» son un solo movimiento: el fragmento se pega a la línea de arriba si esta trae monto.
+ * «mecato» y debajo «5000» (un mensaje de dos líneas, sin nada más) también se juntan.
+ */
+function unirFragmentos(filas: string[]): string[] {
+  const salida: string[] = [];
+  filas.forEach((f, i) => {
+    const anterior = salida.length - 1;
+    if (esFragmento(f) && anterior >= 0 && /\d/.test(salida[anterior])) salida[anterior] += ` ${f}`;
+    else if (filas.length === 2 && i === 1 && /^\d/.test(f) && esFragmento(filas[0])) salida[0] = `${filas[0]} ${f}`;
+    else salida.push(f);
+  });
+  return salida;
+}
+
 export function dividirLinea(texto: string): string[] {
   // «quince mil» y «sesenta lucas» pasan a números antes de contar cantidades: así «ayer pagué quince mil de almuerzo y hoy me giraron ochenta mil» se parte en dos
-  const filas = texto.split(/\r?\n|;/).map(x => numerosDeDinero(x.trim())).filter(Boolean);
+  const filas = unirFragmentos(texto.split(/\r?\n|;/).map(x => numerosDeDinero(x.trim())).filter(Boolean));
   const partes: string[] = [];
   for (const fila of filas) {
     // «pollo 8000 para luis puso 6000 nequi»: todo el gasto era de Luis y él ya mandó una parte. Son dos

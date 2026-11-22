@@ -3,7 +3,7 @@
  * la foto del recibo y el botón de anular. Los filtros se recuerdan entre visitas.
  */
 import { signal } from '@preact/signals';
-import { Ban, BarChart3, Copy, Download, Pencil, ScanLine, Share2, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
+import { Ban, BarChart3, Copy, Download, Pencil, ScanLine, Share2, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, Settings2, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
@@ -32,6 +32,7 @@ import { fechaAtras } from '../../lib/periodos.ts';
 import { BarrasPeriodo } from '../../components/charts/graficos.tsx';
 import { Esqueleto, Insignia, Vacio, visualDeCuenta, visualDeMovimiento, visualDeNombre, visualDePersona } from '../../components/ui/iconos.tsx';
 import { Selector } from '../../components/ui/Selector.tsx';
+import { abrirInfo } from '../../components/ui/HojaInfo.tsx';
 import { avisar, confirmar } from '../../components/ui/Dialogo.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
 import { EditarMovimiento, editandoId } from './EditarMovimiento.tsx';
@@ -62,6 +63,17 @@ const conFoto = signal<Set<string>>(new Set());
 async function cargarFotos(): Promise<void> {
   conFoto.value = new Set((await claves('recibo:')).map(k => k.slice('recibo:'.length)));
 }
+
+/** El contenido de la ventana «Opciones»: ajustes secundarios de la lista que no tienen que ocupar la fila del buscador. */
+function OpcionesMov() {
+  return (
+    <div class="campo-edicion">
+      <label class="check check-chip opcion-anulados"><input type="checkbox" id="anulados" checked={verAnulados.value} onChange={e => { verAnulados.value = (e.target as HTMLInputElement).checked; limite.value = 60; }} /> Mostrar anulados</label>
+      <p class="sub !mt-2">Los anulados no cuentan en los saldos ni en los totales; solo se ven en la lista, tachados.</p>
+    </div>
+  );
+}
+const abrirOpciones = () => abrirInfo({ id: 'opciones-mov', titulo: 'Opciones de la lista', cuerpo: <OpcionesMov /> });
 
 function poner(cambio: Partial<Filtros>): void {
   filtros.value = { ...filtros.value, ...cambio };
@@ -370,10 +382,13 @@ export function Movimientos() {
         {TIPOS.map(([t, e]) => <button key={t} class="chip" data-tipo={t} aria-pressed={f.tipo === t} onClick={() => poner({ tipo: t })}>{e}</button>)}
       </div>
 
+      <div class="filtros-fila">
       <div class="barra filtros">
         {selector('f-categoria', 'Categoría', 'Todas las categorías', 'categoria', f.categoria, 'categoria')}
         {selector('f-cuenta', 'Cuenta', 'Cuentas', 'dinero', f.cuenta, 'cuenta')}
         {selector('f-persona', 'Persona', 'Personas', 'persona', f.persona, 'persona')}
+      </div>
+      <button class="chip chip-opciones" id="opciones-mov" aria-label="Opciones de la lista" onClick={abrirOpciones}><Settings2 size={18} /></button>
       </div>
 
       {etiquetas.length > 0 && (
@@ -383,11 +398,11 @@ export function Movimientos() {
       )}
 
       <div class="barra">
-        <div class="relative flex-1">
+        <div class="relative min-w-[12rem] flex-1">
           <Search size={17} class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-tx2" />
           <input id="buscar" type="search" class="!pl-10" placeholder="Buscar" aria-label="Buscar" value={busqueda.value} onInput={e => { busqueda.value = (e.target as HTMLInputElement).value; limite.value = 60; }} />
         </div>
-        <label class="check check-chip"><input type="checkbox" id="anulados" checked={verAnulados.value} onChange={e => { verAnulados.value = (e.target as HTMLInputElement).checked; }} /> anulados</label>
+        {verAnulados.value && <button class="chip" id="quitar-anulados" aria-pressed="true" onClick={() => { verAnulados.value = false; limite.value = 60; }}>Anulados visibles<X size={14} /></button>}
         {hayFiltros && <button class="chip" id="limpiar" onClick={() => { busqueda.value = ''; poner({ tipo: 'todos', categoria: '', cuenta: '', persona: '', etiqueta: '' }); }}><SlidersHorizontal size={15} />Quitar filtros</button>}
       </div>
 

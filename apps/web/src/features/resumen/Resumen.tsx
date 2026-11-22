@@ -6,7 +6,7 @@ import { signal } from '@preact/signals';
 import { Receipt, ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Download, FileText, Minus, Share2, PiggyBank, Scale, TrendingDown, TrendingUp } from 'lucide-preact';
 import { useState } from 'preact/hooks';
 import {
-  agruparCategorias, aLocal, describirDia, estadoPresupuesto, gastoPorCategoria, ingresosPorFuente, leerMetas,
+  agruparCategorias, aLocal, describirDia, descuadreDelPeriodo, diasTranscurridos, gastoPorCategoria, ingresosPorFuente, leerMetas,
   filtrarMovimientos, movimientosACsv, nombreMes, rangoPeriodo, resumenEnTexto, totalApartado, totalIngresos,
 } from '../../../../../packages/core/src/index.ts';
 import { formatear } from '../../lib/formatear.ts';
@@ -19,8 +19,7 @@ import { TarjetaHormiga } from './Hormiga.tsx';
 import { TarjetaEtiquetas } from './Etiquetas.tsx';
 import { abrirBalance, abrirCategoria, abrirComparativa, abrirConcepto, abrirMedio, abrirTotal, type Periodos } from './aperturas.tsx';
 import { ComparativaMes } from './ComparativaMes.tsx';
-import { Ritmo } from '../../components/charts/graficos.tsx';
-import { BarraAvance, Insignia, Vacio, visualDeNombre } from '../../components/ui/iconos.tsx';
+import { Insignia, Vacio, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
 import { BarrasMeses, MapaCalor } from '../../components/charts/Calendario.tsx';
 import { PresupuestoSemana } from '../saldos/PresupuestoSemana.tsx';
@@ -139,37 +138,20 @@ export function Resumen() {
   const meta = Number(datos.config.meta_ahorro_pct ?? '30');
   const apartado = totalApartado(leerMetas(datos.config));
 
-  const topes = Object.keys(datos.presupuestos).map(id => {
-    const e = estadoPresupuesto(datos.movimientos, datos.cuentas, datos.presupuestos, id, desde, hasta, datos.config.tope_arrastra === '1');
-    return e ? { nombre: datos.cuentas.find(c => c.id === id)?.nombre ?? id, ...e } : null;
-  }).filter((x): x is NonNullable<typeof x> => Boolean(x));
-
-  const previoPorId = new Map(gastoPorCategoria(datos.movimientos, datos.cuentas, previo.desde, previo.hasta).map(c => [c.cuenta.id, c.total]));
+  // el periodo anterior se agrupa igual (con sus subcategorías), si no el grupo se compararía contra solo la categoría suelta
+  const previoPorId = new Map(agruparCategorias(gastoPorCategoria(datos.movimientos, datos.cuentas, previo.desde, previo.hasta), datos.config, datos.cuentas).map(g => [g.cuenta.id, g.total]));
   const previoDe = (g: (typeof grupos)[number]) => previoPorId.get(g.cuenta.id) ?? 0;
-  // la dona muestra las cinco categorías más grandes y junta el resto
-  const ordenadas = [...grupos].sort((x, y) => y.total - x.total);
+  // la dona muestra las seis categorías más grandes y junta el resto; una con total cero o negativo (un reembolso) no tiene trozo
+  const ordenadas = grupos.filter(g => g.total > 0).sort((x, y) => y.total - x.total);
   const trozos: Trozo[] = ordenadas.slice(0, 6).map((g, i) => ({ nombre: g.cuenta.nombre, valor: g.total, color: COLORES[i], previo: previoDe(g) }));
   const resto = ordenadas.slice(6).reduce((s, g) => s + g.total, 0);
   if (resto > 0) trozos.push({ nombre: 'Otras', valor: resto, color: COLORES[6], previo: ordenadas.slice(6).reduce((s, g) => s + previoDe(g), 0) });
 
-  // ritmo del mes: gasto acumulado día a día contra el mes anterior
+  // el ritmo del mes contra el anterior lo dibuja la tarjeta «Ritmo de gasto y presupuesto» (GraficasResumen), con la misma línea del mes pasado
   const diaHoy = ctx.ahora.getDate();
-  const acumulado = (rango: { desde: string; hasta: string }): number[] => {
-    const dias = new Date(Date.UTC(Number(rango.desde.slice(0, 4)), Number(rango.desde.slice(5, 7)), 0)).getUTCDate();
-    let suma = 0;
-    return Array.from({ length: dias }, (_, i) => {
-      const d = `${rango.desde.slice(0, 8)}${String(i + 1).padStart(2, '0')}`;
-      const sig = new Date(Date.UTC(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, i + 2)).toISOString().slice(0, 10);
-      suma += gastoPorCategoria(datos.movimientos, datos.cuentas, `${d} 00:00:00`, `${sig} 00:00:00`).reduce((x, c) => x + c.total, 0);
-      return suma;
-    });
-  };
   const verRitmo = p === 'mes' && a === 0;
-  const ritmoAhora = verRitmo ? acumulado({ desde, hasta }) : [];
-  const ritmoAntes = verRitmo ? acumulado(previo) : [];
-  const esperado = verRitmo ? ritmoAntes[Math.min(diaHoy, ritmoAntes.length) - 1] ?? 0 : 0;
-  const llevo = verRitmo ? ritmoAhora[Math.min(diaHoy, ritmoAhora.length) - 1] ?? 0 : 0;
-  const pctRitmo = esperado > 0 ? Math.round((Math.abs(llevo - esperado) / esperado) * 100) : null;
+  const totalDona = trozos.reduce((s, t) => s + t.valor, 0);
+  const descuadre = descuadreDelPeriodo(datos.movimientos, desde, hasta);
 
   const per: Periodos = { desde, hasta, previoDesde: previo.desde, previoHasta: previo.hasta };
   const cambiar = (nuevo: Periodo) => { periodo.value = nuevo; atras.value = 0; };
@@ -241,25 +223,12 @@ export function Resumen() {
       {a === 0 && <PresupuestoSemana />}
       {vendeProductos(ctx) && <><BotonesCorte /><HojaCorte /></>}
 
-      {topes.length > 0 && (
-        <section class="tarjeta space-y-3">
-          <h3 class="!m-0">Topes</h3>
-          {topes.map(t => {
-            return (
-              <div key={t.nombre} class="tope">
-                <div class="fila-tope"><span>{t.nombre}</span><span class="tabular-nums">{formatear(t.gastado)} de {formatear(t.tope)} ({t.porcentaje}%)</span></div>
-                <BarraAvance porcentaje={t.porcentaje} />
-              </div>
-            );
-          })}
-        </section>
-      )}
       {apartado > 0 && <p class="sub toque" id="apartado-metas" {...tocable(() => abrirMetas(datos))}>Apartado para metas: <b>{formatear(apartado)}</b> (ya está dentro de tus saldos)</p>}
 
-      {total > 0 && (
+      {totalDona > 0 && (
         <section class="tarjeta">
           <h3 class="!mt-0">Dónde se fue</h3>
-          <Dona trozos={trozos} total={total} />
+          <Dona trozos={trozos} total={totalDona} />
         </section>
       )}
 
@@ -298,17 +267,7 @@ export function Resumen() {
 
       {verRitmo && <ComparativaMes datos={datos} ahora={ctx.ahora} />}
 
-      {verRitmo && ritmoAhora.length > 0 && (
-        <section class="tarjeta">
-          <h3 class="!mt-0">Ritmo de gasto</h3>
-          <p class={`!mt-0 mb-2 text-sm font-semibold ${pctRitmo === null ? 'text-tx2' : llevo > esperado ? 'text-neg' : 'text-pos'}`}>
-            {pctRitmo === null ? 'Aún no hay un mes anterior con qué comparar.' : llevo === esperado ? 'Vas igual que tu ritmo habitual.' : `Vas un ${pctRitmo} % ${llevo > esperado ? 'por encima' : 'por debajo'} de tu ritmo habitual.`}
-          </p>
-          <Ritmo ahora={ritmoAhora} antes={ritmoAntes} hastaDia={Math.min(diaHoy, ritmoAhora.length)} />
-        </section>
-      )}
-
-      <TarjetaHormiga movs={datos.movimientos} cuentas={datos.cuentas} desde={desde} hasta={hasta} dias={Math.max(1, Math.round((Date.parse(hasta.replace(' ', 'T') + 'Z') - Date.parse(desde.replace(' ', 'T') + 'Z')) / 86400000))} alTocar={x => abrirConcepto(datos, x, per, true)} />
+      <TarjetaHormiga movs={datos.movimientos} cuentas={datos.cuentas} desde={desde} hasta={hasta} dias={diasTranscurridos(desde, hasta, ctx.ahora)} alTocar={x => abrirConcepto(datos, x, per, true)} />
 
       <TarjetaEtiquetas datos={datos} p={per} />
 
@@ -336,6 +295,7 @@ export function Resumen() {
             )),
           ])}
         </div>
+        {descuadre !== 0 && <p class="sub !mb-0" id="descuadre-periodo">Descuadre de los arqueos: {formatear(Math.abs(descuadre))} {descuadre > 0 ? 'de menos' : 'de más'}. Va aparte: no cuenta como gasto.</p>}
       </section>
 
       <ComparadorFechas datos={datos} ahora={ctx.ahora} />

@@ -257,7 +257,7 @@ export function Ajustes() {
       <p class="sub">Un aviso a esa hora que pregunta «¿Anotaste los gastos de hoy?» y abre el chat. Solo llega si hoy no anotaste nada y si activaste los avisos aquí abajo.</p>
 
       <h2>Avisos en este celular</h2>
-      <Nota>Te aviso cada mañana si una deuda está por vencer, si pasas un tope de gasto o si llevas varios días sin anotar nada.</Nota>
+      <Nota>Te aviso cada mañana si una deuda está por vencer o si llevas varios días sin anotar nada.</Nota>
       <div class="acciones">
         <button class="primario" onClick={async () => { setMsgAvisos('Un momento...'); setMsgAvisos(await activarAvisos()); }}>Activar avisos</button>
         <button class="secundario" onClick={async () => { setMsgAvisos('Mandando...'); setMsgAvisos(await probarAvisos()); }}>Mandar una prueba</button>
