@@ -4,7 +4,7 @@
  * extremos incluidos; hacia el núcleo se pasan como [desde, hasta) con hora, igual que el resto de la app.
  */
 import {
-  deudasPorPersona, gastoPorCategoria, ingresosPorFuente, leerMetas, totalIngresos,
+  agruparCategorias, deudasPorPersona, gastoPorCategoria, ingresosPorFuente, leerMetas, totalIngresos,
   type Cuenta, type Datos, type Meta, type Movimiento,
 } from '../../../../packages/core/src/index.ts';
 import { gastoDe, movimientosDeCategoria, movimientosDeTipos } from './grupos.ts';
@@ -53,7 +53,7 @@ export function gastoPorDiaSemana(datos: Fuente, desde: string, hasta: string): 
   const dias: GastoDia[] = DIAS_SEMANA.map((nombre, indice) => ({ indice, nombre, corto: DIAS_CORTOS[indice], total: 0, veces: 0, promedio: 0, movimientos: [] }));
   const ini = desde.slice(0, 10), fin = hasta.slice(0, 10);
   for (let f = ini, n = 0; f < fin && n < 3700; f = diaDespues(f), n++) dias[diaDeSemana(f)].veces++;
-  for (const m of movimientosDeTipos(datos, ['gasto', 'compartido'], desde, hasta)) {
+  for (const m of movimientosDeTipos(datos, ['gasto', 'compartido', 'deuda'], desde, hasta)) {
     const g = gastoDe(m, cats);
     if (g <= 0) continue;
     const d = dias[diaDeSemana(m.ocurridoEn.slice(0, 10))];
@@ -107,8 +107,10 @@ export const variacionPct = (a: number, b: number): number | null => (a > 0 ? Ma
 export function compararRangos(datos: Fuente, ra: Rango, rb: Rango): Comparacion {
   const A = aDesdeHasta(ra), B = aDesdeHasta(rb);
   const filas = new Map<string, FilaCategoria>();
-  for (const x of gastoPorCategoria(datos.movimientos, datos.cuentas, A.desde, A.hasta)) filas.set(x.cuenta.id, { id: x.cuenta.id, nombre: x.cuenta.nombre, a: x.total, b: 0, variacion: null });
-  for (const x of gastoPorCategoria(datos.movimientos, datos.cuentas, B.desde, B.hasta)) {
+  // cada fila es una categoría principal con lo de sus subcategorías, igual que la ventana que se abre al tocarla
+  const agrupado = (r: { desde: string; hasta: string }) => agruparCategorias(gastoPorCategoria(datos.movimientos, datos.cuentas, r.desde, r.hasta), datos.config, datos.cuentas);
+  for (const x of agrupado(A)) filas.set(x.cuenta.id, { id: x.cuenta.id, nombre: x.cuenta.nombre, a: x.total, b: 0, variacion: null });
+  for (const x of agrupado(B)) {
     const f = filas.get(x.cuenta.id) ?? { id: x.cuenta.id, nombre: x.cuenta.nombre, a: 0, b: 0, variacion: null };
     f.b = x.total;
     filas.set(x.cuenta.id, f);
@@ -142,7 +144,7 @@ export function armarReporte(datos: Datos, titulo: string, periodo: string, desd
   const gastos = cats.reduce((s, x) => s + x.total, 0);
   const ingresos = totalIngresos(datos.movimientos, datos.cuentas, desde, hasta);
   const ids = new Set(datos.cuentas.filter((c: Cuenta) => c.tipo === 'categoria').map(c => c.id));
-  const mayores = movimientosDeTipos(datos, ['gasto', 'compartido'], desde, hasta)
+  const mayores = movimientosDeTipos(datos, ['gasto', 'compartido', 'deuda'], desde, hasta)
     .map(m => ({ fecha: m.ocurridoEn.slice(0, 10), descripcion: m.descripcion, monto: gastoDe(m, ids) }))
     .filter(x => x.monto > 0).sort((a, b) => b.monto - a.monto).slice(0, 8);
   const deudas = deudasPorPersona(datos.movimientos, datos.cuentas, datos.compromisos, datos.config.fecha_apertura ?? '2000-01-01 00:00:00')

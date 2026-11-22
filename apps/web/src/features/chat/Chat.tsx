@@ -6,7 +6,7 @@
 import { ArrowUp, CalendarClock, Camera, ClipboardPaste, HardHat, HelpCircle, Images, Mic, Plus, ScanLine, SlidersHorizontal, Store } from 'lucide-preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  aLocal, atajosRapidos, calcularAlertas, formatear, fraseDeOCR, leerNotificacion, limpiar, hayTrabajadores, interpretar, normalizarDictado, procesar, vendeProductos, type Boton,
+  aLocal, atajosRapidos, calcularAlertas, formatear, fraseDeOCR, leerNotificacion, leerRecurrentes, limpiar, hayTrabajadores, interpretar, normalizarDictado, procesar, vendeProductos, type Boton, type Recurrente,
 } from '../../../../../packages/core/src/index.ts';
 import { leerComprobante } from '../../services/ocr.ts';
 import { app, hayServidor } from '../../services/estado.ts';
@@ -23,6 +23,7 @@ import { sonar } from '../../lib/sonido.ts';
 import { mostrarDeshacer } from '../../components/ui/ToastDeshacer.tsx';
 import { verTexto } from '../../state/privacidad.ts';
 import { Ayuda, esAyuda, seEnvia } from './Ayuda.tsx';
+import { AjusteFijo } from './AjusteFijo.tsx';
 import { BotonesBot, Carta } from './Carta.tsx';
 import { Insignia, T, visualDeNombre, type Icono } from '../../components/ui/iconos.tsx';
 import { abrirOpciones } from '../../components/ui/Selector.tsx';
@@ -76,13 +77,13 @@ function mereceConfeti(textos: string[]): boolean {
 }
 
 /** Las últimas burbujas entran una tras otra al abrir el chat; una burbuja nueva entra sola. `orden` es su lugar contando desde el final. */
-function BurbujaVista({ b, ultima, orden, alPulsar, alEjemplo }: { b: Burbuja; ultima: boolean; orden: number; alPulsar: (x: Boton) => void; alEjemplo: (e: string) => void }) {
+function BurbujaVista({ b, ultima, orden, alPulsar, alEjemplo, alEtiquetar }: { b: Burbuja; ultima: boolean; orden: number; alPulsar: (x: Boton) => void; alEjemplo: (e: string) => void; alEtiquetar: (texto: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const estilo = { '--i': Math.max(0, 5 - orden) } as Record<string, number>;
   const carta = b.de === 'bot' ? parsearCarta(b.texto) : null;
   const botones = b.botones?.length ? <BotonesBot botones={b.botones} activo={ultima} alPulsar={alPulsar} dentroDeCarta={Boolean(carta)} /> : null;
   if (b.de === 'bot' && esAyuda(b.texto)) return <div ref={ref} style={estilo} class="burbuja bot guia"><Ayuda texto={b.texto} alElegir={alEjemplo} /></div>;
-  if (carta) return <div ref={ref} style={estilo} class={`burbuja bot carta ${ultima && b.botones?.length ? 'activa' : ''}`}><Carta datos={carta} hijos={botones} impacto={ultima} /></div>;
+  if (carta) return <div ref={ref} style={estilo} class={`burbuja bot carta ${ultima && b.botones?.length ? 'activa' : ''}`}><Carta datos={carta} hijos={botones} impacto={ultima} alEtiquetar={ultima && b.botones?.length ? alEtiquetar : undefined} /></div>;
   return <div ref={ref} style={estilo} class={`burbuja ${b.de}`}><div class="texto">{quitarEmojis(b.texto)}</div>{botones}</div>;
 }
 
@@ -95,6 +96,7 @@ export function Chat() {
   const [pensando, setPensando] = useState(false);
   const enCurso = useRef(0);
   const [escaneando, setEscaneando] = useState(false);
+  const [ajustando, setAjustando] = useState<Recurrente | null>(null);
   const fin = useRef<HTMLDivElement>(null);
   const turno = useRef<Promise<void>>(Promise.resolve());
   const rec = useRef<Reconocimiento | null>(null);
@@ -322,7 +324,7 @@ export function Chat() {
         </div>
       ))}
       <div class="chat flex flex-1 flex-col gap-2.5 overflow-y-auto p-4" id="chat">
-        {burbujas.map((b, i) => <BurbujaVista key={`${i}-${b.texto.length}`} b={b} ultima={i === burbujas.length - 1} orden={burbujas.length - 1 - i} alPulsar={alPulsar} alEjemplo={alEjemplo} />)}
+        {burbujas.map((b, i) => <BurbujaVista key={`${i}-${b.texto.length}`} b={b} ultima={i === burbujas.length - 1} orden={burbujas.length - 1 - i} alPulsar={alPulsar} alEjemplo={alEjemplo} alEtiquetar={mandar} />)}
         {escaneando && <div class="burbuja bot" role="status"><span class="sub">Leyendo el comprobante...</span></div>}
         {pensando && <div class="burbuja bot pensando" role="status" aria-label="Pensando"><span /><span /><span /></div>}
         <div ref={fin} />
@@ -335,7 +337,7 @@ export function Chat() {
         <div class="atajos -mb-1 flex gap-2 overflow-x-auto px-4 pb-2 pt-1 [scrollbar-width:none]">
           {fijos.map(({ orden, etiqueta, Icono, tema }) => <button key={orden} class="chip atajo shrink-0" data-atajo={orden} onClick={() => mandar(orden)}><Insignia v={{ Icono, ...T[tema] }} tam={26} redondo />{etiqueta}</button>)}
           {rapidos.map(a => (
-            <button key={a.frase} class="chip atajo atajo-fijo shrink-0" data-atajo={a.frase} data-tipo={a.tipo} title="Pago fijo que ya toca" onClick={() => mandar(a.frase)}>
+            <button key={a.frase} class="chip atajo atajo-fijo shrink-0" data-atajo={a.frase} data-tipo={a.tipo} title="Pago fijo que ya toca" onClick={() => { const r = datos && leerRecurrentes(datos.config).find(x => x.frase === a.frase); if (r) setAjustando(r); else mandar(a.frase); }}>
               <Insignia v={{ Icono: CalendarClock, ...T.ambar }} tam={26} redondo />{a.etiqueta}
             </button>
           ))}
@@ -369,6 +371,7 @@ export function Chat() {
         <button type="submit" class="primario !min-h-10 !w-10 !rounded-full !p-0" aria-label="Enviar" title="Enviar"><ArrowUp size={22} strokeWidth={2.4} /></button>
         </div>
       </form>
+      {ajustando && <AjusteFijo fijo={ajustando} alCerrar={() => setAjustando(null)} alConfirmar={frase => { setAjustando(null); mandar(frase); }} />}
       <div id="vozEstado" class={`sub px-5 ${estadoVoz ? 'pb-1 pt-1' : 'h-0'}`} role="status" aria-live="polite">{estadoVoz}</div>
     </>
   );

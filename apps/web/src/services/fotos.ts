@@ -15,5 +15,5 @@ export async function bajarFoto(id: string): Promise<Blob | null> {
 }
 export async function borrarFotoEnServidor(id: string): Promise<void> {
   if (!hayRed()) return;
-  try { await fetch(urlFoto(id), { method: 'DELETE', headers: cabeceraAuth() }); } catch { /* se quedará ahí hasta purgar */ }
+  try { await fetch(urlFoto(id), { method: 'DELETE', headers: { ...cabeceraAuth(), 'X-Confirmar': 'quitar-foto' } }); } catch { /* se quedará ahí hasta purgar */ }
 }

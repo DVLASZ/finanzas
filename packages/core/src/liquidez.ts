@@ -8,7 +8,7 @@
 import { calcularSaldos } from './consultas.ts';
 import { aLocal } from './fechas.ts';
 import { interpretar } from './parser.ts';
-import { leerRecurrentes, ocurrencias } from './recurrentes.ts';
+import { fechasQueFaltan, leerRecurrentes } from './recurrentes.ts';
 import type { Datos } from './repo.ts';
 import { contextoDe } from './repo.ts';
 import { formatear } from './dinero.ts';
@@ -28,7 +28,7 @@ export interface CuentaProyectada {
 const DIA = 86400000;
 const sumarDias = (f: string, n: number): string => new Date(Date.parse(`${f}T00:00:00Z`) + n * DIA).toISOString().slice(0, 10);
 
-/** Los pagos fijos de los próximos `dias` días (desde hoy), con la cuenta de la que salen. Los ya registrados de este periodo no se cuentan. */
+/** Los pagos fijos de los próximos `dias` días (desde hoy), con la cuenta de la que salen. Los ya registrados de este periodo no se cuentan; el vencido sin registrar sí. */
 export function pagosProximos(datos: Datos, ahora: Date, dias = 30): PagoProyectado[] {
   const hoy = aLocal(ahora).slice(0, 10);
   const hasta = sumarDias(hoy, dias);
@@ -37,11 +37,8 @@ export function pagosProximos(datos: Datos, ahora: Date, dias = 30): PagoProyect
   for (const r of leerRecurrentes(datos.config)) {
     const q = interpretar(r.frase, ctx);
     const cuentaId = q.clase === 'movimiento' && q.propuesta.cuentaId ? q.propuesta.cuentaId : 'efectivo';
-    for (const f of ocurrencias(r, hoy, hasta)) {
-      // el de este mes que ya se anotó no vuelve a salir
-      const ya = datos.movimientos.some(m => m.estado === 'ok' && m.ocurridoEn.startsWith(f.slice(0, 7)) && m.descripcion.toLowerCase().includes(r.concepto.toLowerCase()) && f.slice(0, 7) === hoy.slice(0, 7) && m.ocurridoEn.slice(0, 10) >= sumarDias(f, -3));
-      if (!ya) res.push({ fecha: f, concepto: r.concepto, monto: r.monto, cuentaId });
-    }
+    // la misma regla del seguro: lo ya pagado este periodo no sale, y lo vencido sin pagar sale con la fecha de hoy
+    for (const f of fechasQueFaltan(r, datos.movimientos, aLocal(ahora), hasta)) res.push({ fecha: f, concepto: r.concepto, monto: r.monto, cuentaId });
   }
   return res.sort((a, b) => a.fecha.localeCompare(b.fecha));
 }

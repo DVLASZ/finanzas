@@ -54,4 +54,12 @@ Si cambias una plantilla (categorías o palabras nuevas) o el `.json` de una ins
 npm run instalar -- actualizar familia
 ```
 
+### Migración 0007: claves sin tildes
+
+Las bases creadas antes guardaron claves como `dólares`, `alcancía` o `impuestos y trámites`, y las consultas por nombre (`cuanto tengo en alcancia`) no las encontraban. `db/migrations/0007_claves_sin_tilde.sql` las reescribe sin tildes. Si dos cuentas del mismo tipo chocaran, queda la más antigua y la otra recibe el sufijo `-2`. Se puede repetir sin riesgo. Las bases nuevas ya nacen bien. Se aplica a cada base publicada (`actualizar` no corre migraciones, hay que hacerlo con wrangler):
+
+```bash
+npx wrangler d1 execute <base> --remote --file db/migrations/0007_claves_sin_tilde.sql
+```
+
 Lo de la plantilla entra con `INSERT OR IGNORE`: lo que ya existe no se toca. La `config` que está en `instalaciones/<nombre>.json` sí se pone tal cual, porque ahí manda el archivo. El SQL queda en `instalaciones/<nombre>/actualizar.sql` por si quieres revisarlo.

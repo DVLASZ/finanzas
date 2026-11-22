@@ -16,7 +16,7 @@ export interface Alerta {
   nivel: 'urgente' | 'aviso' | 'info';
   texto: string;
   /** Para saber de qué alerta se trata sin leer el texto (los avisos al celular saltan la del saldo inicial). */
-  id?: 'saldo-inicial' | 'saldo-negativo' | 'cierre-dia' | 'resumen-mes' | 'resumen-semana' | 'proyeccion' | 'liquidez' | 'stock';
+  id?: 'saldo-inicial' | 'saldo-negativo' | 'cierre-dia' | 'resumen-mes' | 'resumen-semana' | 'proyeccion' | 'liquidez' | 'stock' | 'tope';
   /** Botones que la app muestra con la alerta. `enviar`: el texto se manda solo al chat (queda una tarjeta por confirmar); si no, solo se deja escrito. */
   acciones?: { titulo: string; texto: string; enviar?: boolean }[];
 }
@@ -111,11 +111,11 @@ export function calcularAlertas(d: Datos, ahora: Date): Alerta[] {
   // Topes mensuales
   const { desde, hasta } = rangoPeriodo('mes', ahora);
   for (const catId of Object.keys(d.presupuestos)) {
-    const e = estadoPresupuesto(d.movimientos, d.cuentas, d.presupuestos, catId, desde, hasta, d.config.tope_arrastra === '1');
+    const e = estadoPresupuesto(d.movimientos, d.cuentas, d.presupuestos, catId, desde, hasta, d.config.tope_arrastra === '1', d.config);
     const nombre = d.cuentas.find(c => c.id === catId)?.nombre ?? catId;
     if (!e) continue;
-    if (e.porcentaje >= 100) res.push({ nivel: 'urgente', texto: `Superaste el tope de ${nombre}: ${formatear(e.gastado)} de ${formatear(e.tope)}.` });
-    else if (e.porcentaje >= 80) res.push({ nivel: 'aviso', texto: `${nombre} va al ${e.porcentaje}% del tope (${formatear(e.gastado)} de ${formatear(e.tope)}).` });
+    if (e.porcentaje >= 100) res.push({ id: 'tope', nivel: 'urgente', texto: `Superaste el tope de ${nombre}: ${formatear(e.gastado)} de ${formatear(e.tope)}.` });
+    else if (e.porcentaje >= 80) res.push({ id: 'tope', nivel: 'aviso', texto: `${nombre} va al ${e.porcentaje}% del tope (${formatear(e.gastado)} de ${formatear(e.tope)}).` });
   }
 
   // los primeros días del mes: cómo le fue al mes que pasó

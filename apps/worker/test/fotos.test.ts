@@ -5,8 +5,8 @@ import worker, { type Env } from '../src/index.ts';
 import { crearD1 } from '../../../tests/d1-shim.ts';
 
 const entorno = (): Env => ({ DB: crearD1(), API_TOKEN: 't', API_TOKEN_LECTURA: 'solo-ver' });
-const pedir = (env: Env, metodo: string, id: string, cuerpo?: Uint8Array, token = 't') =>
-  worker.fetch(new Request(`https://x.workers.dev/api/foto/${id}`, { method: metodo, body: cuerpo as BodyInit | undefined, headers: { Authorization: `Bearer ${token}` } }), env);
+const pedir = (env: Env, metodo: string, id: string, cuerpo?: Uint8Array, token = 't', extra: Record<string, string> = metodo === 'DELETE' ? { 'X-Confirmar': 'quitar-foto' } : {}) =>
+  worker.fetch(new Request(`https://x.workers.dev/api/foto/${id}`, { method: metodo, body: cuerpo as BodyInit | undefined, headers: { Authorization: `Bearer ${token}`, ...extra } }), env);
 const jpeg = (n: number) => { const b = new Uint8Array(n); b[0] = 0xff; b[1] = 0xd8; b.fill(7, 2); return b; };
 
 test('foto: se sube, se lee igual, se reemplaza y se borra', async () => {
@@ -39,4 +39,12 @@ test('foto: sin token no entra, y el acceso de solo lectura no puede subir ni bo
 test('foto: un id raro no llega a la base', async () => {
   const env = entorno();
   assert.equal((await pedir(env, 'PUT', "a'%3Bdrop", jpeg(100))).status, 404);
+});
+
+test('foto: un DELETE sin la confirmación no borra nada', async () => {
+  const env = entorno();
+  await pedir(env, 'PUT', 'm1', jpeg(500));
+  assert.equal((await pedir(env, 'DELETE', 'm1', undefined, 't', {})).status, 400);
+  assert.equal((await pedir(env, 'GET', 'm1')).status, 200, 'la foto sigue ahí');
+  assert.equal((await pedir(env, 'DELETE', 'm1')).status, 200);
 });

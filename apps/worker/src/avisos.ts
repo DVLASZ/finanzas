@@ -1,16 +1,16 @@
 /**
  * Avisos al celular: quién los manda y cuándo.
  *
- *   mañana (8 am)   deudas por vencer, topes pasados, gastos que toca anotar, días sin registrar, resúmenes
+ *   mañana (8 am)   deudas por vencer, gastos que toca anotar, días sin registrar, resúmenes
  *   tarde (6 pm)    cierre del día (¿la billetera tiene lo que dice la app?) y cuentas en negativo
- *   al momento      un tope que acaba de llegar al 80 % o al 100 %, y un giro que llega por el buzón
+ *   al momento      una meta lograda y un giro que llega por el buzón
  *   los domingos    si el respaldo en la nube falla
  *   de noche        «¿Anotaste los gastos de hoy?», a la hora que cada quien elige (solo si hoy no anotó nada)
  *
  * Cada aviso se manda a todos los celulares suscritos. Lo que ya no existe (404 o 410) se borra de la lista.
  */
 import {
-  aLocal, calcularAlertas, estadoPresupuesto, formatear, leerMetas, rangoPeriodo, tocaRecordar, type Datos, type Op,
+  aLocal, calcularAlertas, formatear, leerMetas, tocaRecordar, type Datos, type Op,
 } from '../../../packages/core/src/index.ts';
 import { crearLlavesVapid, enviarAviso, type LlavesVapid, type Suscripcion } from './push.ts';
 import type { D1Repo } from './d1repo.ts';
@@ -52,7 +52,7 @@ export async function avisarAlCelular(
   const hoyEsDia1 = aLocal(ahora).slice(8, 10) === '01';
   const alertas = momento === 'tarde'
     ? todas.filter(a => a.id === 'cierre-dia' || a.id === 'saldo-negativo')
-    : todas.filter(a => (a.nivel !== 'info' || a.id === 'resumen-semana' || (a.id === 'resumen-mes' && hoyEsDia1))
+    : todas.filter(a => a.id !== 'tope' && (a.nivel !== 'info' || a.id === 'resumen-semana' || (a.id === 'resumen-mes' && hoyEsDia1))
       && a.id !== 'saldo-inicial' && a.id !== 'saldo-negativo' && a.id !== 'cierre-dia');
   if (!alertas.length) return { enviados: 0, quitados: 0 };
   const titulo = momento === 'tarde'
@@ -67,34 +67,6 @@ export async function avisarRecordatorio(repo: D1Repo, ahora: Date): Promise<boo
   if (!tocaRecordar(datos.config.recordatorio, datos.movimientos, ahora)) return false;
   const r = await mandarAviso(repo, { titulo: '¿Anotaste los gastos de hoy?', cuerpo: 'Tómate un minuto y deja el día al día. Toca para abrir el chat.' });
   return r.enviados > 0;
-}
-
-/**
- * Después de guardar gastos: si una categoría acaba de llegar al 80 % o al 100 % de su tope este mes,
- * se avisa en el momento (una sola vez por nivel y por mes, aunque se sigan anotando gastos).
- */
-export async function avisarTopes(repo: D1Repo, datos: Datos, ops: Op[], ahora = new Date()): Promise<void> {
-  if (!ops.some(o => o.op === 'guardar') || !Object.keys(datos.presupuestos).length) return;
-  const { desde, hasta } = rangoPeriodo('mes', ahora);
-  const mes = aLocal(ahora).slice(0, 7);
-  const avisados = (await repo.leerSecreto<Record<string, string>>('avisos_tope')) ?? {};
-  const nuevos: string[] = [];
-  for (const catId of Object.keys(datos.presupuestos)) {
-    const e = estadoPresupuesto(datos.movimientos, datos.cuentas, datos.presupuestos, catId, desde, hasta, datos.config.tope_arrastra === '1');
-    if (!e) continue;
-    const nivel = e.porcentaje >= 100 ? 100 : e.porcentaje >= 80 ? 80 : 0;
-    if (!nivel) continue;
-    const ya = avisados[catId]?.startsWith(`${mes}:`) ? Number(avisados[catId].split(':')[1]) : 0;
-    if (nivel <= ya) continue;
-    avisados[catId] = `${mes}:${nivel}`;
-    const nombre = datos.cuentas.find(c => c.id === catId)?.nombre ?? catId;
-    nuevos.push(nivel === 100
-      ? `Superaste el tope de ${nombre}: ${formatear(e.gastado)} de ${formatear(e.tope)}.`
-      : `${nombre} va al ${e.porcentaje}% del tope: ${formatear(e.gastado)} de ${formatear(e.tope)}.`);
-  }
-  if (!nuevos.length) return;
-  await repo.guardarSecreto('avisos_tope', avisados);
-  await mandarAviso(repo, { titulo: 'Tope de gastos', cuerpo: nuevos.slice(0, 2).join(' ') });
 }
 
 /** Cuando una meta de ahorro llega a su valor (o lo pasa) se avisa una vez; si baja y vuelve a llegar, otra vez. */

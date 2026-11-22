@@ -204,7 +204,7 @@ me van a pagar 50k          me cayó 50000 de mamá
 
 ### Lo que no pasó
 
-Una frase con el «no» pegado a un verbo de plata no registra nada: `Ana no me pagó 50000`, `no compré 5000`, `todavía no me paga Pedro`, `nunca me pagó 5000 Pedro`. El bot responde que eso suena a que no pasó y no crea personas (antes «No» o «Nunca» quedaban como una). Las preguntas, como «¿cuánto no he pagado?», siguen su camino.
+Una frase con el «no» pegado a un verbo de plata no registra nada (si hay otra cláusula afirmativa, esa sí se guarda; ver más abajo): `Ana no me pagó 50000`, `no compré 5000`, `todavía no me paga Pedro`, `nunca me pagó 5000 Pedro`. El bot responde que eso suena a que no pasó y no crea personas (antes «No» o «Nunca» quedaban como una). Las preguntas, como «¿cuánto no he pagado?», siguen su camino.
 
 ## Cobros del banco
 
@@ -305,6 +305,21 @@ Verbos de todos los días que el bot ya lee:
 - Gastos: «me tocó poner 30k para el taxi».
 - Mover plata: «saqué 100k del cajero» y «pasé 50k de nequi a efectivo».
 - Sacar de una meta sigue siendo «saqué 80000 de la meta moto», no un retiro del cajero.
+
+Formas de la segunda ronda de lenguaje:
+
+- Cobros: «Faber me pagó los 23k que me debía», «me abonó 10k Ana», «me devolvió 20k Pedro», «me consignó 50k Luis», «cobré 30k a Ana», «Ana me debía 23k y ya me pagó». Con deuda abierta con esa persona son un abono recibido; sin ella, un ingreso con la persona como fuente. Nunca un gasto ni una deuda tuya. «ya me pagó Ana» o «cobré a Ana» sin monto preguntan cuánto.
+- Negaciones por cláusula: se separan por coma, «y», «pero», punto y coma, salto de línea o «/». `gasté 5000, no pagué propina` guarda los 5.000 y la tarjeta dice «Ignoré «no pagué propina», porque dice que no pasó». Si lo único con plata está negado, no se anota nada. `gasté 5000` sin decir en qué se anota como «Gasto» y pregunta la categoría.
+- Medidas: `botella 500 ml 2500`, `compré 500 gramos de queso 5000`. ml, cc, l, g, gr, kg, kilos, libras, cm, mm y metros no son plata.
+- Precio por unidad: `2 empanadas 4500 c/u` y `compré 3 gaseosas 2000 cada una` multiplican (9.000 y 6.000) y la tarjeta dice «3 × $2.000 = $6.000». Sin cantidad pregunta cuántas.
+- Repartos con número: `almuerzo 60k entre 3` anota solo tu parte (20k) y avisa el total, sin crear personas. `pizza 60k entre 3 con ana y luis` es un gasto compartido; si el número no cuadra con los nombres pregunta. `dividimos el almuerzo 30000 con ana y luis` y `repartimos...` reparten en partes iguales.
+- Mover plata: `pasé 50000 a nequi` pregunta de dónde sale. `saqué 100000` y `retiré 100000` sin cuenta preguntan de cuál (con una sola cuenta de banco la usan; «del cajero» sigue tomando la cuenta del banco). `saqué plata del cajero` sin monto pregunta cuánto.
+- Jerga de deudas: `me fié 20000` y `quedé debiendo 15000` preguntan a quién le debes. `me quedó debiendo Pedro 15000`, `me debe ivan 20k` y `me deben 20k Ana` son un préstamo tuyo (igual que `ivan me debe 20k`); `me deben 20k` pregunta quién. `me tocó pagar 20000 a Pedro` y `cancelé la deuda con Pedro 20000` se leen como «pagué 20000 a Pedro» (abono si le debes). `me rebajó Pedro 5000` pregunta qué fue. `cancelar el pago` pregunta si quieres deshacer lo último.
+- `le puse 5000 a la moto` es un gasto en moto. `puse yo 20000` pregunta en qué fue.
+- Dólares: `presté 12.50 usd a ana` (y las deudas y regalos en usd) usan la cuenta de dólares si existe.
+- Líneas: `mecato 5000` y debajo `nequi` (o `ayer`) son un solo movimiento; `mecato` y debajo `5000` también.
+- Prioridad de categoría: la que dicen las palabras de la frase gana al atajo y a las reglas aprendidas. `mecato ana 3000` es Mecato aunque exista la regla ana a Transporte; `pasaje taxi 8000` es Transporte y `pasaje 8000` sigue siendo el atajo. La regla solo rellena cuando la frase no dice categoría.
+- Editar lo último hablando: `anula el último`, `borra`, `borrar el último`, `elimina el ultimo` y `quita el último` deshacen. `cambia el monto a 7000`, `corrige a 7000`, `era 7000` y `mejor 7000` abren el último movimiento con el monto nuevo. Sin movimientos propios responden «No hay nada que deshacer» o «No hay nada que editar».
 
 Si no sabes cómo decir algo, en la Ayuda escribe tu duda en «Pregúntale cómo decirlo» («cómo anoto que presté plata»). Te da el ejemplo con tus cuentas y el botón «Usar este ejemplo» lo deja escrito en el chat.
 
@@ -492,7 +507,11 @@ cuánto puedo gastar esta semana
 
 Lo de la semana sale de lo libre del mes (lo disponible menos los pagos fijos que faltan y lo apartado para metas), repartido entre los días que quedan y multiplicado por siete. Es la misma cuenta de «Seguro para gastar hoy». También sale en Saldos y en Resumen.
 
-Para que lo que sobró de un tope el mes pasado se sume al de este mes, se pone la config `tope_arrastra` en `1` (en el `.json` de la instalación y `npm run instalar -- actualizar <nombre>`).
+Para que lo que sobró de un tope el mes pasado se sume al de este mes, se pone la config `tope_arrastra` en `1` (en el `.json` de la instalación y `npm run instalar -- actualizar <nombre>`). El arrastre solo se aplica a un mes completo.
+
+El tope de una categoría cuenta también lo anotado en sus subcategorías (con `tope comida 100000`, un `almuerzo 40000 restaurante` ya lleva el 40 %). El tope es mensual: en la vista Año se multiplica por doce y en la vista Semana se prorratea por los días (el tope por siete sobre los días del mes). Si una categoría y una de sus subcategorías tienen tope a la vez, el de la hija ya está dentro del de la madre y no se suma dos veces en el ritmo del mes.
+
+Gasto tiene una sola definición: los movimientos de tipo gasto y compartido (tu parte) y la compra a crédito (`debo 30000 a juan por mercado`), que cuenta al anotarla. El Descuadre de un arqueo no cuenta como gasto, así el total, las listas y las gráficas siempre coinciden.
 
 | Escribes | Muestra |
 |---|---|
@@ -506,6 +525,10 @@ Saldos, deudas y resúmenes también tienen su pantalla en la app. Desde el chat
 ## Fechas
 
 `ayer`, `anteayer`, `hoy`, `el lunes`, `el lunes pasado`, `hace 3 días`, `15/10`, `el 2 de octubre`, `a las 3pm`, `4 pm`, `4:30pm`. Un pago mixto sin total (`taxi 6000 billete y 1800 monedas`) cuesta la suma, $7.800. La hora puede ir sola (`almuerzo 12000 1 pm`) o con el día (`ayer 4 pm`). Con `a las 4` sin am ni pm toma la tarde. Una fecha que no existe se rechaza.
+
+También entiende: `el 15` o `dia 15` (ese día de este mes, o del anterior si todavía no llega), `el primero`, `el martes 13`, `el pasado lunes`, `hace una semana`, `hace 2 semanas`, `la semana pasada`, `anoche`, `esta mañana`, `esta tarde`, `ayer por la noche`, `15 nov`, `nov 15`, `2 de marzo de 2025`, `2026-10-15`, `15-10`, `en la quincena` y `a fin de mes` (la fecha que ya pasó más reciente). Horas: `12:30`, `15:30`, `a las 3 y media`, `a las 8 de la noche`; con `cena` y `a las 8` son las 8 de la noche, y en `a las 12 15 mil` el 15 mil es plata, no minutos. Una hora imposible (`a las 25`) se rechaza.
+
+Una fecha sin año que caería a más de 10 días en el futuro se toma del año pasado (`28/12` escrito el 2 de enero es el 28 de diciembre anterior). Con año en el futuro, o con `mañana` y `pasado mañana`, el bot no anota: explica que un movimiento se anota cuando ya pasó. En una deuda, la fecha límite sin año es la próxima que llegue (`antes del 15 de enero` escrito en diciembre es enero del año que viene) y `para el 20` es el próximo día 20.
 
 ## Reglas aprendidas
 
@@ -530,6 +553,29 @@ de terminal a casa
 ```
 
 Si escribes un mensaje completo nuevo, reemplaza la tarjeta. Si estás editando un movimiento ya guardado, el original solo se anula cuando confirmas el nuevo. Si cancelas, queda como estaba.
+
+Al confirmar, primero se guarda el nuevo y después se anula el original: si algo falla en medio, no se pierde nada. El nuevo recuerda a quién reemplazó, así que Deshacer anula la edición y devuelve el original.
+
+En un compartido, cambiar el monto reparte de nuevo si las partes eran iguales («Repartí de nuevo: cada uno $4.000»). Si las partes eran distintas no se tocan y la tarjeta avisa.
+
+## Categorías por palabra, pagos fijos y etiquetas sugeridas
+
+Las palabras del diccionario (`db/diccionario.json`) valen como palabra completa, en singular o plural: `bus` y `buses` son Transporte, pero `busqueda` no; `cena` es Comida y `escena` no; `ropa` es Personal y `europa` no. Solo `droguer` y `peluque` se aceptan como inicio de palabra (droguería, peluquería). El nombre de una categoría también vale en singular o plural y sin tilde: «suscripción», «reparaciones», «salida», «comidas». Nuevas palabras: `tinto` en Mecato, `cerveza` en Salidas, `restaurante` en Comida. «Otros» solo se reconoce tal cual, porque «otro» aparece en demasiadas frases.
+
+Una frase que nombra un pago fijo («claude 65000», «suscripción claude») hereda la cuenta y la categoría con que se guardó ese pago (`core/src/fijosHeredar.ts`). Se reconoce por las palabras distintivas de su concepto, enteras; lo genérico («suscripción», «pago», «cuota») no cuenta. Lo escrito en la frase siempre gana: «claude 65000 efectivo» sale en efectivo.
+
+Al tocar el botón de un pago fijo en el chat se abre una hoja con el monto precargado para ajustarlo (un cobro en dólares cambia con la TRM). Si su cuenta es de dólares, el monto se queda en dólares. Al confirmar sale la tarjeta de siempre, con el concepto del pago fijo, y por eso cuenta como pagado del mes.
+
+La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con una equis para quitarlas), una o dos sugeridas y «Etiqueta» para escribir otra. Las sugeridas salen de los movimientos parecidos (mismo concepto, persona o categoría) y, si no alcanzan, de las más usadas del último mes (`sugerirEtiquetas`, en `core/src/etiquetas.ts`). Tocar una manda a la tarjeta el conjunto completo, por ejemplo `#viaje #claude`, igual que si lo hubieras escrito como corrección; `sin etiquetas` las quita todas. Máximo 5 por movimiento y 24 caracteres.
+
+## Deudas, abonos y deshacer
+
+- **Deuda saldada que vuelve.** Tras anular, restaurar o editar un movimiento, el estado de los compromisos de esas personas se recalcula con su saldo (`reconciliarCompromisos`, en la memoria y en D1). Si deshaces el pago que saldó una deuda, vuelve a estar activa con su motivo y su fecha límite. El monto del compromiso es siempre el original; lo que falta sale del saldo de la persona.
+- **Anular algo que ya tiene abonos.** Si anulas un préstamo, una deuda o un compartido con abonos hechos después, el bot avisa y ofrece anular todo junto. No deja anular solo el préstamo, porque la persona quedaría con una deuda al revés.
+- **Abono de más.** Si el pago pasa de lo que se debe, la tarjeta dice cuánto se debía y de quién queda a favor lo que sobra. Botones: «Registrar solo $X» (lo justo) o «Guardar igual».
+- **Abono en otra moneda.** «Ivan me pagó 10 usd» con una deuda en pesos no se guarda: «Ivan no te debe dólares». Tampoco se paga una deuda con una cuenta de otra moneda. Los dólares nunca se convierten solos.
+- **Saldo inicial.** No se deshace (ni con el botón): se ajusta con un arqueo o se cambia con Editar.
+- **Metas.** Apartar o sacar trae el botón «Deshacer aporte», que revierte solo ese aporte. Si el último comando fue de una meta, «deshacer» lo avisa y deja elegir entre el aporte y el movimiento anterior. Si apartas más de lo que tienes libre (lo que hay en cuentas menos lo ya apartado, con saldo inicial puesto), pide confirmación.
 
 ## Lo que el bot no hace
 

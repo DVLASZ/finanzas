@@ -114,7 +114,9 @@ const EN_PAGINA = {
       // los adornos (círculos borrosos que se salen a propósito) no cuentan: solo lo que de verdad se corta
       const real = h => !h.closest('.pointer-events-none') && getComputedStyle(h).position !== 'absolute';
       if (corta && cs.textOverflow !== 'ellipsis' && el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0) {
-        const culpable = [...el.querySelectorAll('*')].find(h => real(h) && h.getBoundingClientRect().right > r.right + 1.5);
+        // lo que vive dentro de una fila con scroll propio (carrusel, atajos) se puede salir de la caja a propósito
+        const enScroll = h => { for (let q = h.parentElement; q && q !== el; q = q.parentElement) { const o = getComputedStyle(q).overflowX; if (o === 'auto' || o === 'scroll') return true; } return false; };
+        const culpable = [...el.querySelectorAll('*')].find(h => real(h) && !enScroll(h) && h.getBoundingClientRect().right > r.right + 1.5);
         if (culpable || !el.children.length) hallazgos.push({ tipo: 'texto cortado', el: nombre(el), texto: texto(el), dato: `${el.scrollWidth} > ${el.clientWidth}${culpable ? ` por ${nombre(culpable)} «${texto(culpable)}»` : ''}` });
       }
       if ((cs.overflowY === 'hidden' || cs.overflowY === 'clip') && el.scrollHeight > el.clientHeight + 2 && el.clientHeight > 0 && cs.textOverflow !== 'ellipsis' && !/line-clamp/.test(el.className)) {
@@ -143,6 +145,15 @@ const EN_PAGINA = {
     const etiquetasBarra = [...document.querySelectorAll('nav#nav button > span:not([aria-hidden])')].filter(x => getComputedStyle(x).visibility !== 'hidden' && getComputedStyle(x).position !== 'absolute').map(x => x.getBoundingClientRect());
     for (let i = 1; i < etiquetasBarra.length; i++) if (etiquetasBarra[i].left - etiquetasBarra[i - 1].right < 2) hallazgos.push({ tipo: 'etiquetas pegadas', el: 'nav#nav', texto: '', dato: `${Math.round(etiquetasBarra[i].left - etiquetasBarra[i - 1].right)} px entre dos` });
     if (document.documentElement.scrollWidth > ancho + 1) hallazgos.push({ tipo: 'la página se mueve de lado', el: 'html', texto: '', dato: `${document.documentElement.scrollWidth} > ${ancho}` });
+    // la zona con scroll no puede tener nada suelto más allá del borde derecho. Lo que va dentro de una fila con scroll propio
+    // (carruseles, gráficas, atajos) o de un contenedor que recorta no cuenta, porque ahí el desborde es legítimo
+    const contenido = document.getElementById('contenido');
+    if (contenido) {
+      const recorta = x => { for (let p = x.parentElement; p && p !== contenido; p = p.parentElement) { if (getComputedStyle(p).overflowX !== 'visible') return true; } return false; };
+      let peor = null, borde = 0;
+      for (const x of contenido.querySelectorAll('*')) { const r = x.getBoundingClientRect(); if (r.width > 0 && r.right > borde && r.right > ancho + 1 && !recorta(x) && getComputedStyle(x).position !== 'fixed') { borde = r.right; peor = x; } }
+      if (peor) hallazgos.push({ tipo: 'la página se mueve de lado', el: 'contenido', texto: '', dato: `${nombre(peor)} llega a ${Math.round(borde)} de ${ancho}` });
+    }
     return hallazgos;
   },
 };

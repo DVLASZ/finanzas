@@ -12,7 +12,7 @@ import { AlertTriangle, Ban, Check, Pencil, X } from 'lucide-preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  aLocal, capacidadesDeEdicion, conNumeral, etiquetasDeTexto, describirFecha, formatear, hallarMontos, previsualizarEdicion, aplicarEdicion, type CambiosEdicion, type CampoEditable, type Movimiento, type Propuesta,
+  aLocal, capacidadesDeEdicion, conNumeral, etiquetaDeCuenta, etiquetasDeTexto, describirFecha, formatear, hallarMontos, previsualizarEdicion, aplicarEdicion, type CambiosEdicion, type CampoEditable, type Movimiento, type Propuesta,
 } from '../../../../../packages/core/src/index.ts';
 import { agregarRegla, leerReglas, reglaSugerida } from '../../../../../packages/core/src/index.ts';
 import { mostrarConfirmacion } from '../../components/ui/Confirmacion.tsx';
@@ -114,6 +114,8 @@ export function EditarMovimiento() {
   if (!id || !m || !datos || !ctx) return null;
   const cap = capacidadesDeEdicion(m);
   const moneda = p0?.moneda ?? 'COP';
+  // en un pago cruzado (pesos por una deuda en dólares) la cuenta de dinero es la de la otra moneda
+  const monedaCuenta = p0?.montoOtro !== undefined && p0.monedaOtra ? p0.monedaOtra : moneda;
   const cerrar = () => { editandoId.value = null; };
 
   // lo que la persona cambió respecto a lo guardado
@@ -154,7 +156,7 @@ export function EditarMovimiento() {
   };
 
   const opcionesCuentas = (tipo: 'dinero' | 'categoria' | 'fuente') =>
-    datos.cuentas.filter(c => c.tipo === tipo && (tipo !== 'dinero' || c.moneda === moneda) && (tipo !== 'categoria' || c.id !== 'cat:descuadre')).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+    datos.cuentas.filter(c => c.tipo === tipo && (tipo !== 'dinero' || c.moneda === monedaCuenta) && (tipo !== 'categoria' || c.id !== 'cat:descuadre')).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
       .map(c => ({ valor: c.id, etiqueta: c.nombre }));
   const motivo = (c: CampoEditable) => (cap.campos[c].editable ? undefined : cap.campos[c].motivo);
   const visible = (c: CampoEditable) => cap.campos[c].editable || (c === 'monto' && Boolean(p0));
@@ -207,7 +209,7 @@ export function EditarMovimiento() {
               </Campo>
             )}
             {cap.campos.cuenta.editable && (
-              <Campo etiqueta={m.tipo === 'ingreso' ? 'Entró a' : m.tipo === 'transferencia' ? 'Sale de' : 'Pagado con'}>
+              <Campo etiqueta={etiquetaDeCuenta(m, p0)}>
                 <Selector id="e-cuenta" etiqueta="Cuenta" valor={cuentaId} alCambiar={setCuentaId} opciones={opcionesCuentas('dinero')} />
               </Campo>
             )}

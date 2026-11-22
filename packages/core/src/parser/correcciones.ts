@@ -4,7 +4,7 @@ import { listaCategorias, tramosDe } from './comun.ts';
 import { leerPago } from './pago.ts';
 import { gasto, ingreso, transferencia } from './movimientos.ts';
 import { ES_APODO, NO_ES_PERSONA, ROLES, aplicarRol, faltanteGrupo } from './personas.ts';
-import { hallarMontos, aMinor } from '../dinero.ts';
+import { hallarMontos, aMinor, formatear } from '../dinero.ts';
 import { borrarTramos, categoriaPorNombre, gruposDe, hallarCuentas } from '../entidades.ts';
 import { hallarFecha } from '../fechas.ts';
 import { capitalizar, limpiar, titulo } from '../texto.ts';
@@ -105,6 +105,25 @@ export function resolverFaltante(
 }
 
 /**
+ * Cambiar el monto de un gasto compartido: si estaba repartido en partes iguales (todos ponen lo mismo, tú incluido),
+ * se reparte de nuevo con el monto nuevo y se avisa; si las partes eran distintas, no se tocan y se avisa también.
+ */
+function repartirDeNuevo(antes: Propuesta, sig: Propuesta): void {
+  const personas = antes.personas;
+  if (antes.tipo !== 'compartido' || antes.pagoOtro || !personas?.length || sig.monto === antes.monto) return;
+  const partes = personas.length + 1; // tú también
+  const cada = Math.floor(antes.monto / partes);
+  const iguales = personas.every(x => x.monto === cada);
+  if (!iguales) {
+    sig.avisos.push(`Cambié el total, pero las partes de las personas no cambian (${personas.map(x => `${x.nombre} ${formatear(x.monto, sig.moneda)}`).join(', ')}). Tu parte ahora es ${formatear(Math.max(sig.monto - personas.reduce((s, x) => s + x.monto, 0), 0), sig.moneda)}. Si el reparto también cambió, escríbelo de nuevo.`);
+    return;
+  }
+  const nuevo = Math.floor(sig.monto / partes);
+  sig.personas = personas.map(x => ({ ...x, monto: nuevo }));
+  sig.avisos.push(`Repartí de nuevo: cada uno ${formatear(nuevo, sig.moneda)} (partes iguales entre ${partes}, tú incluido).`);
+}
+
+/**
  * Aplica una corrección a una tarjeta que aún no se confirmó. Solo se acepta si TODO el texto
  * es una corrección reconocible (así un gasto nuevo como «mecato 5000» nunca se confunde con una):
  *
@@ -121,6 +140,8 @@ export function aplicarCambio(p: Propuesta, texto: string, ctx: Contexto): Propu
   if (!t && !ex.etiquetas.length) return null;
   const sig: Propuesta = { ...p, avisos: [] };
   if (ex.etiquetas.length) sig.etiqueta = ex.etiquetas.join(' ');
+  // el ✕ de la última etiqueta de la tarjeta
+  if (!ex.etiquetas.length && /^sin etiquetas?$/.test(t)) { sig.etiqueta = undefined; return sig; }
   const consumir = (re: RegExp): RegExpMatchArray | null => {
     const m = t.match(re);
     if (m) t = (t.slice(0, m.index) + ' ' + t.slice((m.index ?? 0) + m[0].length)).replace(/\s+/g, ' ').trim();
@@ -187,6 +208,7 @@ export function aplicarCambio(p: Propuesta, texto: string, ctx: Contexto): Propu
     const ms = hallarMontos(mm[1]).filter(m => m.explicito);
     if (ms.length === 1 && borrarTramos(mm[1], tramosDe(ms)).trim() === '') {
       sig.monto = aMinor(ms[0].valor, sig.moneda);
+      repartirDeNuevo(p, sig);
       t = '';
     }
   }

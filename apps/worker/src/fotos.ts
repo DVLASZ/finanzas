@@ -5,7 +5,7 @@
  *
  *   PUT    /api/foto/<id del movimiento>   cuerpo: el JPEG tal cual
  *   GET    /api/foto/<id del movimiento>
- *   DELETE /api/foto/<id del movimiento>
+ *   DELETE /api/foto/<id del movimiento>   exige la cabecera X-Confirmar: quitar-foto (además del token)
  */
 import type { D1Like } from './d1repo.ts';
 
@@ -27,6 +27,8 @@ export async function manejarFoto(
     return new Response(Uint8Array.from(atob(f.datos), c => c.charCodeAt(0)), { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=86400' } });
   }
   if (req.method === 'DELETE') {
+    // quitar una foto no pide PIN (es un gesto de uso diario), pero sí una marca explícita: un DELETE suelto no la borra
+    if (req.headers.get('X-Confirmar') !== 'quitar-foto') return json({ error: 'Falta confirmar que quieres quitar la foto.' }, 400);
     await db.prepare('DELETE FROM fotos WHERE movimiento_id = ?').bind(id).run();
     return json({ ok: true });
   }

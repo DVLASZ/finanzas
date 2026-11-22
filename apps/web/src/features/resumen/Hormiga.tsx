@@ -3,17 +3,21 @@
  * y los tres conceptos por donde más se va la plata.
  */
 import { Bug } from 'lucide-preact';
-import { gastosHormiga, TOPE_HORMIGA, VECES_HORMIGA, type Cuenta, type Movimiento } from '../../../../../packages/core/src/index.ts';
+import { diasTranscurridos, gastosHormiga, TOPE_HORMIGA, VECES_HORMIGA, type Cuenta, type Movimiento } from '../../../../../packages/core/src/index.ts';
 import { formatear } from '../../lib/formatear.ts';
 import { Insignia, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
+import { ctx as contexto } from '../../state/store.ts';
 
-export function TarjetaHormiga({ movs, cuentas, desde, hasta, dias, alTocar }: { movs: Movimiento[]; cuentas: Cuenta[]; desde: string; hasta: string; dias: number; alTocar?: (concepto: string) => void }) {
-  const h = gastosHormiga(movs, cuentas, desde, hasta, dias);
+export function TarjetaHormiga({ movs, cuentas, desde, hasta, dias, alTocar }: { movs: Movimiento[]; cuentas: Cuenta[]; desde: string; hasta: string; dias?: number; alTocar?: (concepto: string) => void }) {
+  // el ritmo se mide con los días que ya pasaron del periodo, no con su largo total; `dias` solo sirve si aún no hay reloj
+  const ahora = contexto.value?.ahora;
+  const transcurridos = ahora ? diasTranscurridos(desde, hasta, ahora) : Math.max(1, dias ?? 1);
+  const h = gastosHormiga(movs, cuentas, desde, hasta, transcurridos);
   if (h.top.length === 0) return null;
   const max = Math.max(1, ...h.top.map(x => x.total));
   // lo mismo medido por mes, para compararlo con el sueldo o el arriendo
-  const alMes = Math.round((h.total / Math.max(1, dias)) * 30);
+  const alMes = Math.round((h.total / transcurridos) * 30);
   return (
     <section class="tarjeta relative overflow-hidden" aria-label="Gastos hormiga">
       <div class="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-amber-400/20 blur-2xl" />

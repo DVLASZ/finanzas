@@ -4,16 +4,17 @@
  */
 import { diferenciasArqueo, type Saldos, saldoDe } from './asientos.ts';
 import {
-  deudasPorPersona, estadoPresupuesto, gastoPorCategoria, ingresosPorFuente, porEtiqueta, resumenSaldos, totalIngresos,
+  deudasPorPersona, descuadreDelPeriodo, estadoPresupuesto, gastoPorCategoria, ingresosPorFuente, porEtiqueta, resumenSaldos, totalIngresos,
 } from './consultas.ts';
 import { formatear } from './dinero.ts';
 import { conNumeral } from './etiquetas.ts';
 import { leerMetas, totalApartado } from './metas.ts';
 import { agruparCategorias, conSubcategorias } from './subcategorias.ts';
-import { cuentaEnDolares, ejemploDeCuenta, ejemploDeSaldos, vendeProductos } from './entidades.ts';
+import { aliasDeCuentas, cuentaEnDolares, ejemploDeCuenta, ejemploDeSaldos, vendeProductos } from './entidades.ts';
 import { resolverEfectivo, type Reparto } from './efectivo.ts';
 import { describirDia, describirFecha, nombreMes, rangoPeriodo } from './fechas.ts';
 import type { Propuesta } from './parser.ts';
+import { normalizar } from './texto.ts';
 import type { Compromiso, Contexto, Moneda, Movimiento } from './tipos.ts';
 
 const nombreDe = (ctx: Contexto, id: string | undefined): string =>
@@ -158,7 +159,7 @@ export function tarjeta(p: Propuesta, ctx: Contexto, saldos: Saldos): string {
 export function alertaPresupuesto(movs: Movimiento[], ctx: Contexto, categoriaId: string | undefined): string | null {
   if (!categoriaId) return null;
   const { desde, hasta } = rangoPeriodo('mes', ctx.ahora);
-  const e = estadoPresupuesto(movs, ctx.cuentas, ctx.presupuestos, categoriaId, desde, hasta, ctx.config.tope_arrastra === '1');
+  const e = estadoPresupuesto(movs, ctx.cuentas, ctx.presupuestos, categoriaId, desde, hasta, ctx.config.tope_arrastra === '1', ctx.config);
   if (!e) return null;
   const icono = e.porcentaje >= 100 ? '🚨' : e.porcentaje >= 80 ? '⚠️' : '📊';
   const extra = e.porcentaje >= 100 ? ' · ¡superaste el tope!' : '';
@@ -190,9 +191,14 @@ export function textoSaldo(movs: Movimiento[], ctx: Contexto): string {
 export function textoSaldoDe(arg: string, movs: Movimiento[], ctx: Contexto): string {
   const apertura = ctx.config.fecha_apertura ?? '2000-01-01 00:00:00';
   const r = resumenSaldos(movs, ctx.cuentas, apertura);
-  const q = arg.trim();
-  const hallada = r.cuentas.find(x => x.cuenta.clave === q || x.cuenta.clave.startsWith(q) || x.cuenta.nombre.toLowerCase().includes(q));
-  if (!hallada) return `No encuentro una cuenta que se llame «${q}». Tus cuentas son: ${r.cuentas.map(x => x.cuenta.nombre).join(', ')}.`;
+  const q = normalizar(arg);
+  // se compara sin tildes y también con los alias de la instalación («bogota», «transferencia»...)
+  const nombres = (x: (typeof r.cuentas)[number]): string[] =>
+    [normalizar(x.cuenta.clave), normalizar(x.cuenta.nombre), ...(aliasDeCuentas(ctx).find(([id]) => id === x.cuenta.id)?.[1] ?? []).map(normalizar)];
+  const hallada = q
+    ? r.cuentas.find(x => nombres(x).includes(q)) ?? r.cuentas.find(x => nombres(x).some(n => n.startsWith(q))) ?? r.cuentas.find(x => normalizar(x.cuenta.nombre).includes(q))
+    : undefined;
+  if (!hallada) return `No encuentro una cuenta que se llame «${arg.trim()}». Tus cuentas son: ${r.cuentas.map(x => x.cuenta.nombre).join(', ')}.`;
   return `💰 ${hallada.cuenta.nombre}: ${formatear(hallada.saldo, hallada.cuenta.moneda)}`;
 }
 
@@ -231,6 +237,8 @@ export function textoResumen(periodo: 'semana' | 'mes' | 'anio', movs: Movimient
     }
   }
   if (grupos.length > 8) l.push(`• …y ${grupos.length - 8} categorías más`);
+  const descuadre = descuadreDelPeriodo(movs, desde, hasta);
+  if (descuadre !== 0) l.push(`Descuadre: ${formatear(descuadre)} (aparte, no suma en los gastos)`);
   if (ingresos > 0) {
     const balance = ingresos - total;
     const meta = Number(ctx.config.meta_ahorro_pct ?? '30');
@@ -242,7 +250,7 @@ export function textoResumen(periodo: 'semana' | 'mes' | 'anio', movs: Movimient
   }
   if (periodo === 'mes') {
     for (const [catId] of Object.entries(ctx.presupuestos)) {
-      const e = estadoPresupuesto(movs, ctx.cuentas, ctx.presupuestos, catId, desde, hasta, ctx.config.tope_arrastra === '1');
+      const e = estadoPresupuesto(movs, ctx.cuentas, ctx.presupuestos, catId, desde, hasta, ctx.config.tope_arrastra === '1', ctx.config);
       if (e) l.push(`Tope ${nombreDe(ctx, catId)}: ${formatear(e.gastado)} de ${formatear(e.tope)} (${e.porcentaje}%)`);
     }
   }

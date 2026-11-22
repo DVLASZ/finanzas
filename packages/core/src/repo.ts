@@ -12,7 +12,7 @@ import { idPersona } from './entidades.ts';
 import { PLANTILLAS, type DatosDeInstalacion } from './plantillas.ts';
 import type { Propuesta } from './parser.ts';
 import { ATAJOS_INICIALES, CONFIG_INICIAL, CUENTAS_INICIALES } from './semilla.ts';
-import { calcularSaldos } from './consultas.ts';
+import { calcularSaldos, reconciliarCompromisos } from './consultas.ts';
 import { normalizar } from './texto.ts';
 import type { Aprendido, Atajo, Compromiso, Contexto, Cuenta, Movimiento } from './tipos.ts';
 
@@ -130,6 +130,19 @@ export class MemoriaRepo implements Repo {
     // el estado, el id y la fecha de creación no cambian con una edición
     const anterior = this.datos.movimientos[i];
     this.datos.movimientos[i] = structuredClone({ ...m, id: anterior.id, creadoEn: anterior.creadoEn, estado: 'ok' as const, anuladoEn: null });
+    this.reconciliar(anterior, this.datos.movimientos[i]);
+  }
+
+  /** Tras cambiar un movimiento, deja los compromisos de sus personas de acuerdo con el saldo nuevo (ver `reconciliarCompromisos`). */
+  private reconciliar(...ms: Movimiento[]): void {
+    const personas = new Set<string>();
+    for (const m of ms) for (const a of m.asientos) if (this.datos.cuentas.some(c => c.id === a.cuentaId && c.tipo === 'persona')) personas.add(a.cuentaId);
+    if (!personas.size) return;
+    const d = this.datos;
+    for (const c of reconciliarCompromisos(d.movimientos, d.cuentas, d.compromisos, d.config.fecha_apertura ?? '2000-01-01 00:00:00', personas)) {
+      const i = d.compromisos.findIndex(x => x.id === c.id);
+      if (i >= 0) d.compromisos[i] = c;
+    }
   }
 
   async guardarMovimiento(m: Movimiento, cuentasNuevas: Cuenta[], compromisos: Compromiso[]): Promise<void> {
@@ -146,6 +159,7 @@ export class MemoriaRepo implements Repo {
     for (const c of this.datos.compromisos) {
       if (c.id.startsWith(`${id}-c`) && c.estado === 'anulada') c.estado = 'activa';
     }
+    this.reconciliar(m);
   }
 
   async anularMovimiento(id: string, cuando: string): Promise<void> {
@@ -156,6 +170,7 @@ export class MemoriaRepo implements Repo {
     for (const c of this.datos.compromisos) {
       if (c.id.startsWith(`${id}-c`) && c.estado === 'activa') c.estado = 'anulada';
     }
+    if (m) this.reconciliar(m);
   }
 
   async actualizarCompromisos(cs: Compromiso[]): Promise<void> {

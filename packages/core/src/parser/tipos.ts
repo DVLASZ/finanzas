@@ -79,6 +79,8 @@ export interface Propuesta {
   custodia?: boolean;
   /** Arqueo de una persona: deja en cero lo poco que quedó pendiente con ella (saldo con signo: positivo = te debe). */
   cuadra?: { personaId: string; nombre: string; saldo: number };
+  /** Id del movimiento que este reemplazó al editarlo: «Deshacer» lo restaura. Lo pone el bot al confirmar. */
+  reemplazaA?: string;
   mensajeOriginal: string;
   /** Avisos suaves (p. ej. "no dijiste el vuelto"). */
   avisos: string[];
