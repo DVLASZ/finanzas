@@ -161,14 +161,19 @@ function enLinea(crudo) {
   });
 }
 
-function bloqueCodigo(lineas) {
-  const filas = lineas
-    .filter((l) => l.trim() !== "")
-    .map(
-      (l) =>
-        '<div class="frase"><code>' + esc(l.trim()) + '</code><button type="button" class="copiar" data-copy="' +
-        esc(l.trim()) + '" aria-label="Copiar la frase ' + esc(l.trim()) + '">Copiar</button></div>'
-    );
+function bloqueCodigo(lineas, lang) {
+  const util = lineas.filter((l) => l.trim() !== "");
+  // ejemplos de lo que imprime una terminal o de un archivo: se leen, no se copian
+  if (lang === "text") {
+    return '<pre class="muestra"><code>' + esc(util.join("\n")) + "</code></pre>";
+  }
+  const comando = lang === "bash";
+  const filas = util.map(
+    (l) =>
+      '<div class="frase' + (comando ? " cmd" : "") + '"><code>' + esc(l.trim()) + '</code><button type="button" class="copiar" data-copy="' +
+      esc(l.trim()) + '" aria-label="' + (comando ? "Copiar el comando " : "Copiar la frase ") + esc(l.trim()) + '">' +
+      (comando ? "Copiar comando" : "Copiar") + "</button></div>"
+  );
   return '<div class="frases">' + filas.join("") + "</div>";
 }
 
@@ -201,6 +206,7 @@ function convertir(md) {
   let actual = null;
   const salida = () => (actual ? actual.html : intro);
   let i = 0;
+  let h3 = "";
   let parrafo = [];
   const cerrarParrafo = () => {
     if (parrafo.length) {
@@ -215,11 +221,12 @@ function convertir(md) {
 
     if (l.startsWith("```")) {
       cerrarParrafo();
+      const lang = l.slice(3).trim().toLowerCase();
       const cuerpo = [];
       i++;
       while (i < lineas.length && !lineas[i].startsWith("```")) cuerpo.push(lineas[i++]);
       i++;
-      salida().push(bloqueCodigo(cuerpo));
+      salida().push(bloqueCodigo(cuerpo, lang));
       continue;
     }
 
@@ -236,6 +243,7 @@ function convertir(md) {
       cerrarParrafo();
       const t = m[1];
       const nt = norm(t);
+      h3 = nt;
       let extra = figurasPara(t);
       if (nt.includes("si tienes android")) extra += SVG_ANDROID;
       if (nt.includes("si tienes iphone")) extra += SVG_IPHONE;
@@ -267,7 +275,7 @@ function convertir(md) {
           else break;
         } else break;
       }
-      const checklist = actual && actual.n === 6;
+      const checklist = h3.includes("si algo falla");
       salida().push(bloqueLista(items, ordenada, inicio, checklist));
       continue;
     }
@@ -281,11 +289,13 @@ function convertir(md) {
 
 // ---------- pagina ----------
 const LISTA_VERIFICACION = [
-  "Abrí el enlace",
-  "Instalé la app",
-  "Entré con la clave",
-  "Activé los avisos",
-  "Puse el saldo inicial",
+  "Instalé Node.js y Git",
+  "Cloné el repositorio y corrí npm install",
+  "Creé mi base D1 y apliqué las siete migraciones",
+  "Guardé mi clave y mi PIN en un lugar seguro",
+  "Publiqué la app y tengo mi dirección de workers.dev",
+  "Instalé la app en el celular y entré con mi clave",
+  "Activé los avisos y puse mi saldo inicial",
 ];
 
 const CSS = `
@@ -462,16 +472,16 @@ function armar() {
     .join("");
 
   const acceso =
-    '<div class="card acceso"><h2>Tu acceso a la app</h2>' +
-    '<div class="fila"><label for="enlace">Enlace</label>' +
-    '<input id="enlace" class="campo" type="text" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Pega aquí el enlace que te enviaron" value="' + esc(ENLACE) + '">' +
-    '<button type="button" id="abrir" class="btn pleno">Abrir la app</button>' +
-    '<button type="button" class="btn" data-copiar-campo="enlace">Copiar enlace</button></div>' +
-    '<div class="fila"><label for="clave">Clave de acceso</label>' +
-    '<input id="clave" class="campo" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Escribe aquí tu clave" value="' + esc(CLAVE) + '">' +
+    '<div class="card acceso"><h2>Tu app</h2>' +
+    '<div class="fila"><label for="enlace">Dirección de tu app</label>' +
+    '<input id="enlace" class="campo" type="text" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Pega aquí la dirección que te dio Cloudflare" value="' + esc(ENLACE) + '">' +
+    '<button type="button" id="abrir" class="btn pleno">Abrir mi app</button>' +
+    '<button type="button" class="btn" data-copiar-campo="enlace">Copiar dirección</button></div>' +
+    '<div class="fila"><label for="clave">Tu clave de acceso</label>' +
+    '<input id="clave" class="campo" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="La que creaste en el paso 3" value="' + esc(CLAVE) + '">' +
     '<button type="button" id="ver" class="btn" aria-pressed="false">Ver</button>' +
     '<button type="button" class="btn" data-copiar-campo="clave">Copiar clave</button></div>' +
-    '<p class="suave" style="font-size:.85rem;color:var(--suave);margin:0 0 8px">Lo que escribas aquí no se guarda en ningún lado.</p></div>';
+    '<p class="suave" style="font-size:.85rem;color:var(--suave);margin:0 0 8px">Es opcional y sirve para tenerlas a mano en este celular. Lo que escribas aquí no se guarda en ningún lado.</p></div>';
 
   const verificacion =
     '<div class="verif"><h3>Lista de verificación</h3><ul class="lista-chk">' +
@@ -480,7 +490,7 @@ function armar() {
 
   const tarjetas = secciones
     .map((s) => {
-      const extra = s.n === 1 ? verificacion : "";
+      const extra = s.n === 5 ? verificacion : "";
       return (
         '<section class="card" id="paso-' + s.n + '" aria-labelledby="t-paso-' + s.n + '">' +
         '<div class="card-cab"><span class="num" aria-hidden="true">' + s.n + '</span><h2 id="t-paso-' + s.n + '">' + esc(s.titulo) + "</h2></div>" +
@@ -493,7 +503,7 @@ function armar() {
     '<!doctype html>\n<html lang="es"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width, initial-scale=1">' +
     '<meta name="color-scheme" content="dark"><meta name="theme-color" content="#0A0A0C">' +
-    "<title>" + esc(titulo) + "</title><style>" + CSS + "</style></head><body>" +
+    "<title>" + esc(titulo) + "</title><style>" + CSS + ".frase.cmd code{color:#F3E3A6}.frase.cmd .copiar{white-space:normal}pre.muestra{margin:10px 0;padding:12px 14px;background:var(--campo);border:1px solid var(--oro-tenue);border-radius:10px;overflow-wrap:anywhere;white-space:pre-wrap;font:14px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--suave)}</style></head><body>" +
     '<header class="barra"><div class="barra-fila"><span class="barra-titulo">Guía de la app</span>' +
     '<button type="button" id="btn-indice" class="btn" aria-expanded="false" aria-controls="panel-indice">Índice</button></div>' +
     '<nav id="panel-indice" class="panel-indice" aria-label="Índice de pasos" hidden><ol>' + indiceLis + "</ol></nav></header>" +

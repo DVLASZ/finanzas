@@ -9,7 +9,7 @@ La contabilidad es de partida doble, funciona sin internet y corre gratis en Clo
 
 <br />
 
-[Qué hace](#qué-hace) · [Chat](#qué-puedes-escribirle-al-chat) · [Capturas](#capturas) · [Arquitectura](#arquitectura) · [Despliegue](#despliegue-en-3-pasos) · [Docs](docs/README.md)
+[Qué hace](#qué-hace) · [Chat](#qué-puedes-escribirle-al-chat) · [Capturas](#capturas) · [Arquitectura](#arquitectura) · [Instalar la tuya](#instalar-tu-propia-app-guía-completa) · [Despliegue](#despliegue-en-3-pasos) · [Docs](docs/README.md)
 
 <br />
 
@@ -188,6 +188,15 @@ Más detalle: [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) y [docs/MOTOR-CONTABL
 └── docs/                       documentación, banners del README y capturas
 ```
 
+## Instalar tu propia app (guía completa)
+
+Este proyecto es de código abierto y se instala por cuenta propia: cada persona publica su propia copia en su cuenta gratuita de Cloudflare, con su propia base de datos y su propia clave. No depende de nadie más ni cuesta nada. La guía lleva de la mano desde cero, con los comandos exactos y capturas de la app:
+
+- [docs/GUIA-USUARIO.html](docs/GUIA-USUARIO.html): la misma guía como una sola página interactiva, con botones para copiar cada comando y cada frase del chat. Bájala y ábrela en el celular o en el navegador.
+- [docs/GUIA-USUARIO.md](docs/GUIA-USUARIO.md): la guía en texto.
+
+Si encuentras un error o algo que el chat no entiende, abre un Issue en este repositorio con la frase exacta que escribiste.
+
 ## Despliegue en 3 pasos
 
 > [!IMPORTANT]
@@ -206,6 +215,7 @@ npm run web:dev      # http://localhost:5173, en modo local y sin cuentas
 **2. Configurar tu instalación y entrar a Cloudflare**
 
 ```bash
+mkdir instalaciones
 cp scripts/instalacion-ejemplo.json instalaciones/mi-app.json   # edita plantilla, worker, base y nombre
 npx wrangler login
 ```
