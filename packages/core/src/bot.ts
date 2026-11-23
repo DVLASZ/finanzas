@@ -27,6 +27,7 @@ import { textoRevision } from './revision.ts';
 import { aplicarCambio, interpretar, resolverFaltante, type Propuesta } from './parser.ts';
 import { hallarMontos, aMinor, formatear } from './dinero.ts';
 import { contextoDe, type Datos, type Pendiente, type Repo } from './repo.ts';
+import { ayudaDeTema, buscarAyuda, esPreguntaDeAyuda, temasParecidos, type RespuestaDeAyuda } from './ayudaGuiada.ts';
 import { dividirLinea, MAX_MOVIMIENTOS_POR_MENSAJE } from './lineas.ts';
 import { descendientes, leerSubcategorias, MAX_NIVELES, puedeIrDentro } from './subcategorias.ts';
 import { leerMetas, textoAvance, textoMetas, totalApartado, type Meta } from './metas.ts';
@@ -192,6 +193,9 @@ class Motor {
       return p ? this.estadoDePersona(p) : [{ texto: 'Esa persona ya no está.' }];
     }
     if (id.startsWith('lista+:')) return this.agregarALista(id.slice(7));
+    // «ayuda:<tema>»: la explicación de ese tema; «poner:<frase>» la maneja la app (deja la frase escrita), aquí no hace nada
+    if (id.startsWith('ayuda:')) { const r = ayudaDeTema(id.slice(6), this.ctx); return r ? [this.salidaDeAyuda([r])] : [{ texto: 'Ese tema ya no está.' }]; }
+    if (id.startsWith('poner:')) return [];
     // una frase que la IA entendió cuando volvió el internet: se trata como si se acabara de escribir
     // «ia:=texto» no es una frase para el bot sino una indicación para la persona (por ejemplo, cómo decir un reparto distinto)
     if (id.startsWith('ia:=')) return [{ texto: id.slice(4) }];
@@ -257,10 +261,11 @@ class Motor {
     if (res.clase === 'pregunta') {
       return [{ texto: `❓ ${res.mensaje}`, botones: [...res.opciones.map(o => ({ id: `ia:${o.frase}`, titulo: o.titulo })), { id: 'no', titulo: '❌ Cancelar' }] }];
     }
+    if (res.clase === 'error' && esPreguntaDeAyuda(texto)) return [this.respuestaDeAyuda(texto)];
     if (res.clase === 'error') {
       // Una línea sin plata («Jabón baño») parece algo por comprar: se ofrece anotarla en la lista.
       const limpio = texto.trim();
-      if (res.mensaje.startsWith('Me falta el monto') && !/\d/.test(limpio) && limpio.split(/\s+/).length <= 5 && limpio.length <= 60) {
+      if (res.mensaje.includes('Me falta el monto') && !/\d/.test(limpio) && limpio.split(/\s+/).length <= 5 && limpio.length <= 60) {
         return [{ texto: `${res.mensaje}
 ¿O es algo por comprar? Puedo anotarlo en la lista de compras: «${limpio}».`, botones: [{ id: `lista+:${limpio}`, titulo: 'Agregar a la lista' }, { id: 'nada', titulo: 'No' }] }];
       }
@@ -268,6 +273,29 @@ class Motor {
     }
     const reemplazaId = p?.editando ? p.reemplazaId : undefined;
     return this.mostrar({ propuesta: res.propuesta, editando: Boolean(reemplazaId), reemplazaId });
+  }
+
+  /** La respuesta del chat a una pregunta de uso: el tema que mejor responde y sus ejemplos como botones que dejan la frase escrita. */
+  private respuestaDeAyuda(duda: string): Salida {
+    const r = buscarAyuda(duda, this.ctx);
+    if (r.length) return this.salidaDeAyuda(r);
+    const parecidos = temasParecidos(duda);
+    return {
+      texto: 'No estoy seguro de qué quieres saber, pero con gusto te ayudo. Toca el tema que más se parezca o cuéntame con otras palabras, por ejemplo «cómo anoto un gasto».',
+      botones: parecidos.map(t => ({ id: `ayuda:${t.id}`, titulo: t.tema })),
+    };
+  }
+
+  private salidaDeAyuda(r: RespuestaDeAyuda[]): Salida {
+    const [mejor, ...otros] = r;
+    const texto = mejor.ejemplos.length ? `${mejor.explicacion}\nToca un ejemplo y queda escrito en el chat: solo cámbiale lo que haga falta y envíalo.` : mejor.explicacion;
+    return {
+      texto,
+      botones: [
+        ...mejor.ejemplos.map(e => ({ id: `poner:${e}`, titulo: e })),
+        ...otros.map(o => ({ id: `ayuda:${o.id}`, titulo: `También: ${o.tema}` })),
+      ],
+    };
   }
 
   /**
