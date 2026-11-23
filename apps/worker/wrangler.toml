@@ -1,11 +1,12 @@
-# Configuración del Worker de Cloudflare. Ver docs/DESPLIEGUE.md para vincularlo a tu cuenta.
+# Configuración del Worker de Cloudflare. La guía paso a paso está en docs/GUIA-USUARIO.md (y docs/DESPLIEGUE.md).
 #
-# Pasos (una sola vez, cuando tengas la cuenta de Cloudflare):
+# No edites este archivo: copia su contenido a apps/worker/wrangler.local.toml (Git lo ignora), pon ahí el database_id de tu base
+# y usa siempre --config apps/worker/wrangler.local.toml. Pasos, una sola vez:
 #   1) npx wrangler login
-#   2) npx wrangler d1 create finanzas        -> copia el database_id que imprime abajo
-#   3) npm run migracion && npx wrangler d1 migrations apply finanzas --remote
-#   4) npm run web:build && npx wrangler deploy
-#   5) npx wrangler secret put <NOMBRE> para cada secreto (ver docs/DESPLIEGUE.md)
+#   2) npx wrangler d1 create finanzas             -> copia el database_id que imprime
+#   3) npx wrangler d1 migrations apply finanzas --remote --config apps/worker/wrangler.local.toml
+#   4) npx wrangler secret put API_TOKEN --config apps/worker/wrangler.local.toml   (y lo mismo con PIN_BORRADO)
+#   5) npm run web:build && npx wrangler deploy --config apps/worker/wrangler.local.toml
 
 name = "finanzas"
 main = "src/index.ts"

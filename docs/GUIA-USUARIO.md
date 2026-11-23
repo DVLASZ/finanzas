@@ -1,17 +1,188 @@
-# Guía de usuario: instalar y probar la app de finanzas
+# Guía: tu propia app de finanzas, de cero a producción
 
-Esta guía es para probar la app paso a paso, sin saber nada de tecnología. Léela con el celular en la mano. Si algo no sale como dice aquí, ve al final, a la parte "Si algo falla".
+Esta guía te lleva desde un computador sin nada hasta una app de finanzas que es solo tuya: corre en tu cuenta gratuita de Cloudflare, guarda tus datos en tu propia base y solo entra quien tenga tu clave. No depende de nadie más y no cuesta nada. La instalas una vez, y después la usas desde el celular como cualquier otra app.
 
-La app es un chat. Le escribes lo que pasó con tu plata («almuerzo 12000») y ella lo anota. Funciona también sin internet y se sincroniza sola cuando vuelve la señal.
+La app es un chat. Le escribes lo que pasó con tu plata («almuerzo 12000») y ella lo anota. Funciona también sin internet y se sincroniza sola cuando vuelve la señal. El chat y la interfaz están en español.
 
-## 1. Instalar la app
+Se escribe en una terminal con unos pocos comandos. Cada comando tiene su botón para copiarlo: tócalo, pégalo en la terminal y pulsa Enter. No tienes que saber programar. Si un paso no sale como dice aquí, ve al final del capítulo 6, a la parte "Si algo falla".
 
-Te enviaron un enlace y una clave de acceso. Los vas a necesitar los dos. No los compartas con nadie.
+## 1. Requisitos previos
+
+Todo lo que necesitas es gratis y no pide tarjeta.
+
+1. Un computador con Windows, Mac o Linux. El celular lo usas al final, para instalar la app.
+2. Node.js, versión 24 o más nueva (la versión recomendada, "LTS"). Bájalo de nodejs.org con el botón de descarga marcado LTS y ábrelo como cualquier programa.
+3. Git. Bájalo de git-scm.com. En Mac suele venir ya instalado.
+4. Una cuenta gratuita de Cloudflare. Se crea en dash.cloudflare.com/sign-up con tu correo, y confirmas el correo. No hace falta agregar un dominio ni una tarjeta.
+
+La terminal es la ventana donde se escriben los comandos. En Windows abre "PowerShell" desde el menú de inicio. En Mac abre "Terminal". En Linux, la terminal de siempre.
+
+Para comprobar que Node.js y Git quedaron bien, escribe estos dos comandos. El primero debe responder una versión que empiece por v24 o más, y el segundo una versión de git:
+
+```bash
+node --version
+git --version
+```
+
+El plan gratuito de Cloudflare alcanza de sobra para una persona: los Workers (donde corre la app) permiten unas 100.000 peticiones al día, la base D1 guarda hasta 5 GB, y Workers AI trae una cuota diaria gratis para la ayuda del lenguaje natural. La app se frena sola en 30 ayudas de IA al día. Estas cifras son las de hoy y Cloudflare puede cambiarlas, así que si te importa mira su página de precios.
+
+Una advertencia: las claves las escribes tú en tu terminal. No las pegues en chats, ni las subas a GitHub, ni se las mandes a nadie.
+
+## 2. Paso 1: clonar el repositorio e instalar
+
+Clonar es bajar el código a tu computador. Elige una carpeta donde quieras tenerlo (por ejemplo, Documentos) y abre la terminal ahí. Luego, uno por uno:
+
+```bash
+git clone https://github.com/DVLASZ/finanzas.git
+cd finanzas
+npm install
+```
+
+El último tarda un par de minutos: baja las piezas que usa la app. Cuando termine, estás dentro de la carpeta `finanzas`. Todos los comandos que siguen se escriben ahí.
+
+Si quieres ver la app funcionando en tu computador antes de publicarla, sin cuentas ni nada, corre esto y abre http://localhost:5173 en el navegador. Para apagarla, vuelve a la terminal y pulsa Ctrl y C a la vez:
+
+```bash
+npm run web:dev
+```
+
+Esto es opcional. Los datos de esa prueba solo viven en tu navegador.
+
+## 3. Paso 2: crear la base de datos y entrar a Cloudflare
+
+Aquí conectas el proyecto con tu cuenta y creas la base donde se guardan tus movimientos.
+
+### Iniciar sesión en Cloudflare
+
+```bash
+npx wrangler login
+```
+
+Se abre el navegador. Entra con tu cuenta de Cloudflare y pulsa "Allow" (permitir). Cuando diga que quedó conectado, vuelve a la terminal.
+
+### Crear tu base de datos
+
+```bash
+npx wrangler d1 create finanzas
+```
+
+La terminal imprime un bloque con tres líneas parecidas a esta (los números serán distintos):
+
+```text
+database_name = "finanzas"
+database_id = "11111111-2222-3333-4444-555555555555"
+```
+
+Copia el valor de `database_id`, el texto largo con guiones entre las comillas. Es solo el nombre de tu base: no es un secreto, pero lo necesitas ahora.
+
+### Poner tu base en la configuración
+
+El proyecto trae un archivo de configuración con un marcador donde va tu base. Para no tocar el original (y que puedas actualizar la app sin conflictos), hacemos una copia propia que Git ignora. En Mac o Linux:
+
+```bash
+cp apps/worker/wrangler.toml apps/worker/wrangler.local.toml
+```
+
+En Windows (PowerShell):
+
+```bash
+Copy-Item apps/worker/wrangler.toml apps/worker/wrangler.local.toml
+```
+
+Ahora abre `apps/worker/wrangler.local.toml` con cualquier editor de texto (el Bloc de notas sirve). Busca esta línea, casi al final:
+
+```text
+database_id = "PEGA-AQUI-EL-ID-DE-TU-BASE"
+```
+
+Cambia lo que está entre comillas por tu `database_id` y guarda. Deja `database_name = "finanzas"` como está. Si al crear la base le pusiste otro nombre, pon ese mismo nombre ahí, y en los comandos de abajo cambia `finanzas` por tu nombre. La línea `name = "finanzas"` de más arriba es el nombre de tu Worker: sale en la dirección final de tu app (`https://finanzas.<tu-subdominio>.workers.dev`). Puedes dejarlo igual.
+
+Ese archivo ya no se sube a GitHub: `wrangler.local.toml` está en el `.gitignore`.
+
+### Crear las tablas (las migraciones)
+
+Las migraciones son siete archivos, del 0001 al 0007, que arman las tablas, los índices y los datos de partida: las cuentas de dinero (Efectivo, Monedas, Nequi, Daviplata y una en dólares), las categorías de todos los días y unos botones rápidos. Se aplican todas de una vez, en orden:
+
+```bash
+npx wrangler d1 migrations apply finanzas --remote --config apps/worker/wrangler.local.toml
+```
+
+Wrangler lista las siete y pregunta si sigues. Responde con la letra `y` y Enter. Al terminar, cada una debe aparecer con una marca de éxito.
+
+Para confirmar que la base quedó llena, corre esto: debe responder un número mayor que cero.
+
+```bash
+npx wrangler d1 execute finanzas --remote --config apps/worker/wrangler.local.toml --command "select count(*) as cuentas from cuentas"
+```
+
+## 4. Paso 3: tu clave de acceso y publicar la app
+
+### Tu clave de acceso
+
+La clave (el "token") es lo que impide que otra persona entre a tu app. La creas tú. Este comando inventa una larga y al azar; copia lo que imprime:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
+```
+
+Guárdala en un lugar seguro (un administrador de contraseñas o una nota privada). La vas a necesitar en el celular. Ahora entrégasela a tu Worker. El comando pide que la pegues; mientras escribes no se ve nada, es normal:
+
+```bash
+npx wrangler secret put API_TOKEN --config apps/worker/wrangler.local.toml
+```
+
+Si pregunta algo como "There doesn't seem to be a Worker called finanzas, do you want to create it?", responde `y`.
+
+Luego el PIN de borrado. Protege las acciones que borran datos de verdad (por ejemplo, vaciar lo anulado). Escribe un número que recuerdes, de 4 a 8 cifras:
+
+```bash
+npx wrangler secret put PIN_BORRADO --config apps/worker/wrangler.local.toml
+```
+
+### Publicar
+
+Primero se prepara la parte visual de la app, y luego se publica en Cloudflare:
+
+```bash
+npm run web:build
+npx wrangler deploy --config apps/worker/wrangler.local.toml
+```
+
+Si es la primera vez que publicas en tu cuenta, Cloudflare puede pedirte que elijas un subdominio (el nombre que va antes de `.workers.dev`). Elige uno corto, en minúsculas.
+
+Al final la terminal imprime la dirección de tu app, parecida a `https://finanzas.tu-subdominio.workers.dev`. Es tu dirección. Cópiala y guárdala junto a la clave.
+
+Para comprobar que quedó protegida, abre la dirección en el navegador: tiene que cargar la app. La clave solo se pide al conectar el celular, en el siguiente paso.
+
+### La ayuda de la IA (Workers AI)
+
+La app entiende casi todo con sus propias reglas, sin internet. Para las frases muy sueltas puede pedir ayuda a una IA de Cloudflare. No hay que activar nada en el panel: la conexión ya viene en `wrangler.toml` (el bloque `[ai]`) y funciona con tu cuenta gratuita. Lo único aparte es el botón del escáner de comprobantes: usa un modelo de Meta que pide aceptar su licencia una sola vez por cuenta de Cloudflare. Sin eso, el escáner avisa que no está listo y el resto de la app funciona igual. Los detalles están en `docs/IA.md`.
+
+### Otra forma: el instalador, con un solo comando
+
+Si prefieres que un programa haga los pasos 2 y 3 por ti (crear la base, llenarla, inventar la clave y el PIN y publicar), el proyecto trae un instalador. Hace lo mismo que los pasos de arriba, pidiéndote confirmación en cada paso, y guarda tu clave y tu PIN en un archivo tuyo en `instalaciones/mi-app/acceso.txt`, que no se sube a GitHub. Primero inicia sesión con `npx wrangler login` si no lo hiciste. Luego:
+
+```bash
+mkdir instalaciones
+cp scripts/instalacion-ejemplo.json instalaciones/mi-app.json
+```
+
+En Windows, el segundo se escribe `Copy-Item scripts/instalacion-ejemplo.json instalaciones/mi-app.json`. Abre `instalaciones/mi-app.json` y cambia por lo menos `worker` y `base` (por ejemplo, `mi-finanzas`), y `nombreApp` si quieres otro nombre. Después:
+
+```bash
+npm run instalar -- crear mi-app
+```
+
+Es una alternativa: si lo usas, salta los pasos 2 y 3 y sigue en el capítulo 5.
+
+## 5. Paso 4: instalar la app en el celular
+
+Ahora la app vive en tu propia dirección de internet. Instalarla en el celular es tocar un par de botones.
 
 ### Si tienes Android (Chrome)
 
 1. Abre el navegador Chrome. Tiene que ser Chrome, no otro.
-2. Pega [el enlace que te enviaron] en la barra de arriba y entra.
+2. Escribe tu dirección (la que te dio Cloudflare, la de `workers.dev`) en la barra de arriba y entra.
 3. Toca los tres puntos de la esquina de arriba a la derecha.
 4. Elige "Instalar aplicación" (en algunos celulares dice "Instalar app").
 5. Si solo ves "Agregar a la pantalla de inicio", también sirve, pero queda como un acceso directo y no como la app completa. Es mejor la opción de instalar.
@@ -20,26 +191,26 @@ Te enviaron un enlace y una clave de acceso. Los vas a necesitar los dos. No los
 ### Si tienes iPhone (Safari)
 
 1. Abre Safari, el navegador azul con la brújula. En iPhone tiene que ser Safari. Desde Chrome no se puede instalar.
-2. Pega [el enlace que te enviaron] y entra.
+2. Escribe tu dirección y entra.
 3. Toca el botón Compartir (un cuadro con una flecha hacia arriba, abajo en el centro).
 4. Baja en el menú y toca "Agregar a pantalla de inicio".
 5. Toca "Agregar" arriba a la derecha.
 
 ### Abrir la app
 
-Desde ahora abres la app con su ícono, como cualquier otra. Ya no hace falta el enlace.
+Desde ahora abres la app con su ícono, como cualquier otra. Ya no hace falta escribir la dirección.
 
-### Conectar la app con tu clave
+### Entrar con tu clave
 
 Esto se hace una sola vez.
 
 1. Abre la app con el ícono.
 2. Abajo toca Más.
 3. Toca Ajustes y baja hasta "Conexión con el servidor".
-4. En "Dirección del servidor" debe estar escrita la dirección. Si está vacía, pega [el enlace que te enviaron].
-5. En el campo de la clave (se llama "Token de acceso") escribe [tu clave de acceso].
+4. En "Dirección del servidor" debe aparecer sola tu dirección de workers.dev. Si está vacía, escríbela completa, con `https://` al principio.
+5. En el campo "Token de acceso" escribe la clave que creaste en el paso 3.
 6. Toca "Guardar y sincronizar".
-7. Debajo tiene que salir un mensaje de que sincronizó. Si dice "No autorizado", la clave está mal escrita: bórrala y vuelve a escribirla.
+7. Debajo tiene que salir un mensaje de que sincronizó. Si dice "No autorizado", la clave está mal escrita: bórrala y vuelve a escribirla. Si la perdiste, vuelve a correr el comando `secret put API_TOKEN` con una clave nueva.
 
 ### Si el celular pide permisos
 
@@ -66,7 +237,7 @@ El PIN protege las acciones que borran datos y sirve para bloquear la app.
 
 Los avisos te recuerdan, por ejemplo, una deuda por vencer, un pago fijo que toca o que llevas días sin anotar nada. En "Recordatorio nocturno" puedes elegir una hora entre las 7:00 y las 10:30 de la noche para que la app te pregunte si anotaste los gastos de hoy.
 
-En iPhone los avisos solo funcionan si la app está instalada con el ícono en la pantalla de inicio y el teléfono tiene iOS 16.4 o más nuevo. Pruébalo con "Mandar una prueba". Si no llega, avísanos.
+En iPhone los avisos solo funcionan si la app está instalada con el ícono en la pantalla de inicio y el teléfono tiene iOS 16.4 o más nuevo. Pruébalo con "Mandar una prueba". Si no llega, abre un Issue en GitHub (ver al final del capítulo 6).
 
 ### Decirle cuánta plata tienes (un minuto)
 
@@ -86,7 +257,17 @@ Las cuentas que ves en la app son las tuyas (por ejemplo Efectivo, Monedas, Nequ
 
 Para un recorrido corto, toca Más y luego "Primeros pasos". Son cinco ejemplos con un botón "Probar" que deja la frase escrita en el chat.
 
-## 2. Cómo hablarle al chat
+## 6. Paso 5: manual de uso
+
+Ya tienes la app instalada y conectada. Esta parte es el manual: cómo hablarle al chat y cómo sacarle provecho a cada pantalla. Los ejemplos se copian con un toque y se pegan en el chat de la app.
+
+### Monedas y país
+
+Dilo con franqueza antes de seguir: la app nació en Colombia. Maneja dos monedas, el peso (que muestra como $ y con puntos para los miles, así: $15.000) y el dólar, que va aparte y nunca se convierte solo. El chat entiende español, incluidos modismos como "lucas" (2 lucas son 2000) y "5k".
+
+Si vives en otro país, funciona igual: los montos en "pesos" son los de tu moneda local, y lo único es que el símbolo $ y la forma de escribir los miles son los de Colombia. No hay conversión de moneda: lo que escribes es lo que se guarda. Las cuentas con las que nace la app (Efectivo, Monedas, Nequi, Daviplata y una en dólares) vienen de una plantilla. Si quieres otras cuentas, como el nombre de tu banco, se cambian en la plantilla antes de instalar o con una consulta a la base, como explica `docs/INSTALACIONES.md`. Las categorías y las personas sí se crean y se renombran desde la app, en Más, "Categorías y personas".
+
+### Cómo hablarle al chat
 
 Escribe como hablas. El orden no importa, ni las tildes, ni las mayúsculas, y se perdonan las faltas (`nekui` se entiende como Nequi). Lo único que no puede faltar es qué fue y cuánto.
 
@@ -230,13 +411,13 @@ Escáner del chat, para anotar a partir de un comprobante:
 2. Toma la foto o elige una de la galería.
 3. La app lee el monto y deja una tarjeta lista para que la confirmes. Si lee mal, corrígela como cualquier tarjeta.
 
-Dónde queda la foto, con honestidad: la app la reduce de tamaño y guarda una copia en tu celular y otra en tu servidor (el que te dieron con la clave). No se publica en ningún lado. Como la app guarda su propia copia, puedes borrar la foto de tu galería si quieres liberar espacio.
+Dónde queda la foto, con honestidad: la app la reduce de tamaño y guarda una copia en tu celular y otra en tu propia base de Cloudflare. No se publica en ningún lado. Como la app guarda su propia copia, puedes borrar la foto de tu galería si quieres liberar espacio.
 
 ### Hablarle por voz
 
 En el chat, junto a Enviar, hay un micrófono. Tócalo, di la frase («mecato cinco mil quinientos») y el texto queda escrito para que lo revises. Nunca se envía solo. Necesita internet y funciona en Chrome del celular.
 
-## 3. Personas, deudas, préstamos y gastos compartidos
+### Personas, deudas, préstamos y gastos compartidos
 
 Es mejor registrar a las personas antes de usarlas. Para los ejemplos de esta guía usamos a Ana, Luis, Marta y Pedro.
 
@@ -323,7 +504,7 @@ La tarjeta muestra tu parte y lo que te debe cada persona. Si la frase puede sig
 
 Al compartir, en el detalle del movimiento hay "Ver cómo se reparte" y "Compartir cuentas".
 
-## 4. Control del dinero
+### Control del dinero
 
 ### Saldos
 
@@ -426,7 +607,7 @@ Hay un camino más fácil para el efectivo:
 
 Después de las 6 de la tarde, si hubo movimientos en la billetera, la app te pregunta si lo que tienes es lo que ella dice. "Sí, cuadra" hace el arqueo con esas cifras.
 
-## 5. Revisar y entender lo que pasó
+### Revisar y entender lo que pasó
 
 ### Movimientos y filtros
 
@@ -491,19 +672,50 @@ para qué sirve esto
 
 Te responde ahí mismo, en la conversación, con una explicación corta y botones con ejemplos. Toca un ejemplo y queda escrito en el cuadro: cámbiale lo que haga falta y envíalo. También puedes escribir `ayuda` para ver los temas, o ir a Más y luego "Ayuda", donde está el cuadro "Pregúntale cómo decirlo".
 
-## 6. Si algo falla
+### Si algo falla
 
-Pasa a veces, y lo que más ayuda es poder repetirlo. Haz esto:
+Pasa a veces, y lo que más ayuda es poder repetirlo. Cuando encuentres un error, o algo que el bot no entendió, abre un Issue en GitHub: entra a la página del repositorio, toca "Issues" y luego "New issue". Escribe esto:
 
-1. Anota la frase exacta que escribiste, tal cual, con todo y errores. Es lo más importante.
-2. Anota qué esperabas que pasara y qué pasó en cambio.
-3. Toma una captura de pantalla de la tarjeta o del mensaje:
+1. La frase exacta que escribiste, tal cual, con todo y errores. Es lo más importante.
+2. Qué esperabas que pasara y qué pasó en cambio.
+3. Una captura de pantalla de la tarjeta o del mensaje. Antes de tomarla, toca el botón del ojo para esconder los montos, y no pongas nombres reales de otras personas.
    - Android: presiona a la vez el botón de encendido y el de bajar volumen.
    - iPhone: presiona a la vez el botón lateral y el de subir volumen.
 4. Si la app dice que no entendió, no borres el mensaje antes de la captura.
-5. Envía la frase y la captura a [a quién avisar].
+5. Si el error salió al instalar, copia el texto del error de la terminal. No incluyas tu clave ni tu PIN.
 
-Antes de avisar, mira dos cosas:
+Antes de abrir el Issue, mira dos cosas:
 
-- Si dice "No autorizado", la clave de Más, Ajustes, "Conexión con el servidor" está mal escrita.
+- Si la app dice "No autorizado", la clave de Más, Ajustes, "Conexión con el servidor" está mal escrita.
 - Si la app se ve vieja o no cambia, ciérrala del todo y ábrela otra vez con internet. Se actualiza sola.
+
+## 7. Paso 6: actualizar la app en el futuro
+
+El código se mejora con el tiempo. Para tener tu app al día sin perder nada, repite estos pasos en la carpeta `finanzas`. Tus datos no se tocan: viven en tu base de Cloudflare.
+
+1. Antes de empezar, haz un respaldo: en la app, Más, Ajustes, "Respaldo", "Actualizar respaldo". Guarda el archivo fuera del celular.
+2. Baja los cambios y las piezas nuevas:
+
+```bash
+git pull
+npm install
+```
+
+3. Aplica las migraciones nuevas, si las hay. El comando solo aplica las que tu base todavía no tiene. Si no hay ninguna, responde "No migrations to apply" y no pasa nada:
+
+```bash
+npx wrangler d1 migrations apply finanzas --remote --config apps/worker/wrangler.local.toml
+```
+
+4. Vuelve a preparar y publicar:
+
+```bash
+npm run web:build
+npx wrangler deploy --config apps/worker/wrangler.local.toml
+```
+
+5. En el celular, cierra la app del todo y ábrela con internet. Se actualiza sola.
+
+Tu clave, tu PIN y tu `wrangler.local.toml` se quedan como estaban: no hay que volver a crearlos. Si instalaste con el instalador, en vez de los pasos 3 y 4 corre `npm run instalar -- publicar mi-app`, y `npm run instalar -- actualizar mi-app` si el cambio trae categorías o palabras nuevas de la plantilla.
+
+Si `git pull` se queja de que cambiaste archivos, no toques nada del proyecto: tu configuración propia está en archivos que Git ignora. Ábrenos un Issue con el mensaje exacto.
