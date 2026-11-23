@@ -69,7 +69,7 @@ export function Apariencia() {
         </div>
       </div>
       <div><div class="etiqueta">Modo</div><Opciones<Tema> lista={[['claro', 'Claro'], ['oscuro', 'Oscuro'], ['auto', 'Automático (como el teléfono)']]} valor={a.tema} alElegir={v => elegir({ tema: v })} /></div>
-      <div><div class="etiqueta">Tamaño de letra</div><Opciones<Letra> lista={[['compacta', 'Compacta 85 %'], ['normal', 'Normal 100 %'], ['grande', 'Grande 115 %'], ['extra', 'Extra grande 130 %']]} valor={a.letra} alElegir={v => elegir({ letra: v })} /></div>
+      <div data-sin-mascara><div class="etiqueta">Tamaño de letra</div><Opciones<Letra> lista={[['compacta', 'Compacta 85 %'], ['normal', 'Normal 100 %'], ['grande', 'Grande 115 %'], ['extra', 'Extra grande 130 %']]} valor={a.letra} alElegir={v => elegir({ letra: v })} /></div>
     </div>
   );
 }

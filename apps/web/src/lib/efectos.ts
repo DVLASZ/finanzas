@@ -34,8 +34,8 @@ export function momentanea(clase: string, ms = 450): void {
 
 /** Las tarjetas y filas que se ven ahora mismo (hasta 24), de arriba abajo. Sin las que viven dentro de otra tarjeta. */
 function piezasVisibles(): HTMLElement[] {
-  return [...document.querySelectorAll<HTMLElement>('#contenido .tarjeta, #contenido .fila, #contenido .alerta, #dialogo .tarjeta')]
-    .filter(e => { const r = e.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && !e.parentElement?.closest('.tarjeta'); })
+  return [...document.querySelectorAll<HTMLElement>('#contenido .tarjeta, #contenido .fila, #contenido .alerta, #contenido .burbuja:not(.pensando), #dialogo .tarjeta')]
+    .filter(e => { const r = e.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && !e.parentElement?.closest('.tarjeta, .burbuja'); })
     .slice(0, 24);
 }
 

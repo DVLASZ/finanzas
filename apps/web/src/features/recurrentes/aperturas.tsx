@@ -4,7 +4,7 @@
  */
 import { List, Send } from 'lucide-preact';
 import {
-  describirDia, describirFrecuencia, estaPendiente, formatear, limpiar, ocurrencias, yaRegistrado, type Datos, type Recurrente,
+  describirDia, describirFrecuencia, estaPendiente, formatear, nombraAlFijo, ocurrencias, yaRegistrado, type Datos, type Recurrente,
 } from '../../../../../packages/core/src/index.ts';
 import { abrirInfo, cerrarYLuego } from '../../components/ui/HojaInfo.tsx';
 import { Insignia, visualDeNombre } from '../../components/ui/iconos.tsx';
@@ -46,9 +46,8 @@ export function abrirFijos(datos: Datos, lista: Recurrente[], hoy: string, cual:
 export function abrirPagoFijo(datos: Datos, r: Recurrente, hoy: string): void {
   const hecho = yaRegistrado(r, datos.movimientos, hoy);
   const proximas = ocurrencias(r, hoy.slice(0, 10), sumarDias(hoy.slice(0, 10), 120)).slice(0, 4);
-  const clave = limpiar(r.concepto);
   const movimientos = datos.movimientos
-    .filter(m => m.estado === 'ok' && m.tipo === 'gasto' && limpiar(m.descripcion).includes(clave))
+    .filter(m => m.estado === 'ok' && m.tipo === 'gasto' && nombraAlFijo(r, m.descripcion))
     .sort((a, b) => b.ocurridoEn.localeCompare(a.ocurridoEn));
   abrirInfo({
     id: 'info-fijo', titulo: r.concepto,

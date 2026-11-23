@@ -9,6 +9,7 @@ import { irA, prellenarChat, type Pantalla } from '../../state/nav.ts';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { verMovimientos } from '../movimientos/Movimientos.tsx';
 import { TarjetaHormiga } from '../resumen/Hormiga.tsx';
+import { abrirAnulados } from './Anulados.tsx';
 
 interface Accion { titulo: string; hacer: () => void }
 
@@ -33,7 +34,7 @@ function accionesDe(p: PuntoRevision): Accion[] {
     case 'cobro': return [ir('Ver deudas', 'deudas')];
     case 'descuadre': return [{ titulo: 'Ver descuadres', hacer: () => verMovimientos({ categoria: p.categoriaId }) }, ir('Ir a conciliar', 'conciliar')];
     case 'otros': return [{ titulo: 'Ver lo de Otros', hacer: () => verMovimientos({ categoria: p.categoriaId }) }];
-    case 'anulados': return [{ titulo: 'Ver anulados', hacer: () => verMovimientos({ anulados: true }) }];
+    case 'anulados': return [{ titulo: 'Ver anulados', hacer: () => { const d = datosSignal.value, c = contexto.value; if (d && c) abrirAnulados(d, c.ahora); } }];
     case 'tope': return [ir('Ajustar tope', 'cuentas'), { titulo: 'Ver gastos', hacer: () => verMovimientos({ categoria: p.categoriaId }) }];
   }
 }

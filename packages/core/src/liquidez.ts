@@ -31,7 +31,7 @@ const sumarDias = (f: string, n: number): string => new Date(Date.parse(`${f}T00
 /** Los pagos fijos de los próximos `dias` días (desde hoy), con la cuenta de la que salen. Los ya registrados de este periodo no se cuentan; el vencido sin registrar sí. */
 export function pagosProximos(datos: Datos, ahora: Date, dias = 30): PagoProyectado[] {
   const hoy = aLocal(ahora).slice(0, 10);
-  const hasta = sumarDias(hoy, dias);
+  const hasta = sumarDias(hoy, dias - 1); // 30 días: hoy y los 29 siguientes
   const ctx = contextoDe(datos, ahora);
   const res: PagoProyectado[] = [];
   for (const r of leerRecurrentes(datos.config)) {
