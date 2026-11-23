@@ -27,6 +27,13 @@ export interface Recurrente {
   frecuencia?: Frecuencia;
   /** Solo anual: el mes (1 a 12). */
   mes?: number;
+  /** En pausa: no cuenta en lo que falta, en Próximos 30 días, en el seguro ni en los avisos. */
+  pausado?: boolean;
+  /** Último día en que cuenta («AAAA-MM-DD»). Pasada esa fecha ya no se proyecta ni avisa. */
+  fin?: string;
+  /** Cuenta de dinero y categoría con que se anota (si faltan, salen de la frase). */
+  cuentaId?: string;
+  categoriaId?: string;
 }
 
 /** Los avisos empiezan dos días antes y siguen hasta que se registra. */
@@ -40,6 +47,15 @@ const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', '
 
 export const frecuenciaDe = (r: Recurrente): Frecuencia => r.frecuencia ?? 'mensual';
 
+/** Un solo punto de verdad: ¿el pago fijo cuenta en esa fecha? Pausado nunca; con `fin`, hasta ese día inclusive. */
+export const activoEn = (r: Recurrente, fecha: string): boolean => !r.pausado && (!r.fin || fecha.slice(0, 10) <= r.fin);
+
+/** En qué punto está un pago fijo hoy. Si está pausado y además terminó, gana «terminado». */
+export function estadoDeFijo(r: Recurrente, hoy: string): 'activo' | 'pausado' | 'terminado' {
+  if (r.fin && r.fin < hoy.slice(0, 10)) return 'terminado';
+  return r.pausado ? 'pausado' : 'activo';
+}
+
 /** El día de la semana de un nombre («lunes» → 1), o 0. */
 export function diaDeSemana(nombre: string): number {
   return DIAS_SEMANA.indexOf(limpiar(nombre)) + 1;
@@ -49,7 +65,16 @@ export function leerRecurrentes(config: Record<string, string>): Recurrente[] {
   try {
     const l = JSON.parse(config.recurrentes ?? '[]');
     if (!Array.isArray(l)) return [];
-    return l.filter((x): x is Recurrente => x && typeof x.frase === 'string' && typeof x.concepto === 'string' && Number.isInteger(x.dia) && Number(x.monto) > 0);
+    return l
+      .filter((x): x is Recurrente => x && typeof x.frase === 'string' && typeof x.concepto === 'string' && Number.isInteger(x.dia) && Number(x.monto) > 0)
+      // se conservan los pausados y terminados (sirven para reconocer movimientos); solo se limpian los campos mal formados
+      .map(x => {
+        const { pausado, fin, ...resto } = x;
+        const r: Recurrente = { ...resto };
+        if (pausado === true) r.pausado = true;
+        if (typeof fin === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fin)) r.fin = fin;
+        return r;
+      });
   } catch { return []; }
 }
 
@@ -74,7 +99,9 @@ function coincide(r: Recurrente, f: string): boolean {
 /** Las fechas en que toca entre `desde` y `hasta` (las dos incluidas). */
 export function ocurrencias(r: Recurrente, desde: string, hasta: string): string[] {
   const res: string[] = [];
-  for (let f = desde; f <= hasta && res.length < 400; f = sumarDias(f, 1)) if (coincide(r, f)) res.push(f);
+  if (r.pausado) return res;
+  const tope = r.fin && r.fin < hasta ? r.fin : hasta;
+  for (let f = desde; f <= tope && res.length < 400; f = sumarDias(f, 1)) if (coincide(r, f)) res.push(f);
   return res;
 }
 
@@ -129,9 +156,13 @@ export function yaRegistrado(r: Recurrente, movs: Movimiento[], hoy: string): bo
 
 /** ¿Ya toca (o ya pasó la fecha) y todavía no se ha registrado? */
 export function estaPendiente(r: Recurrente, movs: Movimiento[], hoy: string): boolean {
+  if (r.pausado) return false;
   const dia = hoy.slice(0, 10);
-  if (frecuenciaDe(r) === 'mensual') return Number(dia.slice(8, 10)) >= r.dia - DIAS_DE_ANTICIPO && !yaRegistrado(r, movs, hoy);
-  return vigente(r, dia) !== null && !yaRegistrado(r, movs, hoy);
+  if (frecuenciaDe(r) === 'mensual') {
+    return Number(dia.slice(8, 10)) >= r.dia - DIAS_DE_ANTICIPO && activoEn(r, `${dia.slice(0, 8)}${String(r.dia).padStart(2, '0')}`) && !yaRegistrado(r, movs, hoy);
+  }
+  const toca = vigente(r, dia);
+  return toca !== null && activoEn(r, toca) && !yaRegistrado(r, movs, hoy);
 }
 
 /** Los que ya tocan y no se han registrado. */
@@ -147,11 +178,13 @@ export function recurrentesPendientes(config: Record<string, string>, movs: Movi
  * vencida sin registrar sale con la fecha de hoy, porque hay que pagarla ya. La usan el seguro y la proyección de liquidez.
  */
 export function fechasQueFaltan(r: Recurrente, movs: Movimiento[], hoy: string, hasta: string): string[] {
+  if (r.pausado) return [];
   const dia = hoy.slice(0, 10);
   // la ocurrencia del periodo en curso: la del mes si es mensual, la vigente en las demás
   let actual: string | null;
   if (frecuenciaDe(r) === 'mensual') actual = `${dia.slice(0, 8)}${String(r.dia).padStart(2, '0')}`;
   else actual = vigente(r, dia);
+  if (actual !== null && !activoEn(r, actual)) actual = null;
   const cubierta = actual !== null && yaRegistrado(r, movs, hoy);
   const res = ocurrencias(r, dia, hasta).filter(f => !(cubierta && f === actual));
   if (actual !== null && !cubierta && actual < dia) res.unshift(dia);

@@ -1,13 +1,12 @@
 /** Deudas y préstamos: quién te debe y a quién le debes. «Registrar pago/abono» abre una hoja rápida (monto y cuenta) y deja la frase lista en el chat. */
-import { List, PartyPopper, Users } from 'lucide-preact';
+import { PartyPopper, Users } from 'lucide-preact';
 import { deudasPorPersona, describirDia, formatear, gruposDe } from '../../../../../packages/core/src/index.ts';
 import { Insignia, Vacio, visualDePersona } from '../../components/ui/iconos.tsx';
 import { Cargando, Nota } from '../../components/ui/piezas.tsx';
 import { irA, prellenarChat } from '../../state/nav.ts';
 import { HojaAbono, abrirAbono } from '../../components/ui/HojaAbono.tsx';
-import { abrirInfo, cerrarYLuego } from '../../components/ui/HojaInfo.tsx';
-import { movimientosDePersona } from '../../lib/grupos.ts';
-import { verMovimientos } from '../movimientos/Movimientos.tsx';
+import { cerrarYLuego } from '../../components/ui/HojaInfo.tsx';
+import { abrirFichaPersona } from './fichaPersona.tsx';
 import { ctx as contexto, datos as datosSignal } from '../../state/store.ts';
 import { tocable } from '../../lib/tocable.ts';
 import { abrirPorCobrarPagar } from '../saldos/aperturas.tsx';
@@ -33,14 +32,8 @@ export function Deudas() {
     nombre: d.persona.nombre, direccion: d.saldo < 0 ? 'debo' : 'me_deben', moneda: d.moneda,
     saldo: (Math.abs(d.saldo) - (d.saldo < 0 ? d.deOtros : 0)) / (d.moneda === 'USD' ? 100 : 1),
   });
-  const abrir = (d: Deuda, boton: string, sub: string) => abrirInfo({
-    id: `deuda-${d.persona.id}`, titulo: d.persona.nombre, sub,
-    movimientos: movimientosDePersona(datos, d.persona.id),
-    acciones: [
-      { id: 'info-registrar', texto: boton, alTocar: () => cerrarYLuego(() => registrar(d)) },
-      { id: 'info-ver-movimientos', texto: 'Ver en Movimientos', icono: <List size={18} />, alTocar: () => cerrarYLuego(() => verMovimientos({ persona: d.persona.id, periodo: 'todo' })) },
-    ],
-  });
+  const abrir = (d: Deuda, boton: string, sub: string) => abrirFichaPersona(datos, d.persona.id,
+    [{ id: 'info-registrar', texto: boton, alTocar: () => cerrarYLuego(() => registrar(d)) }], sub);
   const personas = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`;
 
   const Fila = ({ d }: { d: Deuda }) => {

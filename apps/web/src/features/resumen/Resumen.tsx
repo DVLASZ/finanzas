@@ -311,7 +311,7 @@ export function Resumen() {
           <section class="tarjeta" id="flujo-mes">
             <h3 class="!mt-0">Flujo del mes</h3>
             <p class="sub !mt-0 mb-2">Ingresos menos gastos, sumados día a día. Toca la línea para ver un día.</p>
-            <FlujoMes puntos={flujo} />
+            <FlujoMes puntos={flujo} datos={datos} />
           </section>
         ) : null;
       })()}
@@ -328,14 +328,14 @@ export function Resumen() {
       {p === 'mes' && (
         <section class="tarjeta" id="mapa-calor">
           <h3 class="!mt-0">Calor del mes: día por día</h3>
-          <MapaCalor dias={gastoDelMes(datos, Number(mesCalor.slice(0, 4)), Number(mesCalor.slice(5, 7)))} hoy={aLocalHoy(ctx.ahora).slice(0, 10)} />
+          <MapaCalor dias={gastoDelMes(datos, Number(mesCalor.slice(0, 4)), Number(mesCalor.slice(5, 7)))} hoy={aLocalHoy(ctx.ahora).slice(0, 10)} datos={datos} />
         </section>
       )}
 
       {p === 'mes' && (
         <section class="tarjeta" id="seis-meses">
           <h3 class="!mt-0">Ingresos y gastos: seis meses</h3>
-          <BarrasMeses meses={ingresosGastosPorMes(datos, ctx.ahora, 6)} />
+          <BarrasMeses meses={ingresosGastosPorMes(datos, ctx.ahora, 6)} datos={datos} />
         </section>
       )}
 

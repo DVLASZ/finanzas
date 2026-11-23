@@ -1112,3 +1112,37 @@ li.grupo.grupo-dia:hover { background: var(--elev); }
 /* @@agente-anulados */
 #lista-anulados .anulado-texto { text-decoration: line-through; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); opacity: .72; }
 #lista-anulados .anulado-fila { min-width: 0; cursor: pointer; }
+
+/* @@u-fijos */
+#fijos-inactivos h3 { margin-top: .5rem; }
+#fijos-inactivos .fila { min-width: 0; }
+#hoja-fijo-editar input[type="date"], #hoja-fijo-fin input[type="date"], #nuevo-fijo-fin { max-width: 100%; }
+
+/* @@u-personas */
+.persona-fila { flex-wrap: wrap; }
+.persona-toque { min-width: 0; flex: 1 1 10rem; cursor: pointer; overflow-wrap: anywhere; }
+.persona-toque:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; border-radius: .6rem; }
+.archivadas-caja { margin-top: 1rem; display: grid; gap: .5rem; }
+.archivadas-caja .fila { flex-wrap: wrap; gap: .5rem; }
+.ficha-persona-deudas { margin: .25rem 0 .5rem; padding: 0; list-style: none; display: grid; gap: .25rem; overflow-wrap: anywhere; }
+
+/* @@u-metas */
+.meta-pausada { opacity: .62; }
+.meta-etiqueta-pausa { display: inline-block; margin-right: .4rem; padding: 0 .45rem; border-radius: 999px; font-style: normal; font-size: .72rem; font-weight: 700; background: color-mix(in srgb, currentColor 14%, transparent); }
+.aporte-fila { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .6rem; min-width: 0; }
+.aporte-deshacer { min-height: 2.25rem; }
+
+/* @@u-graficas */
+
+/* @@u-etiquetas */
+
+/* @@u-ayuda */
+@layer components {
+  .ayuda-respuesta { gap: .7rem; justify-items: stretch; }
+  .ayuda-resp { display: grid; gap: .4rem; justify-items: start; }
+  .ayuda-resp + .ayuda-resp { padding-top: .7rem; border-top: 1px solid var(--bor); }
+  .ayuda-resp-tema { font-size: .8rem; color: var(--marca); }
+  .ayuda-ejemplos { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .ayuda-sin-bloque { display: grid; gap: .5rem; }
+  .ayuda-parecidos { display: flex; flex-wrap: wrap; gap: .4rem; }
+}

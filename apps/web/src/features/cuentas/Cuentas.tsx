@@ -6,7 +6,8 @@
  */
 import { Users } from 'lucide-preact';
 import { useState } from 'preact/hooks';
-import { aMinor, formatear, gruposDe, hallarMontos, leerSubcategorias, limpiar, MAX_NIVELES, profundidad, puedeIrDentro, rutaDe, type Cuenta } from '../../../../../packages/core/src/index.ts';
+import { aMinor, cambiarArchivada, leerArchivadas, formatear, gruposDe, hallarMontos, leerSubcategorias, limpiar, MAX_NIVELES, profundidad, puedeIrDentro, rutaDe, type Cuenta } from '../../../../../packages/core/src/index.ts';
+import { abrirFichaPersona, archivarPersona } from '../deudas/fichaPersona.tsx';
 import { Selector } from '../../components/ui/Selector.tsx';
 import { Insignia, Vacio, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { Cargando, Nota } from '../../components/ui/piezas.tsx';
@@ -34,10 +35,18 @@ export function Cuentas() {
   const ctx = contexto.value;
   const [nueva, setNueva] = useState('');
   const [dentroDe, setDentroDe] = useState('');
+  const [personaNueva, setPersonaNueva] = useState('');
+  const [grupoNueva, setGrupoNueva] = useState('');
+  const [verArchivadas, setVerArchivadas] = useState(false);
   if (!datos || !ctx) return <Cargando />;
 
-  const categorias = datos.cuentas.filter(c => c.tipo === 'categoria' && !CATEGORIAS_DEL_SISTEMA.includes(c.id)).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  const personas = datos.cuentas.filter(c => c.tipo === 'persona').sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  const archivadas = leerArchivadas(datos.config);
+  const porNombre = (a: Cuenta, b: Cuenta) => a.nombre.localeCompare(b.nombre, 'es');
+  const todasCategorias = datos.cuentas.filter(c => c.tipo === 'categoria' && !CATEGORIAS_DEL_SISTEMA.includes(c.id)).sort(porNombre);
+  const categorias = todasCategorias.filter(c => !archivadas.includes(c.id));
+  const todasPersonas = datos.cuentas.filter(c => c.tipo === 'persona').sort(porNombre);
+  const personas = todasPersonas.filter(p => !archivadas.includes(p.id));
+  const guardadas = [...todasCategorias, ...todasPersonas].filter(c => archivadas.includes(c.id));
   const grupos = gruposDe(ctx);
   const palabras = Object.entries(datos.aprendido).sort(([a], [b]) => a.localeCompare(b, 'es')).slice(0, 200);
   const padres = leerSubcategorias(datos.config);
@@ -80,6 +89,32 @@ export function Cuentas() {
     if (lista.length) nuevos[p.id] = lista; else delete nuevos[p.id];
     await guardarCambio(() => app.repo.setConfig('apodos_personas', JSON.stringify(nuevos)));
   };
+  const crearPersona = async (e: Event) => {
+    e.preventDefault();
+    const nombre = personaNueva.trim().slice(0, 40);
+    if (!nombre) return;
+    if (todasPersonas.some(x => limpiar(x.nombre) === limpiar(nombre))) { await avisar({ titulo: 'Ya hay una persona con ese nombre', texto: 'Si la archivaste, restáurala en «Ver archivadas».', tono: 'peligro' }); return; }
+    const id = idLibre('per:', nombre, datos.cuentas);
+    await guardarCambio(() => app.repo.guardarCuenta({ id, nombre, clave: limpiar(nombre), tipo: 'persona', moneda: 'COP', grupo: grupoNueva || grupos[0]?.id }));
+    setPersonaNueva('');
+  };
+  const archivarCategoria = async (c: Cuenta) => {
+    if (Object.entries(padres).some(([id, padre]) => padre === c.id && !archivadas.includes(id))) {
+      await avisar({ titulo: 'Tiene subcategorías', texto: 'Archiva primero las de adentro.', tono: 'peligro' }); return;
+    }
+    const tope = datos.presupuestos[c.id];
+    const quiere = await confirmar({
+      titulo: `¿Archivar «${c.nombre}»?`,
+      texto: `Deja de salir en selectores y listas. Sus movimientos no cambian.${tope ? ' Su tope mensual se quita.' : ''}`,
+      aceptar: 'Sí, archivar', cancelar: 'Cancelar',
+    });
+    if (!quiere) return;
+    await guardarCambio(async () => {
+      if (tope) await app.repo.setPresupuesto(c.id, null);
+      await app.repo.setConfig('archivadas', cambiarArchivada(datos.config, c.id, true));
+    });
+  };
+  const restaurar = (id: string) => guardarCambio(() => app.repo.setConfig('archivadas', cambiarArchivada(datos.config, id, false)));
   const cambiarPadre = (id: string, padre: string) => {
     const nuevo = { ...padres };
     if (padre) nuevo[id] = padre; else delete nuevo[id];
@@ -119,6 +154,7 @@ export function Cuentas() {
               <div class="ficha-acc">
                 <button class="chip" onClick={() => void renombrar(c)}>Renombrar</button>
                 <button class="chip" onClick={() => void ponerTope(c)}>Tope</button>
+                <button class="chip" data-archivar-categoria={c.id} onClick={() => void archivarCategoria(c)}>Archivar</button>
                 <Selector etiqueta={`Dentro de, para ${c.nombre}`} valor={padres[c.id] ?? ''} alCambiar={v => void cambiarPadre(c.id, v)}
                   opciones={[{ valor: '', etiqueta: 'Principal' }, ...posibles.map(x => ({ valor: x.id, etiqueta: `Dentro de ${rutaDe(padres, x.id, datos.cuentas)}` }))]} />
               </div>
@@ -128,10 +164,19 @@ export function Cuentas() {
       </ul>
 
       <h2>Personas</h2>
+      <form class="form-nueva" id="nueva-persona" onSubmit={crearPersona}>
+        <input type="text" id="nueva-persona-nombre" autocomplete="off" placeholder="Nueva persona: Sofia" aria-label="Nombre de la nueva persona" value={personaNueva} onInput={e => setPersonaNueva((e.target as HTMLInputElement).value)} />
+        <div class="fila2">
+          <Selector etiqueta="Grupo de la nueva persona" valor={grupoNueva || grupos[0]?.id || ''} alCambiar={setGrupoNueva}
+            opciones={grupos.map(g => ({ valor: g.id, etiqueta: g.nombre }))} />
+          <button class="primario" type="submit">Agregar</button>
+        </div>
+      </form>
       <ul class="lista">
         {personas.length ? personas.map(p => (
-          <li key={p.id} class="fila" style={{ cursor: 'default' }}>
-            <div>
+          <li key={p.id} class="fila persona-fila" style={{ cursor: 'default' }} data-persona={p.id}>
+            <div class="persona-toque" role="button" tabIndex={0} aria-label={`Ver la ficha de ${p.nombre}`} onClick={() => abrirFichaPersona(datos, p.id)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirFichaPersona(datos, p.id); } }}>
               <div class="titulo">{p.nombre}</div>
               <div class="sub">{grupos.find(g => g.id === p.grupo)?.nombre ?? 'Sin grupo'}{fijas[p.id] ? ` · lo que se le da va a ${datos.cuentas.find(c => c.id === fijas[p.id])?.nombre ?? '?'}` : ''}</div>
             </div>
@@ -142,10 +187,27 @@ export function Cuentas() {
                 opciones={[{ valor: '', etiqueta: 'Grupo...' }, ...grupos.map(g => ({ valor: g.id, etiqueta: g.nombre }))]} />
               <Selector etiqueta={`Categoría fija de ${p.nombre}`} valor={fijas[p.id] ?? ''} alCambiar={v => void cambiarFija(p.id, v)}
                 opciones={[{ valor: '', etiqueta: 'Sin categoría fija' }, ...categorias.map(c => ({ valor: c.id, etiqueta: c.nombre }))]} />
+              <button class="chip" data-archivar-persona={p.id} onClick={() => void archivarPersona(datos, p.id)}>Archivar</button>
             </div>
           </li>
-        )) : <li><Vacio Icono={Users} titulo="Todavía no hay personas" detalle="Aparecen cuando las nombras en el chat." tono="violeta" /></li>}
+        )) : <li><Vacio Icono={Users} titulo="Todavía no hay personas" detalle="Agrega una con el botón o nómbrala en el chat." tono="violeta" /></li>}
       </ul>
+
+      {guardadas.length > 0 && (
+        <div class="archivadas-caja">
+          <button class="chip" id="ver-archivadas" aria-pressed={verArchivadas} onClick={() => setVerArchivadas(v => !v)}>{verArchivadas ? 'Ocultar archivadas' : `Ver archivadas (${guardadas.length})`}</button>
+          {verArchivadas && (
+            <ul class="lista" id="lista-archivadas">
+              {guardadas.map(c => (
+                <li key={c.id} class="fila" style={{ cursor: 'default' }}>
+                  <div class="min-w-0"><div class="titulo">{c.nombre}</div><div class="sub">{c.tipo === 'persona' ? 'Persona' : 'Categoría'}</div></div>
+                  <button class="chip" data-restaurar={c.id} onClick={() => void restaurar(c.id)}>Restaurar</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <h2>Palabras que aprendí</h2>
       <Nota>Cuando me dices en qué categoría va una palabra, la recuerdo. Si una quedó mal, olvídala y te vuelvo a preguntar.</Nota>

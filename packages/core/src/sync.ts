@@ -49,7 +49,7 @@ export interface Rechazo { indice: number; motivo: string }
 /** Máximo de operaciones por petición: de sobra para una cola acumulada sin conexión durante días. */
 export const MAX_OPS = 1000;
 /** Únicas claves de `config` que la app envía (al registrar el saldo inicial). Cualquier otra se rechaza. */
-export const CLAVES_CONFIG_PERMITIDAS = ['fecha_apertura', 'catalogo', 'lista_compras', 'recurrentes', 'metas', 'categoria_persona', 'apodos_personas', 'grupos', 'subcategorias', 'cerrado_hasta', 'tope_arrastra', 'buzon', 'atajos_usuario', 'reglas_aprendidas', 'recordatorio'];
+export const CLAVES_CONFIG_PERMITIDAS = ['fecha_apertura', 'catalogo', 'lista_compras', 'recurrentes', 'metas', 'categoria_persona', 'apodos_personas', 'grupos', 'subcategorias', 'cerrado_hasta', 'tope_arrastra', 'buzon', 'atajos_usuario', 'reglas_aprendidas', 'recordatorio', 'archivadas'];
 /** Largo máximo del valor de una clave de config (el catálogo y la lista son pequeños). */
 const MAX_VALOR_CONFIG = 60000;
 

@@ -20,6 +20,8 @@ export interface ReglaAprendida {
   categoriaId?: string;
   /** 'AAAA-MM-DD HH:MM:SS' */
   creada: string;
+  /** En pausa: se conserva pero no se aplica ni se vuelve a ofrecer. */
+  pausada?: true;
 }
 
 export const MAX_REGLAS = 60;
@@ -44,6 +46,7 @@ export function leerReglas(config: Record<string, string>): ReglaAprendida[] {
       id: r.id, clave: r.clave, creada: r.creada,
       ...(typeof r.cuentaId === 'string' && r.cuentaId ? { cuentaId: r.cuentaId } : {}),
       ...(typeof r.categoriaId === 'string' && r.categoriaId ? { categoriaId: r.categoriaId } : {}),
+      ...(r.pausada === true ? { pausada: true as const } : {}),
     }));
   } catch { return []; }
 }
@@ -67,12 +70,18 @@ export function agregarRegla(lista: ReglaAprendida[], nueva: { clave: string; cu
 export const borrarRegla = (lista: ReglaAprendida[], id: string): ReglaAprendida[] => lista.filter(r => r.id !== id);
 
 /** Cambia la cuenta o la categoría de una regla. `null` quita ese dato. */
-export function editarRegla(lista: ReglaAprendida[], id: string, cambios: { cuentaId?: string | null; categoriaId?: string | null }): ReglaAprendida[] {
+export function editarRegla(lista: ReglaAprendida[], id: string, cambios: { cuentaId?: string | null; categoriaId?: string | null; pausada?: boolean; clave?: string }): ReglaAprendida[] {
   return lista.map(r => {
     if (r.id !== id) return r;
     const n = { ...r };
     if (cambios.cuentaId !== undefined) { if (cambios.cuentaId) n.cuentaId = cambios.cuentaId; else delete n.cuentaId; }
     if (cambios.categoriaId !== undefined) { if (cambios.categoriaId) n.categoriaId = cambios.categoriaId; else delete n.categoriaId; }
+    if (cambios.pausada !== undefined) { if (cambios.pausada) n.pausada = true; else delete n.pausada; }
+    if (cambios.clave !== undefined) {
+      const c = claveDeRegla(cambios.clave).slice(0, MAX_CLAVE).trim();
+      // una clave vacía o ya usada por otra regla se ignora, para no dejar dos reglas iguales
+      if (c && !lista.some(x => x.id !== id && x.clave === c)) n.clave = c;
+    }
     return n;
   });
 }
@@ -83,6 +92,7 @@ export function buscarRegla(lista: ReglaAprendida[], texto: string): ReglaAprend
   if (t.trim() === '') return null;
   let mejor: ReglaAprendida | null = null;
   for (const r of lista) {
+    if (r.pausada) continue;
     if (t.includes(` ${r.clave} `) && (!mejor || r.clave.length > mejor.clave.length)) mejor = r;
   }
   return mejor;
@@ -119,6 +129,7 @@ export function reglaSugerida(datos: Datos, m: Movimiento, cambios: { cuentaId?:
   if (!clave || /^\d+$/.test(clave)) return null;
 
   const igual = leerReglas(datos.config).find(r => r.clave === clave);
+  if (igual?.pausada) return null;
   if (igual && (!cuentaId || igual.cuentaId === cuentaId) && (!categoriaId || igual.categoriaId === categoriaId)) return null;
 
   const destino = [cuentaId ? nombreDe(datos, cuentaId) : '', categoriaId ? nombreDe(datos, categoriaId) : ''].filter(Boolean).join(' y ');

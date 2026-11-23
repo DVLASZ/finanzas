@@ -216,6 +216,7 @@ try {
   await prueba('Movimientos: etiquetas, rango de fechas y exportar CSV o JSON', async () => {
     await irA('Chat'); await escribir('pizza 12000 #cumple'); await pulsar('Confirmar');
     await irA('Movimientos'); await espera(500);
+    await pag.evaluate(() => document.querySelector('#limpiar')?.click()); await espera(300);
     await pag.evaluate(() => document.querySelector('#f-etiqueta').click()); await espera(500);
     igual(await pag.evaluate(() => [...document.querySelectorAll('[role=option]')].map(b => b.innerText.trim().split(/\s/)[0]).join(',')), 'Etiquetas,#cumple', 'el desplegable lista #cumple');
     const filas = () => pag.evaluate(() => document.querySelectorAll('#lista .fila').length);
@@ -531,12 +532,12 @@ try {
     await irA('Resumen'); await espera(500);
     igual(await pag.evaluate(() => Boolean(document.querySelector('#ojo'))), true, 'el ojo está en Resumen');
     await ocultarMontos(pag); await abrirDeMas('Ajustes'); await espera(700);
-    const r = await pag.evaluate(() => { const e = document.querySelector('#estado'); return { texto: e?.innerText.trim(), sw: Boolean(document.querySelector('#ojo-ajustes')), modo: [...document.querySelectorAll('.opciones button')].some(b => b.innerText.trim() === 'Oscuro') }; });
+    const r = await pag.evaluate(() => { const e = document.querySelector('#estado'); return { texto: e?.innerText.trim(), sw: Boolean(document.querySelector('#ojo-ajustes')), modo: [...document.querySelectorAll('.opciones button')].some(b => b.innerText.trim() === 'Oscuro'), escala: [...document.querySelectorAll('[data-sin-mascara] .opciones button')].map(b => b.innerText.toLowerCase()).join('|'), privado: document.documentElement.dataset.privado }; });
     igual(Boolean(r.texto), true, 'el estado de sincronización está en Ajustes');
     igual(r.sw, true, 'el interruptor de privacidad está en Ajustes');
     igual(r.modo, true, 'el modo claro y oscuro está junto a los temas');
-    const letra = (await pag.evaluate(() => document.body.innerText)).toLowerCase();
-    for (const x of ['compacta 85 %', 'normal 100 %', 'grande 115 %', 'extra grande 130 %']) contiene(letra.slice(Math.max(0, letra.indexOf('tamaño de letra'))), x, 'la escala de letra no se oculta con la privacidad: ' + x);
+    igual(r.privado, '1', 'los montos siguen ocultos');
+    igual(r.escala, 'compacta 85 %|normal 100 %|grande 115 %|extra grande 130 %', 'la escala de letra no se oculta con la privacidad');
     await irA('Chat');
   });
   await prueba('botón flotante de privacidad: fijo sobre la barra, en tres pantallas, y al minimizar todo vuelve a ocultarse', async () => {
@@ -702,7 +703,7 @@ try {
     await irA('Chat'); await escribir('le debo 54000 a Pedro por la bici'); await pulsar('Confirmar'); await espera(500);
     await abrirDeMas('Deudas y préstamos'); await espera(700);
     await clic('[data-persona]');
-    igual(await pag.evaluate(() => (document.querySelector('#info')?.dataset.info ?? '').startsWith('deuda-')), true, 'la deuda abre su ventana');
+    igual(await pag.evaluate(() => (document.querySelector('#info')?.dataset.info ?? '').startsWith('ficha-')), true, 'la deuda abre su ventana');
     igual(await hay('#info-registrar'), true, 'con el botón de registrar el pago');
     await clic('#info-cerrar'); await espera(400);
     igual(await hay('#info'), false, 'se cierra');
@@ -854,6 +855,45 @@ try {
       contiene(await pag.evaluate(() => (document.querySelector('#info-alerta-detalle')?.innerText ?? '').toLowerCase()), 'por qué sale', 'explica el motivo');
       await clic('#info-cerrar'); await espera(400);
     }
+  });
+  await prueba('ciclo de un pago fijo: se pausa, se reanuda, se programa su fin y se elimina sin tocar los movimientos', async () => {
+    const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
+    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
+    await irA('Chat'); await escribir('cada mes el 5 gimnasio 50000'); await espera(500);
+    await abrirDeMas('Pagos fijos'); await espera(700);
+    const abrirGimnasio = async () => { await pag.evaluate(() => [...document.querySelectorAll('li[data-fijo]')].find(l => l.innerText.toLowerCase().includes('gimnasio'))?.click()); await espera(600); };
+    await abrirGimnasio();
+    igual(await hay('#fijo-pausar'), true, 'el detalle trae Pausar');
+    await clic('#fijo-pausar'); await espera(500);
+    igual(await hay('#fijos-inactivos'), true, 'en pausa pasa a la sección de pausados');
+    await abrirGimnasio();
+    contiene((await pag.evaluate(() => document.querySelector('#info')?.innerText ?? '')).toLowerCase(), 'en pausa', 'el detalle dice que está en pausa');
+    await clic('#fijo-pausar'); await espera(500);
+    igual(await hay('#fijos-inactivos'), false, 'reanudado vuelve a la lista normal');
+    await abrirGimnasio();
+    await clic('#fijo-fin');
+    await pag.evaluate(() => { const e = document.querySelector('#fijo-fin-fecha'); e.value = '2020-01-01'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    await clic('#fijo-fin-guardar'); await espera(500);
+    igual(await hay('#fijos-inactivos'), true, 'con fin ya pasado queda terminado');
+    await abrirGimnasio();
+    await clic('#fijo-eliminar'); await espera(400);
+    await pulsar('Sí, eliminar').catch(async () => { await clic('#dialogo-aceptar'); });
+    await espera(600);
+    igual(await pag.evaluate(() => [...document.querySelectorAll('li[data-fijo]')].some(l => l.innerText.toLowerCase().includes('gimnasio'))), false, 'eliminado no sale');
+    await irA('Chat');
+  });
+  await prueba('personas: se crean desde el chat sin monto y al escribir su nombre sale su tarjeta', async () => {
+    await irA('Chat'); await escribir('agregar persona Sofia');
+    contiene(await ultima(), 'Sofia', 'confirma la persona');
+    await escribir('Sofia');
+    contiene((await ultima()).toLowerCase(), 'sin pendientes', 'la tarjeta de estado');
+    igual(await pag.evaluate(() => [...document.querySelectorAll('.burbuja button')].some(b => /abono/i.test(b.innerText))), true, 'con el botón de abono');
+  });
+  await prueba('calor del mes: tocar un día con gastos abre la hoja de ese día', async () => {
+    await irA('Resumen'); await espera(700);
+    await pag.evaluate(() => document.querySelector('#mapa-calor .calor-dia:not(.nf)')?.click()); await espera(500);
+    igual(await pag.evaluate(() => document.querySelector('#info')?.dataset.info), 'info-calor-dia', 'abre la hoja del día');
+    await pag.evaluate(() => document.querySelector('#info-cerrar')?.click()); await espera(400);
   });
   await prueba('ventanas flotantes: alcancías, pagos fijos y deudas abren su detalle desde sus tarjetas', async () => {
     const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);

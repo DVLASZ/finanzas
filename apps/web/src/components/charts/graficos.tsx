@@ -4,8 +4,29 @@
  * `prefers-reduced-motion` (el CSS las apaga).
  */
 import { useEffect, useId, useState } from 'preact/hooks';
-import {} from '../../../../../packages/core/src/index.ts';
+import { describirDia } from '../../../../../packages/core/src/index.ts';
 import { formatear } from '../../lib/formatear.ts';
+import { movimientosDelDia } from '../../lib/graficasResumen.ts';
+import { movimientosDeTipos } from '../../lib/grupos.ts';
+import { datos as datosSignal } from '../../state/store.ts';
+import { abrirInfo } from '../ui/HojaInfo.tsx';
+
+const MESES_LARGO = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+/** Abre la hoja de un día (YYYY-MM-DD) o de un mes (YYYY-MM) con sus movimientos. Si aún no hay datos, no hace nada. */
+function abrirHojaFecha(fecha: string): void {
+  const datos = datosSignal.value;
+  if (!datos) return;
+  if (fecha.length <= 7) {
+    const sig = new Date(Date.UTC(Number(fecha.slice(0, 4)), Number(fecha.slice(5, 7)), 1)).toISOString().slice(0, 10);
+    const movs = movimientosDeTipos(datos, ['gasto', 'compartido', 'deuda', 'ingreso'], `${fecha}-01`, sig);
+    abrirInfo({ id: 'info-barra-mes', titulo: `${MESES_LARGO[Number(fecha.slice(5, 7)) - 1]} ${fecha.slice(0, 4)}`, sub: `${movs.length} ${movs.length === 1 ? 'movimiento' : 'movimientos'}`, movimientos: movs.length ? movs : undefined });
+    return;
+  }
+  const dia = fecha.slice(0, 10);
+  const movs = movimientosDelDia(datos, dia);
+  abrirInfo({ id: 'info-barra-dia', titulo: describirDia(dia), sub: `${movs.length} ${movs.length === 1 ? 'movimiento' : 'movimientos'}`, movimientos: movs.length ? movs : undefined });
+}
 
 /** Una curva suave que pasa por los puntos (Catmull-Rom convertida a Bézier). */
 function curva(pts: [number, number][]): string {
@@ -23,7 +44,7 @@ function curva(pts: [number, number][]): string {
 }
 
 /** La evolución de un valor: línea con área degradada. `claro` la pinta en blanco para ir sobre la tarjeta de color. */
-export function Sparkline({ valores, etiquetas, claro = false, alto = 64 }: { valores: number[]; etiquetas?: string[]; claro?: boolean; alto?: number }) {
+export function Sparkline({ valores, etiquetas, fechas, claro = false, alto = 64 }: { valores: number[]; etiquetas?: string[]; /** YYYY-MM-DD de cada punto: si vienen, soltar sobre un día abre su hoja. */ fechas?: string[]; claro?: boolean; alto?: number }) {
   const [sel, setSel] = useState<number | null>(null);
   const W = 300, H = alto, m = 6;
   const min = Math.min(...valores), max = Math.max(...valores);
@@ -41,7 +62,7 @@ export function Sparkline({ valores, etiquetas, claro = false, alto = 64 }: { va
   const punto = sel === null ? null : pts[sel];
   const izquierda = punto ? (punto[0] / W) * 100 : 0;
   return (
-    <div class="relative touch-pan-y" onPointerMove={alTocar} onPointerDown={alTocar} onPointerLeave={() => setSel(null)} onPointerUp={() => setSel(null)}>
+    <div class="relative touch-pan-y" onPointerMove={alTocar} onPointerDown={alTocar} onPointerLeave={() => setSel(null)} onPointerUp={() => { if (sel !== null && fechas?.[sel]) abrirHojaFecha(fechas[sel]); setSel(null); }}>
     {punto && sel !== null && (
       <div class="pointer-events-none absolute -top-9 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-black/75 px-2.5 py-1 text-xs font-semibold text-white shadow-lg ring-1 ring-white/20" style={{ left: `${Math.min(88, Math.max(12, izquierda))}%` }}>
         {etiquetas?.[sel] ? <span class="mr-1.5 font-normal opacity-80">{etiquetas[sel]}</span> : null}<span class="tabular-nums">{formatear(valores[sel])}</span>
@@ -136,7 +157,8 @@ export function Ritmo({ ahora, antes, hastaDia }: { ahora: number[]; antes: numb
   );
 }
 
-export interface Barra { etiqueta: string; valor: number }
+/** `fecha` es opcional: YYYY-MM-DD (un día) o YYYY-MM (un mes). Con ella, tocar la barra abre su hoja de movimientos. */
+export interface Barra { etiqueta: string; valor: number; fecha?: string }
 
 /** Barras verticales (un día o un mes cada una). La más alta se marca; tocar una barra muestra su valor. */
 export function BarrasPeriodo({ barras }: { barras: Barra[] }) {
@@ -153,7 +175,7 @@ export function BarrasPeriodo({ barras }: { barras: Barra[] }) {
       </div>
       <div class="flex h-24 items-end gap-[3px]" role="img" aria-label="Gasto por día">
         {barras.map((b, i) => (
-          <button key={b.etiqueta} type="button" aria-label={`${b.etiqueta}: ${formatear(b.valor)}`} onClick={() => setSel(sel === i ? null : i)}
+          <button key={b.etiqueta} type="button" aria-label={`${b.etiqueta}: ${formatear(b.valor)}`} onClick={() => { setSel(sel === i ? null : i); if (b.fecha) abrirHojaFecha(b.fecha); }}
             class="group relative flex h-full min-w-0 flex-1 items-end rounded-sm outline-offset-2">
             <span class="barra-sube block w-full rounded-t-md transition-[filter,opacity] group-active:brightness-125"
               style={{ height: `${Math.max(b.valor > 0 ? 6 : 2, (b.valor / max) * 100)}%`, animationDelay: `${Math.min(i, 30) * 16}ms`, background: i === ver ? 'linear-gradient(180deg, var(--neg), color-mix(in srgb, var(--neg) 55%, var(--adv)))' : 'linear-gradient(180deg, var(--marca), var(--marca-2))', opacity: i === ver ? 1 : b.valor > 0 ? 0.62 : 0.25 }} />

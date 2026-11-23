@@ -26,6 +26,7 @@ export * from './trabajadores.ts';
 export * from './revision.ts';
 export * from './restaurar.ts';
 export * from './recurrentes.ts';
+export * from './archivadas.ts';
 export * from './fijosHeredar.ts';
 export * from './metas.ts';
 export * from './subcategorias.ts';

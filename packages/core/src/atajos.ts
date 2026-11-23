@@ -55,6 +55,8 @@ export interface AtajoUsuario {
   etiqueta: string;
   frase: string;
   modo: 'plantilla' | 'frase';
+  /** Oculto: no sale en la barra del chat pero sigue en el editor. */
+  oculto?: boolean;
 }
 
 export const MAX_ATAJOS = 12;
@@ -73,6 +75,7 @@ export function limpiarAtajos(x: unknown): AtajoUsuario[] {
       etiqueta: (typeof etiqueta === 'string' && etiqueta.trim() ? etiqueta.trim() : etiquetaDe(f)).slice(0, 24),
       frase: f,
       modo: modo === 'plantilla' ? 'plantilla' : 'frase',
+      ...((a as Record<string, unknown>).oculto === true ? { oculto: true } : {}),
     });
   }
   return res.slice(0, MAX_ATAJOS);

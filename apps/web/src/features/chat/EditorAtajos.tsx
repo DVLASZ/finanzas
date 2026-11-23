@@ -3,7 +3,7 @@
  * Cada atajo tiene dos modos: «plantilla» deja el texto escrito en el cuadro para ponerle el monto y la cuenta, y «frase»
  * (con monto y cuenta ya dichos) arma directo la tarjeta por confirmar.
  */
-import { ArrowDown, ArrowUp, Check, Pencil, Plus, Trash2, X } from 'lucide-preact';
+import { ArrowDown, ArrowUp, Check, Eye, EyeOff, Pencil, Plus, Trash2, X } from 'lucide-preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { etiquetaDe, MAX_ATAJOS, modoSugerido, moverAtajo, sugerenciasAtajos, type AtajoUsuario } from '../../../../../packages/core/src/index.ts';
@@ -33,7 +33,7 @@ export function EditorAtajos() {
     if (!b) return;
     const frase = b.frase.trim();
     if (!frase) return;
-    const nuevo: AtajoUsuario = { id: b.id ?? `a${Date.now().toString(36)}`, etiqueta: (b.etiqueta.trim() || etiquetaDe(frase)).slice(0, 24), frase: frase.slice(0, 80), modo: b.modo };
+    const nuevo: AtajoUsuario = { id: b.id ?? `a${Date.now().toString(36)}`, etiqueta: (b.etiqueta.trim() || etiquetaDe(frase)).slice(0, 24), frase: frase.slice(0, 80), modo: b.modo, ...(b.id && lista.find(x => x.id === b.id)?.oculto ? { oculto: true } : {}) };
     guardarAtajos(b.id ? lista.map(x => (x.id === b.id ? nuevo : x)) : [...lista, nuevo]);
     setB(null);
   };
@@ -55,12 +55,13 @@ export function EditorAtajos() {
           <ul class="lista !mt-3" id="at-lista">
             {lista.length === 0 && <li class="vacio">Aún no tienes botones. Agrega el primero.</li>}
             {lista.map((a, i) => (
-              <li key={a.id} class="fila" style={{ cursor: 'default' }} data-atajo-id={a.id}>
+              <li key={a.id} class={`fila ${a.oculto ? 'opacity-60' : ''}`} style={{ cursor: 'default' }} data-atajo-id={a.id}>
                 <span class="flex min-w-0 items-center gap-2.5">
                   <Insignia v={visualDeNombre(a.frase)} tam={34} redondo />
                   <span class="min-w-0"><span class="titulo block truncate">{a.etiqueta}</span><span class="sub block truncate">{a.modo === 'plantilla' ? 'Plantilla' : 'Frase'}: {a.frase}</span></span>
                 </span>
-                <span class="flex shrink-0 gap-1">
+                <span class="flex shrink-0 flex-wrap justify-end gap-1">
+                  <button type="button" class="secundario atajo-ocultar !min-h-9 !px-2" aria-pressed={Boolean(a.oculto)} aria-label={a.oculto ? `Mostrar ${a.etiqueta} en la barra` : `Ocultar ${a.etiqueta} de la barra`} title={a.oculto ? 'Mostrar en la barra' : 'Ocultar de la barra'} onClick={() => guardarAtajos(lista.map(x => (x.id === a.id ? { ...x, oculto: !a.oculto } : x)))}>{a.oculto ? <EyeOff size={16} /> : <Eye size={16} />}</button>
                   <button type="button" class="secundario !min-h-9 !px-2" aria-label={`Subir ${a.etiqueta}`} disabled={i === 0} onClick={() => guardarAtajos(moverAtajo(lista, i, -1))}><ArrowUp size={16} /></button>
                   <button type="button" class="secundario !min-h-9 !px-2" aria-label={`Bajar ${a.etiqueta}`} disabled={i === lista.length - 1} onClick={() => guardarAtajos(moverAtajo(lista, i, 1))}><ArrowDown size={16} /></button>
                   <button type="button" class="secundario !min-h-9 !px-2" aria-label={`Editar ${a.etiqueta}`} data-editar={a.id} onClick={() => abrirForm({ id: a.id, etiqueta: a.etiqueta, frase: a.frase, modo: a.modo, modoTocado: true })}><Pencil size={16} /></button>

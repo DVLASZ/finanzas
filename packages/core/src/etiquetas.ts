@@ -52,6 +52,19 @@ export function etiquetasDeTexto(texto: string): { valor: string | null; error?:
   return { valor: v.etiquetas.length ? v.etiquetas.join(' ') : null, error: v.error };
 }
 
+/**
+ * Cambia una etiqueta por otra dentro de un valor guardado, o la quita si `a` es null. Si el valor ya llevaba la nueva,
+ * queda una sola (fusión). Devuelve null cuando no queda ninguna. Lanza si la etiqueta nueva no es válida.
+ */
+export function reemplazarEtiqueta(valor: string | null | undefined, de: string, a: string | null): string | null {
+  const antes = normalizar(de).replace(/^#/, '');
+  const tokens = tokensDeEtiqueta(valor);
+  if (!tokens.includes(antes)) return tokens.join(' ') || null;
+  const v = validar(tokens.flatMap(t => (t === antes ? (a ? [a] : []) : [t])));
+  if (v.error) throw new Error(v.error);
+  return v.etiquetas.length ? v.etiquetas.join(' ') : null;
+}
+
 /** Para mostrar: «viaje claude» da «#viaje #claude». */
 export function conNumeral(valor: string | null | undefined): string {
   return tokensDeEtiqueta(valor).map(t => `#${t}`).join(' ');
