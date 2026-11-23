@@ -210,7 +210,7 @@ export function Chat() {
     if (f) void escanear(f);
   };
 
-  const alPulsar = (b: Boton) => { if (b.id === 'ok') { vibrar(); sonar('ok'); } void enviar({ boton: b.id }, b.titulo.replace(/^[\p{Extended_Pictographic}️‍\s]+/u, '').trim() || b.titulo); };
+  const alPulsar = (b: Boton) => { if (b.id.startsWith('poner:')) { alEjemplo(b.id.slice(6)); return; } if (b.id === 'ok') { vibrar(); sonar('ok'); } void enviar({ boton: b.id }, b.titulo.replace(/^[\p{Extended_Pictographic}️‍\s]+/u, '').trim() || b.titulo); };
   const mandar = (t: string) => { void enviar({ texto: t }, t); };
   /** Un ejemplo de la guía: las consultas se envían; lo demás queda escrito para ponerle el monto. */
   const alEjemplo = (e: string) => {

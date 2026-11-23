@@ -5,6 +5,7 @@ Por dónde empezar según lo que quieras hacer.
 ## Usar la app
 
 - [INICIO.md](INICIO.md): de cero a la app instalada en el celular.
+- [GUIA-USUARIO.md](GUIA-USUARIO.md): guía paso a paso para quien va a instalar y probar la app.
 - [BOT.md](BOT.md): cómo escribirle al bot, con todos los casos.
 - [EDITAR.md](EDITAR.md): corregir un movimiento ya guardado, con doble confirmación.
 - [INSTALACIONES.md](INSTALACIONES.md): las plantillas, el aspecto y qué cambia entre una app y otra.

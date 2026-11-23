@@ -889,6 +889,19 @@ try {
     contiene((await ultima()).toLowerCase(), 'sin pendientes', 'la tarjeta de estado');
     igual(await pag.evaluate(() => [...document.querySelectorAll('.burbuja button')].some(b => /abono/i.test(b.innerText))), true, 'con el botón de abono');
   });
+  await prueba('ayuda en el chat: las preguntas de uso se responden con ejemplos tocables y no se cobran como gasto', async () => {
+    await irA('Chat');
+    for (const [pregunta, esperado] of [['Como anoto un gasto', 'Un gasto es lo que compraste'], ['como agrego una persona', 'Una persona es alguien'], ['como pauso un pago fijo', 'Pausa un pago fijo'], ['como uso etiquetas', 'Con # juntas'], ['para qué sirve esto', 'cuaderno de plata']]) {
+      await escribir(pregunta);
+      const u = await ultima();
+      contiene(u, esperado, pregunta);
+      if (/Me falta|lista de compras/.test(u)) throw new Error('trató la pregunta como un gasto: ' + u);
+    }
+    await escribir('Como anoto un gasto');
+    await pulsar('almuerzo 12000');
+    igual(await pag.evaluate(() => document.querySelector('#texto').value.trim()), 'almuerzo 12000', 'el ejemplo queda escrito en el cuadro');
+    await pag.evaluate(() => { const x = document.querySelector('#texto'); x.value = ''; x.dispatchEvent(new Event('input', { bubbles: true })); });
+  });
   await prueba('calor del mes: tocar un día con gastos abre la hoja de ese día', async () => {
     await irA('Resumen'); await espera(700);
     await pag.evaluate(() => document.querySelector('#mapa-calor .calor-dia:not(.nf)')?.click()); await espera(500);
