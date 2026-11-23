@@ -113,7 +113,11 @@ compré un trident 4500
 
 ```
 ingreso 50k chamba nequi
+me pagaron 500k de nómina
++50k mamá nequi
 ```
+
+El signo + al principio marca que la plata entra. Un gasto no lleva signo menos: se escribe normal («almuerzo 12000»). Si te devolvieron plata, anótala como ingreso.
 
 ### Pasar plata entre tus cuentas
 
