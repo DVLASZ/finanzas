@@ -9,6 +9,7 @@ import { verTexto } from '../../state/privacidad.ts';
 import { BarraAvance, Insignia, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { Escalonado, MontoAnimado } from '../../components/ui/piezas.tsx';
 import { tocable } from '../../lib/tocable.ts';
+import { finDeMes } from '../../lib/graficasResumen.ts';
 import { abrirCategoriaComparada, type Periodos } from './aperturas.tsx';
 
 const p2 = (n: number) => String(n).padStart(2, '0');
@@ -31,17 +32,24 @@ function Variacion({ v, nuevo }: { v: number | null; nuevo: boolean }) {
     : <span class="var-chip var-baja"><ArrowDownRight size={12} />{v} %</span>;
 }
 
-export function ComparativaMes({ datos, ahora }: { datos: Datos; ahora: Date }) {
-  const c = comparativaMensual(datos, ahora);
+/**
+ * Con `desde` (el inicio del mes que se ve) compara ese mes contra el anterior. Si es el mes de hoy, solo hasta hoy; si ya pasó, el mes
+ * entero contra el entero, sin proyección. Sin `desde` se comporta como siempre, con el mes de hoy. `hasta` se acepta por simetría con el padre.
+ */
+export function ComparativaMes({ datos, ahora, desde }: { datos: Datos; ahora: Date; desde?: string; hasta?: string }) {
+  const mesHoy = aLocal(ahora).slice(0, 7);
+  const cerrado = Boolean(desde) && (desde as string).slice(0, 7) < mesHoy;
+  const visto = desde && (desde.slice(0, 7) !== mesHoy) ? finDeMes(desde) : ahora;
+  const c = comparativaMensual(datos, visto);
   if (!c.totalActual && !c.totalAnteriorMismosDias) return null;
-  const texto = textoProyeccion(c) ? verTexto(textoProyeccion(c) as string) : null;
+  const texto = !cerrado && textoProyeccion(c) ? verTexto(textoProyeccion(c) as string) : null;
   const filas = c.filas.slice(0, 6);
   const maxFila = Math.max(1, ...filas.map(f => Math.max(f.actual, f.anterior)));
   const pctProyeccion = c.totalMesAnterior > 0 && c.proyeccion !== null ? Math.min(150, Math.round((c.proyeccion / c.totalMesAnterior) * 100)) : null;
 
   return (
     <Escalonado class="space-y-3">
-      {c.proyeccion !== null && (
+      {!cerrado && c.proyeccion !== null && (
         <section class="tarjeta realce" id="proyeccion">
           <div class="etiqueta flex items-center gap-1"><TrendingUp size={14} />Cómo cierra el mes</div>
           <div class="monto mt-0.5"><MontoAnimado valor={c.proyeccion} /></div>
@@ -55,11 +63,11 @@ export function ComparativaMes({ datos, ahora }: { datos: Datos; ahora: Date }) 
 
       {filas.length > 0 && (
         <section class="tarjeta" id="contra-mes-pasado">
-          <h3 class="!mt-0">Contra el mes pasado</h3>
-          <p class="sub !mt-0">Lo que llevas hasta hoy contra los mismos {c.dia} días del mes anterior.</p>
+          <h3 class="!mt-0">{cerrado ? 'Contra el mes anterior' : 'Contra el mes pasado'}</h3>
+          <p class="sub !mt-0">{cerrado ? 'Lo gastado en ese mes contra el mes de antes, completos.' : `Lo que llevas hasta hoy contra los mismos ${c.dia} días del mes anterior.`}</p>
           <ul class="lista !m-0" style={{ boxShadow: 'none', background: 'transparent' }}>
             {filas.map(f => (
-              <li key={f.cuentaId} class="fila toque" data-comparar={f.cuentaId} {...tocable(() => abrirCategoriaComparada(datos, f.cuentaId, f.nombre, periodosDelMes(ahora), { ahora: `Este mes, hasta el día ${c.dia}`, antes: `Mes anterior, mismos ${c.dia} días` }))}>
+              <li key={f.cuentaId} class="fila toque" data-comparar={f.cuentaId} {...tocable(() => abrirCategoriaComparada(datos, f.cuentaId, f.nombre, periodosDelMes(visto), cerrado ? { ahora: 'Ese mes', antes: 'Mes anterior' } : { ahora: `Este mes, hasta el día ${c.dia}`, antes: `Mes anterior, mismos ${c.dia} días` }))}>
                 <div class="min-w-0">
                   <div class="flex min-w-0 items-center gap-2"><Insignia v={visualDeNombre(f.nombre)} tam={30} /><span class="titulo min-w-0 truncate">{f.nombre}</span></div>
                   <div class="sub">{formatear(f.actual)} <span class="opacity-70">contra {formatear(f.anterior)}</span></div>

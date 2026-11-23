@@ -95,6 +95,7 @@ try {
   await espera(900);
   await pag.screenshot({ path: join(salida, 'calor.png') }); console.log('  calor');
   for (const [id, nombre] of [['#grafica-dia-semana', 'dia-semana'], ['#comparador-fechas', 'comparador']]) {
+    if (id === '#comparador-fechas') await pag.evaluate(() => document.querySelector('#abrir-comparador')?.click());
     await pag.evaluate(s => document.querySelector(s)?.scrollIntoView({ block: 'center' }), id);
     await espera(1100);
     await pag.screenshot({ path: join(salida, nombre + '.png') }); console.log('  ' + nombre);

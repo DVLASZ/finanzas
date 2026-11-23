@@ -1088,3 +1088,27 @@ html[data-piel="obsidiana"] #info.saliendo > [role="dialog"]::after { animation:
 /* las frases sugeridas del editor de atajos pueden ser largas: bajan de línea en vez de salirse de la hoja */
 #at-sugeridas { flex-wrap: wrap; }
 #at-sugeridas .chip { max-width: 100%; white-space: normal; text-align: left; height: auto; min-height: var(--alto-btn, 44px); }
+
+/* @@agente-resumen-filtros */
+
+/* @@agente-graficas */
+.sd-fila { display: grid; grid-template-columns: repeat(auto-fit, minmax(2.4rem, 1fr)); gap: .25rem; align-items: end; }
+.sd-fila .ds-nombre { font-size: .62rem; }
+.sd-fila .ds-col.sel { background: color-mix(in srgb, var(--marca) 12%, transparent); color: var(--tx); }
+.sd-futuro { opacity: .55; }
+.evo-fila { display: grid; grid-template-columns: repeat(var(--evo-n, 12), minmax(2.3rem, 1fr)); gap: .3rem; align-items: end; min-width: 100%; width: max-content; }
+.evo-fila .mes-nombre { white-space: nowrap; }
+.cp-fila { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) auto; align-items: center; gap: .5rem; margin-top: .2rem; }
+.cp-rotulo { font-size: .7rem; color: var(--tx2); }
+.cp-relleno { display: block; height: 100%; border-radius: inherit; transform-origin: left; animation: crece .6s cubic-bezier(.22, 1, .36, 1) backwards; }
+@media (prefers-reduced-motion: reduce) { .cp-relleno { animation: none; } }
+
+/* @@agente-movimientos */
+li.grupo.grupo-dia { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem .75rem; margin-top: .6rem; padding: .6rem 1rem; font-size: .8rem; letter-spacing: .06em; color: var(--tx); background: var(--elev); border-left: 3px solid var(--acc); border-radius: .6rem; }
+li.grupo.grupo-dia:hover { background: var(--elev); }
+.grupo-dia-nombre { min-width: 0; font-weight: 700; }
+.grupo-dia-total { display: flex; flex-wrap: wrap; gap: .1rem .75rem; margin-left: auto; font-size: .78rem; font-weight: 700; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+
+/* @@agente-anulados */
+#lista-anulados .anulado-texto { text-decoration: line-through; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); opacity: .72; }
+#lista-anulados .anulado-fila { min-width: 0; cursor: pointer; }

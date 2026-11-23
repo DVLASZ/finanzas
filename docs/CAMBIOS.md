@@ -6,6 +6,12 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-24
 
+- Resumen tiene los mismos filtros que Movimientos: Todo, Semana, Mes, Año y Fechas. Las gráficas siguen el periodo que miras: en Semana salen los siete días y la comparación con la semana anterior, en Mes el flujo, el calor del mes y los topes, en Año la evolución de enero a diciembre con los topes del año, y en Todo el histórico. Un periodo sin movimientos muestra un aviso en vez de gráficas de otros meses.
+- Resumen ya no repite la tarjeta Por categoría (están la dona, que ahora abre los movimientos de cada categoría al tocarla, y Metas y topes). El comparador de dos fechas pasó a un botón que abre una ventana flotante.
+- Movimientos: cada día tiene un encabezado marcado con lo gastado o ingresado ese día, las etiquetas son un desplegable con su contador y ya no existe Mostrar anulados. Los anulados se ven en Más, Revisión del mes, Ver anulados, en una ventana flotante.
+- Privacidad: la escala de letra (85, 100, 115 y 130 %) ya no se vuelve puntos. Los controles de la interfaz quedan fuera de la máscara con el atributo data-sin-mascara. En el chat, el ojo hace el mismo barrido sobre las burbujas y las tarjetas.
+- Pagos fijos: un movimiento cubre el pago fijo si nombra su palabra distintiva («claude» para «Suscripción Claude»), sin importar el monto. Próximos 30 días cuenta hoy y los 29 siguientes, y si un solo pago fijo pesa en una cuenta dice cuál es y qué día cae.
+
 - Etiquetas: puedes escribir uno o varios #hashtags en cualquier frase del chat (#viaje, #claude, #universidad) sin que cambie la categoría ni el concepto. En Movimientos se filtran por etiqueta y cada fila las muestra como chips, y Resumen tiene una tarjeta con lo gastado por etiqueta que abre sus movimientos. Hasta 5 por movimiento.
 - Reglas aprendidas: si cambias la cuenta o la categoría de un movimiento de hoy, la app ofrece guardarlo como regla («la próxima vez que escriba Laura, usar Nequi»). Las reglas se editan y se borran en Ajustes, y una cuenta o categoría escrita en la frase siempre gana.
 - Dos gráficas nuevas en Resumen: gasto por día de la semana (cada barra abre sus movimientos) y un comparador de dos rangos de fechas elegidos por ti. El reporte PDF del periodo sale por el diálogo de impresión del teléfono, con una hoja limpia en blanco y negro.

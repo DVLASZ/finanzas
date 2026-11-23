@@ -5,26 +5,14 @@
  */
 import { hallarMontos, type MontoHallado } from './dinero.ts';
 import { borrarTramos, categorizar, hallarCuentas } from './entidades.ts';
-import { leerRecurrentes, type Recurrente } from './recurrentes.ts';
+import { clavesDeFijo as claves, leerRecurrentes, palabrasRaiz, type Recurrente } from './recurrentes.ts';
 import { normalizar } from './texto.ts';
 import type { Contexto, Moneda } from './tipos.ts';
 
-/** Palabras del concepto que no distinguen un pago de otro: «Suscripción Claude» se reconoce por «claude». */
-const GENERICAS = new Set(['suscripcion', 'pago', 'cuota', 'mensual', 'servicio', 'plan', 'cobro', 'de', 'del', 'la', 'el', 'los', 'las', 'mi']);
-
-const raiz = (w: string): string => (w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w);
-const palabras = (t: string): string[] => normalizar(t).match(/[a-z]+/g) ?? [];
-
-/** Las palabras que tiene que traer la frase para nombrar este pago fijo. */
-function claves(r: Recurrente): string[] {
-  const todas = palabras(r.concepto).filter(w => w.length >= 3);
-  const propias = todas.filter(w => !GENERICAS.has(w));
-  return (propias.length ? propias : todas).map(raiz);
-}
 
 /** El pago fijo que la frase nombra (todas las palabras distintivas de su concepto, enteras), o null. Gana el más específico. */
 export function fijoParaFrase(texto: string, recurrentes: Recurrente[]): Recurrente | null {
-  const enFrase = new Set(palabras(texto).map(raiz));
+  const enFrase = palabrasRaiz(texto);
   let mejor: Recurrente | null = null;
   let mejorN = 0;
   for (const r of recurrentes) {

@@ -9,7 +9,7 @@
  *   semanal   el día de la semana (1 lunes a 7 domingo)
  *   anual     el día del mes, junto con `mes` (1 a 12)
  */
-import { limpiar } from './texto.ts';
+import { limpiar, normalizar } from './texto.ts';
 import type { Movimiento } from './tipos.ts';
 
 export type Frecuencia = 'mensual' | 'quincenal' | 'semanal' | 'anual';
@@ -90,10 +90,33 @@ function vigente(r: Recurrente, dia: string): string | null {
 
 const fechaDe = (m: Movimiento): string => m.ocurridoEn.slice(0, 10);
 
+/** Palabras del concepto que no distinguen un pago de otro: «Suscripción Claude» se reconoce por «claude». */
+const GENERICAS = new Set(['suscripcion', 'pago', 'cuota', 'mensual', 'servicio', 'plan', 'cobro', 'de', 'del', 'la', 'el', 'los', 'las', 'mi']);
+const raiz = (w: string): string => (w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w);
+
+/** Las palabras de un texto, sin tildes ni plural final. */
+export const palabrasRaiz = (t: string): Set<string> => new Set((normalizar(t).match(/[a-z]+/g) ?? []).map(raiz));
+
+/** Las palabras que tiene que traer un texto para nombrar este pago fijo. */
+export function clavesDeFijo(r: Recurrente): string[] {
+  const todas = (normalizar(r.concepto).match(/[a-z]+/g) ?? []).filter(w => w.length >= 3);
+  const propias = todas.filter(w => !GENERICAS.has(w));
+  return (propias.length ? propias : todas).map(raiz);
+}
+
+/** ¿Este texto nombra al pago fijo? Vale el concepto entero o solo sus palabras distintivas («claude» para «Suscripción Claude»). */
+export function nombraAlFijo(r: Recurrente, texto: string): boolean {
+  if (limpiar(texto).includes(limpiar(r.concepto))) return true;
+  const k = clavesDeFijo(r);
+  if (!k.length) return false;
+  const p = palabrasRaiz(texto);
+  return k.every(w => p.has(w));
+}
+
 /** ¿Ya hay un movimiento de este recurrente en el periodo de `hoy` («AAAA-MM-DD HH:MM:SS»)? */
 export function yaRegistrado(r: Recurrente, movs: Movimiento[], hoy: string): boolean {
-  const clave = limpiar(r.concepto);
-  const coincideConcepto = (m: Movimiento) => m.estado === 'ok' && limpiar(m.descripcion).includes(clave);
+  // el monto no importa (un cobro en dólares cambia con la TRM): basta con que el movimiento nombre al pago fijo
+  const coincideConcepto = (m: Movimiento) => m.estado === 'ok' && nombraAlFijo(r, m.descripcion);
   if (frecuenciaDe(r) === 'mensual') {
     const mes = hoy.slice(0, 7);
     return movs.some(m => m.ocurridoEn.startsWith(mes) && coincideConcepto(m));

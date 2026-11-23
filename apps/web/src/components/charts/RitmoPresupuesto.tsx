@@ -16,7 +16,8 @@ const COLOR = { segura: 'var(--pos)', cerca: 'var(--adv)', alerta: 'var(--neg)' 
 
 type Fuente = Pick<Datos, 'movimientos' | 'cuentas' | 'config' | 'presupuestos'>;
 
-export function RitmoPresupuesto({ datos, ahora }: { datos: Fuente; ahora: Date }) {
+/** Con `cerrado` el mes ya pasó: no hay proyección, solo lo que se gastó contra la referencia. */
+export function RitmoPresupuesto({ datos, ahora, cerrado = false }: { datos: Fuente; ahora: Date; cerrado?: boolean }) {
   const r = ritmoDelMes(datos, ahora);
   const [sel, setSel] = useState<number | null>(null);
   const n = r.dias.length;
@@ -33,8 +34,9 @@ export function RitmoPresupuesto({ datos, ahora }: { datos: Fuente; ahora: Date 
   const contra = r.presupuesto !== null ? 'el presupuesto' : 'el mes anterior';
   const frase = r.referencia <= 0
     ? 'Todavía no hay un tope ni un mes anterior con qué comparar.'
-    : r.zona === 'alerta' ? `A este ritmo cierras el mes por encima de ${contra}.`
-      : r.zona === 'cerca' ? `A este ritmo llegas muy cerca de ${contra}.` : `A este ritmo cierras el mes por debajo de ${contra}.`;
+    : cerrado ? (r.llevo > r.referencia ? `El mes cerró por encima de ${contra}.` : `El mes cerró por debajo de ${contra}.`)
+      : r.zona === 'alerta' ? `A este ritmo cierras el mes por encima de ${contra}.`
+        : r.zona === 'cerca' ? `A este ritmo llegas muy cerca de ${contra}.` : `A este ritmo cierras el mes por debajo de ${contra}.`;
 
   const abrirDia = (k: number) => {
     setSel(k);
@@ -62,7 +64,7 @@ export function RitmoPresupuesto({ datos, ahora }: { datos: Fuente; ahora: Date 
   const ancho = (W - PAD * 2) / Math.max(1, n - 1);
   return (
     <div id="ritmo-grafica">
-      <p class="sub !mt-0 mb-2">La línea muestra lo que llevas gastado en el mes y la punteada, hasta dónde llegarías a este ritmo. Toca un día para ver sus gastos.</p>
+      <p class="sub !mt-0 mb-2">{cerrado ? 'La línea muestra lo que se fue gastando día a día en el mes. Toca un día para ver sus gastos.' : 'La línea muestra lo que llevas gastado en el mes y la punteada, hasta dónde llegarías a este ritmo. Toca un día para ver sus gastos.'}</p>
       <p class="!mt-0 mb-2 text-sm font-semibold" style={{ color }} id="ritmo-frase">{frase}</p>
       <div class="graf-scroll">
         <svg viewBox={`0 0 ${W} ${H}`} class="ritmo-svg" role="group" aria-label={`Gasto acumulado del mes: ${verMonto(formatearReal(r.llevo))}, proyección ${verMonto(formatearReal(r.proyeccion))}`}
@@ -85,12 +87,12 @@ export function RitmoPresupuesto({ datos, ahora }: { datos: Fuente; ahora: Date 
       </div>
       <div class="ritmo-leyenda">
         <span><i style={{ background: 'var(--acc)' }} />Lo gastado</span>
-        <span><i style={{ background: color }} />Proyección</span>
+        {!cerrado && <span><i style={{ background: color }} />Proyección</span>}
         <span><i style={{ background: r.presupuesto !== null ? 'var(--adv)' : 'var(--tx2)' }} />{r.presupuesto !== null ? 'Presupuesto' : 'Mes anterior'}</span>
       </div>
       <div class="mt-2 grid gap-2 text-xs [grid-template-columns:repeat(auto-fit,minmax(8rem,1fr))]" id="ritmo-dato">
         <div><div class="etiqueta">Día {actual.dia}{actual.futuro ? ' (proyectado)' : ''}</div><b class="tabular-nums">{verMonto(formatear(Math.round(actual.acumulado)))}</b></div>
-        <div><div class="etiqueta">Fin de mes a este ritmo</div><b class="tabular-nums" style={{ color }}><MontoAnimado valor={r.proyeccion} /></b></div>
+        <div><div class="etiqueta">{cerrado ? 'Total del mes' : 'Fin de mes a este ritmo'}</div><b class="tabular-nums" style={{ color }}><MontoAnimado valor={cerrado ? r.llevo : r.proyeccion} /></b></div>
         {r.referencia > 0 && <div><div class="etiqueta">{r.presupuesto !== null ? 'Presupuesto (suma de topes)' : 'Mes anterior'}</div><b class="tabular-nums">{verMonto(formatear(r.referencia))}</b></div>}
       </div>
     </div>

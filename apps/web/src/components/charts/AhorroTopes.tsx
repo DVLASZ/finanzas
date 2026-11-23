@@ -6,7 +6,7 @@
 import { Target } from 'lucide-preact';
 import { describirDia, filtrarMovimientos, formatear as formatearReal, rangoPeriodo, type Datos } from '../../../../../packages/core/src/index.ts';
 import { abrirCategoria } from '../../features/resumen/aperturas.tsx';
-import { avanceMetas, avanceTopes, type AvanceMeta } from '../../lib/graficasResumen.ts';
+import { avanceMetas, avanceTopes, avanceTopesRango, diasEntre, rangoAnterior, type AvanceMeta } from '../../lib/graficasResumen.ts';
 import { fechaAtras } from '../../lib/periodos.ts';
 import { formatear } from '../../lib/formatear.ts';
 import { verMonto } from '../../state/privacidad.ts';
@@ -39,16 +39,21 @@ function abrirMeta(datos: Fuente, a: AvanceMeta): void {
   });
 }
 
-export function AhorroTopes({ datos, ahora }: { datos: Fuente; ahora: Date }) {
+/** Con `desde` y `hasta` los topes se escalan a ese periodo (mes, año o los días que sean); sin ellos, al mes de hoy. */
+export function AhorroTopes({ datos, ahora, desde, hasta }: { datos: Fuente; ahora: Date; desde?: string; hasta?: string }) {
   const metas = avanceMetas(datos);
-  const topes = avanceTopes(datos, ahora);
+  const propio = Boolean(desde && hasta);
+  const topes = propio ? avanceTopesRango(datos, desde!, hasta!) : avanceTopes(datos, ahora);
+  const dias = propio ? diasEntre(desde!, hasta!) : 30;
+  const unidad = !propio ? 'del mes' : dias <= 8 ? 'de la semana' : dias <= 92 ? 'del mes' : 'del periodo';
   const apartado = metas.reduce((s, a) => s + a.meta.apartado, 0);
-  const mes = rangoPeriodo('mes', ahora), previo = rangoPeriodo('mes', fechaAtras(ahora, 'mes', 1));
+  const mes = propio ? { desde: `${desde!.slice(0, 10)} 00:00:00`, hasta: `${hasta!.slice(0, 10)} 00:00:00` } : rangoPeriodo('mes', ahora);
+  const previo = propio ? rangoAnterior(mes.desde, mes.hasta) : rangoPeriodo('mes', fechaAtras(ahora, 'mes', 1));
   const per = { desde: mes.desde, hasta: mes.hasta, previoDesde: previo.desde, previoHasta: previo.hasta };
   if (!metas.length && !topes.length) return <p class="sub !mt-0">Cuando crees una meta («meta moto 2000000») o un tope por categoría, aquí ves cómo avanzan.</p>;
   return (
     <div id="ahorro-grafica" class="grid gap-4">
-      <p class="sub !mt-0">Las barras verdes son lo que has apartado para cada meta. Las de topes comparan lo gastado este mes con el límite. Toca una para ver el detalle.</p>
+      <p class="sub !mt-0">Las barras verdes son lo que has apartado para cada meta. Las de topes comparan lo gastado en el periodo con el límite. Toca una para ver el detalle.</p>
       {metas.length > 0 && (
         <div>
           <div class="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3"><span class="etiqueta flex items-center gap-1"><Target size={14} />Metas de ahorro</span><b class="tabular-nums text-sm"><MontoAnimado valor={apartado} /> apartado</b></div>
@@ -67,7 +72,7 @@ export function AhorroTopes({ datos, ahora }: { datos: Fuente; ahora: Date }) {
       )}
       {topes.length > 0 && (
         <div>
-          <div class="etiqueta mb-1.5">Topes del mes por categoría</div>
+          <div class="etiqueta mb-1.5">Topes {unidad} por categoría</div>
           <ul class="ahorro-lista" id="ahorro-topes">
             {topes.map((t, i) => (
               <li key={t.id}>
