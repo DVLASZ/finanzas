@@ -49,7 +49,8 @@ export function Saldos() {
   const evolucion = Array.from({ length: dias }, (_, k) => alCierre(dias - 1 - k));
   // «en N días» se mide contra el cierre de hace N días, no contra el primer punto de la gráfica (que es de hace N-1)
   const cambioDias = evolucion[evolucion.length - 1] - alCierre(dias);
-  const etiquetasEvolucion = Array.from({ length: dias }, (_, k) => describirDia(aLocal(new Date(ctx.ahora.getTime() - (dias - 1 - k) * 86400000)).slice(0, 10)));
+  const fechasEvolucion = Array.from({ length: dias }, (_, k) => aLocal(new Date(ctx.ahora.getTime() - (dias - 1 - k) * 86400000)).slice(0, 10));
+  const etiquetasEvolucion = fechasEvolucion.map(describirDia);
   const cambio = cambioDias;
   const seguro = seguroParaGastar(datos, ctx.ahora);
   const restaHoy = seguro.quedaHoy;
@@ -113,7 +114,7 @@ export function Saldos() {
           <div class="flex items-center justify-between"><div class="text-xs font-semibold uppercase tracking-[.09em] opacity-85">Disponible</div><Nfc size={22} class="opacity-80" /></div>
           <div data-ajusta class="fab-reserva mt-1 text-[2.6rem] font-extrabold leading-none tracking-tight"><MontoAnimado valor={r.disponibleCop} /></div>
           <div class="mt-2 text-[.8rem] opacity-85">{cuentasEnDisponible} · sin las monedas{r.cuentas.some(x => x.cuenta.moneda === 'USD') ? ' ni los dólares' : ''}</div>
-          <div class="-mx-1 mt-3" onClick={e => e.stopPropagation()}><Sparkline valores={evolucion} etiquetas={etiquetasEvolucion} /></div>
+          <div class="-mx-1 mt-3" onClick={e => e.stopPropagation()}><Sparkline valores={evolucion} etiquetas={etiquetasEvolucion} fechas={fechasEvolucion} /></div>
           <div class="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
             <span class="opacity-90">{cambio === 0 ? 'Sin cambios' : `${cambio > 0 ? '+' : '-'}${formatear(Math.abs(cambio))}`} en {dias} días</span>
             <span class="flex shrink-0 gap-1 whitespace-nowrap">{([14, 30] as const).map(n => <button key={n} class={`rounded-full px-2.5 py-1 font-semibold transition active:scale-95 ${dias === n ? 'bg-marca text-sobre' : 'bg-tx/10'}`} aria-pressed={dias === n} onClick={e => { e.stopPropagation(); setDias(n); }}>{n} d</button>)}</span>

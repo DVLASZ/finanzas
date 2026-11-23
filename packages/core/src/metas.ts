@@ -4,6 +4,7 @@
  * guarda en la config, como la lista de compras, y se sincroniza igual.
  */
 import { formatear } from './dinero.ts';
+import { limpiar } from './texto.ts';
 
 export interface Meta {
   nombre: string;
@@ -17,17 +18,53 @@ export interface Meta {
   ultimo?: { id: string; m: number; n: number };
   /** La fecha en que se quiere tenerla («AAAA-MM-DD»): con ella se calcula cuánto apartar cada semana. */
   fecha?: string;
+  /** Identificador estable: no cambia al renombrar. Las metas viejas lo reciben al leerlas, derivado del nombre. */
+  id?: string;
+  /** En pausa: no cuenta en lo apartado ni en el «seguro para gastar», y no pide cuota. */
+  pausada?: boolean;
 }
+
+const idDeNombre = (nombre: string): string => limpiar(nombre).replace(/\s+/g, '-') || 'meta';
+
+/** Id nuevo para una meta que se crea ahora: el nombre más un sufijo corto, para no chocar con uno borrado. */
+export const idNuevoDeMeta = (nombre: string): string => `${idDeNombre(nombre)}-${Math.random().toString(36).slice(2, 6)}`;
 
 export function leerMetas(config: Record<string, string>): Meta[] {
   try {
     const l = JSON.parse(config.metas ?? '[]');
     if (!Array.isArray(l)) return [];
-    return l.filter((x): x is Meta => x && typeof x.nombre === 'string' && Number(x.meta) > 0 && Number(x.apartado) >= 0);
+    return l
+      .filter((x): x is Meta => x && typeof x.nombre === 'string' && Number(x.meta) > 0 && Number(x.apartado) >= 0)
+      .map(m => ({ ...m, id: typeof m.id === 'string' && m.id ? m.id : idDeNombre(m.nombre) }));
   } catch { return []; }
 }
 
-export const totalApartado = (metas: Meta[]): number => metas.reduce((s, m) => s + m.apartado, 0);
+/** Lo apartado de las metas activas: una meta en pausa no se descuenta del dinero libre. */
+export const totalApartado = (metas: Meta[]): number => metas.reduce((s, m) => s + (m.pausada ? 0 : m.apartado), 0);
+
+/** Cambia el nombre de una meta (por id). Falla si queda vacío o si ya existe otra con ese nombre. */
+export function renombrarMeta(metas: Meta[], id: string, nuevo: string): { ok: boolean; error?: string } {
+  const m = metas.find(x => x.id === id);
+  const n = nuevo.trim().slice(0, 30);
+  if (!m) return { ok: false, error: 'No encontré esa alcancía.' };
+  if (!n) return { ok: false, error: 'El nombre no puede quedar vacío.' };
+  if (metas.some(x => x !== m && limpiar(x.nombre) === limpiar(n))) return { ok: false, error: 'Ya tienes una alcancía con ese nombre.' };
+  m.nombre = n.charAt(0).toUpperCase() + n.slice(1);
+  return { ok: true };
+}
+
+/** Deshace un aporte concreto (índice en `aportes`): lo quita del historial y revierte lo apartado. */
+export function quitarAporte(metas: Meta[], id: string, indice: number): { ok: boolean; error?: string } {
+  const m = metas.find(x => x.id === id);
+  const a = m?.aportes?.[indice];
+  if (!m || !a) return { ok: false, error: 'No encontré ese aporte.' };
+  const resto = m.apartado - a.m;
+  if (resto < 0) return { ok: false, error: 'Deshacerlo dejaría lo apartado en negativo.' };
+  m.apartado = resto;
+  m.aportes = m.aportes!.filter((_, i) => i !== indice);
+  m.ultimo = undefined;
+  return { ok: true };
+}
 
 const porcentaje = (m: Meta): number => (m.apartado >= m.meta ? 100 : Math.min(99, Math.round((m.apartado / m.meta) * 100)));
 

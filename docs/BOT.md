@@ -252,6 +252,27 @@ Si dices para qué fue un préstamo (`presté 52000 para cámara`), lo que sigue
 
 Los regalos van como gasto en Regalos: `le regalé 50000 a Jorge`.
 
+También puedes crear y cambiar personas sin anotar plata. Hace falta la palabra persona o contacto (o `registrar a`), porque `agregar arroz` es la lista de compras. La persona nueva queda en el grupo que le toca por el nombre (familia si dices mamá o tía, amigos si no) y se cambia en Más, Categorías y personas.
+
+```
+agregar persona Sofia
+nueva persona Laura
+registrar a Faber
+guardar contacto Laura
+crear persona Faber
+añadir contacto Ana
+renombrar persona Ana a Ani
+```
+
+Si ya existe, responde «Ya tengo a Sofia.». Al renombrar, el nombre nuevo no puede ser el de otra persona; los movimientos viejos quedan con el nombre nuevo.
+
+Escribir solo el nombre de alguien que ya tienes (`Ivan`) muestra cómo van las cuentas con él: «Ivan: te debe $50.000.», «le debes...» o «sin pendientes». Trae tres botones (Le presté, Gasto compartido, Abono) que preguntan cuánto. Si hay dos con el mismo primer nombre, pregunta cuál.
+
+```
+Ivan
+daniel
+```
+
 Una persona puede tener una categoría fija (config `categoria_persona`, JSON `{"per:julio": "cat:hijo"}`). Con ella, `Giro Julio 150k Bancolombia` queda directo como gasto en esa categoría, con el nombre en el concepto y sin preguntar nada. Nequi, Daviplata y otros medios de pago nunca se toman por una persona, aunque la app no tenga esa cuenta.
 
 ## Plata que te mandan para pagar algo de otra persona
@@ -418,6 +439,18 @@ recurrentes
 Hay cuatro frecuencias. En «cada mes» el día va de 1 a 28. En «cada quincena» va de 1 a 13 y cae ese día y 15 días después (el 5 y el 20). «Cada lunes» (o martes, y así) es semanal, y «cada año el 15 de marzo» es anual.
 
 Desde dos días antes de la fecha, y hasta que escribas ese gasto, la app te muestra el aviso y el celular te avisa por la mañana. Cuando lo anotas (`mecato 12000`), el aviso se va hasta la próxima vez. Un pago anual sigue avisando hasta un mes después de la fecha. Para quitar uno: `quitar recurrente mecato`.
+
+Los que ya existen se pausan, se reanudan o se terminan con una fecha. El bot busca por el nombre; si coinciden varios, te pide que precises. Un fijo en pausa no cuenta en lo que falta, en Próximos 30 días ni en los avisos, y el listado lo marca «(en pausa)». Con fecha de fin, el listado dice «(hasta 21/12/2026)». Sin fecha, `fin` es hoy. La fecha va como `21/12/2026` o `21 de diciembre de 2026`.
+
+```
+pausar recurrente internet
+pausar pago fijo internet
+pausar pago internet
+reanudar recurrente internet
+fin recurrente internet 21/12/2026
+terminar pago fijo internet 21/12/2026
+cancelar pago internet el 21 de diciembre de 2026
+```
 
 ## Metas de ahorro
 

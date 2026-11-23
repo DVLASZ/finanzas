@@ -3,11 +3,11 @@
  * la foto del recibo y el botón de anular. Los filtros se recuerdan entre visitas.
  */
 import { signal } from '@preact/signals';
-import { Ban, BarChart3, Copy, Download, Pencil, ScanLine, Share2, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
+import { Ban, BarChart3, Copy, Download, Pencil, ScanLine, Share2, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, RotateCcw, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
-  aLocal, esArqueo, etiquetasUsadas, filtrarMovimientos, fraseDeOCR, movimientosACsv, movimientosAJson, describirDia, describirFecha, leerSubcategorias, leerRecurrentes, limpiar, nombreMes, rangoPeriodo, tokensDeEtiqueta,
+  aLocal, esArqueo, esArqueoAnulado, etiquetasUsadas, gruposDe, leerArchivadas, filtrarMovimientos, fraseDeOCR, movimientosACsv, movimientosAJson, describirDia, describirFecha, leerSubcategorias, leerRecurrentes, limpiar, nombreMes, rangoPeriodo, tokensDeEtiqueta,
   type Cuenta, type Movimiento,
 } from '../../../../../packages/core/src/index.ts';
 import { formatear } from '../../lib/formatear.ts';
@@ -32,7 +32,7 @@ import { fechaAtras } from '../../lib/periodos.ts';
 import { BarrasPeriodo } from '../../components/charts/graficos.tsx';
 import { Esqueleto, Insignia, Vacio, visualDeCuenta, visualDeMovimiento, visualDeNombre, visualDePersona } from '../../components/ui/iconos.tsx';
 import { Selector } from '../../components/ui/Selector.tsx';
-import { avisar, confirmar } from '../../components/ui/Dialogo.tsx';
+import { avisar, confirmar, pedir } from '../../components/ui/Dialogo.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
 import { EditarMovimiento, editandoId } from './EditarMovimiento.tsx';
 import { DuplicarMovimiento, duplicandoId } from './DuplicarMovimiento.tsx';
@@ -189,6 +189,16 @@ function Detalle({ m }: { m: Movimiento }) {
     await refrescar();
   };
 
+  const restaurar = async () => {
+    const quiere = await confirmar({ titulo: `¿Restaurar «${m.descripcion}»?`, texto: 'Vuelve a contar en los saldos como antes de anularlo.', aceptar: 'Sí, restaurar', cancelar: 'Cancelar' });
+    if (!quiere) return;
+    await guardarCambio(() => app.repo.restaurarMovimiento(m.id, aLocal(new Date())));
+    anotarActividad('anulacion', 'Se restauró un movimiento anulado');
+    atras();
+    void sincronizar();
+    await refrescar();
+  };
+
   // va fuera de la pantalla: un ancestro con transform (la animación de entrada) rompería el position: fixed
   return createPortal(
     <div id="detalle" class="fixed inset-0 z-[56] flex items-end justify-center bg-black/55 backdrop-blur-[2px]" onClick={e => { if (e.target === e.currentTarget) atras(); }}>
@@ -233,8 +243,9 @@ function Detalle({ m }: { m: Movimiento }) {
         <div class="acciones">
           {foto && <button class="secundario" id="leerFoto" disabled={leyendo} onClick={leerConIA}><ScanLine size={18} />{leyendo ? 'Leyendo...' : 'Leer con IA'}</button>}
           {filasDivision.length > 0 && <button class="secundario" id="compartirDivision" onClick={compartir}><Share2 size={18} />Compartir cuentas</button>}
-          <label class="secundario archivo"><Camera size={18} />Tomar foto<input type="file" id="fotoCamara" accept="image/*" capture="environment" hidden onChange={alElegir} /></label>
-          <label class="secundario archivo"><ImagePlus size={18} />Subir imagen<input type="file" id="fotoArchivo" accept="image/*" hidden onChange={alElegir} /></label>
+          {m.estado !== 'anulado' && <label class="secundario archivo"><Camera size={18} />Tomar foto<input type="file" id="fotoCamara" accept="image/*" capture="environment" hidden onChange={alElegir} /></label>}
+          {m.estado !== 'anulado' && <label class="secundario archivo"><ImagePlus size={18} />Subir imagen<input type="file" id="fotoArchivo" accept="image/*" hidden onChange={alElegir} /></label>}
+          {m.estado === 'anulado' && !esArqueoAnulado(m) && <button class="secundario" id="restaurar-mov" onClick={restaurar}><RotateCcw size={18} />Restaurar</button>}
           {m.estado === 'ok' && <button class="secundario" id="duplicar-mov" onClick={() => { duplicandoId.value = m.id; }}><Copy size={18} />Duplicar</button>}
           {m.estado === 'ok' && <button class="secundario" id="editar-mov" onClick={() => { editandoId.value = m.id; }}><Pencil size={18} />Editar</button>}
           {m.estado === 'ok' && <button class="peligro" id="anular" onClick={anular}><Ban size={18} />{esArqueo(m) ? 'Anular arqueo' : 'Anular'}</button>}
@@ -324,25 +335,43 @@ export function Movimientos() {
 
   // una barra por día (semana o mes) o por mes (año o todo), con ceros donde no hubo gasto
   const claveBarra = (k: string) => (porMes ? `${k.slice(5, 7)}/${k.slice(2, 4)}` : `${k.slice(8, 10)}/${k.slice(5, 7)}`);
-  const barras: { etiqueta: string; valor: number }[] = [];
+  const barras: { etiqueta: string; valor: number; fecha?: string }[] = [];
   if (r && !porMes) {
     for (let d = new Date(`${r.desde.slice(0, 10)}T12:00:00Z`); d.toISOString().slice(0, 10) < r.hasta.slice(0, 10); d.setUTCDate(d.getUTCDate() + 1)) {
       const k = d.toISOString().slice(0, 10);
-      barras.push({ etiqueta: claveBarra(k), valor: Math.max(0, porTiempo.get(k) ?? 0) });
+      barras.push({ etiqueta: claveBarra(k), valor: Math.max(0, porTiempo.get(k) ?? 0), fecha: k });
     }
   } else if (r && f.periodo === 'anio') {
-    for (let mes = 1; mes <= 12; mes++) { const k = `${r.desde.slice(0, 4)}-${String(mes).padStart(2, '0')}`; barras.push({ etiqueta: claveBarra(k), valor: Math.max(0, porTiempo.get(k) ?? 0) }); }
+    for (let mes = 1; mes <= 12; mes++) { const k = `${r.desde.slice(0, 4)}-${String(mes).padStart(2, '0')}`; barras.push({ etiqueta: claveBarra(k), valor: Math.max(0, porTiempo.get(k) ?? 0), fecha: k }); }
   } else {
-    for (const k of [...porTiempo.keys()].sort()) barras.push({ etiqueta: claveBarra(k), valor: Math.max(0, porTiempo.get(k)!) });
+    for (const k of [...porTiempo.keys()].sort()) barras.push({ etiqueta: claveBarra(k), valor: Math.max(0, porTiempo.get(k)!), fecha: k });
   }
+  const archivadas = leerArchivadas(datos.config);
   const usadas = (tipo: Cuenta['tipo']) => {
     const ids = new Set(datos.movimientos.flatMap(m => m.asientos.map(a => a.cuentaId)));
     for (const padre of Object.values(leerSubcategorias(datos.config))) ids.add(padre);
-    return datos.cuentas.filter(c => c.tipo === tipo && ids.has(c.id)).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    // todas las personas salen (hay un directorio), no solo las que ya tienen movimientos; las archivadas no
+    return datos.cuentas.filter(c => c.tipo === tipo && (tipo === 'persona' || ids.has(c.id)) && !archivadas.includes(c.id)).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  };
+  const nuevaPersona = async () => {
+    const nombre = (await pedir({ titulo: 'Nombre de la persona', aceptar: 'Crear' }))?.trim().slice(0, 40);
+    if (!nombre) return;
+    const existente = datos.cuentas.find(x => x.tipo === 'persona' && limpiar(x.nombre) === limpiar(nombre));
+    if (existente) {
+      if (archivadas.includes(existente.id)) { await avisar({ titulo: 'Esa persona está archivada', texto: 'Restáurala en Más, Categorías y personas.', tono: 'peligro' }); return; }
+      poner({ persona: existente.id }); return;
+    }
+    const base = 'per:' + (limpiar(nombre).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'nueva');
+    let id = base;
+    for (let n = 2; datos.cuentas.some(c => c.id === id); n++) id = `${base}-${n}`;
+    id = id.slice(0, 60);
+    await guardarCambio(() => app.repo.guardarCuenta({ id, nombre, clave: limpiar(nombre), tipo: 'persona', moneda: 'COP', grupo: gruposDe(ctx)[0]?.id }));
+    poner({ persona: id });
   };
   const selector = (id: string, etiqueta: string, vacio: string, tipo: Cuenta['tipo'], valor: string, campo: 'categoria' | 'cuenta' | 'persona') => (
-    <Selector id={id} etiqueta={etiqueta} valor={valor} alCambiar={v => poner({ [campo]: v })}
-      opciones={[{ valor: '', etiqueta: vacio }, ...usadas(tipo).map(c => ({ valor: c.id, etiqueta: c.nombre, visual: tipo === 'categoria' ? visualDeNombre(c.nombre) : tipo === 'dinero' ? visualDeCuenta(c) : visualDePersona(c.nombre) }))]} />
+    <Selector id={id} etiqueta={etiqueta} valor={valor} alCambiar={v => { if (v === '__nueva') void nuevaPersona(); else poner({ [campo]: v }); }}
+      opciones={[{ valor: '', etiqueta: vacio }, ...usadas(tipo).map(c => ({ valor: c.id, etiqueta: c.nombre, visual: tipo === 'categoria' ? visualDeNombre(c.nombre) : tipo === 'dinero' ? visualDeCuenta(c) : visualDePersona(c.nombre) })),
+        ...(tipo === 'persona' ? [{ valor: '__nueva', etiqueta: '+ Nueva persona' }] : [])]} />
   );
 
   const hayFiltros = f.tipo !== 'todos' || f.categoria || f.cuenta || f.persona || f.etiqueta || busqueda.value;

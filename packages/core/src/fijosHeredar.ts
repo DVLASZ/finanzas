@@ -6,7 +6,7 @@
 import { hallarMontos, type MontoHallado } from './dinero.ts';
 import { borrarTramos, categorizar, hallarCuentas } from './entidades.ts';
 import { clavesDeFijo as claves, leerRecurrentes, palabrasRaiz, type Recurrente } from './recurrentes.ts';
-import { normalizar } from './texto.ts';
+import { limpiar, normalizar } from './texto.ts';
 import type { Contexto, Moneda } from './tipos.ts';
 
 
@@ -33,8 +33,32 @@ export function heredarDeFijo(texto: string, ctx: Contexto): HerenciaDeFijo | nu
   const frase = normalizar(fijo.frase);
   const cuenta = hallarCuentas(frase, ctx)[0];
   const sinCuenta = borrarTramos(frase, cuenta ? [cuenta] : []).replace(/[\d.,$]+/g, ' ').replace(/\s+/g, ' ').trim();
-  const categoriaId = categorizar(sinCuenta, ctx) ?? categorizar(normalizar(fijo.concepto), ctx) ?? undefined;
-  return { fijo, cuentaId: cuenta?.id, categoriaId };
+  // lo guardado en el pago fijo manda; la frase solo completa lo que falte (o lo que ya no exista en esta instalación)
+  const cuentaGuardada = fijo.cuentaId && ctx.cuentas.some(c => c.id === fijo.cuentaId) ? fijo.cuentaId : undefined;
+  const categoriaGuardada = fijo.categoriaId && ctx.cuentas.some(c => c.id === fijo.categoriaId) ? fijo.categoriaId : undefined;
+  const categoriaId = categoriaGuardada ?? categorizar(sinCuenta, ctx) ?? categorizar(normalizar(fijo.concepto), ctx) ?? undefined;
+  return { fijo, cuentaId: cuentaGuardada ?? cuenta?.id, categoriaId };
+}
+
+/** Cambia campos de un pago fijo (se busca por concepto, sin tildes ni mayúsculas). Si cambia el monto, la frase lo sigue. */
+export function cambiarFijo(lista: Recurrente[], concepto: string, cambios: Partial<Recurrente>): Recurrente[] {
+  const clave = limpiar(concepto);
+  let visto = false;
+  return lista.map(r => {
+    if (visto || limpiar(r.concepto) !== clave) return r;
+    visto = true;
+    const nuevo: Recurrente = { ...r, ...cambios };
+    // el concepto es la llave: no se cambia por aquí
+    nuevo.concepto = r.concepto;
+    if (cambios.monto !== undefined && cambios.monto !== r.monto && cambios.frase === undefined) nuevo.frase = fraseConMonto(r, cambios.monto);
+    return nuevo;
+  });
+}
+
+/** Quita un pago fijo de la lista por su concepto. */
+export function quitarFijo(lista: Recurrente[], concepto: string): Recurrente[] {
+  const clave = limpiar(concepto);
+  return lista.filter(r => limpiar(r.concepto) !== clave);
 }
 
 export interface AjusteDeFijo { monto: number; moneda: Moneda; cuentaNombre?: string }
