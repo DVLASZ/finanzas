@@ -6,6 +6,7 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-24
 
+- La guía de usuario también existe como página interactiva de un solo archivo, [GUIA-USUARIO.html](GUIA-USUARIO.html): tiene índice, botón para volver arriba, un espacio para el enlace y la clave de acceso, botones para copiar cada frase del chat y 15 capturas reales incrustadas (hechas con datos inventados). Se genera con `npm run capturas:guia` y `npm run guia:html`.
 - El chat responde las preguntas de uso en la conversación: «cómo anoto un gasto», «cómo agrego una persona», «cómo pauso un pago fijo», «para qué sirve esto» ya no se cobran como un gasto sin monto ni se ofrecen para la lista de compras. Traen una explicación corta y botones con ejemplos que dejan la frase escrita. Cuando falta el monto de un gasto, el mensaje ahora empieza con «¡Casi!» y pregunta cuánto fue.
 - Guía de usuario paso a paso para quien va a instalar y probar la app: [GUIA-USUARIO.md](GUIA-USUARIO.md).
 - Pagos fijos con ciclo completo: al abrir uno se puede editar (monto, frecuencia, día, cuenta, categoría), pausar y reanudar, programar una fecha de fin y eliminar (los movimientos anotados se conservan). Un pago pausado o terminado deja de contar en Falta por pagar, Próximos 30 días, el seguro y los avisos, y sale en la sección Pausados y terminados. Por chat: «pausar recurrente claude», «reanudar recurrente claude», «fin recurrente claude 21/12/2026».
