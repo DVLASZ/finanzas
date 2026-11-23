@@ -10,7 +10,8 @@ export type Comando =
   | 'ventas' | 'existencias' | 'existencias_fijar' | 'existencias_sumar'
   | 'saldo' | 'semana' | 'mes' | 'anio' | 'deudas' | 'deshacer' | 'ayuda'
   | 'editar_ultimo' | 'ultimos' | 'categoria' | 'evento' | 'lista' | 'lista_agregar' | 'lista_quitar'
-  | 'recurrente_agregar' | 'recurrente_quitar' | 'recurrentes'
+  | 'recurrente_agregar' | 'recurrente_quitar' | 'recurrentes' | 'recurrente_pausar' | 'recurrente_reanudar' | 'recurrente_fin'
+  | 'persona_agregar' | 'persona_renombrar'
   | 'deshacer_varios' | 'subcategoria' | 'cierre_cerrar' | 'cierre_abrir' | 'cierre_ver'
   | 'corte' | 'saldo_cuenta' | 'presupuesto_semana' | 'revision' | 'jornales' | 'cuadrar_persona' | 'metas' | 'meta_fijar' | 'meta_apartar' | 'meta_sacar' | 'meta_quitar';
 

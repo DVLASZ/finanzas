@@ -7,9 +7,9 @@
  * Flujo: mensaje -> tarjeta "Entendí: ..." -> [Confirmar] [Editar] [Cancelar]. Nada se guarda
  * hasta confirmar. Tras confirmar quedan [Editar] [Deshacer]. El bot nunca borra: solo anula.
  */
-import { calcularSaldos, compromisosSaldados, gastoHabitual, resumenSaldos } from './consultas.ts';
+import { calcularSaldos, compromisosSaldados, deudasPorPersona, gastoHabitual, resumenSaldos } from './consultas.ts';
 import { construirMovimiento, errorDePago } from './asientos.ts';
-import { ejemploDeCuenta } from './entidades.ts';
+import { apodosDePersonas, ejemploDeCuenta, grupoPorDefecto, gruposDe, idPersona } from './entidades.ts';
 import {
   abonosHuerfanos, AVISO_APERTURA, AVISO_EXCESO, AVISO_FALTA, AVISO_MONEDA, excesoDePago, faltaPlata, movimientosQueSePierden,
   quedaNegativoSin, type Falta,
@@ -48,7 +48,7 @@ const EJEMPLOS_RECURRENTES: Record<Frecuencia, string> = {
   anual: 'Ejemplo: «cada año el 15 de marzo seguro 300000».',
 };
 import { limpiar, titulo } from './texto.ts';
-import type { Contexto, Movimiento } from './tipos.ts';
+import type { Contexto, Cuenta, Movimiento } from './tipos.ts';
 
 export interface Entrada {
   texto?: string;
@@ -92,9 +92,12 @@ function textoExistencias(config: Record<string, string>, movs: Movimiento[]): s
   ].join('\n');
 }
 
+/** «2026-12-21» como «21/12/2026». */
+const diaCorto = (iso: string): string => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
 function textoRecurrentes(lista: Recurrente[]): string {
   return lista.length
-    ? ['🔁 Gastos que se repiten:', ...[...lista].sort((a, b) => a.dia - b.dia).map(r => `• ${r.concepto} ${formatear(r.monto)} (${describirFrecuencia(r)})`), '', 'Para quitar uno: «quitar recurrente internet».'].join('\n')
+    ? ['🔁 Gastos que se repiten:', ...[...lista].sort((a, b) => a.dia - b.dia).map(r => `• ${r.concepto} ${formatear(r.monto)} (${describirFrecuencia(r)})${r.pausado ? ' (en pausa)' : ''}${r.fin ? ` (hasta ${diaCorto(r.fin)})` : ''}`), '', 'Para quitar uno: «quitar recurrente internet». También: «pausar recurrente internet», «reanudar recurrente internet» o «fin recurrente internet 21/12/2026».'].join('\n')
     : '🔁 No hay gastos que se repitan. Agrega uno así: «cada mes el 5 internet 60000», «cada quincena el 5 almuerzo 40000», «cada lunes almuerzo 12000» o «cada año el 15 de marzo seguro 300000».';
 }
 
@@ -183,6 +186,11 @@ class Motor {
     }
     if (id.startsWith('undometa:')) return this.deshacerAporte(id.slice(9));
     if (id.startsWith('metaok:')) return this.moverMeta(id.slice(7), 1, true);
+    // «per:<id>»: la tarjeta de esa persona (cuando el nombre escrito tenía varias posibles)
+    if (id.startsWith('per:')) {
+      const p = this.ctx.cuentas.find(c => c.tipo === 'persona' && c.id === id);
+      return p ? this.estadoDePersona(p) : [{ texto: 'Esa persona ya no está.' }];
+    }
     if (id.startsWith('lista+:')) return this.agregarALista(id.slice(7));
     // una frase que la IA entendió cuando volvió el internet: se trata como si se acabara de escribir
     // «ia:=texto» no es una frase para el bot sino una indicación para la persona (por ejemplo, cómo decir un reparto distinto)
@@ -240,6 +248,9 @@ class Motor {
 
     // 4) Mensaje nuevo. Si estabas editando, el mensaje completo reemplaza la tarjeta y mantiene
     //    la referencia al movimiento original (que se anula solo al confirmar).
+    // Escribir solo el nombre de alguien que ya tienes muestra cómo van las cuentas con esa persona.
+    const tarjeta = this.tarjetaDePersona(texto);
+    if (tarjeta) return tarjeta;
     const res = interpretar(texto, this.ctx);
     if (res.clase === 'comando') return this.comando(res.comando, res.arg);
     // la frase puede significar dos cosas: se pregunta con botones en vez de adivinar
@@ -691,6 +702,11 @@ class Motor {
       case 'lista_quitar': return this.quitarDeLista(arg ?? '');
       case 'recurrente_agregar': return this.agregarRecurrente(arg ?? '');
       case 'recurrente_quitar': return this.quitarRecurrente(arg ?? '');
+      case 'recurrente_pausar': return this.cambiarFijo(arg ?? '', 'pausar');
+      case 'recurrente_reanudar': return this.cambiarFijo(arg ?? '', 'reanudar');
+      case 'recurrente_fin': return this.cambiarFijo(arg ?? '', 'fin');
+      case 'persona_agregar': return this.agregarPersona(arg ?? '');
+      case 'persona_renombrar': return this.renombrarPersona(arg ?? '');
       case 'cierre_cerrar': return this.cerrarMes(arg ?? '');
       case 'cierre_abrir': { await this.repo.setConfig('cerrado_hasta', ''); return [{ texto: '🔓 Abrí todos los meses. Puedes anotar y corregir fechas de antes.' }]; }
       case 'cierre_ver': { const h = this.cerradoHasta(); return [{ texto: h ? `🔒 Cerrado hasta el ${describirDia(h)}. Para abrirlo escribe «abrir meses».` : 'No hay meses cerrados. Para cerrar uno: «cerrar mes octubre».' }]; }
@@ -941,6 +957,100 @@ class Motor {
     await this.repo.setConfig('catalogo', JSON.stringify(conConteo(catalogo, producto, total, aLocal(this.ctx.ahora))));
     const unidades = total === 1 ? 'unidad' : 'unidades';
     return [{ texto: sumar ? `📦 Sumé ${cantidad}: ahora hay ${total} ${unidades} de ${producto.nombre}.` : `📦 Quedó anotado: ${total} ${unidades} de ${producto.nombre}. Cada venta las va restando.` }];
+  }
+
+  /** «claude|2026-12-21»: pausa, reanuda o termina un pago fijo que ya existe, y deja el resto como estaba. */
+  private async cambiarFijo(arg: string, accion: 'pausar' | 'reanudar' | 'fin'): Promise<Salida[]> {
+    const [texto, fechaIso = ''] = arg.split('|');
+    const lista = leerRecurrentes(this.datos.config);
+    const clave = limpiar(texto);
+    const exactos = lista.filter(r => limpiar(r.concepto) === clave);
+    const hallados = exactos.length ? exactos : lista.filter(r => limpiar(r.concepto).includes(clave) || limpiar(r.frase).includes(clave));
+    if (!hallados.length) return [{ texto: `No tengo un pago fijo con «${texto}». Escribe «recurrentes» para verlos.` }];
+    if (hallados.length > 1) return [{ texto: `Precisa cuál: ${hallados.map(r => r.concepto).join(', ')}. Escríbelo con más palabras del nombre.` }];
+    const r = hallados[0];
+    let cambiado: Recurrente;
+    let respuesta: string;
+    if (accion === 'pausar') {
+      cambiado = { ...r, pausado: true };
+      respuesta = `Pausé: ${r.concepto}. No lo cuento ni lo aviso hasta que lo reanudes con «reanudar recurrente ${texto}».`;
+    } else if (accion === 'reanudar') {
+      cambiado = { ...r };
+      delete cambiado.pausado;
+      respuesta = `Reanudé: ${r.concepto}.`;
+    } else {
+      if (fechaIso === 'mala') return [{ texto: 'Esa fecha no existe. Escríbela así: «fin recurrente claude 21/12/2026».' }];
+      const fin = fechaIso || aLocal(this.ctx.ahora).slice(0, 10);
+      cambiado = { ...r, fin };
+      respuesta = `Listo: ${r.concepto} queda hasta el ${diaCorto(fin)}.`;
+    }
+    await this.repo.setConfig('recurrentes', JSON.stringify(lista.map(x => (x === r ? cambiado : x))));
+    return [{ texto: respuesta }];
+  }
+
+  // ---------------------------------------------------------------- personas desde el chat
+
+  /** El grupo con el que se guarda una persona nueva: el que le toca por el nombre si esta instalación lo tiene; si no, el primero. */
+  private grupoNuevo(nombre: string): { id: string; nombre: string } {
+    const grupos = gruposDe(this.ctx);
+    const defecto = grupoPorDefecto(nombre);
+    return grupos.find(g => g.id === defecto) ?? grupos[0] ?? { id: defecto, nombre: defecto };
+  }
+
+  private async agregarPersona(arg: string): Promise<Salida[]> {
+    const clave = limpiar(arg);
+    if (!clave) return [{ texto: 'Dime el nombre: «agregar persona Sofia».' }];
+    const nombre = titulo(clave);
+    const ya = this.ctx.cuentas.find(c => c.tipo === 'persona' && c.clave === clave);
+    if (ya) return [{ texto: `Ya tengo a ${ya.nombre}.` }];
+    const grupo = this.grupoNuevo(nombre);
+    await this.repo.guardarCuenta({ id: idPersona(nombre), nombre, clave, tipo: 'persona', moneda: 'COP', grupo: grupo.id });
+    return [{ texto: `Listo: ${nombre} quedó en tu directorio (grupo ${grupo.nombre}).` }];
+  }
+
+  private async renombrarPersona(arg: string): Promise<Salida[]> {
+    const [viejo, nuevo] = arg.split('|').map(limpiar);
+    const personas = this.ctx.cuentas.filter(c => c.tipo === 'persona');
+    const p = personas.find(c => c.clave === viejo);
+    if (!p) return [{ texto: `No tengo a ${titulo(viejo)}. Escribe «agregar persona ${titulo(viejo)}» para crearla.` }];
+    if (!nuevo) return [{ texto: 'Dime el nombre nuevo: «renombrar persona Sofia a Sofi».' }];
+    const otra = personas.find(c => c.clave === nuevo && c.id !== p.id);
+    if (otra) return [{ texto: `Ya tengo a ${otra.nombre}. Si son la misma persona, usa «es un apodo de...» al anotar un movimiento.` }];
+    // el id no cambia: los movimientos viejos siguen apuntando a la misma cuenta
+    await this.repo.guardarCuenta({ ...p, nombre: titulo(nuevo), clave: nuevo });
+    return [{ texto: `Listo: ${p.nombre} ahora es ${titulo(nuevo)}.` }];
+  }
+
+  /** Si el texto es solo el nombre de una persona que ya tienes, su tarjeta; si hay varias posibles, pregunta cuál. */
+  private tarjetaDePersona(texto: string): Salida[] | null {
+    const clave = limpiar(texto);
+    if (!clave || /\d/.test(clave) || clave.split(' ').length > 3) return null;
+    const personas = this.ctx.cuentas.filter(c => c.tipo === 'persona');
+    const apodos = apodosDePersonas(this.ctx);
+    const exacta = personas.find(p => p.clave === clave) ?? personas.find(p => apodos[p.id]?.includes(clave));
+    if (exacta) return this.estadoDePersona(exacta);
+    if (clave.includes(' ')) return null;
+    const mismos = personas.filter(p => p.clave.split(' ')[0] === clave);
+    if (mismos.length === 1) return this.estadoDePersona(mismos[0]);
+    if (mismos.length > 1) {
+      return [{ texto: `¿Cuál ${titulo(clave)}?`, botones: [...mismos.map(p => ({ id: p.id, titulo: p.nombre })), { id: 'nada', titulo: 'Ninguno' }] }];
+    }
+    return null;
+  }
+
+  private estadoDePersona(p: Cuenta): Salida[] {
+    const apertura = this.ctx.config.fecha_apertura ?? '2000-01-01 00:00:00';
+    const filas = deudasPorPersona(this.datos.movimientos, this.ctx.cuentas, this.datos.compromisos, apertura).filter(d => d.persona.id === p.id);
+    const partes = filas.map(d => `${d.saldo > 0 ? 'te debe' : 'le debes'} ${formatear(Math.abs(d.saldo), d.moneda)}`);
+    const n = p.nombre;
+    return [{
+      texto: `${n}: ${partes.length ? partes.join(' y ') : 'sin pendientes'}. ¿Qué quieres anotar?`,
+      botones: [
+        { id: `ia:=¿Cuánto le prestaste a ${n}? Escríbelo así: «le presté 50k a ${n}».`, titulo: 'Le presté' },
+        { id: `ia:=¿Cuánto fue el gasto compartido con ${n}? Escríbelo así: «almuerzo 40k con ${n}».`, titulo: 'Gasto compartido' },
+        { id: `ia:=¿Cuánto abonaste o te abonó ${n}? Escríbelo así: «pagué 20k a ${n}» o «${n} me pagó 20k».`, titulo: 'Abono' },
+      ],
+    }];
   }
 
   private async quitarRecurrente(texto: string): Promise<Salida[]> {

@@ -35,8 +35,10 @@ export function pagosProximos(datos: Datos, ahora: Date, dias = 30): PagoProyect
   const ctx = contextoDe(datos, ahora);
   const res: PagoProyectado[] = [];
   for (const r of leerRecurrentes(datos.config)) {
-    const q = interpretar(r.frase, ctx);
-    const cuentaId = q.clase === 'movimiento' && q.propuesta.cuentaId ? q.propuesta.cuentaId : 'efectivo';
+    // la cuenta guardada manda; si falta o ya no existe, se lee de la frase
+    const guardada = r.cuentaId && datos.cuentas.some(c => c.id === r.cuentaId) ? r.cuentaId : null;
+    const q = guardada ? null : interpretar(r.frase, ctx);
+    const cuentaId = guardada ?? (q && q.clase === 'movimiento' && q.propuesta.cuentaId ? q.propuesta.cuentaId : 'efectivo');
     // la misma regla del seguro: lo ya pagado este periodo no sale, y lo vencido sin pagar sale con la fecha de hoy
     for (const f of fechasQueFaltan(r, datos.movimientos, aLocal(ahora), hasta)) res.push({ fecha: f, concepto: r.concepto, monto: r.monto, cuentaId });
   }

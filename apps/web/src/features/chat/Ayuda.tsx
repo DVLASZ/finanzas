@@ -14,7 +14,7 @@ import { quitarEmojis } from '../../lib/carta.ts';
 import { entrar } from '../../lib/efectos.ts';
 import { Insignia, T, type Icono, type Visual } from '../../components/ui/iconos.tsx';
 import { ctx as contexto } from '../../state/store.ts';
-import { ayudaGuiada, type RespuestaDeAyuda } from '../../../../../packages/core/src/index.ts';
+import { ayudaDeTema, buscarAyuda, temasParecidos, type RespuestaDeAyuda } from '../../../../../packages/core/src/index.ts';
 
 /** El texto que devuelve el bot para «ayuda» (empieza siempre igual). */
 export const esAyuda = (t: string): boolean => t.startsWith('👋 Cuéntame');
@@ -106,8 +106,10 @@ export function Ayuda({ texto, alElegir }: { texto: string; alElegir: (ejemplo: 
   const temas = temasDe(texto, cuenta);
   const [abierto, setAbierto] = useState<string | null>(null);
   const [duda, setDuda] = useState('');
-  const [respuesta, setRespuesta] = useState<RespuestaDeAyuda | null | undefined>(undefined);
-  const preguntar = (e: Event) => { e.preventDefault(); if (ctx && duda.trim()) setRespuesta(ayudaGuiada(duda, ctx)); };
+  // undefined: aún no se pregunta; []: nada coincidió (se ofrecen temas parecidos); si no, hasta 3 temas con su explicación
+  const [respuestas, setRespuestas] = useState<RespuestaDeAyuda[] | undefined>(undefined);
+  const preguntar = (e: Event) => { e.preventDefault(); if (ctx && duda.trim()) setRespuestas(buscarAyuda(duda, ctx)); };
+  const verTema = (id: string) => { const r = ayudaDeTema(id, ctx ?? undefined); if (r) setRespuestas([r]); };
   const tema = temas.find(t => t.id === abierto);
   const cuerpo = useRef<HTMLDivElement>(null);
   const chips = useRef<HTMLDivElement>(null);
@@ -121,17 +123,31 @@ export function Ayuda({ texto, alElegir }: { texto: string; alElegir: (ejemplo: 
         <form class="ayuda-pregunta" id="ayuda-pregunta" onSubmit={preguntar}>
           <label class="etiqueta" for="ayuda-duda">Pregúntale cómo decirlo</label>
           <div class="ayuda-duda-fila">
-            <input id="ayuda-duda" type="text" value={duda} placeholder="Ej: cómo anoto que presté plata" autocomplete="off" onInput={e => { setDuda((e.target as HTMLInputElement).value); setRespuesta(undefined); }} />
+            <input id="ayuda-duda" type="text" value={duda} placeholder="Ej: cómo anoto que presté plata" autocomplete="off" onInput={e => { setDuda((e.target as HTMLInputElement).value); setRespuestas(undefined); }} />
             <button type="submit" class="chip" id="ayuda-preguntar">Preguntar</button>
           </div>
-          {respuesta && (
+          {respuestas && respuestas.length > 0 && (
             <div class="ayuda-respuesta" id="ayuda-respuesta" role="status">
-              <span class="ayuda-texto">{respuesta.explicacion}</span>
-              <button type="button" class="ejemplo" data-ejemplo={respuesta.ejemplo} onClick={() => alElegir(respuesta.ejemplo)}>{respuesta.ejemplo}<ArrowUpRight size={14} aria-hidden="true" /></button>
-              <button type="button" class="probar" id="ayuda-usar" onClick={() => alElegir(respuesta.ejemplo)}>Usar este ejemplo</button>
+              {respuestas.map((r, i) => (
+                <div key={r.id} class="ayuda-resp" data-tema={r.id}>
+                  {respuestas.length > 1 && <b class="ayuda-resp-tema">{r.tema}</b>}
+                  <span class="ayuda-texto">{r.explicacion}</span>
+                  <div class="ayuda-ejemplos">
+                    {r.ejemplos.map(e => <button key={e} type="button" class="ejemplo" data-ejemplo={e} onClick={() => alElegir(e)}>{e}<ArrowUpRight size={14} aria-hidden="true" /></button>)}
+                  </div>
+                  {i === 0 && <button type="button" class="probar" id="ayuda-usar" onClick={() => alElegir(r.ejemplos[0])}>Usar este ejemplo</button>}
+                </div>
+              ))}
             </div>
           )}
-          {respuesta === null && <p class="sub !m-0" id="ayuda-sin">No supe de qué hablas. Prueba con una palabra: préstamo, deuda, cajero, ingreso, meta, compartido.</p>}
+          {respuestas && respuestas.length === 0 && (
+            <div class="ayuda-sin-bloque">
+              <p class="sub !m-0" id="ayuda-sin">No supe de qué hablas. Prueba con una palabra: préstamo, deuda, cajero, ingreso, meta, compartido. O mira alguno de estos temas.</p>
+              <div class="ayuda-parecidos">
+                {temasParecidos(duda).map(t => <button key={t.id} type="button" class="chip ayuda-parecido" data-tema={t.id} onClick={() => verTema(t.id)}>{t.tema}</button>)}
+              </div>
+            </div>
+          )}
         </form>
         <div ref={chips} class="ayuda-temas" id="ayuda-temas">
           {temas.map((t, i) => (

@@ -34,7 +34,7 @@ const GRUPOS: Grupo[] = [
     { id: 'alcancias', nombre: 'Alcancías', detalle: 'Metas de ahorro con avance', Icono: PiggyBank, tema: 'rosa' },
     { id: 'pagosfijos', nombre: 'Pagos fijos', detalle: 'Arriendo, internet, cuotas', Icono: CalendarClock, tema: 'ambar' },
     { id: 'deudas', nombre: 'Deudas y préstamos', detalle: 'Quién te debe y a quién le debes', Icono: HandCoins, tema: 'ambar' },
-    { id: 'cuentas', nombre: 'Categorías y personas', detalle: 'Crear, renombrar y poner topes', Icono: Tags, tema: 'violeta' },
+    { id: 'cuentas', nombre: 'Categorías y personas', detalle: 'Categorías, topes y directorio de personas', Icono: Tags, tema: 'violeta' },
     { id: 'lista', nombre: 'Lista de compras', detalle: 'Lo que falta comprar', Icono: ShoppingBasket, tema: 'rosa' },
     { id: 'catalogo', nombre: 'Productos y precios', detalle: 'Lo que vendes y cuánto cuesta', Icono: Package, tema: 'cian', soloSiVende: true },
     { id: 'trabajadores', nombre: 'Pagos a trabajadores', detalle: 'Cuánto se pagó a cada uno', Icono: Users, tema: 'lima', soloSiTrabajadores: true },

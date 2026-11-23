@@ -26,6 +26,19 @@ import { type Contexto, type Moneda } from './tipos.ts';
 // Comandos
 // ---------------------------------------------------------------------------------------
 
+/** La fecha de fin de un pago fijo dicha como «21/12/2026» o «21 de diciembre de 2026»: lo hallado y «AAAA-MM-DD» (vacío si no hay; «mala» si no existe). */
+function fechaDeFin(t: string): { encontrado: string; iso: string } {
+  const m = t.match(/\b\d{1,2}\/\d{1,2}\/\d{4}\b/) ?? t.match(/\b\d{1,2} de [a-z]+(?: de| del)? \d{4}\b/);
+  if (!m) return { encontrado: '', iso: '' };
+  const num = m[0].match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const txt = m[0].match(/^(\d{1,2}) de ([a-z]+)(?: de| del)? (\d{4})$/);
+  const d = Number(num ? num[1] : txt?.[1]);
+  const mes = num ? Number(num[2]) : mesDeNombre(txt?.[2] ?? '');
+  const a = Number(num ? num[3] : txt?.[3]);
+  const existe = mes >= 1 && mes <= 12 && d >= 1 && d <= new Date(Date.UTC(a, mes, 0)).getUTCDate();
+  return { encontrado: m[0], iso: existe ? `${a}-${String(mes).padStart(2, '0')}-${String(d).padStart(2, '0')}` : 'mala' };
+}
+
 function detectarComando(t: string): { comando: Comando; arg?: string } | null {
   const simples: [RegExp, Comando][] = [
     [/^(saldo|saldos|cuanto tengo|cuanta plata tengo)$/, 'saldo'],
@@ -87,6 +100,26 @@ function detectarComando(t: string): { comando: Comando; arg?: string } | null {
   if (/^(recurrentes|gastos recurrentes|gastos fijos|pagos del mes)$/.test(t)) return { comando: 'recurrentes' };
   const quitarRec = t.match(/^(?:quitar|borrar|eliminar) recurrente (.+)$/);
   if (quitarRec) return { comando: 'recurrente_quitar', arg: quitarRec[1].trim() };
+  // Pagos fijos que ya existen: «pausar recurrente claude», «reanudar pago fijo claude», «fin recurrente claude 21/12/2026».
+  // El arg es «nombre» o, en «fin», «nombre|AAAA-MM-DD» (fecha vacía si no se dijo).
+  const FIJO = String.raw`(?:recurrente|pago fijo|gasto fijo|gasto recurrente|pago)`;
+  const pausarRec = t.match(new RegExp(String.raw`^(?:pausar|pausa|poner en pausa) ${FIJO} ([a-z ]+)$`));
+  if (pausarRec) return { comando: 'recurrente_pausar', arg: pausarRec[1].trim() };
+  const reanudarRec = t.match(new RegExp(String.raw`^(?:reanudar|reanuda|retomar|reactivar) ${FIJO} ([a-z ]+)$`));
+  if (reanudarRec) return { comando: 'recurrente_reanudar', arg: reanudarRec[1].trim() };
+  const finRec = t.match(new RegExp(String.raw`^(?:fin|terminar|termina|finalizar|cancelar|cancela) ${FIJO} (.+)$`));
+  if (finRec) {
+    const fecha = fechaDeFin(finRec[1]);
+    const nombre = (fecha.encontrado ? finRec[1].replace(fecha.encontrado, ' ') : finRec[1]).replace(/\s+(?:el|hasta el|hasta|para el|para|en)\s*$/, '').replace(/\s+/g, ' ').trim();
+    if (nombre && /^[a-z ]+$/.test(nombre)) return { comando: 'recurrente_fin', arg: `${nombre}|${fecha.iso}` };
+  }
+  // Personas sin monto: «agregar persona Sofia», «registrar a Sofia», «renombrar persona Sofia a Sofi».
+  // «agregar X» a secas es la lista de compras: aquí se exige la palabra persona o contacto.
+  const nuevaPersona = t.match(/^(?:agregar|agrega|anadir|anade|nueva|nuevo|crear|crea|registrar|registra|guardar|guarda|anotar|anota) (?:una |un |nueva |nuevo )?(?:persona|contacto) ([a-z]+(?: [a-z]+){0,2})$/)
+    ?? t.match(/^registrar a ([a-z]+(?: [a-z]+){0,2})$/);
+  if (nuevaPersona) return { comando: 'persona_agregar', arg: nuevaPersona[1] };
+  const renombrar = t.match(/^(?:renombrar|cambiar(?: el nombre de)?|cambia el nombre de) (?:la )?(?:persona|contacto) ([a-z]+(?: [a-z]+){0,2}) (?:a|por|como) ([a-z]+(?: [a-z]+){0,2})$/);
+  if (renombrar) return { comando: 'persona_renombrar', arg: `${renombrar[1]}|${renombrar[2]}` };
   // Existencias de los productos del catálogo: «existencias», «inventario galletas 200», «llegaron 50 galletas»
   if (/^(existencias|inventario|stock)$/.test(t)) return { comando: 'existencias' };
   const fijarStock = t.match(/^(?:inventario|stock|conteo)\s+(.+?)\s+(\d+)$/);

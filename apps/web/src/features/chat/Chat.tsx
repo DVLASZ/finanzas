@@ -302,7 +302,7 @@ export function Chat() {
 
   const avisos = datos && ctx ? calcularAlertas(datos, ctx.ahora).filter(a => a.acciones?.length && (a.id === 'cierre-dia' || a.id === 'saldo-negativo')) : [];
   const rapidos = datos && ctx ? atajosRapidos(datos, ctx.ahora) : [];
-  const propios = atajosUsuario.value;
+  const propios = atajosUsuario.value.filter(a => !a.oculto);
   const oculta = barraOculta.value;
   const fijos: { orden: string; etiqueta: string; Icono: Icono; tema: keyof typeof T }[] = [{ orden: 'ayuda', etiqueta: 'Ayuda', Icono: HelpCircle, tema: 'coral' }];
   if (ctx && vendeProductos(ctx)) fijos.push({ orden: 'ventas', etiqueta: 'Ventas', Icono: Store, tema: 'cian' });

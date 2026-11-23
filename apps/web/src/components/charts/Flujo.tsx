@@ -5,9 +5,11 @@
  */
 import { Banknote, Smartphone } from 'lucide-preact';
 import { useState } from 'preact/hooks';
-import type { ConceptoTop, MedioDePago, PuntoDeFlujo } from '../../../../../packages/core/src/index.ts';
+import { describirDia, type ConceptoTop, type Datos, type MedioDePago, type PuntoDeFlujo } from '../../../../../packages/core/src/index.ts';
 import { formatear } from '../../lib/formatear.ts';
+import { movimientosDelDia } from '../../lib/graficasResumen.ts';
 import { verMonto } from '../../state/privacidad.ts';
+import { abrirInfo } from '../ui/HojaInfo.tsx';
 import { Insignia, visualDeNombre } from '../ui/iconos.tsx';
 
 const W = 300, H = 112, PAD = 8;
@@ -23,7 +25,7 @@ function curva(pts: [number, number][]): string {
   return d;
 }
 
-export function FlujoMes({ puntos }: { puntos: PuntoDeFlujo[] }) {
+export function FlujoMes({ puntos, datos }: { puntos: PuntoDeFlujo[]; datos?: Datos }) {
   const [sel, setSel] = useState<number | null>(null);
   if (puntos.length < 2) return null;
   const valores = puntos.map(p => p.acumulado);
@@ -43,10 +45,23 @@ export function FlujoMes({ puntos }: { puntos: PuntoDeFlujo[] }) {
     setSel(Math.max(0, Math.min(puntos.length - 1, Math.round(f * (puntos.length - 1)))));
   };
   const positivo = actual.acumulado >= 0;
+  // al soltar sobre un punto se abre la hoja de ese día
+  const alSoltar = (e: PointerEvent) => {
+    if (!datos) return;
+    const r = (e.currentTarget as SVGElement).getBoundingClientRect();
+    const k = Math.max(0, Math.min(puntos.length - 1, Math.round(((e.clientX - r.left) / r.width) * (puntos.length - 1))));
+    const p = puntos[k];
+    const movs = movimientosDelDia(datos, p.fecha);
+    abrirInfo({
+      id: 'info-flujo-dia', titulo: describirDia(p.fecha),
+      sub: `${movs.length} ${movs.length === 1 ? 'movimiento' : 'movimientos'} · balance del día ${verMonto(formatear(p.neto))}`,
+      movimientos: movs.length ? movs : undefined,
+    });
+  };
   return (
     <div id="flujo-grafica">
       <svg viewBox={`0 0 ${W} ${H}`} class="flujo-svg" role="img" aria-label={`Flujo del mes: balance acumulado ${verMonto(formatear(actual.acumulado))}`}
-        onPointerMove={alMover} onPointerDown={alMover} onPointerLeave={() => setSel(null)}>
+        onPointerMove={alMover} onPointerDown={alMover} onPointerUp={alSoltar} onPointerLeave={() => setSel(null)}>
         <defs>
           <linearGradient id="flujo-degradado" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="var(--acc)" stop-opacity=".45" />

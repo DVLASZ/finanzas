@@ -57,7 +57,7 @@ export function ListaMovimientos({ movs, id = 'info-movs', vacio = 'No hay movim
             {movs.slice(0, LIMITE).map((m, i) => {
               const v = montoVisible(m, datos.cuentas);
               return (
-                <li key={m.id} class="fila fila-entra" style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} data-id={m.id} onClick={() => abrirDetalle(m.id)}>
+                <li key={m.id} class={`fila fila-entra ${m.estado === 'anulado' ? 'anulado' : ''}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} data-id={m.id} onClick={() => abrirDetalle(m.id)}>
                   <div class="flex min-w-0 items-center gap-3">
                     <Insignia v={visualDeMovimiento(m, datos.cuentas)} tam={38} />
                     <div class="min-w-0"><div class="titulo">{m.descripcion}</div><div class="sub">{describirFecha(m.ocurridoEn, ctx.ahora, m.sinHora)}</div></div>
