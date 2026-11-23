@@ -3,7 +3,7 @@
  * la foto del recibo y el botón de anular. Los filtros se recuerdan entre visitas.
  */
 import { signal } from '@preact/signals';
-import { Ban, BarChart3, Copy, Download, Pencil, ScanLine, Share2, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, Settings2, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
+import { Ban, BarChart3, Copy, Download, Pencil, ScanLine, Share2, Camera, Image as IconoFoto, CalendarDays, Tags, ChevronLeft, ChevronRight, ImagePlus, Scale, Search, SearchX, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, X } from 'lucide-preact';
 import { createPortal } from 'preact/compat';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
@@ -32,7 +32,6 @@ import { fechaAtras } from '../../lib/periodos.ts';
 import { BarrasPeriodo } from '../../components/charts/graficos.tsx';
 import { Esqueleto, Insignia, Vacio, visualDeCuenta, visualDeMovimiento, visualDeNombre, visualDePersona } from '../../components/ui/iconos.tsx';
 import { Selector } from '../../components/ui/Selector.tsx';
-import { abrirInfo } from '../../components/ui/HojaInfo.tsx';
 import { avisar, confirmar } from '../../components/ui/Dialogo.tsx';
 import { MontoAnimado } from '../../components/ui/piezas.tsx';
 import { EditarMovimiento, editandoId } from './EditarMovimiento.tsx';
@@ -55,7 +54,6 @@ function leerFiltros(): Filtros {
 }
 const filtros = signal<Filtros>(leerFiltros());
 const busqueda = signal('');
-const verAnulados = signal(false);
 const limite = signal(60);
 const modoGrafico = signal<'tiempo' | 'categoria'>('tiempo');
 /** Los movimientos que tienen foto de recibo guardada en este aparato. */
@@ -63,17 +61,6 @@ const conFoto = signal<Set<string>>(new Set());
 async function cargarFotos(): Promise<void> {
   conFoto.value = new Set((await claves('recibo:')).map(k => k.slice('recibo:'.length)));
 }
-
-/** El contenido de la ventana «Opciones»: ajustes secundarios de la lista que no tienen que ocupar la fila del buscador. */
-function OpcionesMov() {
-  return (
-    <div class="campo-edicion">
-      <label class="check check-chip opcion-anulados"><input type="checkbox" id="anulados" checked={verAnulados.value} onChange={e => { verAnulados.value = (e.target as HTMLInputElement).checked; limite.value = 60; }} /> Mostrar anulados</label>
-      <p class="sub !mt-2">Los anulados no cuentan en los saldos ni en los totales; solo se ven en la lista, tachados.</p>
-    </div>
-  );
-}
-const abrirOpciones = () => abrirInfo({ id: 'opciones-mov', titulo: 'Opciones de la lista', cuerpo: <OpcionesMov /> });
 
 function poner(cambio: Partial<Filtros>): void {
   filtros.value = { ...filtros.value, ...cambio };
@@ -265,9 +252,8 @@ function ChipsEtiqueta({ valor, alTocar }: { valor?: string | null; alTocar: (e:
   return <>{tokensDeEtiqueta(valor).map(e => <button type="button" key={e} class="etiq mr-1 cursor-pointer border-0" data-etiqueta={e} aria-label={`Filtrar por la etiqueta ${e}`} onClick={ev => { ev.stopPropagation(); alTocar(e); }}>#{e}</button>)}</>;
 }
 
-export function verMovimientos(f: { anulados?: boolean; categoria?: string; etiqueta?: string; cuenta?: string; persona?: string; texto?: string; periodo?: Periodo } = {}): void {
+export function verMovimientos(f: { categoria?: string; etiqueta?: string; cuenta?: string; persona?: string; texto?: string; periodo?: Periodo } = {}): void {
   busqueda.value = f.texto ?? '';
-  verAnulados.value = Boolean(f.anulados);
   poner({ periodo: f.periodo ?? 'mes', atras: 0, tipo: 'todos', categoria: f.categoria ?? '', cuenta: f.cuenta ?? '', persona: f.persona ?? '', etiqueta: f.etiqueta ?? '', desde: '', hasta: '' });
   irA('movimientos');
 }
@@ -298,10 +284,10 @@ export function Movimientos() {
 
   const lista = filtrarMovimientos(datos, {
     texto: busqueda.value, etiqueta: f.etiqueta, tipos: DE_TIPO[f.tipo], categoria: f.categoria, cuenta: f.cuenta, persona: f.persona,
-    desde: r?.desde.slice(0, 10), hasta: r?.hasta.slice(0, 10), anulados: verAnulados.value,
+    desde: r?.desde.slice(0, 10), hasta: r?.hasta.slice(0, 10),
   });
   const etiquetas = etiquetasUsadas(datos.movimientos);
-  const activas = tokensDeEtiqueta(f.etiqueta);
+  const etiquetaElegida = tokensDeEtiqueta(f.etiqueta)[0] ?? '';
 
   // totales de lo que se está viendo (sin anulados) y en qué categorías se fue
   let gastos = 0, ingresos = 0;
@@ -320,6 +306,19 @@ export function Movimientos() {
       }
       else if (c.tipo === 'fuente') ingresos -= a.monto;
     }
+  }
+  // total de cada día sobre la lista completa filtrada, para que no cambie al pulsar «Ver más»
+  const totalDia = new Map<string, { gasto: number; ingreso: number }>();
+  for (const m of lista) {
+    if (m.estado !== 'ok') continue;
+    const dia = m.ocurridoEn.slice(0, 10);
+    const t = totalDia.get(dia) ?? { gasto: 0, ingreso: 0 };
+    for (const a of m.asientos) {
+      const c = datos.cuentas.find(x => x.id === a.cuentaId);
+      if (a.moneda !== 'COP' || !c) continue;
+      if (c.tipo === 'categoria') t.gasto += a.monto; else if (c.tipo === 'fuente') t.ingreso -= a.monto;
+    }
+    totalDia.set(dia, t);
   }
   const desglose = [...porCat.entries()].filter(([, v]) => v !== 0).sort((a, b) => b[1] - a[1]);
 
@@ -387,22 +386,18 @@ export function Movimientos() {
         {selector('f-categoria', 'Categoría', 'Todas las categorías', 'categoria', f.categoria, 'categoria')}
         {selector('f-cuenta', 'Cuenta', 'Cuentas', 'dinero', f.cuenta, 'cuenta')}
         {selector('f-persona', 'Persona', 'Personas', 'persona', f.persona, 'persona')}
+        {etiquetas.length > 0 && (
+          <Selector id="f-etiqueta" etiqueta="Etiqueta" valor={etiquetaElegida} alCambiar={v => { limite.value = 60; poner({ etiqueta: v }); }}
+            opciones={[{ valor: '', etiqueta: 'Etiquetas' }, ...etiquetas.map(e => ({ valor: e.etiqueta, etiqueta: `#${e.etiqueta} (${e.n})` }))]} />
+        )}
       </div>
-      <button class="chip chip-opciones" id="opciones-mov" aria-label="Opciones de la lista" onClick={abrirOpciones}><Settings2 size={18} /></button>
       </div>
-
-      {etiquetas.length > 0 && (
-        <div class="carrusel no-scrollbar" role="group" aria-label="Etiquetas">
-          {etiquetas.map(e => <button key={e.etiqueta} class="chip" data-etiqueta={e.etiqueta} aria-pressed={activas.includes(e.etiqueta)} onClick={() => poner({ etiqueta: (activas.includes(e.etiqueta) ? activas.filter(x => x !== e.etiqueta) : [...activas, e.etiqueta]).join(' ') })}>#{e.etiqueta} <span class="tabular-nums opacity-70">{e.n}</span></button>)}
-        </div>
-      )}
 
       <div class="barra">
         <div class="relative min-w-[12rem] flex-1">
           <Search size={17} class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-tx2" />
           <input id="buscar" type="search" class="!pl-10" placeholder="Buscar" aria-label="Buscar" value={busqueda.value} onInput={e => { busqueda.value = (e.target as HTMLInputElement).value; limite.value = 60; }} />
         </div>
-        {verAnulados.value && <button class="chip" id="quitar-anulados" aria-pressed="true" onClick={() => { verAnulados.value = false; limite.value = 60; }}>Anulados visibles<X size={14} /></button>}
         {hayFiltros && <button class="chip" id="limpiar" onClick={() => { busqueda.value = ''; poner({ tipo: 'todos', categoria: '', cuenta: '', persona: '', etiqueta: '' }); }}><SlidersHorizontal size={15} />Quitar filtros</button>}
       </div>
 
@@ -417,7 +412,7 @@ export function Movimientos() {
           <span class="flujo-out" style={{ flexGrow: gastos, flexBasis: 0 }} />
         </div>
       )}
-      <p id="cuenta" class="sub !my-0 px-1">{lista.length} movimientos · Gastos {verMonto(formatear(gastos))} · Ingresos {verMonto(formatear(ingresos))}</p>
+      <p id="cuenta" class="sub !my-0 px-1">{lista.length} movimientos</p>
       {lista.length > 0 && (
         <div class="carrusel no-scrollbar" role="group" aria-label="Exportar lo que se ve">
           <button class="chip" id="exportar-csv" onClick={() => descargar(`movimientos-${aLocal(ctx.ahora).slice(0, 10)}.csv`, movimientosACsv(lista, datos.cuentas), 'text/csv')}><Download size={15} />Exportar CSV</button>
@@ -451,7 +446,13 @@ export function Movimientos() {
       <ul class="lista" id="lista">
         {grupos.length === 0 && <li><Vacio Icono={SearchX} titulo="No hay movimientos" detalle="Prueba con otro periodo o quita los filtros." /></li>}
         {grupos.map(g => [
-          <li key={`d${g.dia}`} class="grupo" aria-hidden="true">{describirDia(g.dia)}</li>,
+          <li key={`d${g.dia}`} class="grupo grupo-dia">
+            <span class="grupo-dia-nombre">{describirDia(g.dia)}</span>
+            <span class="grupo-dia-total">
+              {(totalDia.get(g.dia)?.gasto ?? 0) !== 0 && <span class="text-neg tabular-nums">-{verMonto(formatear(Math.abs(totalDia.get(g.dia)!.gasto)))}</span>}
+              {(totalDia.get(g.dia)?.ingreso ?? 0) !== 0 && <span class="text-pos tabular-nums">+{verMonto(formatear(Math.abs(totalDia.get(g.dia)!.ingreso)))}</span>}
+            </span>
+          </li>,
           ...g.items.map((m, idx) => {
             const v = montoVisible(m, datos.cuentas);
             const cs = m.asientos.map(a => datos.cuentas.find(c => c.id === a.cuentaId)).filter((c): c is Cuenta => Boolean(c));

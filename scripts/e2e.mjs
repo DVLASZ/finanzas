@@ -163,7 +163,7 @@ try {
   await prueba('resumen: categorías, informe y comparación', async () => {
     await irA('Resumen'); const t = await pag.evaluate(() => document.body.innerText);
     // los títulos de sección van en mayúsculas por estilo: se compara sin distinguir
-    contiene(t.toLowerCase(), 'por categoría', 'resumen'); contiene(t, 'Informe para imprimir', 'botón del informe');
+    contiene(t.toLowerCase(), 'dónde se fue', 'resumen'); contiene(t, 'Informe para imprimir', 'botón del informe');
   });
   await prueba('Más: categorías y personas, primeros pasos, buzón y conciliar abren', async () => {
     await abrirDeMas('Categorías y personas'); contiene(await pag.evaluate(() => document.body.innerText), 'Restaurante', 'subcategoría creada en el chat');
@@ -216,13 +216,15 @@ try {
   await prueba('Movimientos: etiquetas, rango de fechas y exportar CSV o JSON', async () => {
     await irA('Chat'); await escribir('pizza 12000 #cumple'); await pulsar('Confirmar');
     await irA('Movimientos'); await espera(500);
-    igual(await pag.evaluate(() => [...document.querySelectorAll('[aria-label="Etiquetas"] button')].map(b => b.innerText.trim().split(/\s/)[0]).join(',')), '#cumple', 'chip de la etiqueta');
+    await pag.evaluate(() => document.querySelector('#f-etiqueta').click()); await espera(500);
+    igual(await pag.evaluate(() => [...document.querySelectorAll('[role=option]')].map(b => b.innerText.trim().split(/\s/)[0]).join(',')), 'Etiquetas,#cumple', 'el desplegable lista #cumple');
     const filas = () => pag.evaluate(() => document.querySelectorAll('#lista .fila').length);
     const todas = await filas();
-    await pag.evaluate(() => document.querySelector('[aria-label="Etiquetas"] button').click()); await espera(400);
+    await pag.evaluate(() => document.querySelector('[role=option][data-valor="cumple"]')?.click()); await espera(400);
     igual(await filas(), 1, 'solo lo de la etiqueta');
     igual(await pag.evaluate(() => Boolean(document.querySelector('#exportar-csv') && document.querySelector('#exportar-json'))), true, 'botones de exportar');
-    await pag.evaluate(() => document.querySelector('[aria-label="Etiquetas"] button').click()); await espera(400);
+    await pag.evaluate(() => document.querySelector('#f-etiqueta').click()); await espera(500);
+    await pag.evaluate(() => document.querySelector('[role=option][data-valor=""]')?.click()); await espera(400);
     igual(await filas(), todas, 'quitar la etiqueta devuelve todo');
     await pag.evaluate(() => document.querySelector('[data-periodo="rango"]').click()); await espera(400);
     igual(await pag.evaluate(() => document.querySelectorAll('#rango input[type=date]').length), 2, 'dos fechas');
@@ -528,11 +530,13 @@ try {
     igual(await pag.evaluate(() => Boolean(document.querySelector('#ojo'))), true, 'el ojo está en Saldos');
     await irA('Resumen'); await espera(500);
     igual(await pag.evaluate(() => Boolean(document.querySelector('#ojo'))), true, 'el ojo está en Resumen');
-    await abrirDeMas('Ajustes'); await espera(700);
+    await ocultarMontos(pag); await abrirDeMas('Ajustes'); await espera(700);
     const r = await pag.evaluate(() => { const e = document.querySelector('#estado'); return { texto: e?.innerText.trim(), sw: Boolean(document.querySelector('#ojo-ajustes')), modo: [...document.querySelectorAll('.opciones button')].some(b => b.innerText.trim() === 'Oscuro') }; });
     igual(Boolean(r.texto), true, 'el estado de sincronización está en Ajustes');
     igual(r.sw, true, 'el interruptor de privacidad está en Ajustes');
     igual(r.modo, true, 'el modo claro y oscuro está junto a los temas');
+    const letra = (await pag.evaluate(() => document.body.innerText)).toLowerCase();
+    for (const x of ['compacta 85 %', 'normal 100 %', 'grande 115 %', 'extra grande 130 %']) contiene(letra.slice(Math.max(0, letra.indexOf('tamaño de letra'))), x, 'la escala de letra no se oculta con la privacidad: ' + x);
     await irA('Chat');
   });
   await prueba('botón flotante de privacidad: fijo sobre la barra, en tres pantallas, y al minimizar todo vuelve a ocultarse', async () => {
@@ -672,11 +676,13 @@ try {
     igual(await hay('#info'), false, 'la ventana se cierra');
     // las categorías, los medios de pago y las comparativas
     for (const [sel, id] of [['[data-categoria]', 'categoria'], ['#anillo-medios [data-medio="efectivo"]', 'medio'], ['#comp-gastos', 'comparativa-gastos']]) {
+      if (id === 'categoria') { await pag.evaluate(() => { if (!document.querySelector('[data-categoria]')) document.querySelector('svg[aria-label="Gastos por categoría"]')?.parentElement?.querySelector('ul li button')?.click(); }); await espera(300); }
       await clic(sel);
       igual(await pag.evaluate(i => document.querySelector('#info')?.dataset.info, id), id, 'abre ' + id);
       await clic('#info-cerrar'); await espera(400);
     }
     // el atajo a Movimientos filtra de verdad
+    await pag.evaluate(() => { if (!document.querySelector('[data-categoria]')) document.querySelector('svg[aria-label="Gastos por categoría"]')?.parentElement?.querySelector('ul li button')?.click(); }); await espera(300);
     await clic('[data-categoria]'); await clic('#info-ver-movimientos'); await espera(700);
     igual(await pag.evaluate(() => document.querySelector('nav [aria-current=page]')?.dataset.p), 'movimientos', 'va a Movimientos');
     igual(await hay('#info'), false, 'y la ventana ya no está');
@@ -730,20 +736,13 @@ try {
     contiene(await pag.evaluate(() => document.body.innerText), '20.000', 'con el monto del abono');
   });
 
-  await prueba('movimientos: Mostrar anulados vive en la ventana de opciones y el chip lo apaga rápido', async () => {
+  await prueba('movimientos: ya no trae Mostrar anulados ni el engranaje de opciones', async () => {
     const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
-    const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
     await irA('Movimientos'); await espera(700);
-    igual(await hay('#opciones-mov'), true, 'hay botón de opciones');
-    igual(await pag.evaluate(() => Boolean(document.querySelector('#buscar')?.closest('.barra')?.querySelector('#anulados'))), false, 'la fila del buscador ya no trae la caja');
-    await clic('#opciones-mov');
-    igual(await hay('#info #anulados'), true, 'la ventana trae el interruptor');
-    await clic('#anulados');
-    igual(await pag.evaluate(() => document.querySelector('#anulados').checked), true, 'se enciende');
-    await clic('#info-cerrar'); await espera(400);
-    igual(await hay('#quitar-anulados'), true, 'queda el chip Anulados visibles');
-    await clic('#quitar-anulados');
-    igual(await hay('#quitar-anulados'), false, 'el chip lo apaga');
+    igual(await hay('#opciones-mov'), false, 'sin botón de opciones');
+    igual(await hay('#anulados'), false, 'sin interruptor de anulados');
+    igual(await hay('#f-etiqueta'), true, 'las etiquetas son un desplegable');
+    igual(await pag.evaluate(() => document.querySelectorAll('#lista li.grupo-dia').length > 0), true, 'cada día lleva su encabezado');
   });
 
   await prueba('ventanas flotantes: las tarjetas de Resumen y la comparativa por categoría abren su desglose', async () => {
@@ -787,7 +786,9 @@ try {
     const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
     const poner = async (s, v) => { await pag.evaluate((x, y) => { const e = document.querySelector(x); e.value = y; e.dispatchEvent(new Event('input', { bubbles: true })); }, s, v); await espera(300); };
     await irA('Resumen'); await espera(700);
-    igual(await hay('#comparador-fechas'), true, 'está el comparador');
+    igual(await hay('#comparador-fechas'), false, 'el comparador ya no está fijo en la página');
+    await clic('#abrir-comparador');
+    igual(await hay('#info #comparador-fechas'), true, 'se abre en una ventana flotante');
     igual(await pag.evaluate(() => document.querySelectorAll('#comparador-fechas input[type=date]').length), 4, 'cuatro fechas: A y B');
     igual(await hay('#comparador-resultado'), true, 'con los rangos de ejemplo ya compara');
     // un rango al revés avisa y no calcula
@@ -816,7 +817,9 @@ try {
     await pag.evaluate(() => { window.__imprimio = 0; window.print = () => { window.__imprimio++; }; });
     if (await pag.evaluate(() => document.documentElement.dataset.privado) !== '1') { await clic('#ojo'); }
     igual(await hay('#reporte-pdf'), true, 'el botón del reporte está en Resumen');
-    igual(await hay('#reporte-pdf-comparador'), true, 'y el del comparador');
+    await clic('#abrir-comparador');
+    igual(await hay('#reporte-pdf-comparador'), true, 'y el del comparador, dentro de su ventana');
+    await clic('#info-cerrar'); await espera(400);
     await clic('#reporte-pdf');
     igual(await hay('#dialogo'), true, 'sale el diálogo de confirmación');
     contiene(await pag.evaluate(() => document.querySelector('#dialogo').innerText), 'El reporte muestra las cifras', 'dice que muestra las cifras');

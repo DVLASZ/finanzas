@@ -21,7 +21,7 @@ export function LiquidezProxima() {
               <b>{c.nombre}</b>
               <span class={`tabular-nums ${c.corta ? 'text-neg' : 'text-pos'}`}>{c.corta ? 'Se queda corta' : 'Alcanza'}</span>
             </div>
-            <div class="sub">Hoy {formatear(c.saldo)} · pagos fijos {formatear(c.saldo - c.minimo)}{c.corta ? ` · faltan ${formatear(c.corta.faltan)} el ${Number(c.corta.fecha.slice(8))}/${Number(c.corta.fecha.slice(5, 7))} (${c.corta.concepto})` : ` · te quedarían ${formatear(c.minimo)}`}</div>
+            <div class="sub">Hoy {formatear(c.saldo)} · pagos fijos {formatear(c.saldo - c.minimo)}{c.pagos.length === 1 ? ` (${c.pagos[0].concepto} el ${Number(c.pagos[0].fecha.slice(8))}/${Number(c.pagos[0].fecha.slice(5, 7))})` : ''}{c.corta ? ` · faltan ${formatear(c.corta.faltan)} el ${Number(c.corta.fecha.slice(8))}/${Number(c.corta.fecha.slice(5, 7))} (${c.corta.concepto})` : ` · te quedarían ${formatear(c.minimo)}`}</div>
           </li>
         ))}
       </ul>

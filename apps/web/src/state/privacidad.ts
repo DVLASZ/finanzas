@@ -40,7 +40,8 @@ export const verTexto = (texto: string): string => (montosOcultos.value ? texto.
 const DINERO = /[-+]?(?:US)?\$\s?\d[\d.,]*|\d[\d.,]*\s?USD\b|[-+]?\d+(?:[.,]\d+)?\s?%/g;
 /** Lo que se escribió tú mismo en una burbuja («almuerzo 12000», «pasaje 7k») también es una cifra. */
 const ESCRITO = /\b\d{4,}\b|\b\d{1,3}(?:\.\d{3})+\b|\b\d+\s?(?:k|mil|lucas?)\b/gi;
-const FUERA = '#dialogo, #editar, #duplicar, #reporte-impresion, script, style, textarea, input';
+// [data-sin-mascara]: controles de la interfaz (escala de letra, contadores) que traen un número pero no son plata
+const FUERA = '#dialogo, #editar, #duplicar, #reporte-impresion, [data-sin-mascara], script, style, textarea, input';
 
 const guardados = new Map<Text, { real: string; mascara: string }>();
 

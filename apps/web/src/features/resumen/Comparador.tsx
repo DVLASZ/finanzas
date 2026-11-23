@@ -6,6 +6,7 @@ import { FileText } from 'lucide-preact';
 import { useState } from 'preact/hooks';
 import { aLocal, type Datos } from '../../../../../packages/core/src/index.ts';
 import { Insignia, visualDeNombre } from '../../components/ui/iconos.tsx';
+import { abrirInfo } from '../../components/ui/HojaInfo.tsx';
 import { aDesdeHasta, compararRangos, etiquetaRango, validarRango, variacionPct, type Rango } from '../../lib/comparador.ts';
 import { formatear } from '../../lib/formatear.ts';
 import { tocable } from '../../lib/tocable.ts';
@@ -30,7 +31,12 @@ function Campo({ rotulo, valor, alCambiar, id }: { rotulo: string; valor: string
   return <label class="cmp-campo">{rotulo}<input type="date" id={id} value={valor} onInput={e => alCambiar((e.target as HTMLInputElement).value)} /></label>;
 }
 
-export function ComparadorFechas({ datos, ahora }: { datos: Datos; ahora: Date }) {
+/** Abre el comparador en la ventana flotante. El estado de los rangos se pierde al cerrarla, y así debe ser. */
+export function abrirComparador(datos: Datos, ahora: Date): void {
+  abrirInfo({ id: 'comparador', titulo: 'Comparar dos fechas', cuerpo: <CuerpoComparador datos={datos} ahora={ahora} /> });
+}
+
+function CuerpoComparador({ datos, ahora }: { datos: Datos; ahora: Date }) {
   const hoy = aLocal(ahora).slice(0, 10);
   const [a, setA] = useState<Rango>(() => mesAntes(hoy));
   const [b, setB] = useState<Rango>(() => ({ inicio: `${hoy.slice(0, 7)}-01`, fin: hoy }));
@@ -51,8 +57,7 @@ export function ComparadorFechas({ datos, ahora }: { datos: Datos; ahora: Date }
   };
 
   return (
-    <section class="tarjeta" id="comparador-fechas">
-      <h3 class="!mt-0">Comparar dos rangos de fechas</h3>
+    <div id="comparador-fechas">
       <p class="sub !mt-0 mb-2">Elige dos rangos y mira cuánto cambió el rango B respecto del A. Toca una categoría para ver los movimientos de los dos.</p>
       <div class="cmp-rangos">
         <fieldset class="cmp-rango" data-rango="a"><legend>Rango A</legend>
@@ -100,7 +105,7 @@ export function ComparadorFechas({ datos, ahora }: { datos: Datos; ahora: Date }
       <div class="acciones">
         <button class="secundario" id="reporte-pdf-comparador" disabled={!cmp} onClick={reporte}><FileText size={18} />Reporte PDF</button>
       </div>
-    </section>
+    </div>
   );
 }
 
