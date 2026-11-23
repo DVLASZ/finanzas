@@ -9,6 +9,8 @@ apps/worker/.wrangler/
 .env.*
 .dev.vars
 apps/worker/.dev.vars
+# tu configuración propia del Worker (con el id de tu base): la guía manda copiar wrangler.toml a este archivo
+apps/worker/wrangler.local.toml
 
 # Instalaciones: cada una lleva sus datos propios (personas, precios), tokens y PIN
 instalaciones/
