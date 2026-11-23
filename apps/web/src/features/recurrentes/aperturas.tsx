@@ -5,7 +5,7 @@
 import { CalendarX, List, Pause, Pencil, Play, Send, Trash2 } from 'lucide-preact';
 import { useState } from 'preact/hooks';
 import {
-  cambiarFijo, describirDia, describirFrecuencia, estadoDeFijo, estaPendiente, formatear, frecuenciaDe, hallarMontos, nombraAlFijo, ocurrencias, quitarFijo, rutaDe,
+  cambiarFijo, fraseConMonto, describirDia, describirFrecuencia, estadoDeFijo, estaPendiente, formatear, frecuenciaDe, hallarMontos, nombraAlFijo, ocurrencias, quitarFijo, rutaDe,
   leerRecurrentes, leerSubcategorias, yaRegistrado, type Datos, type Frecuencia, type Recurrente,
 } from '../../../../../packages/core/src/index.ts';
 import { confirmar } from '../../components/ui/Dialogo.tsx';
@@ -64,7 +64,8 @@ function FormEditar({ r }: { r: Recurrente }) {
     const tope = frecuencia === 'quincenal' ? 13 : frecuencia === 'semanal' ? 7 : 28;
     if (!(m > 0)) return setError('El monto tiene que ser mayor que cero.');
     if (!(d >= 1 && d <= tope)) return setError(`El día va de 1 a ${tope}.`);
-    const frase = /\d[\d.,]*\s*$/.test(r.frase) ? r.frase.replace(/\d[\d.,]*\s*$/, String(m)) : `${r.frase} ${m}`;
+    // la frase solo se toca si cambia el monto, y se cambia el monto que ya trae (no se agrega otro)
+    const frase = m === r.monto ? r.frase : fraseConMonto(r, m);
     const cambios: Partial<Recurrente> = {
       monto: m, frase, frecuencia, dia: d, mes: frecuencia === 'anual' ? Number(mes) : undefined,
       cuentaId: cuentaId || undefined, categoriaId: categoriaId || undefined, fin: fin || undefined,
