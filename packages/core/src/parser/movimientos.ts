@@ -96,8 +96,8 @@ export function gasto(b: Base, ctx: Contexto): Resultado {
   }
   if (principales.length === 0 && !(atajo && atajo.monto)) {
     return error(libresAtajo.length
-      ? `Me falta el monto de «${conOriginales(libresAtajo, b)}». Escríbelo completo, por ejemplo: «${conOriginales(libresAtajo, b)} 5000».`
-      : 'Me falta el monto y en qué fue. Escríbelo completo, por ejemplo: «mecato 5000».');
+      ? `¡Casi! Me falta el monto de «${conOriginales(libresAtajo, b)}». ¿Cuánto fue? Escríbelo completo, por ejemplo: «${conOriginales(libresAtajo, b)} 5000».`
+      : '¡Casi! Me falta el monto y en qué fue. Escríbelo completo, por ejemplo: «mecato 5000».');
   }
 
   const cuentaId = cuentas[0]?.id ?? atajo?.cuentaId ?? reglaCuenta ?? 'efectivo';

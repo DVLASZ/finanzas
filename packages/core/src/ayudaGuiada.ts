@@ -48,7 +48,7 @@ export const TEMAS_AYUDA: TemaDeAyuda[] = [
   { id: 'pausar', tema: 'Pausar o cancelar un pago fijo', palabras: ['paus', 'cance', 'termi', 'fin', 'reanu', 'suscr', 'fijo', 'arrie', 'inter', 'netfl'],
     explicacion: 'Pausa un pago fijo para que deje de avisar, reanúdalo cuando vuelva, ponle fecha de fin o quítalo del todo. Lo ya pagado no se toca.',
     ejemplos: ['pausar recurrente claude', 'reanudar recurrente claude', 'fin recurrente claude 21/12/2026', 'quitar recurrente claude'] },
-  { id: 'personas', tema: 'Personas', palabras: ['perso', 'nombr', 'conta', 'regis', 'borr', 'elimi', 'renom', 'agreg', 'nueva'], frases: ['una persona', 'nueva persona', 'agregar persona', 'a una persona'],
+  { id: 'personas', tema: 'Personas', palabras: ['perso', 'nombr', 'conta', 'renom'], frases: ['una persona', 'nueva persona', 'agregar persona', 'a una persona', 'registrar a', 'borrar una persona', 'borro una persona', 'elimino una persona', 'eliminar una persona', 'quitar una persona', 'quito una persona'],
     explicacion: 'Una persona es alguien a quien le prestas, le debes o con quien compartes. Agrégala con su nombre, cámbiale el nombre cuando quieras, y si escribes solo su nombre ves cómo van las cuentas con ella.',
     ejemplos: ['agregar persona Sofia', 'nueva persona Laura', 'registrar a Sofia', 'renombrar persona Sofia a Sofi', 'Sofia'] },
   { id: 'etiquetas', tema: 'Etiquetas y subcategorías', palabras: ['#', 'hasht', 'etiqu', 'subca', 'agrup'], frases: ['tag'],
@@ -61,7 +61,7 @@ export const TEMAS_AYUDA: TemaDeAyuda[] = [
     explicacion: 'Un tope es lo máximo que quieres gastar en una categoría. Te aviso cuando te acercas. Para quitarlo, dilo igual.',
     ejemplos: ['tope mecato 100000', 'quitar tope mecato'] },
   { id: 'corregir', tema: 'Corregir o eliminar', palabras: ['deshac', 'equivo', 'corre', 'anula', 'borr', 'confu', 'edit', 'cambi', 'categ', 'elimi', 'anul'],
-    frases: ['me equivoque', 'cambiar el monto', 'cambiar la categoria', 'cambio la categoria', 'me confundi'],
+    frases: ['me equivoque', 'cambiar el monto', 'cambiar la categoria', 'cambio la categoria', 'me confundi', 'editar un gasto', 'edito un gasto', 'editar un movimiento', 'edito un movimiento', 'cambiar un gasto', 'cambio un gasto', 'borrar un gasto', 'borro un gasto', 'borrar un movimiento', 'borro un movimiento', 'corregir un gasto', 'corrijo un gasto'],
     explicacion: 'Nada se borra: lo que deshaces queda marcado como anulado. Para cambiar el monto o la categoría de lo último, edítalo.',
     ejemplos: ['deshacer', 'editar último'] },
   { id: 'otrodia', tema: 'Otro día', palabras: ['ayer', 'antie', 'fecha', 'lunes', 'dias'], frases: ['anteayer', 'otro dia'],
@@ -72,7 +72,11 @@ export const TEMAS_AYUDA: TemaDeAyuda[] = [
     ejemplos: ['saldo', 'semana'] },
   { id: 'gasto', tema: 'Gasto', palabras: ['gasto', 'gaste', 'compr', 'almue', 'comid', 'mecat', 'taxi', 'bus', 'pague'], frases: ['un gasto', 'mi gasto'],
     explicacion: 'Un gasto es lo que compraste y cuánto. Si dices con qué pagaste, lo uso; si no, es efectivo.',
-    ejemplos: ['almuerzo 12000 {cuenta}'] },
+    ejemplos: ['almuerzo 12000', 'almuerzo 12000 {cuenta}', 'café 4k'] },
+  { id: 'acerca', tema: 'Para qué sirve', palabras: ['sirv', 'funcion', 'app', 'aplic', 'hace', 'empez', 'comen', 'inici', 'primer'],
+    frases: ['para que sirve', 'que puedo hacer', 'que puedo escribir', 'que hace', 'como funciona', 'como empiezo', 'por donde empiezo'],
+    explicacion: 'Es tu cuaderno de plata. Me escribes lo que gastas o lo que te llega, como hablas, y yo lo anoto. Después ves cuánto tienes, quién te debe y en qué se va la plata.',
+    ejemplos: ['almuerzo 12000', 'me pagaron 500k de nómina', 'saldo'] }
 ];
 
 const VACIAS = new Set([
@@ -135,4 +139,18 @@ export function temasParecidos(duda: string, cuantos = 4): { id: string; tema: s
   const cercanos = ordenados.filter(x => x.p > 0);
   const elegidos = cercanos.length ? cercanos : ['gasto', 'prestamo', 'ingreso', 'meta'].map(id => ({ t: TEMAS_AYUDA.find(x => x.id === id)! }));
   return elegidos.slice(0, cuantos).map(x => ({ id: x.t.id, tema: x.t.tema }));
+}
+
+/**
+ * ¿Es una pregunta de uso («cómo anoto un gasto», «para qué sirve esto», «cómo pauso un pago fijo»)? Solo cuenta si no trae
+ * números: con un monto es un movimiento. El bot la usa antes de decir «me falta el monto».
+ */
+export function esPreguntaDeAyuda(texto: string): boolean {
+  const d = limpiar(texto);
+  if (/\d/.test(d)) return false;
+  const palabras = d.split(' ').filter(Boolean);
+  if (palabras.length < 2) return false;
+  if (/^(como|que puedo|que se puede|se puede|puedo|para que|por que|que es|que hace|que significa|que hago|donde|cuando|cual es|explicame|explica|ayudame|ayuda con|ayuda para|necesito ayuda|no entiendo|no se como|dime como|quiero saber|quisiera saber|me ayudas|me puedes ayudar|como funciona)\b/.test(d)) return true;
+  if (/\bcomo (hago|anoto|registro|agrego|pauso|borro|edito|elimino|cancelo|cambio|uso|pongo|creo|guardo|veo|saco|miro|funciona|se)\b/.test(d)) return true;
+  return texto.includes('?') && palabras.length >= 3;
 }

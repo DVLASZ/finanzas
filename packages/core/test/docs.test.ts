@@ -34,7 +34,7 @@ test('cada ejemplo de BOT.md se entiende (no termina en error)', async () => {
     const repo = new MemoriaRepo();
     repo.aplicarPlantilla(/Alcancía|Plata en otras/.test(e.seccion) ? 'familia' : 'personal', { personas: PERSONAS });
     const t = textoDe(await procesar(repo, { texto: e.linea }, AHORA));
-    if (!t || /^(Me falta|¿De quién|No reconozco|No entiendo|No hay movimientos)/.test(t)) fallos.push(`[${e.seccion}] ${e.linea}  ->  ${t.slice(0, 80)}`);
+    if (!t || /^(¡Casi|Me falta|¿De quién|No reconozco|No entiendo|No hay movimientos)/.test(t)) fallos.push(`[${e.seccion}] ${e.linea}  ->  ${t.slice(0, 80)}`);
   }
   assert.deepEqual(fallos, []);
 });
