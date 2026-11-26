@@ -110,7 +110,8 @@ export function resolverNombre(escrito: string, ctx: Contexto, p: Propuesta): st
   if (r.candidatas?.length) {
     p.faltantes.push({
       campo: 'persona', dato: escrito,
-      pregunta: `¿A quién te refieres con «${escrito}»?`,
+      // con una sola parecida se nombra: «Danyel» casi siempre es Daniel mal escrito, y así no se crea otra persona sin querer
+      pregunta: `¿A quién te refieres con «${escrito}»?${r.candidatas.length === 1 ? ` ¿Es ${r.candidatas[0].nombre} o alguien nuevo?` : ''}`,
       opciones: [...r.candidatas.map(c => c.nombre), `${escrito} (nuevo)`],
     });
   }

@@ -106,6 +106,7 @@ test('tarjeta: dice qué asumió cuando no se dice cómo se pagó', async () => 
   const bot = await botConMonedas();
   const t = textoDe(await bot.di('mecato 2800'));
   assert.match(t, /Pagaste justo: \$2\.000 en billete \+ \$800 en monedas/);
+  await bot.pulsa('no');
   const [s] = await bot.di('mecato 2800');
   assert.ok(s.botones?.some(b => b.id === 'pago:5000'), 'atajo para pagar con 5.000');
   assert.ok(s.botones?.some(b => b.id === 'pago:10000'), 'atajo para pagar con 10.000');

@@ -32,7 +32,7 @@ export const TEMAS_AYUDA: TemaDeAyuda[] = [
   { id: 'cajero', tema: 'Cajero', palabras: ['cajer', 'retir', 'saque', 'sacar', 'saco'], frases: ['sacar plata', 'saque plata', 'sacar efectivo'],
     explicacion: 'Sacar del cajero es pasar plata de una cuenta a efectivo.',
     ejemplos: ['cambio 100000 {cuenta} a efectivo'] },
-  { id: 'pasar', tema: 'Pasar plata', palabras: ['pasar', 'trans', 'mover', 'consi', 'meter'], frases: ['pasar plata', 'pase de', 'mover plata', 'cambio de cuenta', 'de una cuenta a otra', 'entre cuentas', 'meter plata'],
+  { id: 'pasar', tema: 'Pasar plata', palabras: ['pasar', 'paso', 'trans', 'mover', 'consi', 'meter'], frases: ['pasar plata', 'paso plata', 'pase de', 'mover plata', 'cambio de cuenta', 'de una cuenta a otra', 'entre cuentas', 'entre mis cuentas', 'meter plata'],
     explicacion: 'Pasar plata de una cuenta a otra no es gasto: solo cambia dónde está.',
     ejemplos: ['cambio 50000 efectivo a {cuenta}'] },
   { id: 'ingreso', tema: 'Ingreso', palabras: ['ingre', 'sueld', 'quinc', 'salar', 'llego', 'giraro', 'cayo', 'depos', 'entra', 'nomin', 'honor', 'chamb', 'traba', 'activ'],
@@ -48,7 +48,8 @@ export const TEMAS_AYUDA: TemaDeAyuda[] = [
   { id: 'pausar', tema: 'Pausar o cancelar un pago fijo', palabras: ['paus', 'cance', 'termi', 'fin', 'reanu', 'suscr', 'fijo', 'arrie', 'inter', 'netfl'],
     explicacion: 'Pausa un pago fijo para que deje de avisar, reanúdalo cuando vuelva, ponle fecha de fin o quítalo del todo. Lo ya pagado no se toca.',
     ejemplos: ['pausar recurrente claude', 'reanudar recurrente claude', 'fin recurrente claude 21/12/2026', 'quitar recurrente claude'] },
-  { id: 'personas', tema: 'Personas', palabras: ['perso', 'nombr', 'conta', 'renom'], frases: ['una persona', 'nueva persona', 'agregar persona', 'a una persona', 'registrar a', 'borrar una persona', 'borro una persona', 'elimino una persona', 'eliminar una persona', 'quitar una persona', 'quito una persona'],
+  { id: 'personas', tema: 'Personas', palabras: ['perso', 'nombr', 'conta', 'renom', 'herma', 'famil', 'primo', 'prima', 'abuel', 'novio', 'novia', 'sobri'],
+    frases: ['anotar a', 'agregar a mi', 'registrar a mi', 'una persona', 'nueva persona', 'agregar persona', 'a una persona', 'registrar a', 'borrar una persona', 'borro una persona', 'elimino una persona', 'eliminar una persona', 'quitar una persona', 'quito una persona'],
     explicacion: 'Una persona es alguien a quien le prestas, le debes o con quien compartes. Agrégala con su nombre, cámbiale el nombre cuando quieras, y si escribes solo su nombre ves cómo van las cuentas con ella.',
     ejemplos: ['agregar persona Sofia', 'nueva persona Laura', 'registrar a Sofia', 'renombrar persona Sofia a Sofi', 'Sofia'] },
   { id: 'etiquetas', tema: 'Etiquetas y subcategorías', palabras: ['#', 'hasht', 'etiqu', 'subca', 'agrup'], frases: ['tag'],
@@ -60,8 +61,8 @@ export const TEMAS_AYUDA: TemaDeAyuda[] = [
   { id: 'topes', tema: 'Topes', palabras: ['tope', 'limit', 'presu'],
     explicacion: 'Un tope es lo máximo que quieres gastar en una categoría. Te aviso cuando te acercas. Para quitarlo, dilo igual.',
     ejemplos: ['tope mecato 100000', 'quitar tope mecato'] },
-  { id: 'corregir', tema: 'Corregir o eliminar', palabras: ['deshac', 'equivo', 'corre', 'anula', 'borr', 'confu', 'edit', 'cambi', 'categ', 'elimi', 'anul'],
-    frases: ['me equivoque', 'cambiar el monto', 'cambiar la categoria', 'cambio la categoria', 'me confundi', 'editar un gasto', 'edito un gasto', 'editar un movimiento', 'edito un movimiento', 'cambiar un gasto', 'cambio un gasto', 'borrar un gasto', 'borro un gasto', 'borrar un movimiento', 'borro un movimiento', 'corregir un gasto', 'corrijo un gasto'],
+  { id: 'corregir', tema: 'Corregir o eliminar', palabras: ['deshac', 'equivo', 'corre', 'anula', 'borr', 'confu', 'edit', 'cambi', 'categ', 'elimi', 'anul', 'quita'],
+    frases: ['me equivoque', 'puse mal', 'quitar un gasto', 'quito un gasto', 'quitar un movimiento', 'cambiar el monto', 'cambiar la categoria', 'cambio la categoria', 'me confundi', 'editar un gasto', 'edito un gasto', 'editar un movimiento', 'edito un movimiento', 'cambiar un gasto', 'cambio un gasto', 'borrar un gasto', 'borro un gasto', 'borrar un movimiento', 'borro un movimiento', 'corregir un gasto', 'corrijo un gasto'],
     explicacion: 'Nada se borra: lo que deshaces queda marcado como anulado. Para cambiar el monto o la categoría de lo último, edítalo.',
     ejemplos: ['deshacer', 'editar último'] },
   { id: 'otrodia', tema: 'Otro día', palabras: ['ayer', 'antie', 'fecha', 'lunes', 'dias'], frases: ['anteayer', 'otro dia'],
@@ -151,6 +152,22 @@ export function esPreguntaDeAyuda(texto: string): boolean {
   const palabras = d.split(' ').filter(Boolean);
   if (palabras.length < 2) return false;
   if (/^(como|que puedo|que se puede|se puede|puedo|para que|por que|que es|que hace|que significa|que hago|donde|cuando|cual es|explicame|explica|ayudame|ayuda con|ayuda para|necesito ayuda|no entiendo|no se como|dime como|quiero saber|quisiera saber|me ayudas|me puedes ayudar|como funciona)\b/.test(d)) return true;
-  if (/\bcomo (hago|anoto|registro|agrego|pauso|borro|edito|elimino|cancelo|cambio|uso|pongo|creo|guardo|veo|saco|miro|funciona|se)\b/.test(d)) return true;
+  if (/\bcomo (hago|anoto|registro|agrego|pauso|borro|edito|elimino|cancelo|cambio|uso|pongo|creo|guardo|veo|saco|miro|funciona|se|paso|meto|quito|corrijo|muevo)\b/.test(d)) return true;
+  // «ayuda no sé cómo borrar», «me puedes decir cómo...», «no sé cómo...» en cualquier parte
+  if (/^ayuda\b|\bno se como\b|\bme (puedes|podrias) (decir|explicar|ensenar)\b|\bpuedes decirme\b/.test(d)) return true;
+  // querer o necesitar hacer algo, sin monto: «quiero anotar a mi hermana», «necesito quitar un gasto»
+  if (/^(?:yo )?(?:quiero|quisiera|necesito|me gustaria|tengo que|debo) (?:anotar|agregar|registrar|mirar|ver|saber|quitar|borrar|eliminar|crear|poner|pasar|cambiar|editar|corregir|sacar|guardar|mover|meter|deshacer|anular)\b/.test(d)) return true;
   return texto.includes('?') && palabras.length >= 3;
+}
+
+/**
+ * Una consulta dicha con otras palabras: «quiero mirar quién me debe plata» es «deudas» y «cuánto me queda después de
+ * pagar todo» es «saldo». Devuelve la palabra de la consulta o null. Solo sin números: con un monto es un movimiento.
+ */
+export function consultaDisfrazada(texto: string): string | null {
+  const d = limpiar(texto);
+  if (/\d/.test(d)) return null;
+  if (/\b(?:quien(?:es)? me debe(?:n)?|cuanto me deben|a quien(?:es)? le debo|cuanto debo|quien me falta por pagar)\b/.test(d)) return 'deudas';
+  if (/\b(?:cuanto me queda|cuanta plata (?:me queda|tengo)|cuanto tengo|cuanta plata hay)\b/.test(d)) return 'saldo';
+  return null;
 }

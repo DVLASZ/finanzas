@@ -94,6 +94,21 @@ export function frasesDeRespuesta(bruta: unknown): string[] {
 const PALABRAS_INGRESO = /\b(me pagaron|me pago|me consignaron|me giraron|me llego|me llegaron|me depositaron|me transfirieron|me abonaron|me soltaron|ingreso|ingrese|recibi|cobre|gane|salario|sueldo|nomina|vendi)\b/;
 const PALABRAS_GASTO = /\b(compre|gaste|pague|pagamos|me costo|me cobraron|almuerzo|cena|desayuno|taxi|mecato|mercado|gasto)\b/;
 
+/**
+ * Lo que tiene que haber dicho la persona para que la IA proponga cada tipo de movimiento. Un gasto no puede volverse
+ * préstamo, deuda, abono ni transferencia si la persona no habló de eso. El gasto y el ingreso tienen sus propias reglas abajo.
+ */
+const RESPALDO: Partial<Record<string, RegExp>> = {
+  prestamo: /\b(preste|presto|prestamo|prestado|fie|le fie|me debe|me deben|me quedo debiendo|quedo debiendo)\b/,
+  deuda: /\b(debo|debia|deuda|le debo|me prestaron|me presto|me fiaron|me fio|fiado|fiao|quede debiendo|me prestan)\b/,
+  pago: /\b(pague (?:\S+ ){0,3}a|le pague|pague (?:la|una|mi) (?:deuda|cuota)|abono|abone|abonaron|me abono|me pago|me pagaron|me consigno|me consignaron|me mando|me mandaron|me transfirio|me transfirieron|me giro|me giraron|me envio|me enviaron|me llego|me llegaron|me dio|me dieron|cobre|le cobre|me devolvio|me devolvieron|le devolvi|devolvi|cuota|saldar|salde|cancele)\b/,
+  transferencia: /\b(pase|pasar|paso|cambie|cambio|cambiar|saque|sacar|transferi|transferir|transferencia|retire|retirar|retiro|consigne|meti|cajero|movi|mover|envie|mande|recargue)\b/,
+  cambio_moneda: /\b(cambie|cambio|cambiar|dolares|dolar|usd|pesos|compre dolares|vendi dolares)\b/,
+  compartido: /\b(entre|medias|mitad|vaca|cada uno|cada quien|dividi\w*|partes|pague por|con)\b/,
+  apertura: /\b(saldo inicial|empiezo con|arranco con|tengo)\b/,
+  ajuste: /\b(arqueo|ajuste|ajustar|conte|tengo)\b/,
+};
+
 /** Montos que se pueden armar con los que dijo la persona: ellos mismos, sumas, restas y partes iguales. */
 function montosPermitidos(original: string, ctx: Contexto): Set<number> {
   const base = new Set<number>();
@@ -126,6 +141,7 @@ export function validarFrasesIA(frases: string[], original: string, ctx: Context
   const o = normalizar(original);
   const dijoIngreso = PALABRAS_INGRESO.test(o);
   const dijoGasto = PALABRAS_GASTO.test(o);
+  const palabras = limpiar(original);
   const ids = new Set(ctx.cuentas.map(c => c.id));
   const salida: string[] = [];
   for (const frase of frases) {
@@ -141,6 +157,12 @@ export function validarFrasesIA(frases: string[], original: string, ctx: Context
     if (p.persona && !o.includes(normalizar(p.persona))) continue;
     if (p.tipo === 'ingreso' && !dijoIngreso) continue;
     if (p.tipo === 'gasto' && dijoIngreso && !dijoGasto) continue;
+    const respaldo = RESPALDO[p.tipo];
+    if (respaldo && !respaldo.test(palabras)) continue;
+    // la frase tampoco puede traer un verbo de préstamo, deuda, abono o paso de plata que la persona no usó
+    // («pagué 12000 a Luis» sale como gasto con Luis, pero suena a pagarle una deuda)
+    const f = limpiar(frase);
+    if ((['prestamo', 'deuda', 'pago', 'transferencia'] as const).some(k => RESPALDO[k]!.test(f) && !RESPALDO[k]!.test(palabras))) continue;
     salida.push(frase);
   }
   return salida;

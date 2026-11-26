@@ -200,6 +200,10 @@ me van a pagar 50k          me cayó 50000 de mamá
 
 `me pagaron 50k de la chamba`, `me pagaron la quincena 800k` y `Ana me pagó 50k` son ingreso si esa persona no te debe nada. Si Ana te debe, la misma frase es el cobro de la deuda. «Me pagó el almuerzo» sigue siendo un gasto que cubrió otro.
 
+También son ingreso, nunca gasto: `me encontré 50 mil en el parque`, `mi tía me regaló 10 mil`, `vendí la bici 200000` (en las apps sin catálogo), `te transfirieron 30000 a nequi` y los avisos del banco como `Recibiste 20.000 de ANA MARIA en tu Nequi`. En `le presté mi juguete a Tomás y me dio 2 mil`, la única plata es la que entra: ingreso de Tomás.
+
+Tras `me pagaron` o `me devolvieron`, lo que va con artículo es una cosa y no una persona: `me pagaron 120 mil de una actividad en Popayán` y `me devolvieron 15.500 de una compra` son ingreso, y no crean a «Actividad» ni a «Compra». Un pariente o alguien que ya tienes sí es persona (`me pagaron 30k de mi mamá`). `me devolvieron 20k que me debían` sin decir quién es ingreso; si alguien te debe, el bot pregunta con un botón por cada deudor y uno de «solo el ingreso».
+
 `pago de ana 50k` es plata de Ana si ya la tienes registrada. Si el nombre es nuevo, el bot pregunta si te pagó o si pagaste tú. `le pagaron 50k` pide aclarar a quién.
 
 ### Lo que no pasó
@@ -228,7 +232,9 @@ saqué 50k de nequi
 cambio 32000 nequi a dolares 8 usd
 ```
 
-El último es un cambio de moneda: la tarjeta muestra a cuánto salió el dólar esa vez.
+El último es un cambio de moneda: la tarjeta muestra a cuánto salió el dólar esa vez. Si falta una de las dos cifras (`pasé 100 dólares a nequi`), el bot pregunta cuántos pesos llegaron; nunca inventa la tasa. Si dices las dos cifras pero no la cuenta de pesos (`mandé 20 dólares a mi cuenta de pesos y llegaron 78 mil`), ofrece un botón por cuenta.
+
+Dos montos con dos cuentas en la misma frase no son una transferencia. `pagué 20k con nequi y 10k en efectivo` son dos gastos; si el bot no logra separarlos, pregunta. Tampoco se adivina cuando la plata no llegó a donde parece: `retiré 40k de nequi pero los dejé en el cajero` pregunta si se recuperó, se perdió o el cajero no la entregó, y `le pasé 30 mil a mi hermana para que me la guarde` pregunta si es un préstamo, un regalo u otra cuenta tuya.
 
 ## Personas, préstamos y deudas
 
@@ -244,7 +250,17 @@ sergio me prestó 20k
 
 Cada persona tiene un saldo neto contigo. Si te debía y luego paga algo por ti, se compensa. `deudas` muestra lo que debes (con motivo y fecha límite) y lo que te deben.
 
-Las personas se identifican por el nombre completo que uses. Si escribes un nombre suelto que se parece a varios, el bot pregunta cuál. Si lo escribes con un error de tipeo ("danyel" cuando existe Daniel), también pregunta y no adivina.
+Las personas se identifican por el nombre completo que uses. Si escribes un nombre suelto que se parece a varios, el bot pregunta cuál. Si lo escribes con un error de tipeo ("danyel" cuando existe Daniel), también pregunta y no adivina: «¿Es Daniel o alguien nuevo?».
+
+Frases donde no se sabe hacia dónde fue la plata, y lo que hace el bot:
+
+- `le mandé 25k a juan` pregunta si se lo prestaste, le pagaste algo o se lo regalaste.
+- `le di 20k a carlos para el bus y no me los devuelve` es un préstamo a Carlos (lo que se espera de vuelta es préstamo).
+- `presté 10000 a Ana y Luis` son dos personas: pregunta si fueron 10.000 a cada una o 5.000 a cada una, y anota dos préstamos.
+- `presté 5k a juan no a jose` presta a Juan: el «no a jose» corrige, no es parte del nombre.
+- `faber me devolvió 20k de los 40 que le presté` es el abono de Faber, no otro préstamo.
+- `quedamos a mano con maría por 15k` no anota nada solo: pregunta si María te pagó, si le pagaste tú o si se cierra la cuenta sin mover plata.
+- `pagué 60k por mí y por ana y luis` es un gasto compartido entre los tres.
 
 Cuando aparece un nombre nuevo, el bot pregunta de qué grupo es (en la app familiar: los de la casa, familia, trabajadores, etc.) y después qué fue el movimiento: le pagué, le presté, le vendí, me pagó, me prestó, le regalé o fue gasto mío. Si el nombre viene con trato («Don Carlos», «la seño»), también lo pregunta en un préstamo o una deuda, y ofrece «Es un apodo de...»: elige a quién y, al confirmar, ese nombre queda como apodo de esa persona y la próxima vez no pregunta. Los apodos se ven y se cambian en Más, Categorías y personas. Un nombre simple en un préstamo («presté 20000 a Ana») no pregunta, para no sumar un paso a cada uno.
 
@@ -501,7 +517,9 @@ metí 10000 a la alcancía
 saqué 2 monedas de 500 de la alcancía
 ```
 
-La plata pasa de Monedas a Alcancía (o al revés al sacar). La alcancía sale aparte en Saldos y no suma al disponible.
+La plata pasa de Monedas a Alcancía (o al revés al sacar, y también al romperla: `rompí la alcancía y salieron 35 mil`). La alcancía sale aparte en Saldos y no suma al disponible.
+
+En una app sin cuenta Alcancía esa plata nunca estuvo en los saldos, así que `rompí la alcancía y salieron 35 mil` pregunta si ya estaba anotada (no se anota nada) o si entra ahora al efectivo.
 
 ## Plata en otras cuentas
 
