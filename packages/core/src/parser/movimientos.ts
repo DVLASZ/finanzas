@@ -23,7 +23,8 @@ const NUMEROS_EN_LETRAS: Record<string, number> = { un: 1, una: 1, dos: 2, tres:
  * La plata sale de (o vuelve a) Monedas: las monedas de la billetera pasan al armario.
  */
 export function alcancia(b: Base): Resultado {
-  const saca = /\b(saque|saco|sacamos|retire|retiro|retiramos)\b/.test(b.t);
+  // romperla o vaciarla también es sacar: «rompí la alcancía y salieron 35 mil»
+  const saca = SACA_DE_ALCANCIA.test(b.t);
   const partes: string[] = [];
   let total = 0;
   for (const m of b.t.matchAll(/\b(\d+|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+(?:monedas?\s+)?(?:de\s+)?(1\.?000|mil|1k|50|100|200|500)\b/g)) {
@@ -43,6 +44,28 @@ export function alcancia(b: Base): Resultado {
   p.cuentaDestinoId = saca ? 'monedas' : 'alcancia';
   if (partes.length) p.nota = partes.join(' + ');
   return { clase: 'movimiento', propuesta: p };
+}
+
+const SACA_DE_ALCANCIA = /\b(saque|saco|sacamos|retire|retiro|retiramos|rompi|rompimos|rompio|quebre|vacie|vaciamos|salieron|salio)\b/;
+
+/**
+ * Sacar de una alcancía que la app no tiene como cuenta. Esa plata nunca estuvo en tus saldos (las metas
+ * solo apartan, no mueven plata), así que no se adivina: se pregunta si ya estaba contada o si entra ahora.
+ * Meter plata a esa alcancía sigue su camino de siempre (null).
+ */
+export function alcanciaSinCuenta(b: Base): Resultado | null {
+  if (!SACA_DE_ALCANCIA.test(b.t)) return null;
+  const m = b.montos.find(x => x.explicito && x.moneda !== 'USD');
+  if (!m) return null;
+  const v = aMinor(m.valor, 'COP');
+  return {
+    clase: 'pregunta',
+    mensaje: `Tu app no tiene una cuenta Alcancía, así que esos ${formatear(v)} no estaban en tus saldos. ¿Qué pasó con esa plata?`,
+    opciones: [
+      { titulo: 'Ya la tenía anotada', frase: '=Listo, no anoto nada: guardar plata aparte no la saca de tus cuentas.' },
+      { titulo: 'Entra ahora a mi efectivo', frase: `ingreso ${v} alcancia efectivo` },
+    ],
+  };
 }
 
 // ---------------------------------------------------------------------------------------
@@ -321,6 +344,21 @@ export function transferencia(b: Base, ctx: Contexto): Resultado {
     // Cambio de moneda: hace falta cuánto en pesos y cuánto en dólares.
     const usd = conUsd ?? explicitos.find(m => m.valor < 1000 && m.moneda === null && explicitos.length === 2);
     const cop = explicitos.find(m => m !== usd && m.moneda === null);
+    // Falta una de las dos cifras: los dólares nunca se pasan a pesos con una tasa inventada, se pregunta la otra.
+    const pesosId = origen === 'arq' ? destino : origen;
+    const pesosCuenta = ctx.cuentas.find(c => c.id === pesosId);
+    if (usd && !cop && pesosCuenta) {
+      const u = formatear(aMinor(usd.valor, 'USD'), 'USD');
+      return origen === 'arq'
+        ? error(`¿Cuántos pesos te llegaron a ${pesosCuenta.nombre} por los ${u}? Escríbelo así: «cambio ${usd.valor} dolares a ${pesosCuenta.clave} 400000».`)
+        : error(`¿Cuántos pesos salieron de ${pesosCuenta.nombre} para comprar los ${u}? Escríbelo así: «cambio 400000 ${pesosCuenta.clave} a dolares ${usd.valor} usd».`);
+    }
+    if (!usd && cop && pesosCuenta && explicitos.length === 1) {
+      const c = formatear(aMinor(cop.valor, 'COP'));
+      return destino === 'arq'
+        ? error(`¿Cuántos dólares te dieron por los ${c} de ${pesosCuenta.nombre}? Escríbelo así: «cambio ${cop.valor} ${pesosCuenta.clave} a dolares 8 usd».`)
+        : error(`¿Cuántos dólares cambiaste para recibir ${c} en ${pesosCuenta.nombre}? Escríbelo así: «cambio 8 dolares a ${pesosCuenta.clave} ${cop.valor}».`);
+    }
     if (!usd || !cop) {
       return error(`Para mover plata de/hacia la cuenta de dólares dime los pesos y los dólares. Ejemplo: «cambio 32000 ${ejemploDeCuenta(ctx)} a dolares 8 usd».`);
     }
@@ -334,11 +372,63 @@ export function transferencia(b: Base, ctx: Contexto): Resultado {
     return { clase: 'movimiento', propuesta: p };
   }
 
+  // Dos montos y dos cuentas en la misma frase («pagué 20k con nequi y 10k en efectivo») no son una transferencia:
+  // casi siempre es un pago partido. Si nadie la dividió antes, se pregunta en vez de mover plata entre cuentas.
+  if (explicitos.length >= 2 && b.cuentas.length >= 2) return dosMontosDosCuentas(b, explicitos, ctx);
   if (explicitos.length !== 1) return error(`Me falta el monto (uno solo). Ejemplo: «cambio 50k efectivo a ${ejemploDeCuenta(ctx)}».`);
   const p = propuestaBase(b, 'transferencia', 'Transferencia', aMinor(explicitos[0].valor, 'COP'), 'COP');
   p.cuentaId = origen; p.cuentaDestinoId = destino;
   void ctx;
   return { clase: 'movimiento', propuesta: p };
+}
+
+const VERBO_DE_GASTO = /\b(pague|pagamos|gaste|gastamos|compre|compramos)\b/;
+
+/**
+ * Cada monto va con la cuenta que tiene más cerca, en el orden en que se dijeron. Con verbo de gasto se ofrecen los dos
+ * gastos, un movimiento por línea; sin él no se sabe si es una transferencia o un saldo, y se pide decirlo de nuevo.
+ */
+function dosMontosDosCuentas(b: Base, montos: MontoHallado[], ctx: Contexto): Resultado {
+  const nombre = (id: string) => ctx.cuentas.find(c => c.id === id);
+  const pares = montos.slice(0, 2).map((m, i) => ({ v: aMinor(m.valor, 'COP'), cuenta: nombre(b.cuentas[i].id) }));
+  const dicho = pares.map(x => `${formatear(x.v)} en ${x.cuenta?.nombre ?? '?'}`).join(' y ');
+  if (!VERBO_DE_GASTO.test(b.t) || pares.some(x => !x.cuenta)) {
+    return error(`Veo dos montos y dos cuentas (${dicho}). ¿Qué fue? Si es una transferencia, escribe un solo monto: «cambio 50k efectivo a ${ejemploDeCuenta(ctx)}». Si son gastos, uno por línea.`);
+  }
+  return {
+    clase: 'pregunta',
+    mensaje: `Veo dos pagos: ${dicho}. ¿Son dos gastos?`,
+    opciones: [
+      { titulo: 'Sí, dos gastos', frase: pares.map(x => `pague ${x.v} con ${x.cuenta!.clave}`).join('\n') },
+      { titulo: 'Otra cosa', frase: `=Escribe un movimiento por línea, por ejemplo «pagué ${pares[0].v} con ${pares[0].cuenta!.clave}» y en otra línea «pagué ${pares[1].v} con ${pares[1].cuenta!.clave}».` },
+    ],
+  };
+}
+
+/**
+ * «mandé 20 dólares a mi cuenta de pesos y llegaron 78 mil»: un cambio de moneda con las dos cifras, pero sin nombrar
+ * la cuenta de pesos. Se pregunta cuál, con un botón por cuenta que ya arma el cambio completo.
+ */
+export function cambioSinCuentaDePesos(b: Base, ctx: Contexto): Resultado | null {
+  const dolares = cuentaEnDolares(ctx);
+  if (!dolares || b.cuentas.length !== 1 || b.cuentas[0].id !== dolares.id) return null;
+  const usd = b.montos.find(m => m.moneda === 'USD');
+  const cop = b.montos.find(m => m.explicito && m.moneda === null);
+  if (!usd || !cop || b.montos.length !== 2) return null;
+  const destinos = ctx.cuentas.filter(c => c.tipo === 'dinero' && c.moneda === 'COP' && c.id !== 'monedas' && c.id !== 'alcancia');
+  if (!destinos.length) return null;
+  const venden = usd.inicio < cop.inicio; // los dólares se dijeron primero: salen dólares y llegan pesos
+  const u = formatear(aMinor(usd.valor, 'USD'), 'USD');
+  const c = formatear(aMinor(cop.valor, 'COP'));
+  const clave = dolares.clave;
+  return {
+    clase: 'pregunta',
+    mensaje: venden ? `¿A qué cuenta llegaron los ${c} por los ${u}?` : `¿De qué cuenta salieron los ${c} para los ${u}?`,
+    opciones: destinos.map(d => ({
+      titulo: d.nombre,
+      frase: venden ? `cambio ${usd.valor} usd ${clave} a ${d.clave} ${cop.valor}` : `cambio ${cop.valor} ${d.clave} a ${clave} ${usd.valor} usd`,
+    })),
+  };
 }
 
 

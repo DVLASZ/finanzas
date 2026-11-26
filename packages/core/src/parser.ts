@@ -9,7 +9,7 @@
 import { error, type Comando, type Resultado } from './parser/tipos.ts';
 import { dentroDe, prepararBase, type Base } from './parser/comun.ts';
 import { leerPago, pagoSinTotal } from './parser/pago.ts';
-import { alcancia, gasto, ingreso, transferencia, vueltoSuelto } from './parser/movimientos.ts';
+import { alcancia, alcanciaSinCuenta, cambioSinCuentaDePesos, gasto, ingreso, transferencia, vueltoSuelto } from './parser/movimientos.ts';
 import { deuda, mePago, pagoDeDeuda, prestamo, regalo, personaConocida, ventaDelCatalogo } from './parser/personas.ts';
 import { compraConLineas } from './parser/compras.ts';
 import { declaraciones } from './parser/declaraciones.ts';
@@ -17,6 +17,9 @@ import { hallarFecha, hallarFechaLimite } from './fechas.ts';
 import { quitarComasDeMiles, repartoEnOtroOrden } from './reparto.ts';
 import { diaDeSemana, mesDeNombre } from './recurrentes.ts';
 import { naturalizar } from './lenguaje.ts';
+import { aclararIlegible, corregirTypos } from './fuzzy.ts';
+import { expandirCantidades } from './cantidades.ts';
+import { corregida, incertidumbre } from './incertidumbre.ts';
 import { capitalizar, limpiar, normalizar } from './texto.ts';
 import { extraerEtiquetas } from './etiquetas.ts';
 import { categorizar, hallarCuentas } from './entidades.ts';
@@ -267,7 +270,13 @@ function sinNegadas(texto: string): { texto: string; ignoradas: string[]; todas:
 }
 
 export function interpretar(texto: string, ctx: Contexto): Resultado {
-  const neg = sinNegadas(texto);
+  texto = corregirTypos(texto, ctx); // «gsate 12 mil en almurzo» se lee «gaste 12 mil en almuerzo» (ver fuzzy.ts)
+  const ilegible = aclararIlegible(texto, ctx); if (ilegible) return ilegible; // «Ibgrwsi 50k»: se pregunta, no se inventa un gasto
+  texto = expandirCantidades(texto); // «3 polas a 4500 cada una» es 13500 (ver cantidades.ts)
+  // lo que no pasó, no se sabe o se corrige en la misma frase (ver incertidumbre.ts)
+  const dudosa = incertidumbre(texto);
+  if (dudosa) return dudosa;
+  const neg = sinNegadas(corregida(texto));
   if (neg.todas) return error(AVISO_NEGADO);
   const r = interpretarAfirmado(neg.texto, ctx);
   if (neg.ignoradas.length && r.clase === 'movimiento') {
@@ -343,6 +352,9 @@ function interpretarPlano(texto: string, ctx: Contexto): Resultado {
   if (suelto) return suelto;
   // Alcancía de monedas (solo en las apps que la tienen): «metí 5 monedas de 500 y 3 de mil a la alcancía»
   if (/\balcancia\b/.test(b.t) && ctx.cuentas.some(c => c.id === 'alcancia')) return alcancia(b);
+  // sin esa cuenta, lo que sale de una alcancía no se adivina (ni gasto ni ingreso): se pregunta
+  const deAlcancia = /\balcancia\b/.test(b.t) ? alcanciaSinCuenta(b) : null;
+  if (deAlcancia) return deAlcancia;
   const sinVuelto =!/\b(de vuelto|vuelto|devuelta)\b/.test(b.t);
   const conBillete = /\bcon (?:(?:un|una|el|la|billete|billetes|de|del) )*\d/.test(b.t);
 
@@ -367,6 +379,8 @@ function interpretarPlano(texto: string, ctx: Contexto): Resultado {
   }
 
   // Transferencia entre tus cuentas
+  const cambioSinPesos = cambioSinCuentaDePesos(b, ctx);
+  if (cambioSinPesos) return cambioSinPesos;
   const verbosTransfer = /\b(cambie|cambio|pase|transferi|transferencia|movi|mueve|consigne|deposite|saque|retire|retiro|traslade|meti)\b/;
   // (las cuentas nombradas dentro de «con 2k en monedas» o «vuelto 200 monedas» son del pago, no de una transferencia)
   const pago0 = leerPago(b.t, b.montos);

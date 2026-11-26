@@ -12,6 +12,7 @@
     "check": "npm run typecheck && npm test && npm run verificar && npm run contraste && npm run privacidad && npm run seguridad",
     "guia:html": "node scripts/guia-html.mjs",
     "seguridad": "node scripts/seguridad.mjs",
+    "bateria": "node scripts/bateria-red-team.mjs",
     "typecheck": "tsc --noEmit -p .",
     "test": "node --test \"packages/core/test/*.test.ts\" \"apps/worker/test/*.test.ts\"",
     "salud": "node scripts/salud.mjs",

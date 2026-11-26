@@ -118,6 +118,7 @@ test('un gasto muy por encima de lo normal en su categoría avisa en la tarjeta'
   const t = textoDe(await bot.di('mecato 40000', deLocal('2026-10-10 10:00:00')));
   assert.match(t, /bastante más de lo normal en Mecato: lo usual son \$3\.000/);
   // un monto normal no avisa
+  await bot.pulsa('no');
   assert.doesNotMatch(textoDe(await bot.di('mecato 4000', deLocal('2026-10-10 10:00:00'))), /bastante más/);
 });
 

@@ -8,7 +8,7 @@
     { "id": "cat:juegos",        "palabras": ["steam", "juego"] },
     { "id": "cat:transporte",    "palabras": ["moto", "taxi", "carro", "bus", "pasaje", "cicla", "bicicleta"] },
     { "id": "cat:mecato",        "palabras": ["mecato", "galleta", "dulce", "donas", "postre", "helado", "mango", "crispetas", "lecherita", "quesillo", "gatorade", "trident", "chicle", "paquete", "coca", "tinto"] },
-    { "id": "cat:comida",        "palabras": ["arepa", "empanada", "pizza", "almuerzo", "comida", "sandwich", "salchipapa", "hawaiano", "leche", "chorizo", "arroz", "salsa de tomate", "fresas", "perro", "desayuno", "cena", "restaurante"] },
+    { "id": "cat:comida",        "palabras": ["arepa", "empanada", "pizza", "almuerzo", "comida", "sandwich", "salchipapa", "hawaiano", "leche", "chorizo", "arroz", "salsa de tomate", "fresas", "perro", "desayuno", "cena", "restaurante", "pan"] },
     { "id": "cat:universidad",   "palabras": ["materiales", "lapiz", "cuaderno", "fotocopia", "impresion"] },
     { "id": "cat:salidas",       "palabras": ["cine", "entrada", "salida", "concierto", "rifa", "cerveza"] },
     { "id": "cat:personal",      "palabras": ["peluque","zapatos", "costura", "jeans", "ropa", "barberia"] },
