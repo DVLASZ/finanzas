@@ -153,6 +153,17 @@ const FLUJOS: Record<string, (caso: Caso) => Promise<string | null>> = {
     const p = cartas[0].partes.join(' ');
     return cartas[0].tipo === 'Préstamo' && cartas[0].monto === 5000 && /Juan/.test(p) && !/Jose/.test(p) ? null : `salió «${cartas[0].texto}» y se esperaba un préstamo de 5000 a Juan`;
   },
+  'con-cual-cuenta': async caso => {
+    const bot = nuevoBot();
+    const s = await bot.di(caso.texto);
+    const t = textoDe(s);
+    if (leerCarta(t)) return `salió tarjeta en vez de preguntar con cuál pagó: «${corto(t)}»`;
+    if (!/¿Pagaste con [^?]+ o con [^?]+?/.test(t)) return `no preguntó con cuál cuenta pagó: «${corto(t)}»`;
+    const botones = s.flatMap(x => x.botones ?? []).filter(b => b.id.startsWith('ia:'));
+    if (botones.length !== 2) return `se esperaban dos botones, uno por cuenta, y hay ${botones.length}`;
+    const c = leerCarta(textoDe(await bot.pulsa(botones[0].id)));
+    return c && c.tipo === 'Gasto' && sin(botones[0].titulo).includes(sin(c.cuenta)) ? null : `el botón no armó un gasto con esa cuenta: ${c ? c.texto : 'sin tarjeta'}`;
+  },
   'pend-ok': async () => {
     const bot = nuevoBot();
     await bot.di('almuerzo 5000');

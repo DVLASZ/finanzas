@@ -363,7 +363,7 @@ pago de deuda        \b(pague|pagamos|abone|salde|pago)\b.*\ba [a-z]
 El orden se ve en las pruebas:
 
 - «gasté 50000 de la meta moto» es el comando `meta_sacar` y no un gasto: responde «Sacaste $50.000 de Moto...» y no anota ningún gasto.
-- «almuerzo 12000 nequi daviplata» y «mecato 5000 efectivo nequi» son transferencias: dos cuentas ganan al gasto.
+- «almuerzo 12000 nequi daviplata» y «mecato 5000 efectivo nequi» (un concepto, un monto, dos cuentas y ningún verbo de pasar plata) no son transferencias: el bot pregunta «¿Pagaste con Nequi o con Daviplata?» con un botón por cuenta (`pagoConDosCuentas` en `parser.ts`). Sin concepto («nequi a daviplata 12000») o con verbo («pasé 12000 de nequi a daviplata») sigue siendo una transferencia.
 - «llegaron 1000 galletas» es un ingreso de $1.000, porque `ingresoPorVerbo` corre antes que el comando `existencias_sumar`. «llegaron 50 galletas» sí llega al comando, porque 50 no es plata para `esPlata`.
 - «cancelar el pago» pregunta «¿Quieres deshacer el último movimiento?» porque `dudas` corre antes que los comandos.
 - «Marta me debe 10000» es un préstamo a Marta: `verbos` lo reescribe como «presté 10000 a Marta» (`lenguaje.ts:248-249`).
@@ -568,7 +568,7 @@ Cada punto trae la frase, lo que pasa hoy (probado) y la causa probable. La marc
 
 ### 8.2 Cuentas y categorías
 
-8. INTEGRIDAD. «almuerzo 12000 nequi daviplata» y «mecato 5000 efectivo nequi» dan una transferencia entre esas cuentas, no un gasto. Causa: dos cuentas en la frase bastan para `transferencia` (`parser.ts:374-375`). Con dos montos y dos cuentas («pagué 20k con nequi y 10k en efectivo») ya no sale transferencia: `dosMontosDosCuentas` (`parser/movimientos.ts`) pregunta si son dos gastos. Con un solo monto sigue pendiente.
+8. INTEGRIDAD. «almuerzo 12000 nequi daviplata» y «mecato 5000 efectivo nequi» dan una transferencia entre esas cuentas, no un gasto. Causa: dos cuentas en la frase bastan para `transferencia` (`parser.ts:374-375`). Con dos montos y dos cuentas («pagué 20k con nequi y 10k en efectivo») ya no sale transferencia: `dosMontosDosCuentas` (`parser/movimientos.ts`) pregunta si son dos gastos. Con un solo monto y un concepto de gasto («almuerzo 12000 nequi daviplata») ya no sale transferencia: `pagoConDosCuentas` (`parser.ts`) pregunta con cuál de las dos cuentas pagó, con un botón por cuenta (casos RED-148 y RED-149). Este punto quedó resuelto.
 9. INTEGRIDAD. «Compra aprobada por $45.900 en EXITO con tu tarjeta» y «almuerzo 12000 con tarjeta de credito» salen de Efectivo. Causa: «tarjeta» no es alias de ninguna cuenta (`entidades.ts:12-19`) y sin cuenta se usa Efectivo (`movimientos.ts:103`).
 10. INTEGRIDAD. «saqué 100k del cajero» elige Nequi sin preguntar, aunque también existe Daviplata. Causa: `verbos` toma la primera cuenta de banco que encuentra (`lenguaje.ts:268-269`). «saqué 100000» sin «cajero» sí pregunta de qué cuenta (`lenguaje.ts:467-472`).
 11. INTEGRIDAD. «taxi 8000 de la casa a la universidad» sale en Universidad y sin recorrido. Causa: el nombre exacto de una categoría gana al diccionario (`entidades.ts:251-252`).
@@ -647,7 +647,7 @@ Después de la radiografía se escribió una batería adversarial de 147 frases 
 5. **Flujo del bot** (`bot.ts`): las palabras sueltas «ok», «no», «borra» y «gracias» actúan solo sobre la tarjeta pendiente (confirman o cancelan) y nunca anulan un movimiento ya guardado; sin tarjeta pendiente se contestan con una frase corta. Un movimiento nuevo con una tarjeta pendiente no la reemplaza en silencio: el bot muestra la pendiente y pregunta si se guarda o se descarta, y deja la nueva en cola. Lo aprendido (categoría de una palabra) se guarda al confirmar, no al responder, así que cancelar la tarjeta no deja una regla de algo que no pasó. Las preguntas de ayuda sin monto se responden con la guía, y una consulta dicha con otras palabras («cuánto me queda») se contesta como consulta.
 6. **Validación de la IA** (`ia.ts`, `validarFrasesIA`): cada tipo de movimiento que propone la IA tiene que estar respaldado por palabras del texto original. Un préstamo, una deuda, un abono, una transferencia o un cambio de moneda inventados se descartan cuando la persona solo habló de un gasto, y las frases con un verbo de esos tipos que la persona no usó también.
 
-Lo que sigue siendo débil (ver la sección 8): «almuerzo 12000 nequi daviplata» sale como transferencia y el reparto entre varias personas sigue dependiendo de que se nombren.
+Lo que sigue siendo débil (ver la sección 8): el reparto entre varias personas sigue dependiendo de que se nombren.
 
 ## 9. Cómo probarlo
 

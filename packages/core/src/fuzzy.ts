@@ -78,7 +78,7 @@ const COMUNES = `
   cambia cambie cambio cambiar cambiamos borra quita elimina anula revierte deshaz corrige modifica edita actualiza
   monto montos motor foto europa escena cinta celular congreso alcance bono bonos medio medios duda dudas nota notas
   devolvi devuelto devuelve devolver devolvieron consigno consigna ingresa ingresan llegan llega rebajo rebaja recibo recibos
-  luca luka lukas moneda drogueria peluquero peluqueria suscripcion pedro rosa tito lucas pepe marta mario
+  luca luka lukas moneda drogueria peluquero peluqueria suscripcion pedro rosa tito lucas pepe marta
   cuarto banquete meto mete meti metio
 `;
 

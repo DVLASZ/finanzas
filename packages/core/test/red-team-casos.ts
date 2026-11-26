@@ -203,4 +203,7 @@ export const CASOS: Caso[] = [
   c(145, 'varios', 'almuerzo 5000 31/02', o(NADA, PREG)),
   c(146, 'varios', 'compre 3 cosas a 2.500 cada una pero una me la regalaron', G(5000)),
   c(147, 'varios', 'pague 10000 y luego me devolvieron los mismos 10000', o(NADA, PREG)),
+  // ---- el último caso borde de la radiografía: un monto, dos cuentas y ningún verbo de pasar plata
+  c(148, 'transferencias', 'almuerzo 12000 nequi daviplata', FLUJO('con-cual-cuenta'), { nota: 'Un concepto de gasto con un solo monto y dos cuentas no es una transferencia: pregunta con cuál pagó, con un botón por cuenta.' }),
+  c(149, 'transferencias', 'mercado 50k efectivo nequi', FLUJO('con-cual-cuenta'), { nota: 'Igual que RED-148; sin verbo de transferencia y con un concepto, se pregunta.' }),
 ];

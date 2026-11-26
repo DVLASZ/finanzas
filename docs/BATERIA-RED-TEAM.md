@@ -1,6 +1,6 @@
-# Batería adversarial del bot (RED-001 a RED-147)
+# Batería adversarial del bot (RED-001 a RED-149)
 
-Estas son las 147 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
+Estas son las 149 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
 
 ```bash
 node --test packages/core/test/red-team.test.ts
@@ -141,6 +141,8 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-093 | `retire 40k de nequi pero los deje en el cajero` | Pregunta antes de inventar o Sin tarjeta: no anota nada |  |
 | RED-094 | `mande 20 dolares a mi cuenta de pesos y llegaron 78 mil` | Cambio de moneda o Pregunta antes de inventar |  |
 | RED-095 | `nequi 15k efectivo 10k` | Nunca un gasto |  |
+| RED-148 | `almuerzo 12000 nequi daviplata` | Flujo de estado (con-cual-cuenta) | Un concepto de gasto con un solo monto y dos cuentas no es una transferencia: pregunta con cuál pagó, con un botón por cuenta. |
+| RED-149 | `mercado 50k efectivo nequi` | Flujo de estado (con-cual-cuenta) | Igual que RED-148; sin verbo de transferencia y con un concepto, se pregunta. |
 
 ## Personas y compartidos
 
