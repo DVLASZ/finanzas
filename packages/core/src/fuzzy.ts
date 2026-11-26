@@ -115,7 +115,7 @@ function vocabulario(ctx: Contexto): Vocabulario {
   for (const c of CUENTAS) agregarDestino(c, c === 'neki' ? 'nequi' : c);
   for (const [, alias] of aliasDeCuentas(ctx)) for (const a of alias) { const w = normalizar(a); cuentas.add(w); agregarDestino(w); }
   // las palabras del diccionario también en plural: «glletas» es «galletas», no «galleta»
-  for (const cat of ctx.diccionario?.categorias ?? []) {
+  for (const cat of [...(ctx.diccionario?.categorias ?? []), ...(ctx.diccionario?.finalidad ?? [])]) {
     for (const p of cat.palabras) for (const w of normalizar(p).split(' ')) { agregarDestino(w); agregarDestino(/[aeiou]$/.test(w) ? `${w}s` : `${w}es`); }
   }
   for (const c of ctx.cuentas) {

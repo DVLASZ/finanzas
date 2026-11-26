@@ -3,9 +3,9 @@
  * `Movimiento.etiqueta` como texto separado por espacios, en minúscula, sin tildes ni «#» ("viaje claude").
  * Así no hace falta migración: un valor viejo de una sola palabra sigue siendo una etiqueta válida.
  */
-import { idPersona } from './entidades.ts';
+import { aliasDeCuentas, cuentaDePalabra, idPersona } from './entidades.ts';
 import { normalizar } from './texto.ts';
-import type { Movimiento } from './tipos.ts';
+import type { Contexto, Movimiento } from './tipos.ts';
 
 export const MAX_LARGO_ETIQUETA = 24;
 export const MAX_ETIQUETAS = 5;
@@ -29,8 +29,10 @@ function validar(brutas: string[]): { etiquetas: string[]; error?: string } {
 /** Saca de una frase todos los #hashtags (en cualquier posición) y devuelve la frase sin ellos. */
 export function extraerEtiquetas(texto: string): Etiquetado {
   const brutas: string[] = [];
-  const sin = texto.replace(/(^|\s)#([\p{L}\p{N}_-]+)/gu, (_t, pre: string, e: string) => { brutas.push(e); return pre; });
-  if (!brutas.length) return { texto, etiquetas: [] };
+  // «#123» o «#-» (sin ninguna letra) no es una etiqueta: se descarta sin ruido, el gasto sale sin etiqueta.
+  // «# viaje» (con espacio) y «##viaje» no cuadran con este patrón y tampoco cuentan.
+  const sin = texto.replace(/(^|\s)#([\p{L}\p{N}_-]+)/gu, (_t, pre: string, e: string) => { if (/\p{L}/u.test(e)) brutas.push(e); return pre; });
+  if (!brutas.length) return { texto: sin === texto ? texto : sin.replace(/\s+/g, ' ').trim(), etiquetas: [] };
   const v = validar(brutas);
   return { texto: sin.replace(/\s+/g, ' ').trim(), etiquetas: v.etiquetas, error: v.error };
 }
@@ -114,4 +116,20 @@ export function sugerirEtiquetas(movs: Movimiento[], base: BaseDeSugerencia, n =
     for (const [e] of [...puntos].sort(orden)) if (!puestas.has(e) && !salida.includes(e)) salida.push(e);
   }
   return salida.slice(0, n);
+}
+
+/**
+ * Las etiquetas que en realidad son el nombre de una cuenta de dinero de esta instalación («#nequi») no se guardan como
+ * etiqueta: se devuelven aparte, con el id de la cuenta, para que el parser las trate como si hubieran escrito la cuenta.
+ */
+export function separarCuentas(etiquetas: string[], ctx: Contexto): { etiquetas: string[]; cuentas: { palabra: string; id: string }[] } {
+  const extra = aliasDeCuentas(ctx);
+  const cuentas: { palabra: string; id: string }[] = [];
+  const resto = etiquetas.filter(e => {
+    const id = cuentaDePalabra(e, extra);
+    if (!id || !ctx.cuentas.some(c => c.id === id && c.tipo === 'dinero')) return true;
+    cuentas.push({ palabra: e, id });
+    return false;
+  });
+  return { etiquetas: resto, cuentas };
 }

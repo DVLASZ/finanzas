@@ -108,6 +108,8 @@ export interface Aprendido {
 /** Palabras clave -> categoría (db/diccionario.json). */
 export interface Diccionario {
   categorias: { id: string; palabras: string[] }[];
+  /** Para qué es la compra: se mira antes que el nombre de la categoría y que `categorias`. Gana el primer id que exista. */
+  finalidad?: { ids: string[]; palabras: string[] }[];
   prestamos_inicio: string[];
 }
 

@@ -19,9 +19,10 @@ import { diaDeSemana, mesDeNombre } from './recurrentes.ts';
 import { naturalizar } from './lenguaje.ts';
 import { aclararIlegible, corregirTypos } from './fuzzy.ts';
 import { expandirCantidades } from './cantidades.ts';
+import { calcular } from './calculos.ts';
 import { corregida, incertidumbre } from './incertidumbre.ts';
 import { capitalizar, limpiar, normalizar } from './texto.ts';
-import { extraerEtiquetas } from './etiquetas.ts';
+import { extraerEtiquetas, separarCuentas } from './etiquetas.ts';
 import { categorizar, hallarCuentas } from './entidades.ts';
 import { type Contexto, type Moneda } from './tipos.ts';
 
@@ -60,8 +61,11 @@ function detectarComando(t: string): { comando: Comando; arg?: string } | null {
   // «cambia el monto a 7000», «corrige a 7000», «era 7000», «mejor 7000»: corrige el monto del último movimiento
   const cambioMonto = t.match(/^(?:(?:cambia|cambiar|cambie|corrige|corregir|modifica|modificar|edita|editar|actualiza|actualizar)(?: (?:el|la))?(?: (?:monto|valor|precio))?(?: (?:a|por|en))?|era|mejor)\s+(\d[\d.,]*\s?(?:k|mil|lucas?|palos?)?)$/);
   if (cambioMonto) return { comando: 'editar_ultimo', arg: `monto ${cambioMonto[1]}` };
+  // Enseñarle una palabra: «aprende que "pastilla" es salud». El bot revisa si la regla es sana (aprender.ts).
+  const aprender = t.match(/^(?:aprende|aprender|aprendete) que (.+?) (?:es|son|significa|va en|va a|quiere decir) (.+)$/);
+  if (aprender) return { comando: 'aprender', arg: `${aprender[1]}|${aprender[2]}` };
   // Cierre de meses: «cerrar mes octubre», «meses cerrados», «abrir meses»
-  const cerrar = t.match(/^cerrar(?: el)? mes (?:de )?([a-z]+)(?: (?:de )?(\d{4}))?$/);
+  const cerrar =t.match(/^cerrar(?: el)? mes (?:de )?([a-z]+)(?: (?:de )?(\d{4}))?$/);
   if (cerrar) return { comando: 'cierre_cerrar', arg: `${cerrar[1]}|${cerrar[2] ?? ''}` };
   if (/^(?:abrir|reabrir) (?:los )?meses?(?: cerrados?)?$/.test(t)) return { comando: 'cierre_abrir' };
   if (/^meses? cerrados?$/.test(t)) return { comando: 'cierre_ver' };
@@ -106,6 +110,10 @@ function detectarComando(t: string): { comando: Comando; arg?: string } | null {
   // Pagos fijos que ya existen: «pausar recurrente claude», «reanudar pago fijo claude», «fin recurrente claude 21/12/2026».
   // El arg es «nombre» o, en «fin», «nombre|AAAA-MM-DD» (fecha vacía si no se dijo).
   const FIJO = String.raw`(?:recurrente|pago fijo|gasto fijo|gasto recurrente|pago)`;
+  // Pausa con fechas: «pausa claude desde el proximo mes», «pausa el arriendo por dos meses y vuelve a cobrar en febrero».
+  // El arg es «nombre|cola»; el bot convierte la cola en fechas con el reloj de la conversación.
+  const pausaConFecha = t.match(new RegExp(String.raw`^(?:pausar|pausa|poner en pausa|pon en pausa) (?:el |la |los |las |mi |mis )?(?:${FIJO} )?([a-z ]+?) ((?:desde|a partir|por \S+ mes|hasta|vuelve|volver|retoma).*)$`));
+  if (pausaConFecha) return { comando: 'recurrente_pausar', arg: `${pausaConFecha[1].trim()}|${pausaConFecha[2]}` };
   const pausarRec = t.match(new RegExp(String.raw`^(?:pausar|pausa|poner en pausa) ${FIJO} ([a-z ]+)$`));
   if (pausarRec) return { comando: 'recurrente_pausar', arg: pausarRec[1].trim() };
   const reanudarRec = t.match(new RegExp(String.raw`^(?:reanudar|reanuda|retomar|reactivar) ${FIJO} ([a-z ]+)$`));
@@ -270,6 +278,7 @@ function sinNegadas(texto: string): { texto: string; ignoradas: string[]; todas:
 }
 
 export function interpretar(texto: string, ctx: Contexto): Resultado {
+  const cuenta = calcular(texto); if (typeof cuenta !== 'string') return cuenta; texto = cuenta; // «28000 más 10% de propina» es 30800; va antes de corregirTypos, que lee «rebajaron» como «regalaron» (ver calculos.ts)
   texto = corregirTypos(texto, ctx); // «gsate 12 mil en almurzo» se lee «gaste 12 mil en almuerzo» (ver fuzzy.ts)
   const ilegible = aclararIlegible(texto, ctx); if (ilegible) return ilegible; // «Ibgrwsi 50k»: se pregunta, no se inventa un gasto
   texto = expandirCantidades(texto); // «3 polas a 4500 cada una» es 13500 (ver cantidades.ts)
@@ -352,7 +361,16 @@ function interpretarPlano(texto: string, ctx: Contexto): Resultado {
   // los hashtags de cualquier parte de la frase se quitan antes de analizar: no tocan concepto, categoría ni monto
   const ex = extraerEtiquetas(original);
   if (ex.error) return error(ex.error);
-  const t0 = ex.etiquetas.length ? limpiar(ex.texto) : t00;
+  // «#nequi» con una cuenta de ese nombre es la cuenta, no una etiqueta; si la frase ya nombra otra cuenta, se pregunta
+  const sep = separarCuentas(ex.etiquetas, ctx);
+  let t0 = ex.texto !== original ? limpiar(ex.texto) : t00;
+  if (sep.cuentas.length) {
+    const dichas = new Set(hallarCuentas(t0, ctx).map(c => c.id));
+    const nuevas = sep.cuentas.filter(c => !dichas.has(c.id));
+    if (nuevas.length && dichas.size) return error(`Escribiste #${nuevas[0].palabra} y también otra cuenta en la misma frase. ¿Con cuál pagaste? Escríbelo de nuevo con una sola cuenta.`);
+    t0 = `${t0} ${nuevas.map(c => c.palabra).join(' ')}`.trim();
+  }
+  ex.etiquetas = sep.etiquetas;
 
   if (/^(apertura|saldo inicial|saldos iniciales)\b/.test(t0)) return declaraciones('apertura', original, t0, ctx);
   if (/^(arqueo|cuadre|cuadrar)\b/.test(t0)) return declaraciones('ajuste', original, t0, ctx);

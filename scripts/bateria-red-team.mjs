@@ -9,6 +9,10 @@ const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const M = n => (Array.isArray(n) ? n.map(x => '$' + x.toLocaleString('es-CO')).join(' o ') : '$' + Number(n).toLocaleString('es-CO'));
 const TIPOS = { gasto: 'Gasto', ingreso: 'Ingreso', prestamo: 'Préstamo', deuda: 'Deuda', compartido: 'Gasto compartido', cambio: 'Cambio de moneda', transferencia: 'Transferencia' };
 
+function descItem(i) {
+  return [i.tipo ? TIPOS[i.tipo] ?? i.tipo : '', i.monto !== undefined ? M(i.monto) : '', i.cuenta ? `en ${i.cuenta}` : '', i.cat ? `categoría ${i.cat}` : '', i.catNo ? `no ${i.catNo}` : '', i.concepto ? `«${i.concepto}»` : '', i.fecha ? `el ${i.fecha}` : '', i.etiqueta === null ? 'sin etiqueta' : i.etiqueta ? `etiqueta ${i.etiqueta}` : '', i.personas ? i.personas.map(p => `${p.nombre} ${M(p.monto)}`).join(', ') : ''].filter(Boolean).join(' ') || 'un movimiento';
+}
+
 function describir(e) {
   switch (e.t) {
     case 'gasto': case 'ingreso': case 'prestamo': case 'deuda': case 'compartido': case 'cambio':
@@ -23,11 +27,13 @@ function describir(e) {
     case 'sinfusion': return 'Ana y Luis por separado, nunca «Ana Luis»';
     case 'o': return e.alt.map(describir).join(' o ');
     case 'flujo': return `Flujo de estado (${e.id})`;
+    case 'estado': return [e.pend ? (e.pend.length ? `Quedan pendientes: ${e.pend.map(i => descItem(i)).join('; ')}` : 'Sin tarjetas pendientes') : '', e.guard ? (e.guard.length ? `Guardado: ${e.guard.map(i => descItem(i)).join('; ')}` : 'Nada guardado') : '', e.preg ? 'Pregunta' : ''].filter(Boolean).join('. ');
+    case 'sinregla': return `No aprende «${e.palabra}»: explica por qué y no guarda ninguna regla`;
     default: return '';
   }
 }
 
-const GRUPOS = { typos: 'Errores de escritura', jerga: 'Jerga, autocorrecciones e incertidumbre', historias: 'Historias largas y números en letras', negaciones: 'Negaciones e hipotéticos', deudas: 'Deudas, préstamos y abonos', numeros: 'Números, fechas y unidades', transferencias: 'Transferencias y monedas', personas: 'Personas y compartidos', ayuda: 'Preguntas de ayuda disfrazadas', pendiente: 'Con una tarjeta pendiente', varios: 'Varios movimientos, IA y límites' };
+const GRUPOS = { typos: 'Errores de escritura', jerga: 'Jerga, autocorrecciones e incertidumbre', historias: 'Historias largas y números en letras', negaciones: 'Negaciones e hipotéticos', deudas: 'Deudas, préstamos y abonos', numeros: 'Números, fechas y unidades', transferencias: 'Transferencias y monedas', personas: 'Personas y compartidos', ayuda: 'Preguntas de ayuda disfrazadas', pendiente: 'Con una tarjeta pendiente', varios: 'Varios movimientos, IA y límites', conversacion: 'Ronda 2: conversaciones de varios mensajes y colas', modismos: 'Ronda 2: modismos colombianos', finalidad: 'Ronda 2: el para qué manda sobre el dónde', calculos: 'Ronda 2: cuentas compuestas', aprendizaje: 'Ronda 2: aprender sin contaminar', etiquetas: 'Ronda 2: etiquetas', programacion: 'Ronda 2: pagos fijos y alcancías con fechas relativas', banco: 'Ronda 2: notificaciones del banco pegadas' };
 
 let md = `# Batería adversarial del bot (RED-001 a RED-${CASOS.length})
 
