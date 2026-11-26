@@ -6,6 +6,8 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-24
 
+- Chat: el hilo ya no se arrastra hacia los lados. Se corrigieron dos casos con letra extra grande que cortaban el borde de una tarjeta: el botón largo de "Pasar ... de Efectivo a Nequi" (ahora baja de línea) y la fila "Quedó en ..." del aviso de guardado.
+- La ayuda del chat también entiende «como meto plata que me entro» y «donde anoto un pago que me hicieron por un trabajo», y ofrece ejemplos de ingreso que se tocan: «ingreso 50000 actividad» y «me pagaron 80k congreso nequi».
 - La ayuda del chat entiende mejor las preguntas de todos los días sobre plata que entra: «como registro una plata que me ingresa como pago de una actividad», «cuando me paguen la quincena como lo anoto» o «como registro un pago que me hicieron» responden con el tema de ingresos. «Como saco el total del mes» lleva a los saldos y no al cajero.
 - Radiografía técnica del intérprete de lenguaje natural, con el orden real de las reglas y una lista de puntos débiles para pruebas de estrés: [ARQUITECTURA-BOT.md](ARQUITECTURA-BOT.md).
 - La guía de usuario también existe como página interactiva de un solo archivo, [GUIA-USUARIO.html](GUIA-USUARIO.html): tiene índice, botón para volver arriba, un espacio para el enlace y la clave de acceso, botones para copiar cada frase del chat y 15 capturas reales incrustadas (hechas con datos inventados). Se genera con `npm run capturas:guia` y `npm run guia:html`.

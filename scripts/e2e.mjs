@@ -902,6 +902,17 @@ try {
     igual(await pag.evaluate(() => document.querySelector('#texto').value.trim()), 'almuerzo 12000', 'el ejemplo queda escrito en el cuadro');
     await pag.evaluate(() => { const x = document.querySelector('#texto'); x.value = ''; x.dispatchEvent(new Event('input', { bubbles: true })); });
   });
+  await prueba('chat: el hilo no se desplaza hacia los lados y nada se sale de su ancho', async () => {
+    await irA('Chat');
+    await escribir('como meto plata que me entro');
+    contiene(await ultima(), 'Un ingreso lleva', 'la pregunta de ingresos se responde');
+    await escribir('almuerzo con ana luis y marta 60000 nequi con una descripcion larguisima larguisima larguisima larguisima');
+    const r = await pag.evaluate(() => { const c = document.querySelector('#chat'); const ancho = c.clientWidth; const fuera = [...c.querySelectorAll('.burbuja, .burbuja *')].filter(e => e.getBoundingClientRect().right > c.getBoundingClientRect().right + 1).length; return { sw: c.scrollWidth, cw: ancho, ov: getComputedStyle(c).overflowX, fuera }; });
+    igual(r.ov, 'hidden', 'el hilo no tiene scroll horizontal');
+    igual(r.sw <= r.cw, true, 'el contenido no es más ancho que el hilo');
+    igual(r.fuera, 0, 'ninguna burbuja ni tarjeta se pasa del borde');
+    await pulsar('Cancelar');
+  });
   await prueba('calor del mes: tocar un día con gastos abre la hoja de ese día', async () => {
     await irA('Resumen'); await espera(700);
     await pag.evaluate(() => document.querySelector('#mapa-calor .calor-dia:not(.nf)')?.click()); await espera(500);

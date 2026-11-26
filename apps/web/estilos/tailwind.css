@@ -1146,3 +1146,15 @@ li.grupo.grupo-dia:hover { background: var(--elev); }
   .ayuda-sin-bloque { display: grid; gap: .5rem; }
   .ayuda-parecidos { display: flex; flex-wrap: wrap; gap: .4rem; }
 }
+
+/* @@chat-sin-lado: el hilo del chat no se arrastra hacia los lados ni corta el borde de las burbujas y las tarjetas */
+#chat { overflow-x: hidden; overscroll-behavior-x: none; touch-action: pan-y; max-width: 100%; box-sizing: border-box; }
+#chat > * { min-width: 0; max-width: 100%; box-sizing: border-box; }
+#chat .burbuja, #chat .burbuja.carta { max-width: 100%; box-sizing: border-box; }
+#chat .burbuja.yo, #chat .burbuja.bot { max-width: min(100%, 90%); }
+#chat .burbuja.carta { max-width: 100%; }
+#form { max-width: 100%; box-sizing: border-box; overflow-x: clip; }
+#chat .chip { white-space: normal; text-align: left; height: auto; max-width: 100%; overflow-wrap: anywhere; }
+#chat .impacto, #chat .impacto-fila { min-width: 0; max-width: 100%; box-sizing: border-box; }
+#chat .impacto-fila > span { min-width: 0; flex: 1 1 auto; }
+#chat .impacto-fila > b { flex: 0 0 auto; }

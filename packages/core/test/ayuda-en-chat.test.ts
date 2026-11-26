@@ -89,3 +89,11 @@ test('«como saco el total del mes» lleva a saldos y no al cajero', async () =>
   const botones = (await nuevoBot().di('como saco el total del mes')).flatMap(x => x.botones ?? []).map(b => b.id).join(' ');
   assert.match(botones, /poner:saldo/);
 });
+
+test('«como meto plata que me entro» y «donde anoto un pago que me hicieron por un trabajo» dan ejemplos de ingreso tocables', async () => {
+  for (const p of ['como meto plata que me entro', 'donde anoto un pago que me hicieron por un trabajo', 'como registro una plata que me ingresa como pago de una actividad']) {
+    const botones = (await nuevoBot().di(p)).flatMap(x => x.botones ?? []).map(b => b.id);
+    assert.ok(botones.includes('poner:ingreso 50000 actividad'), p);
+    assert.ok(botones.some(b => /^poner:me pagaron 80k congreso/.test(b)), p);
+  }
+});
