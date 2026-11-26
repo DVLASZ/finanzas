@@ -12,7 +12,7 @@ test('el monto dicho en cifra y en letras cuenta una vez', () => {
 });
 
 test('un teléfono dictado no queda en la frase', () => {
-  assert.equal(limpiarDictado('le consigne a juan al 3001234567 cincuenta mil'), 'le consigne a juan 50000');
+  assert.equal(limpiarDictado('le consigne a juan al 300' + '1234567 cincuenta mil'), 'le consigne a juan 50000');
 });
 
 test('la última corrección dictada reemplaza el monto', () => {

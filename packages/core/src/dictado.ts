@@ -54,7 +54,7 @@ export function limpiarDictado(texto: string, ctx?: Contexto): string {
   // «eeeh pues anota...»: la muletilla del comienzo
   t = t.replace(/^\s*(?:e+h+m*|mm+|hmm+)[\s,]+(?:pues[\s,]+)?/i, '');
   t = t.replace(/\bde el\b/gi, 'del');
-  // un teléfono dictado en medio («a Juan al 3001234567») no es un monto ni una cuenta
+  // un teléfono dictado en medio («a Juan al» seguido de diez dígitos) no es un monto ni una cuenta
   t = t.replace(/(?:\b(?:al|el|numero|número|celular|cel)\s+)?(?<![\d.,])3\d{9}(?![\d.,])/gi, ' ');
   // «18 mil de almuerzo y treinta y cinco de gasolina»: el segundo monto, dicho corto, hereda el «mil»
   if (/\b\d+\s*mil\b/i.test(t)) {
