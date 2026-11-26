@@ -202,7 +202,7 @@ export function construirMovimiento(
       const pid = persona(p.persona!);
       salidaDeDinero(p.monto);
       mov({ cuentaId: pid, monto: p.monto, moneda: M });
-      nuevoCompromiso(pid, 'me_deben', p.monto, M, p.motivo);
+      nuevoCompromiso(pid, 'me_deben', p.monto, M, p.motivo, p.fechaLimite);
       break;
     }
     case 'deuda': {

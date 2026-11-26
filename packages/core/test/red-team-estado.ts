@@ -11,7 +11,7 @@ const sin = (s: string): string => s.normalize('NFD').replace(/\p{M}/gu, '').toL
 const corto = (t: string, n = 110): string => t.replace(/\n/g, ' | ').slice(0, n);
 
 /** Lo que se ve de una cosa (tarjeta o movimiento) para compararla con un Item. */
-interface Vista { tipo: string; monto: number; cuentas: string[]; cat: string; personas: string[]; concepto: string; etiqueta: string | null; fecha: string; reparto: { nombre: string; monto: number }[] }
+interface Vista { tipo: string; monto: number; cuentas: string[]; cat: string; personas: string[]; concepto: string; etiqueta: string | null; fecha: string; vence: string; reparto: { nombre: string; monto: number }[] }
 
 export const ahoraDe = (caso: Caso): Date => (caso.ahora ? new Date(caso.ahora) : AHORA);
 
@@ -22,7 +22,7 @@ async function vistaDePropuesta(bot: Bot, p: Propuesta, ahora: Date): Promise<Vi
   void ahora;
   return {
     tipo: p.tipo, monto: p.monto, cuentas: [nombre(p.cuentaId), nombre(p.cuentaDestinoId)].filter(Boolean), cat: nombre(p.categoriaId),
-    personas, concepto: p.concepto ?? '', etiqueta: p.etiqueta ?? null, fecha: p.ocurridoEn ?? '', reparto: p.personas ?? [],
+    personas, concepto: p.concepto ?? '', etiqueta: p.etiqueta ?? null, fecha: p.ocurridoEn ?? '', vence: p.fechaLimite ?? '', reparto: p.personas ?? [],
   };
 }
 
@@ -54,7 +54,7 @@ async function vistasGuardadas(bot: Bot): Promise<Vista[]> {
       cuentas: ids.filter(id => tipoDe(id) === 'dinero').map(nombre),
       cat: nombre(ids.find(id => tipoDe(id) === 'categoria') ?? ''),
       personas: ids.filter(id => tipoDe(id) === 'persona').map(nombre),
-      concepto: m.descripcion, etiqueta: m.etiqueta ?? null, fecha: m.ocurridoEn, reparto: [],
+      concepto: m.descripcion, etiqueta: m.etiqueta ?? null, fecha: m.ocurridoEn, vence: '', reparto: [],
     };
   });
 }
@@ -75,6 +75,7 @@ function cumpleItem(i: Item, v: Vista): string | null {
     if (i.etiqueta !== null && sin(v.etiqueta ?? '') !== sin(i.etiqueta)) return `etiqueta «${v.etiqueta}» y se esperaba ${i.etiqueta}`;
   }
   if (i.fecha && !v.fecha.startsWith(i.fecha)) return `fecha ${v.fecha.slice(0, 10)} y se esperaba ${i.fecha}`;
+  if (i.vence && !v.vence.startsWith(i.vence)) return `vence ${v.vence.slice(0, 10) || 'sin fecha'} y se esperaba ${i.vence}`;
   for (const p of i.personas ?? []) {
     if (!v.reparto.some(r => sin(r.nombre).includes(sin(p.nombre)) && r.monto === p.monto)) return `el reparto no trae a ${p.nombre} con ${p.monto}`;
   }

@@ -6,8 +6,10 @@
  * (Cloudflare, tu PC o el celular).
  */
 
+import { RE_RELATIVA, relativa } from './fechasRelativas.ts';
+
 const OFFSET_MS = -5 * 3600 * 1000;
-const DIAS = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+const DIAS =['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
 const DIAS_CORTOS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -178,7 +180,13 @@ export function hallarFecha(t: string, ahora: Date): FechaHallada {
   let m: RegExpMatchArray | null;
   const PIDE_MES = `(${RE_MESES})`;
   const DIA_MES = '(\\d{1,2}|primero)';
-  if ((m = quitar(/\b(anteayer|antier|antes de ayer)\b/))) { sumarDias(-2); explicita = diaConPalabra = true; }
+  if ((m = quitar(RE_RELATIVA))) {
+    // «anteanoche», «el 15 del mes pasado», «el último día del mes pasado» (ver fechasRelativas.ts)
+    const r = relativa(m, c);
+    if (!r) falla(MSG_NO_EXISTE);
+    else { ponerDia(r.anio, r.mes, r.dia); if (r.noche) aHora(20); }
+    explicita = true;
+  } else if ((m = quitar(/\b(anteayer|antier|antes de ayer)\b/))) { sumarDias(-2); explicita = diaConPalabra = true; }
   else if ((m = quitar(/\bayer\b/))) { sumarDias(-1); explicita = diaConPalabra = true; }
   else if ((m = quitar(/\banoche\b/))) { sumarDias(-1); aHora(20); explicita = true; }
   else if ((m = quitar(/\bhoy\b/))) { explicita = diaConPalabra = true; }
