@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { nuevoBot, textoDe } from '../../../tests/ayudas.ts';
 import { CASOS, type Caso, type Esp } from './red-team-casos.ts';
+import { ahoraDe, conversar, evaluarEstado, evaluarSinRegla, FLUJOS_PROGRAMACION } from './red-team-estado.ts';
 
 type Bot = ReturnType<typeof nuevoBot>;
 type Salidas = Awaited<ReturnType<Bot['di']>>;
@@ -85,7 +86,12 @@ function cumpleCarta(e: Esp, c: Carta | null, texto: string, botones: string[]):
   }
 }
 
-async function evaluarSimple(bot: Bot, e: Esp, texto: string): Promise<string | null> {
+async function evaluarSimple(bot: Bot, e: Esp, texto: string, caso?: Caso): Promise<string | null> {
+  if (e.t === 'estado' || e.t === 'sinregla') {
+    const ahora = caso ? ahoraDe(caso) : undefined;
+    const ultimo = await conversar(bot, caso ?? ({ texto } as Caso), ahora as Date);
+    return e.t === 'estado' ? evaluarEstado(bot, e, ultimo, ahora as Date) : evaluarSinRegla(bot, e, ultimo);
+  }
   const s = await bot.di(texto);
   const botones = s.flatMap(x => x.botones ?? []).map(b => b.id);
   if (e.t === 'varios') {
@@ -238,14 +244,14 @@ const FLUJOS: Record<string, (caso: Caso) => Promise<string | null>> = {
 
 export async function evaluar(caso: Caso): Promise<string | null> {
   if (caso.esp.t === 'flujo') {
-    const f = FLUJOS[caso.esp.id];
+    const f = FLUJOS[caso.esp.id] ?? FLUJOS_PROGRAMACION[caso.esp.id];
     return f ? f(caso) : `flujo sin definir: ${caso.esp.id}`;
   }
-  const conEstado = async (): Promise<Bot> => { const b = nuevoBot(); for (const f of caso.antes ?? []) await confirmar(b, f); return b; };
+  const conEstado = async (): Promise<Bot> => { const b = nuevoBot(ahoraDe(caso)); for (const f of caso.antes ?? []) await confirmar(b, f); return b; };
   const alternativas: Esp[] = caso.esp.t === 'o' ? caso.esp.alt : [caso.esp];
   const razones: string[] = [];
   for (const alt of alternativas) {
-    const r = await evaluarSimple(await conEstado(), alt, caso.texto).catch(err => `error: ${String(err)}`);
+    const r = await evaluarSimple(await conEstado(), alt, caso.texto, caso).catch(err => `error: ${String(err)}`);
     if (r === null) return null;
     razones.push(r);
   }

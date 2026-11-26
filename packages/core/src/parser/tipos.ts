@@ -13,7 +13,7 @@ export type Comando =
   | 'recurrente_agregar' | 'recurrente_quitar' | 'recurrentes' | 'recurrente_pausar' | 'recurrente_reanudar' | 'recurrente_fin'
   | 'persona_agregar' | 'persona_renombrar'
   | 'deshacer_varios' | 'subcategoria' | 'cierre_cerrar' | 'cierre_abrir' | 'cierre_ver'
-  | 'corte' | 'saldo_cuenta' | 'presupuesto_semana' | 'revision' | 'jornales' | 'cuadrar_persona' | 'metas' | 'meta_fijar' | 'meta_apartar' | 'meta_sacar' | 'meta_quitar';
+  | 'corte' | 'saldo_cuenta' | 'presupuesto_semana' | 'revision' | 'jornales' | 'cuadrar_persona' | 'metas' | 'meta_fijar' | 'meta_apartar' | 'meta_sacar' | 'meta_quitar' | 'aprender';
 
 /** Un dato que falta o que hay que aclarar antes de poder confirmar. */
 export interface Faltante {

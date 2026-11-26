@@ -246,6 +246,11 @@ export function categorizar(t: string, ctx: Contexto): string | null {
     const a = ctx.aprendido[w];
     if (a?.categoriaId && existe(a.categoriaId)) return a.categoriaId;
   }
+  // para qué es la compra manda sobre el lugar: «uber a la universidad» es Transporte aunque exista la categoría Universidad
+  for (const f of ctx.diccionario.finalidad ?? []) {
+    const id = f.ids.find(existe);
+    if (id && f.palabras.some(p => coincidePalabraClave(t, p))) return id;
+  }
   // el nombre tal cual gana al diccionario; el nombre en singular o plural («suscripción») va después, para que
   // «reparación de la bicicleta» siga el orden del diccionario como siempre
   const exacta = ctx.cuentas.find(c => c.tipo === 'categoria' && c.id !== 'cat:descuadre' && traePalabras(t, c.clave));
