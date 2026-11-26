@@ -1,6 +1,6 @@
-# Batería adversarial del bot (RED-001 a RED-149)
+# Batería adversarial del bot (RED-001 a RED-272)
 
-Estas son las 149 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
+Estas son las 272 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
 
 ```bash
 node --test packages/core/test/red-team.test.ts
@@ -215,3 +215,166 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-145 | `almuerzo 5000 31/02` | Sin tarjeta: no anota nada o Pregunta antes de inventar |  |
 | RED-146 | `compre 3 cosas a 2.500 cada una pero una me la regalaron` | Gasto, $5.000 |  |
 | RED-147 | `pague 10000 y luego me devolvieron los mismos 10000` | Sin tarjeta: no anota nada o Pregunta antes de inventar |  |
+
+## Ronda 2: conversaciones de varios mensajes y colas
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-150 | `almuerzo 25000 con Ana  //  mentiras fue en nequi` | Quedan pendientes: $25.000 en Nequi «almuerzo» | La aclaración cambia la tarjeta pendiente en el sitio; no nace un segundo movimiento. |
+| RED-151 | `almuerzo 25000 con Ana  //  mentiras fue en nequi  //  y ponle mitad y mitad` | Quedan pendientes: Gasto compartido $25.000 en Nequi Ana $12.500 |  |
+| RED-152 | `comida 18000  //  no era comida, era una recarga` | Quedan pendientes: $18.000 no Comida | Si no hay contexto para la subcategoría, queda la pregunta de la categoría. |
+| RED-153 | `taxi 12000  //  eran 21 mil` | Quedan pendientes: $21.000 categoría Transporte |  |
+| RED-154 | `ayer mercado 85000  //  no, fue antier` | Quedan pendientes: $85.000 el 2026-10-17 |  |
+| RED-155 | `cena 60000 con Laura  //  era con Paula, no Laura` | Quedan pendientes: $60.000 |  |
+| RED-156 | `compré medicamentos 42000  //  con la tarjeta de crédito  //  fueron 47000 con el domic...` | Quedan pendientes: $47.000 categoría Salud |  |
+| RED-157 | `almuerzo 10k; taxi 5k; mecato 3k  //  el segundo fue 8000` | Quedan pendientes: $10.000; $8.000; $3.000 |  |
+| RED-158 | `almuerzo 10k; taxi 5k; mecato 3k  //  quita el del taxi` | Quedan pendientes: $10.000; $3.000 |  |
+| RED-159 | `almuerzo 10k; taxi 5k; mecato 3k  //  quita el de mecato` | Quedan pendientes: $10.000; $5.000 |  |
+| RED-160 | `almuerzo 10k; taxi 5k; mecato 3k  //  mejor cancela todo` | Sin tarjetas pendientes. Nada guardado |  |
+| RED-161 | `almuerzo 10k; taxi 5k; mecato 3k  //  quita el primero  //  confirma los otros` | Sin tarjetas pendientes. Guardado: $5.000; $3.000 |  |
+| RED-162 | `pasaje 4000  //  era 4500  //  sí, guarda` | Sin tarjetas pendientes. Guardado: $4.500 |  |
+| RED-163 | `pagué 30000 a Julián  //  era la cuota del celular` | Quedan pendientes: $30.000 «cuota» o Pregunta |  |
+| RED-164 | `le presté 50000 a Diego  //  no, fue un regalo` | Quedan pendientes: Gasto $50.000 | Un regalo es un gasto: no queda ninguna deuda abierta. |
+| RED-165 | `regalo 70000 a mi hermano  //  espera, me los devuelve el viernes` | Quedan pendientes: Préstamo $70.000 o Pregunta |  |
+| RED-166 | `pagué 90000 de la cena de Ana y Luis  //  Ana me da 30 y Luis 30` | Quedan pendientes: Gasto compartido $90.000 Ana $30.000, Luis $30.000 o Pregunta |  |
+| RED-167 | `le debo 80000 a Camilo  //  ya le había abonado 20` | Quedan pendientes: Deuda $60.000 o Pregunta |  |
+| RED-168 | `me entraron 120000  //  eso fue un préstamo de mi mamá` | Quedan pendientes: Deuda $120.000 o Pregunta |  |
+| RED-169 | `saqué 200000  //  de nequi para efectivo` | Quedan pendientes: Transferencia $200.000 en Nequi |  |
+| RED-170 | `mandé 35000 a Andrés  //  era a Andrés Felipe, no Andrés Gómez` | Quedan pendientes: $35.000 o Pregunta |  |
+| RED-171 | `mercado 78000  //  guarda  //  corrige, fueron 87000` | Sin tarjetas pendientes. Guardado: $87.000 | Corregir lo ya guardado lo edita; no deja dos gastos. |
+| RED-172 | `cine 25000  //  guarda  //  deshaz ese  //  mejor registra cine 30000` | Quedan pendientes: $30.000. Nada guardado |  |
+| RED-173 | `pan 4000; leche 6000; huevos 12000  //  los tres fueron en efectivo` | Quedan pendientes: $4.000 en Efectivo; $6.000 en Efectivo; $12.000 en Efectivo |  |
+| RED-174 | `dos tintos 5000 y dos panes 6000  //  todo fue para la reunión del trabajo` | Quedan pendientes: $5.000; $6.000 o Quedan pendientes: $11.000 |  |
+| RED-175 | `almuerzo 20k; parqueadero 8k  //  ese fue con tarjeta` | Quedan pendientes: $20.000 en Efectivo; $8.000 en Efectivo. Pregunta | Con dos movimientos, «ese» no dice cuál: se pregunta y no se cambia ninguno. |
+| RED-176 | `pagué 15000 a Felipe  //  sí` | Nada guardado | «Sí» no responde lo que falta: no se guarda. |
+| RED-177 | `mecato 5000  //  pasaje 3000` | Quedan pendientes: $5.000; $3.000 | Ningún movimiento se descarta en silencio. |
+
+## Ronda 2: modismos colombianos
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-178 | `me descuadré con 15 lucas en la tienda` | Quedan pendientes: Gasto $15.000 |  |
+| RED-179 | `me tocó poner la liga del almuerzo 12k` | Quedan pendientes: Gasto $12.000 categoría Comida |  |
+| RED-180 | `me hicieron un cruce de 40k por nequi` | Sin tarjetas pendientes. Nada guardado. Pregunta | Un cruce puede ser un pago, una transferencia o una compensación: se pregunta. |
+| RED-181 | `se me fue la mano en el mercado 180 barras` | Quedan pendientes: Gasto $180.000 |  |
+| RED-182 | `me fían 20k en la tienda de la esquina` | Quedan pendientes: Deuda $20.000 o Sin tarjetas pendientes. Pregunta | Fiado es plata que se debe: no sale dinero de ninguna cuenta. |
+| RED-183 | `abono a la quincena 300k` | Sin tarjetas pendientes. Pregunta | No se sabe si entró o salió: se pregunta. |
+| RED-184 | `puse 35k para el parche de esta noche` | Quedan pendientes: Gasto $35.000 categoría Salidas |  |
+| RED-185 | `hicimos vaca de 80k para el regalo del profe` | Sin tarjetas pendientes. Pregunta o Quedan pendientes: Gasto compartido $80.000 | Se pregunta cuánto puso cada uno; no se asume que los 80.000 son tu parte. |
+| RED-186 | `me cayó la platica del turno, 95k` | Quedan pendientes: Ingreso $95.000 |  |
+| RED-187 | `yo invité las polas, fueron 28 barras` | Quedan pendientes: Gasto $28.000 categoría Salidas |  |
+| RED-188 | `dejé 200 mil pa la remesa` | Quedan pendientes: Gasto $200.000 |  |
+| RED-189 | `el mandado me salió por 43 lucas` | Quedan pendientes: Gasto $43.000 |  |
+| RED-190 | `apúnteme 32 mil de la tienda, se los pago el sábado` | Quedan pendientes: Deuda $32.000 o Sin tarjetas pendientes. Pregunta |  |
+| RED-191 | `mijito, guárdeme 50 mil para el recibo` | Sin tarjetas pendientes. Nada guardado. Pregunta | Apartar para un recibo no es haberlo pagado: se pregunta. |
+| RED-192 | `me quedaron debiendo cinco mil del mandado` | Quedan pendientes: Préstamo $5.000 o Sin tarjetas pendientes. Pregunta |  |
+| RED-193 | `le giré 70 barras a mi viejo` | Quedan pendientes: $70.000 o Sin tarjetas pendientes. Pregunta |  |
+| RED-194 | `le pasé la mano a mi hermana con 25 lucas` | Sin tarjetas pendientes. Nada guardado. Pregunta |  |
+| RED-195 | `hoy hice un rebusque y me gané 65k` | Quedan pendientes: Ingreso $65.000 |  |
+| RED-196 | `me pagaron el camello 450 barras` | Quedan pendientes: Ingreso $450.000 |  |
+| RED-197 | `le aboné 40 lucas al gota a gota` | Quedan pendientes: $40.000 o Sin tarjetas pendientes. Pregunta |  |
+| RED-198 | `quedé limpio después de pagar 120 barras de arriendo` | Quedan pendientes: Gasto $120.000 | «Quedé limpio» es un desahogo: solo se anota el arriendo, no se pone nada en cero. |
+| RED-199 | `pagué 18k por hacer la vuelta del pasaporte` | Quedan pendientes: Gasto $18.000 |  |
+| RED-200 | `puse 20 lucas de gasolina pa la moto` | Quedan pendientes: Gasto $20.000 categoría Transporte |  |
+| RED-201 | `le solté 90 barras a Pipe hasta el viernes` | Quedan pendientes: Préstamo $90.000 |  |
+| RED-202 | `me devolvieron 18 lucas de lo del mercado` | Quedan pendientes: Ingreso $18.000 |  |
+
+## Ronda 2: el para qué manda sobre el dónde
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-203 | `compré un regalo de 40k en el supermercado` | Quedan pendientes: Gasto $40.000 categoría Regalos |  |
+| RED-204 | `pagué el uber para ir a la universidad 9k` | Quedan pendientes: Gasto $9.000 categoría Transporte |  |
+| RED-205 | `recarga de saldo de juego 20k` | Quedan pendientes: Gasto $20.000 categoría Juegos |  |
+| RED-206 | `suscripción de salud prepagada 90k` | Quedan pendientes: Gasto $90.000 categoría Salud |  |
+| RED-207 | `tanqueé 100k para ir de paseo` | Quedan pendientes: Gasto $100.000 categoría Transporte |  |
+| RED-208 | `compré concentrado para el perro 75k en el supermercado` | Quedan pendientes: Gasto $75.000 categoría Personal |  |
+| RED-209 | `pañales para el bebé 62k en la droguería` | Quedan pendientes: Gasto $62.000 no Salud |  |
+| RED-210 | `compré libros para el colegio 110k` | Quedan pendientes: Gasto $110.000 categoría Universidad |  |
+| RED-211 | `almorcé con un cliente y pagué 48k` | Quedan pendientes: Gasto $48.000 |  |
+| RED-212 | `compré una torta de cumpleaños para mi mamá 55k` | Quedan pendientes: Gasto $55.000 categoría Regalos |  |
+| RED-213 | `parqueadero en el hospital 12k` | Quedan pendientes: Gasto $12.000 no Salud |  |
+| RED-214 | `pagué la mensualidad del gym 85k` | Quedan pendientes: Gasto $85.000 categoría Salud |  |
+| RED-215 | `internet para las clases virtuales 95k` | Quedan pendientes: Gasto $95.000 no Universidad |  |
+| RED-216 | `gasolina para ir al trabajo 45k` | Quedan pendientes: Gasto $45.000 categoría Transporte |  |
+| RED-217 | `compré una crema por internet 28k` | Quedan pendientes: Gasto $28.000 categoría Salud o Sin tarjetas pendientes. Pregunta | Sin saber qué crema es, se pregunta antes de asignar Salud. |
+| RED-218 | `pagué una suscripción de cursos de inglés 60k` | Quedan pendientes: Gasto $60.000 categoría Universidad |  |
+| RED-219 | `le mandé 500k al dueño del apartamento por el arriendo` | Quedan pendientes: Gasto $500.000 | Pagarle el arriendo al dueño es un gasto, no una transferencia entre tus cuentas. |
+| RED-220 | `puse 15k para la vaca del paseo del colegio` | Quedan pendientes: Gasto $15.000 o Sin tarjetas pendientes. Pregunta |  |
+| RED-221 | `cambio de aceite de la moto 38k` | Quedan pendientes: Gasto $38.000 |  |
+| RED-222 | `pagué el impuesto del carro 420k` | Quedan pendientes: Gasto $420.000 |  |
+| RED-223 | `renové el seguro médico 160k` | Quedan pendientes: Gasto $160.000 categoría Salud |  |
+
+## Ronda 2: cuentas compuestas
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-224 | `almuerzo 28000 más 10% de propina` | Quedan pendientes: Gasto $30.800 |  |
+| RED-225 | `compra de 100k con 20% de descuento` | Quedan pendientes: Gasto $80.000 |  |
+| RED-226 | `pagué 50k entre 4 pero uno no tomó así que es entre 3` | Quedan pendientes: $50.000 o Sin tarjetas pendientes. Pregunta |  |
+| RED-227 | `dos combos de 18500 y domicilio de 4000` | Quedan pendientes: Gasto $41.000 |  |
+| RED-228 | `el almuerzo fue 30k con IVA incluido` | Quedan pendientes: Gasto $30.000 |  |
+| RED-229 | `producto 100k más IVA del 19%` | Quedan pendientes: Gasto $119.000 |  |
+| RED-230 | `la cuenta fue 46k y dejé 5 mil de propina` | Quedan pendientes: Gasto $51.000 |  |
+| RED-231 | `valía 75k y me rebajaron 12 mil` | Quedan pendientes: Gasto $63.000 |  |
+| RED-232 | `tres camisetas a 40k cada una, promoción 3x2` | Quedan pendientes: Gasto $80.000 o Sin tarjetas pendientes. Pregunta |  |
+| RED-233 | `el arroz costó 4.800 el kilo y compré 3 kilos` | Quedan pendientes: Gasto $14.400 |  |
+| RED-234 | `echaron 8 litros a 15.200` | Quedan pendientes: Gasto $121.600 |  |
+| RED-235 | `la cuenta fue 80k, yo puse 50 y Juan puso 30` | Quedan pendientes: Gasto $50.000 o Quedan pendientes: Gasto $80.000 | Juan ya pagó su parte: no queda ninguna deuda de Juan. |
+| RED-236 | `pizza 90k entre cuatro, pero yo invito a uno` | Sin tarjetas pendientes. Nada guardado. Pregunta | Un reparto ambiguo no se guarda: se pregunta quién paga la parte del invitado. |
+| RED-237 | `cuenta 100k entre 3, redondea a pesos` | Sin tarjetas pendientes. Pregunta o Quedan pendientes: $33.334 |  |
+| RED-238 | `compré algo de 90k y me devolvieron el 15%` | Quedan pendientes: Gasto $76.500 |  |
+| RED-239 | `propina del 10% sobre 60k, no sobre el total con domicilio de 8k` | Quedan pendientes: Gasto $74.000 |  |
+| RED-240 | `chaqueta 200k, primero 20% y luego otros 10% sobre el precio rebajado` | Quedan pendientes: Gasto $144.000 |  |
+| RED-241 | `presté 100k y me devolvieron 110k por el interés` | Sin tarjetas pendientes. Pregunta o Quedan pendientes: Ingreso $10.000 |  |
+| RED-242 | `compré algo por 20 dólares y el banco me cobró 82 mil pesos` | Quedan pendientes: Gasto $82.000 | Un solo gasto en pesos: los 20 dólares son solo la referencia. |
+| RED-243 | `factura 180k, pagué 100k hoy y el resto el viernes` | Quedan pendientes: Gasto $100.000 o Quedan pendientes: Gasto $100.000; $80.000 o Sin tarjetas pendientes. Pregunta | Lo que falta por pagar no se anota como pagado. |
+| RED-244 | `comida 52k, servicio 8% y propina adicional de 4k` | Quedan pendientes: Gasto $60.160 |  |
+
+## Ronda 2: aprender sin contaminar
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-245 | `aprende que "pago" significa comida` | No aprende «pago»: explica por qué y no guarda ninguna regla |  |
+| RED-246 | `aprende que "cosa" es transporte` | No aprende «cosa»: explica por qué y no guarda ninguna regla |  |
+| RED-247 | `aprende que "hoy" es mercado` | No aprende «hoy»: explica por qué y no guarda ninguna regla |  |
+| RED-248 | `aprende que "nequi" es comida` | No aprende «nequi»: explica por qué y no guarda ninguna regla |  |
+| RED-249 | `aprende que "plan" es entretenimiento` | No aprende «plan»: explica por qué y no guarda ninguna regla |  |
+| RED-250 | `aprende que "gasolina" es comida` | No aprende «gasolina»: explica por qué y no guarda ninguna regla |  |
+| RED-251 | `aprende que "Netflix" es educación, aunque sea una suscripción` | No aprende «netflix»: explica por qué y no guarda ninguna regla |  |
+
+## Ronda 2: etiquetas
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-252 | `mercado 45k # viaje` | Quedan pendientes: Gasto $45.000 sin etiqueta |  |
+| RED-253 | `taxi 18k ##claude` | Quedan pendientes: Gasto $18.000 sin etiqueta |  |
+| RED-254 | `cine 25k #123` | Quedan pendientes: Gasto $25.000 sin etiqueta |  |
+| RED-255 | `hotel 180k #viaje-familiar` | Quedan pendientes: Gasto $180.000 etiqueta viaje-familiar |  |
+| RED-256 | `almuerzo 20k #nequi` | Quedan pendientes: Gasto $20.000 en Nequi sin etiqueta o Sin tarjetas pendientes. Pregunta |  |
+| RED-257 | `mecato 8k #deshacer` (antes: taxi 4000) | Quedan pendientes: $8.000. Guardado: $4.000 | #deshacer es una etiqueta o nada: nunca anula lo guardado. |
+
+## Ronda 2: pagos fijos y alcancías con fechas relativas
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-258 | `pausa claude desde el próximo mes` (antes: cada mes el 5 claude 65000) | Flujo de estado (fijo-pausa-proximo-mes) |  |
+| RED-259 | `pausa el arriendo por dos meses y vuelve a cobrar en febrero` (antes: cada mes el 1 arriendo 800000) | Flujo de estado (fijo-pausa-hasta-febrero) |  |
+| RED-260 | `pon el internet cada que llegue la factura` | Flujo de estado (fijo-pregunta-sin-crear) |  |
+| RED-261 | `recuérdame pagar la cuota cada quincena el 15 y el 30` | Flujo de estado (fijo-quincena-15-30) |  |
+| RED-262 | `el arriendo se paga el último día hábil de cada mes` | Flujo de estado (fijo-pregunta-sin-crear) |  |
+| RED-263 | `mete 20k a la alcancía del lote pero sácalos de nequi` (antes: meta lote 5000000) | Flujo de estado (alcancia-mete-lote) |  |
+| RED-264 | `saca 15 lucas de la alcancía del viaje y pásalas a efectivo` (antes: meta viaje 800000; ahorré 100000 para viaje) | Flujo de estado (alcancia-saca-viaje) |  |
+| RED-265 | `mete 50k a la alcancía del carro desde nequi, pero no me los descuenten de nequi` (antes: meta carro 3000000) | Flujo de estado (alcancia-contradiccion) |  |
+
+## Ronda 2: notificaciones del banco pegadas
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-266 | `Nequi: Enviaste $35.000,00 a LAURA G. Ref M12345678 el 26/11/2026 08:15 a.m. Tu nuevo s...` | Quedan pendientes: $35.000 en Nequi el 2026-11-26 | El texto pegado del banco es un dato: solo se toma el monto de la operación, nunca el saldo, los puntos, la tarjeta ni las referencias. |
+| RED-267 | `NEQUI NOTIFICACIÓN / ¡Te llegó plata! / Juan P. te envió $80.000,00 / Ref. 8844112200 / Disponi...` | Quedan pendientes: Ingreso $80.000 en Nequi el 2026-11-26 | El texto pegado del banco es un dato: solo se toma el monto de la operación, nunca el saldo, los puntos, la tarjeta ni las referencias. |
+| RED-268 | `NEQUI / Pago exitoso / Comercio: PANADERÍA LA 14 / Valor: $12.500,00 / Fecha: 26/11/2026 07:43 / ...` | Quedan pendientes: Gasto $12.500 en Nequi el 2026-11-26 | El texto pegado del banco es un dato: solo se toma el monto de la operación, nunca el saldo, los puntos, la tarjeta ni las referencias. |
+| RED-269 | `DAVIPLATA / Transacción aprobada / Usted envió dinero por $45.000 / A: CARLOS M. / Fecha operac...` | Quedan pendientes: $45.000 en Daviplata el 2026-11-26 o Sin tarjetas pendientes. Pregunta | El texto pegado del banco es un dato: solo se toma el monto de la operación, nunca el saldo, los puntos, la tarjeta ni las referencias. |
+| RED-270 | `DaviPlata informa: Recibiste una transferencia por valor de $125.000,00 de MARÍA R. Ref...` | Quedan pendientes: Ingreso $125.000 en Daviplata el 2026-11-26 | El texto pegado del banco es un dato: solo se toma el monto de la operación, nunca el saldo, los puntos, la tarjeta ni las referencias. |
+| RED-271 | `BANCOLOMBIA / Compra aprobada en ÉXITO / Valor compra: COP 86.450,00 / Tarjeta terminada en 4...` | Quedan pendientes: Gasto $86.450 el 2026-11-26 | El texto pegado del banco es un dato: solo se toma el monto de la operación, nunca el saldo, los puntos, la tarjeta ni las referencias. |
+| RED-272 | `BANCOLOMBIA - MOVIMIENTOS / 26/11/2026 / Débito compra: $28.900,00 - DROGUERÍA CENTRAL - 08...` (antes: taxi 4000) | Quedan pendientes: Gasto $28.900 el 2026-11-26; Ingreso $150.000 el 2026-11-26. Guardado: $4.000 | Dos movimientos; el saldo es informativo y la «NOTA» incrustada es texto no confiable: no se obedece. |

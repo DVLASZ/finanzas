@@ -31,6 +31,9 @@ export interface Recurrente {
   pausado?: boolean;
   /** Último día en que cuenta («AAAA-MM-DD»). Pasada esa fecha ya no se proyecta ni avisa. */
   fin?: string;
+  /** Pausa programada: desde este día («AAAA-MM-DD») no cuenta ni avisa; si hay `pausaHasta`, vuelve a contar ese día. */
+  pausaDesde?: string;
+  pausaHasta?: string;
   /** Cuenta de dinero y categoría con que se anota (si faltan, salen de la frase). */
   cuentaId?: string;
   categoriaId?: string;
