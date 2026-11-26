@@ -8,6 +8,7 @@
  * hasta confirmar. Tras confirmar quedan [Editar] [Deshacer]. El bot nunca borra: solo anula.
  */
 import { calcularSaldos, compromisosSaldados, deudasPorPersona, gastoHabitual, resumenSaldos } from './consultas.ts';
+import { limpiarDictado } from './dictado.ts';
 import { construirMovimiento, errorDePago } from './asientos.ts';
 import { apodosDePersonas, ejemploDeCuenta, grupoPorDefecto, gruposDe, idPersona } from './entidades.ts';
 import {
@@ -32,10 +33,14 @@ import {
 import { hallarMontos, aMinor, formatear } from './dinero.ts';
 import { contextoDe, type Datos, type Pendiente, type Repo } from './repo.ts';
 import { alAprender, alConfirmarAprender } from './aprender.ts';
+import { reaccionSuelta } from './limites.ts';
+import { responderHistorial } from './consultasHistorial.ts';
 import { ayudaDeTema, buscarAyuda, consultaDisfrazada, esPreguntaDeAyuda, temasParecidos, type RespuestaDeAyuda } from './ayudaGuiada.ts';
 import { dividirTodo, MAX_MOVIMIENTOS_POR_MENSAJE } from './lineas.ts';
+import { narrar } from './narrativa.ts';
 import { leerNotificacionBancaria } from './banco.ts';
 import { incertidumbre } from './incertidumbre.ts';
+import { cruzado } from './cruzados.ts';
 import { descendientes, leerSubcategorias, MAX_NIVELES, puedeIrDentro } from './subcategorias.ts';
 import { leerMetas, textoAvance, textoMetas, totalApartado, type Meta } from './metas.ts';
 import { describirFrecuencia, leerPausa, leerRecurrentes, type Frecuencia, type Recurrente } from './recurrentes.ts';
@@ -266,16 +271,29 @@ class Motor {
 
     const p = this.pend;
 
+    // un emoji suelto («👍», «❌», «🔄») contesta la tarjeta pendiente; limpiar() los borra, por eso se mira el texto original
+    const reaccion = reaccionSuelta(texto);
+    if (reaccion === 'duda' && p) {
+      const salida = await this.mostrar(p);
+      salida[0].texto = `No sé si quieres confirmarla, editarla o cancelarla. ¿Cuál de las tres?\n${salida[0].texto}`;
+      return salida;
+    }
+    if (reaccion) return this.alPalabraSuelta(reaccion === 'duda' ? 'gracias' : reaccion, p);
+
     // Una notificación del banco pegada se vuelve una frase por operación (ver banco.ts); con una sola, esa frase es el mensaje.
     // Es un movimiento nuevo: no se toma como respuesta ni corrección de la tarjeta pendiente.
     const banco = leerNotificacionBancaria(texto, this.ctx);
     if (banco?.frases.length === 1) texto = banco.frases[0];
-    if (!banco) texto = sinMuletillaDeRegistro(texto);
+    if (!banco) texto = limpiarDictado(sinMuletillaDeRegistro(texto), this.ctx); // el dictado por voz, ya como se escribe (ver dictado.ts)
 
     // 0) Palabras sueltas («ok», «no», «borra», «gracias»): con una tarjeta pendiente actúan solo sobre ella;
     //    sin tarjeta se contesta corto. Nunca son un gasto sin monto ni una corrección del concepto.
     const suelta = palabraSuelta(t);
     if (suelta && (p || suelta !== 'borra')) return this.alPalabraSuelta(suelta, p);
+
+    // 0a) Una pregunta sobre el historial («cuál fue mi último gasto») solo se contesta: no crea nada ni toca la tarjeta pendiente
+    const historial = banco ? null : responderHistorial(texto, this.datos, this.ctx.ahora);
+    if (historial) return [{ texto: historial }];
 
     // 0b) La conversación sigue: una aclaración de la tarjeta («mentiras, fue en nequi»), una orden sobre la cola
     //     («quita el del taxi»), una corrección de lo recién guardado («corrige, fueron 87000») o la respuesta escrita
@@ -312,7 +330,10 @@ class Motor {
 
     // 3) Varios movimientos en un mensaje: se van mostrando de a uno
     // (una sola línea que no se anota, como «pagué 10000 y me devolvieron los mismos 10000», no se parte)
-    const todas = banco ? banco.frases : !/[\n;]/.test(texto) && incertidumbre(texto) ? [texto] : dividirTodo(texto, this.nombresDeCuentas());
+    // un párrafo que cuenta varias cosas se rearma en frases de un movimiento cada una (ver narrativa.ts)
+    const narradas = banco ? null : narrar(texto, this.nombresDeCuentas());
+    if (narradas?.length === 1) texto = narradas[0];
+    const todas = banco ? banco.frases : narradas ? narradas : !/[\n;]/.test(texto) && (incertidumbre(texto) || cruzado(texto)) ? [texto] : dividirTodo(texto, this.nombresDeCuentas());
     const partes = todas.slice(0, MAX_MOVIMIENTOS_POR_MENSAJE);
 
     // Un movimiento nuevo con una tarjeta sin confirmar: no se reemplaza en silencio. La nueva queda en la cola
