@@ -4,6 +4,16 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-26
+
+- El bot entiende dictado por voz con muletillas, números en letras y correcciones («ah no mentiras fue en efectivo»).
+- El préstamo guarda su vencimiento (`le presté 90k a Pipe hasta el viernes`).
+- Condonaciones, compensaciones y pagos de terceros no inventan gastos ni ingresos.
+- Preguntas sobre el historial se responden con datos (último gasto, promedio, comparar meses).
+- Fechas como `anteanoche` o `el último día del mes pasado`; las obligaciones futuras no se anotan como gasto.
+- Los párrafos largos se parten en un movimiento por evento.
+- Montos con decimales raros o enormes preguntan; 👍 confirma y ❌ cancela.
+
 ## 2026-11-24
 
 - Segunda ronda de pruebas difíciles del bot (123 casos nuevos, 272 en total, ver [BATERIA-RED-TEAM.md](BATERIA-RED-TEAM.md)). Con una tarjeta pendiente puedes aclarar como hablas («mentiras fue en nequi», «eran 21 mil», «era con Paula, no Laura», «no, fue un regalo») y la tarjeta se corrige en el sitio. En una lista de movimientos puedes decir «el segundo fue 8000», «quita el del taxi» o «confirma los otros». «Corrige, fueron 87000» edita lo último que guardaste.

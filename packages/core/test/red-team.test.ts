@@ -80,7 +80,11 @@ function cumpleCarta(e: Esp, c: Carta | null, texto: string, botones: string[]):
     case 'ayuda': return botones.some(b => b.startsWith('poner:') || b.startsWith('ayuda:')) && !c ? null : `no respondió con ayuda: «${corto(texto)}»`;
     case 'nada': return c ? `salió una tarjeta que no debía: «${c.texto}»` : null;
     case 'preg': return !c && (/[¿?]/.test(texto) || /Me falta|Veo varios|dime|escribe|manda/i.test(texto)) ? null : c ? `salió tarjeta en vez de preguntar: «${c.texto}»` : `no preguntó: «${corto(texto)}»`;
-    case 'util': return !c && !/Me falta/.test(texto) ? null : `no dio una respuesta útil: «${corto(texto)}»`;
+    case 'util': {
+      if (c || /Me falta/.test(texto)) return `no dio una respuesta útil: «${corto(texto)}»`;
+      return e.re && !new RegExp(e.re, 'i').test(sin(texto)) ? `la respuesta no menciona «${e.re}»: «${corto(texto, 140)}»` : null;
+    }
+    case 'alto': return !c ? (/[¿?]/.test(texto) ? null : `ni tarjeta ni pregunta: «${corto(texto)}»`) : /segur|muy alto|revisa|verifica|cifra|ceros|confirma/i.test(texto) ? null : `guardaría el monto sin avisar que es muy alto: «${c.texto}»`;
     case 'nogasto': return !c || (c.tipo !== 'Gasto' && c.tipo !== 'Gasto compartido') ? null : `salió un gasto: «${c.texto}»`;
     default: return 'expectativa desconocida';
   }
@@ -103,6 +107,12 @@ async function evaluarSimple(bot: Bot, e: Esp, texto: string, caso?: Caso): Prom
       if (e.cuentas && !sin(cartas[i].cuenta).includes(sin(e.cuentas[i]))) return `la tarjeta ${i + 1} usa «${cartas[i].cuenta}» y se esperaba ${e.cuentas[i]}`;
     }
     return null;
+  }
+  if (e.t === 'sin') {
+    const { cartas, texto: t0 } = await recoger(bot, s);
+    if (cartas.length === 0) return /[¿?]/.test(t0) || /Me falta|dime|escribe|manda/i.test(t0) ? null : `ni tarjeta ni pregunta: «${corto(t0)}»`;
+    const mal = cartas.find(c => e.tipos.includes(c.tipo));
+    return mal ? `salió ${mal.tipo} y no debía: «${mal.texto}»` : null;
   }
   if (e.t === 'sinfusion') {
     const { cartas, texto: t0 } = await recoger(bot, s);
@@ -258,18 +268,28 @@ export async function evaluar(caso: Caso): Promise<string | null> {
   return razones.join('  /  ');
 }
 
+/** RED_SOLO=273-292 o RED_SOLO=273,280,301-305 corre solo esos casos (para trabajar un bloque sin esperar toda la batería). */
+function elegidos(): Caso[] {
+  const sel = process.env.RED_SOLO;
+  if (!sel) return CASOS;
+  const ids = new Set<number>();
+  for (const p of sel.split(',')) { const [a, b] = p.split('-').map(Number); for (let i = a; i <= (b || a); i++) ids.add(i); }
+  return CASOS.filter(c => ids.has(Number(c.id.slice(4))));
+}
+
 if (process.env.RED_INFORME) {
   test('informe de la batería RED', async () => {
     const fallos: string[] = [];
-    for (const caso of CASOS) {
+    const lista = elegidos();
+    for (const caso of lista) {
       const r = await evaluar(caso);
       if (r !== null) fallos.push(`${caso.id} [${caso.grupo}] «${caso.texto.slice(0, 60).replace(/\n/g, ' / ')}» -> ${r}`);
     }
-    console.log(`RED: ${CASOS.length - fallos.length} de ${CASOS.length} pasan`);
+    console.log(`RED: ${lista.length - fallos.length} de ${lista.length} pasan`);
     for (const f of fallos) console.log('  FALLA ' + f);
   });
 } else {
-  for (const caso of CASOS) {
+  for (const caso of elegidos()) {
     test(`${caso.id} «${caso.texto.slice(0, 50).replace(/\n/g, ' / ')}»`, async () => {
       const r = await evaluar(caso);
       assert.equal(r, null, r ?? '');

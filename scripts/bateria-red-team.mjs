@@ -22,7 +22,9 @@ function describir(e) {
     case 'ayuda': return 'Responde con ayuda y ejemplos tocables';
     case 'nada': return 'Sin tarjeta: no anota nada';
     case 'preg': return 'Pregunta antes de inventar';
-    case 'util': return 'Respuesta útil (consulta o ayuda), sin tarjeta';
+    case 'util': return e.re ? `Responde con datos (menciona «${e.re}»), sin tarjeta` : 'Respuesta útil (consulta o ayuda), sin tarjeta';
+    case 'sin': return `Nunca ${e.tipos.map(x => x.toLowerCase()).join(' ni ')}: si no hay tarjeta, pregunta o explica`;
+    case 'alto': return 'Monto sospechoso: pide confirmar la cifra o pregunta';
     case 'nogasto': return 'Nunca un gasto';
     case 'sinfusion': return 'Ana y Luis por separado, nunca «Ana Luis»';
     case 'o': return e.alt.map(describir).join(' o ');
@@ -33,7 +35,7 @@ function describir(e) {
   }
 }
 
-const GRUPOS = { typos: 'Errores de escritura', jerga: 'Jerga, autocorrecciones e incertidumbre', historias: 'Historias largas y números en letras', negaciones: 'Negaciones e hipotéticos', deudas: 'Deudas, préstamos y abonos', numeros: 'Números, fechas y unidades', transferencias: 'Transferencias y monedas', personas: 'Personas y compartidos', ayuda: 'Preguntas de ayuda disfrazadas', pendiente: 'Con una tarjeta pendiente', varios: 'Varios movimientos, IA y límites', conversacion: 'Ronda 2: conversaciones de varios mensajes y colas', modismos: 'Ronda 2: modismos colombianos', finalidad: 'Ronda 2: el para qué manda sobre el dónde', calculos: 'Ronda 2: cuentas compuestas', aprendizaje: 'Ronda 2: aprender sin contaminar', etiquetas: 'Ronda 2: etiquetas', programacion: 'Ronda 2: pagos fijos y alcancías con fechas relativas', banco: 'Ronda 2: notificaciones del banco pegadas' };
+const GRUPOS = { typos: 'Errores de escritura', jerga: 'Jerga, autocorrecciones e incertidumbre', historias: 'Historias largas y números en letras', negaciones: 'Negaciones e hipotéticos', deudas: 'Deudas, préstamos y abonos', numeros: 'Números, fechas y unidades', transferencias: 'Transferencias y monedas', personas: 'Personas y compartidos', ayuda: 'Preguntas de ayuda disfrazadas', pendiente: 'Con una tarjeta pendiente', varios: 'Varios movimientos, IA y límites', conversacion: 'Ronda 2: conversaciones de varios mensajes y colas', modismos: 'Ronda 2: modismos colombianos', finalidad: 'Ronda 2: el para qué manda sobre el dónde', calculos: 'Ronda 2: cuentas compuestas', aprendizaje: 'Ronda 2: aprender sin contaminar', etiquetas: 'Ronda 2: etiquetas', programacion: 'Ronda 2: pagos fijos y alcancías con fechas relativas', banco: 'Ronda 2: notificaciones del banco pegadas', dictado: 'Ronda 3: dictado por voz, números en letras y homófonos', cruzados: 'Ronda 3: préstamos cruzados, compensaciones y condonaciones', analiticas: 'Ronda 3: consultas sobre el historial', fechas: 'Ronda 3: fechas relativas, madrugada y obligaciones futuras', narrativas: 'Ronda 3: narrativas largas de varios eventos', limites: 'Ronda 3: montos límite, nombres que chocan y emojis' };
 
 let md = `# Batería adversarial del bot (RED-001 a RED-${CASOS.length})
 
@@ -56,7 +58,7 @@ for (const [g, titulo] of Object.entries(GRUPOS)) {
   for (const c of casos) {
     const frase = c.texto.length > 90 ? c.texto.slice(0, 87).replace(/\n/g, ' / ') + '...' : c.texto.replace(/\n/g, ' / ');
     const pre = c.antes?.length ? ` (antes: ${c.antes.join('; ')})` : '';
-    md += `| ${c.id} | \`${frase.replace(/\|/g, '/')}\`${pre} | ${describir(c.esp)} | ${c.nota ?? ''} |\n`;
+    md += `| ${c.id} | \`${frase.replace(/\|/g, '/').replace(/3\d{9}/g, '3XXXXXXXXX')}\`${pre} | ${describir(c.esp)} | ${c.nota ?? ''} |\n`;
   }
 }
 writeFileSync(join(raiz, 'docs', 'BATERIA-RED-TEAM.md'), md);

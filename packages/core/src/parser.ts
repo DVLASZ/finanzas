@@ -17,10 +17,15 @@ import { hallarFecha, hallarFechaLimite } from './fechas.ts';
 import { quitarComasDeMiles, repartoEnOtroOrden } from './reparto.ts';
 import { diaDeSemana, mesDeNombre } from './recurrentes.ts';
 import { naturalizar } from './lenguaje.ts';
+import { cruzado, vencimientoDePrestamo } from './cruzados.ts';
 import { aclararIlegible, corregirTypos } from './fuzzy.ts';
 import { expandirCantidades } from './cantidades.ts';
 import { calcular } from './calculos.ts';
+import { dudaDeDictado } from './dictado.ts';
+import { avisoDeMontoAlto, dudaDeNumeroONombre } from './limites.ts';
 import { corregida, incertidumbre } from './incertidumbre.ts';
+import { dudaDeFecha } from './fechasRelativas.ts';
+import { obligacion } from './obligaciones.ts';
 import { capitalizar, limpiar, normalizar } from './texto.ts';
 import { extraerEtiquetas, separarCuentas } from './etiquetas.ts';
 import { categorizar, hallarCuentas } from './entidades.ts';
@@ -174,9 +179,11 @@ function conLimites(r: Resultado): Resultado {
   const grande = (n: number | undefined, mon: Moneda | undefined) => n !== undefined && Math.abs(n) > (mon === 'USD' ? MAX_USD : MAX_COP);
   if (grande(p.monto, p.moneda) || grande(p.montoOtro, p.monedaOtra)
     || (p.declarados ?? []).some(d => grande(d.monto, d.moneda)) || (p.deudasIniciales ?? []).some(d => grande(d.monto, d.moneda))) {
-    return error('Ese monto es demasiado grande: revisa los ceros.');
+    return error('Ese monto es demasiado grande: revisa los ceros. ¿Seguro que lo escribiste bien?');
   }
   if (p.tipo !== 'apertura' && p.tipo !== 'ajuste' && !(p.monto > 0)) return error('El monto tiene que ser mayor que cero.');
+  const alto = avisoDeMontoAlto(p.monto, p.moneda);
+  if (alto) p.avisos.push(alto);
   return r;
 }
 
@@ -279,12 +286,26 @@ function sinNegadas(texto: string): { texto: string; ignoradas: string[]; todas:
 
 export function interpretar(texto: string, ctx: Contexto): Resultado {
   const cuenta = calcular(texto); if (typeof cuenta !== 'string') return cuenta; texto = cuenta; // «28000 más 10% de propina» es 30800; va antes de corregirTypos, que lee «rebajaron» como «regalaron» (ver calculos.ts)
+  const duda = dudaDeNumeroONombre(texto, ctx); if (duda) return duda; // decimales en pesos y nombres que chocan con cuentas o categorías (ver limites.ts)
+  const dictada = dudaDeDictado(texto); if (dictada) return dictada; // «siento veinte mil», «dos de veinte mil de arroz»: se pregunta (ver dictado.ts)
   texto = corregirTypos(texto, ctx); // «gsate 12 mil en almurzo» se lee «gaste 12 mil en almuerzo» (ver fuzzy.ts)
   const ilegible = aclararIlegible(texto, ctx); if (ilegible) return ilegible; // «Ibgrwsi 50k»: se pregunta, no se inventa un gasto
   texto = expandirCantidades(texto); // «3 polas a 4500 cada una» es 13500 (ver cantidades.ts)
+  // fechas que no se adivinan y pagos que todavía no se hacen (ver fechasRelativas.ts y obligaciones.ts)
+  const pendiente = dudaDeFecha(texto, ctx) ?? obligacion(texto); if (pendiente) return pendiente;
   // lo que no pasó, no se sabe o se corrige en la misma frase (ver incertidumbre.ts)
   const dudosa = incertidumbre(texto);
   if (dudosa) return dudosa;
+  // deudas que se perdonan, se cruzan o se abonan en la misma frase (ver cruzados.ts)
+  const cruz = cruzado(texto);
+  if (cruz?.pregunta) return { clase: 'pregunta', ...cruz.pregunta };
+  if (cruz?.texto) texto = cruz.texto;
+  // «le presté 90k a Pipe hasta el viernes»: la fecha es el vencimiento, el préstamo es de hoy
+  const venc = vencimientoDePrestamo(texto, ctx.ahora);
+  if (venc) {
+    const r = interpretar(venc.resto, ctx);
+    if (r.clase === 'movimiento' && r.propuesta.tipo === 'prestamo') { r.propuesta.fechaLimite = venc.fecha; return r; }
+  }
   const neg = sinNegadas(corregida(texto));
   if (neg.todas) return error(AVISO_NEGADO);
   const r = interpretarAfirmado(neg.texto, ctx);
@@ -438,6 +459,8 @@ function interpretarPlano(texto: string, ctx: Contexto): Resultado {
   if (/\b(le debo|debo)\b/.test(b.t)) return deuda(b, ctx, false, fechaLimite);
 
   const mePagaron = b.t.match(/\bme (pago|pagaron|devolvio|devolvieron|regreso|abono|salde|invito)\b/);
+  // «el 15 del mes pasado me pagaron 800k»: sin la fecha queda «me pagaron 800k», plata que entra y no alguien que pagó
+  if (mePagaron?.[1] === 'pagaron' && /^me pagaron \d[\d.]*\s?(?:k|mil|lucas?)?$/.test(b.t)) return ingreso({ ...b, t: b.t.replace('me pagaron', 'otros'.padEnd(10)) }, ctx); // mismo largo: las posiciones de los montos no se mueven
   if (mePagaron) return mePago(b, ctx, mePagaron[1]);
 
   // Pago de una deuda: "pagué 54k a sergio"  (el nombre se toma de lo que sigue a «a»)

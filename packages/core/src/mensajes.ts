@@ -50,7 +50,7 @@ function titular(p: Propuesta, ctx: Contexto): string {
       const tasa = usd ? ` · ${formatear(Math.round(pesos / (usd / 100)))} por dólar` : '';
       return `Cambio de moneda · ${sale} (${cuenta}) → ${entra} (${nombreDe(ctx, p.cuentaDestinoId)})${tasa} · ${f}`;
     }
-    case 'prestamo': return `Préstamo · le prestas a ${p.persona} · ${m} · ${cuenta} · ${f}`;
+    case 'prestamo': return `Préstamo · le prestas a ${p.persona} · ${m} · ${cuenta}${p.fechaLimite ? ` · te paga antes del ${describirDia(p.fechaLimite)}` : ''} · ${f}`;
     case 'deuda': {
       if (p.custodia && p.recibeDinero) return `Plata de ${p.persona}${p.motivo ? ` para ${p.motivo}` : ''} · ${m} · ${cuenta} · ${f}`;
       const lim = p.fechaLimite ? ` · antes del ${describirDia(p.fechaLimite)}` : '';

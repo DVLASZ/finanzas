@@ -664,3 +664,13 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - No convierte dólares a pesos por su cuenta, porque el dólar cambia y una tasa vieja engaña.
 - No adivina nombres parecidos: pregunta.
 - No guarda sin que confirmes, tampoco cuando la IA reescribe la frase.
+
+## Dictado, preguntas sobre el historial y fechas
+
+- Puedes dictar: «eh anótame veinticinco mil quinientos de almuerzo con nequi ah no mentiras fue en efectivo» queda como un gasto de $25.500 en Efectivo.
+- «le presté 90k a Pipe hasta el viernes» guarda el vencimiento y lo muestra en la tarjeta.
+- Perdonar una deuda, compensar dos o que pague un tercero no mueve tu plata: el bot lo explica y pregunta cómo dejarlo.
+- Preguntas como «cuál fue el último gasto que anoté» o «gasté más en octubre o noviembre» se responden con tus datos y nunca crean un movimiento.
+- «para el próximo lunes tengo que pagar 95k» no se anota como gasto: el bot te dice cómo dejarlo como pago fijo.
+- Un párrafo largo se parte en un movimiento por cada cosa que pasó; lo que pensabas hacer y no hiciste se descarta.
+- Con una tarjeta pendiente, 👍 confirma y ❌ cancela.

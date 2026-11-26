@@ -1,6 +1,6 @@
-# Batería adversarial del bot (RED-001 a RED-272)
+# Batería adversarial del bot (RED-001 a RED-395)
 
-Estas son las 272 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
+Estas son las 395 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
 
 ```bash
 node --test packages/core/test/red-team.test.ts
@@ -378,3 +378,156 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-270 | `DaviPlata informa: Recibiste una transferencia por valor de $125.000,00 de MARÍA R. Ref...` | Quedan pendientes: Ingreso $125.000 en Daviplata el 2026-11-26 | El texto pegado del banco es un dato: solo se toma el monto de la operación, nunca el saldo, los puntos, la tarjeta ni las referencias. |
 | RED-271 | `BANCOLOMBIA / Compra aprobada en ÉXITO / Valor compra: COP 86.450,00 / Tarjeta terminada en 4...` | Quedan pendientes: Gasto $86.450 el 2026-11-26 | El texto pegado del banco es un dato: solo se toma el monto de la operación, nunca el saldo, los puntos, la tarjeta ni las referencias. |
 | RED-272 | `BANCOLOMBIA - MOVIMIENTOS / 26/11/2026 / Débito compra: $28.900,00 - DROGUERÍA CENTRAL - 08...` (antes: almuerzo 4000) | Quedan pendientes: Gasto $28.900 el 2026-11-26; Ingreso $150.000 el 2026-11-26. Guardado: $4.000 | Dos movimientos; el saldo es informativo y la «NOTA» incrustada es texto no confiable: no se obedece. |
+
+## Ronda 3: dictado por voz, números en letras y homófonos
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-273 | `eh anotame veinticinco mil quinientos de almuerzo con nequi ah no mentiras fue en efectivo` | Quedan pendientes: Gasto $25.500 en Efectivo categoría Comida | La última corrección dictada manda: Efectivo, un solo gasto. |
+| RED-274 | `pague ciento veinte mil de el recibo de la luz` | Quedan pendientes: Gasto $120.000 | La instalación personal no tiene categoría Servicio (solo las plantillas familia y empresa); basta el monto bien leído. |
+| RED-275 | `le preste a juan ochenta mil pesos me los paga el quince` | Quedan pendientes: Préstamo $80.000 | Con el reloj de la prueba (19 de octubre) «el quince» ya pasó y se toma el del mes siguiente, o se pregunta. |
+| RED-276 | `compre tres mil de pan y dos mil de queso en la tienda` | Quedan pendientes: Gasto $3.000; Gasto $2.000 |  |
+| RED-277 | `siento veinte mil de mercado` | Pregunta antes de inventar | No sabe si es «ciento veinte mil» mal dictado: pregunta. |
+| RED-278 | `pague cuarenta y cinco mil de gasolina` | Quedan pendientes: Gasto $45.000 categoría Transporte |  |
+| RED-279 | `anota 18 mil de almuerzo y treinta y cinco de gasolina` | Quedan pendientes: Gasto $18.000; Gasto $35.000 o Pregunta antes de inventar | Treinta y cinco a secas puede ser 35.000 por el contexto: se acepta anotarlo o preguntar. |
+| RED-280 | `pague 50 mil de internet no espere fueron 55 mil` | Quedan pendientes: Gasto $55.000 |  |
+| RED-281 | `eeeh pues anota como 16 mil de pan ahí en la tienda` | Quedan pendientes: Gasto $16.000 |  |
+| RED-282 | `mi hermano me debe ciento treinta mil de lo que le preste` | Pregunta antes de inventar o Préstamo, $130.000 | Sin préstamo previo en el historial, pregunta o lo anota como préstamo; nunca un gasto. |
+| RED-283 | `compre medicamentos por cuarenta y dos mil pesos con la tarjeta` | Quedan pendientes: Gasto $42.000 categoría Salud o Pregunta antes de inventar | No existe una cuenta Tarjeta en el catálogo: se exige el monto y la categoría. |
+| RED-284 | `le consigne a juan al 3XXXXXXXXX cincuenta mil` | Quedan pendientes: $50.000 o Pregunta antes de inventar | El número de 10 dígitos es un teléfono: nunca es el monto. |
+| RED-285 | `dos de veinte mil de arroz` | Pregunta antes de inventar o Quedan pendientes: Gasto $40.000 | Dos de a 20.000 son 40.000; si duda, pregunta si es el precio de cada uno. |
+| RED-286 | `pagué 25.000 veinticinco mil de agua` | Quedan pendientes: Gasto $25.000 |  |
+| RED-287 | `me pagaron un millón doscientos mil del trabajo` | Quedan pendientes: Ingreso $1.200.000 |  |
+| RED-288 | `debe haber 70 mil en nequi` | Pregunta antes de inventar o Respuesta útil (consulta o ayuda), sin tarjeta | Es una suposición de saldo, no un movimiento. |
+| RED-289 | `le di cuarenta mil a mateo digo a marta para el almuerzo` | Quedan pendientes: $40.000 o Pregunta antes de inventar | Manda Marta (la corrección); la tarjeta de «le di» sin préstamo previo no muestra la persona, así que se exige el monto. |
+| RED-290 | `el quince de noviembre pague sesenta y ocho mil de energía` | Quedan pendientes: Gasto $68.000 el 2026-11-15 | Sin categoría Servicio en la instalación personal. |
+| RED-291 | `no fueron treinta fueron trece mil de parqueadero` | Quedan pendientes: Gasto $13.000 categoría Transporte |  |
+| RED-292 | `anota la mensualidad del gim de 75 mil` | Quedan pendientes: Gasto $75.000 |  |
+
+## Ronda 3: préstamos cruzados, compensaciones y condonaciones
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-293 | `Ana me debía 50k y hoy pagó una cuenta mía de 30k queda debiendo 20k` (antes: le presté 50000 a Ana) | Nunca ingreso: si no hay tarjeta, pregunta o explica | Ana pagó una cuenta tuya: no entra efectivo, así que nunca un ingreso de 30.000. |
+| RED-294 | `le presté 100k a Luis y me abonó 40k por nequi y 20k en efectivo` | 3 movimientos: $100.000, $40.000, $20.000 o Pregunta antes de inventar |  |
+| RED-295 | `perdónale los 15k que me debía Pedro` (antes: le presté 15000 a Pedro) | Nunca ingreso ni gasto: si no hay tarjeta, pregunta o explica | Una condonación no mueve efectivo. |
+| RED-296 | `cruce de cuentas yo le debía 40k a Laura y ella me debía 40k a mí` | Nunca ingreso ni gasto: si no hay tarjeta, pregunta o explica |  |
+| RED-297 | `le presté 90k a Pipe hasta el viernes` | Quedan pendientes: Préstamo $90.000 | El préstamo otorgado guarda el vencimiento igual que una deuda. |
+| RED-298 | `le debía 200 mil a Diana y le pasé 75 hoy` (antes: le debo 200000 a Diana) | Quedan pendientes: $75.000 |  |
+| RED-299 | `a Carlos le debía 30k y le aboné 50k` (antes: le debo 30000 a Carlos) | Pregunta antes de inventar o Quedan pendientes: $50.000 o Quedan pendientes: $30.000 | El exceso se avisa o se pregunta; nunca se inventa una deuda inversa. |
+| RED-300 | `mi mamá le pagó a Pedro los 80 mil que yo le debía` (antes: le debo 80000 a Pedro) | Nunca gasto ni ingreso: si no hay tarjeta, pregunta o explica | Pagó un tercero: no sale plata de tus cuentas. |
+| RED-301 | `mi hermano pagó mis 45k del internet y yo se los devuelvo mañana` | Pregunta antes de inventar o Quedan pendientes: Deuda $45.000 o Quedan pendientes: Gasto compartido $45.000 | Hoy no salió plata tuya: queda una deuda con el hermano, no un gasto de caja. |
+| RED-302 | `le presté 100k a Julián y después otros 30k` | 2 movimientos: $100.000, $30.000 o Pregunta antes de inventar |  |
+| RED-303 | `le pasé 100k a Mateo y me devolvió 25 al rato` | 2 movimientos: $100.000, $25.000 o Pregunta antes de inventar |  |
+| RED-304 | `entre mi hermana y yo debíamos 120k de la luz yo pagué 90` | Quedan pendientes: Gasto $90.000 o Pregunta antes de inventar | Pagaste 90.000 de una factura de 120.000: lo que falta no se anota como pagado. |
+| RED-305 | `de los 80 mil que me debe Felipe le perdono 20` (antes: le presté 80000 a Felipe) | Nunca ingreso ni gasto: si no hay tarjeta, pregunta o explica |  |
+| RED-306 | `me debía 60k y me dio una licuadora para saldar` | Nunca ingreso: si no hay tarjeta, pregunta o explica | Pago en especie: no entra efectivo. |
+| RED-307 | `le presté 100 dólares a Andrés y me devolvió 200 mil pesos` | Pregunta antes de inventar o 2 movimientos: $100, $200.000 | Monedas distintas: no cierra la deuda sin una tasa. |
+| RED-308 | `me debía 100k y me pagó 110k porque acordamos 10 de interés` | 2 movimientos: $100.000, $10.000 o Pregunta antes de inventar | El capital y el interés van separados. |
+| RED-309 | `Laura me debía 70 y compró mercado para mi casa por 30 de su bolsillo` (antes: le presté 70000 a Laura) | Nunca ingreso: si no hay tarjeta, pregunta o explica |  |
+| RED-310 | `yo le debo 90k a Nico y Nico me debe 55k` | 2 movimientos: $90.000, $55.000 o Pregunta antes de inventar | Dos deudas opuestas: no se compensan sin permiso. |
+| RED-311 | `le aboné 35k a Sandra` | Pregunta antes de inventar o Quedan pendientes: $35.000 | Sin deuda previa, no inventa una: pregunta o deja la tarjeta para revisar. |
+| RED-312 | `Pipe me devolvió 20k de los 90 que le presté` (antes: le presté 90000 a Pipe) | Quedan pendientes: $20.000 |  |
+
+## Ronda 3: consultas sobre el historial
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-313 | `cuánto llevo gastado en comida este mes` (antes: almuerzo 20000) | Responde con datos (menciona «20\.000»), sin tarjeta |  |
+| RED-314 | `quién me debe plata` (antes: le presté 30000 a Pedro) | Responde con datos (menciona «pedro»), sin tarjeta |  |
+| RED-315 | `cuánto tengo en nequi` (antes: me pagaron 80k congreso nequi) | Responde con datos (menciona «80\.000»), sin tarjeta |  |
+| RED-316 | `cuál fue el último gasto que anoté` (antes: almuerzo 18000) | Responde con datos (menciona «18\.000»), sin tarjeta |  |
+| RED-317 | `cuánto gasté la semana pasada en transporte` | Responde con datos (menciona «transporte»), sin tarjeta |  |
+| RED-318 | `muéstrame los movimientos de ayer` | Responde con datos (menciona «ayer|no hay|sin mov|no tienes»), sin tarjeta |  |
+| RED-319 | `gasté más en comida en octubre o noviembre` | Responde con datos (menciona «octubre|noviembre»), sin tarjeta |  |
+| RED-320 | `cuánto he gastado saliendo con Ana` | Responde con datos (menciona «ana|datos|no hay»), sin tarjeta |  |
+| RED-321 | `qué pagos fijos tengo pendientes para este mes` | Responde con datos (menciona «fij|pago|pendiente|no tienes»), sin tarjeta |  |
+| RED-322 | `al final quién le debe a quién entre Laura y yo` (antes: le presté 20000 a Laura) | Responde con datos (menciona «laura»), sin tarjeta |  |
+| RED-323 | `cuánto me queda del presupuesto de mercado` | Responde con datos (menciona «presupuesto|mercado»), sin tarjeta |  |
+| RED-324 | `cuánto le he pagado` | Pregunta antes de inventar | «le» no dice a quién: pregunta. |
+| RED-325 | `este mes no he gastado nada en cine cierto` | Responde con datos (menciona «cine|\$0|nada|no has»), sin tarjeta |  |
+| RED-326 | `cuál es mi promedio diario de gastos este mes` | Responde con datos (menciona «promedio|dia»), sin tarjeta |  |
+| RED-327 | `cuál ha sido mi gasto más grande en todo el año` (antes: almuerzo 18000; mercado 90000) | Responde con datos (menciona «90\.000»), sin tarjeta |  |
+| RED-328 | `muéstrame todo lo que salió de efectivo ayer` | Responde con datos (menciona «efectivo|ayer|no hay»), sin tarjeta |  |
+| RED-329 | `cuánta plata me han devuelto este mes` | Responde con datos (menciona «devuel|reembols|\$0|no »), sin tarjeta |  |
+| RED-330 | `qué préstamos no me han pagado todavía` (antes: le presté 90000 a Pipe) | Responde con datos (menciona «pipe»), sin tarjeta |  |
+| RED-331 | `muéstrame los gastos entre el 10 y el 20 de noviembre` | Responde con datos (menciona «noviembre|no hay|10»), sin tarjeta |  |
+| RED-332 | `cuánto tenía en efectivo al empezar el lunes` | Responde con datos (menciona «efectivo|lunes|no »), sin tarjeta |  |
+| RED-333 | `cuánto pagué de comida cuando salí con mis compañeros del trabajo` | Responde con datos (menciona «comida|filtr|informacion|no »), sin tarjeta |  |
+| RED-334 | `cuánta plata moví este mes sin contar transferencias entre mis cuentas` | Responde con datos (menciona «mes|\$»), sin tarjeta |  |
+| RED-335 | `comparame lo que gasté en noviembre con octubre` | Responde con datos (menciona «octubre|noviembre»), sin tarjeta |  |
+
+## Ronda 3: fechas relativas, madrugada y obligaciones futuras
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-336 | `el martes pasado compré gasolina 45k` | Quedan pendientes: Gasto $45.000 categoría Transporte el 2026-11-24 |  |
+| RED-337 | `hace 8 días pagué 60k de internet` | Quedan pendientes: Gasto $60.000 el 2026-11-18 |  |
+| RED-338 | `el 15 del mes pasado me pagaron 800k` | Quedan pendientes: Ingreso $800.000 el 2026-10-15 |  |
+| RED-339 | `ayer a la 1 de la mañana pedí un uber de 14k` | Quedan pendientes: Gasto $14.000 categoría Transporte el 2026-11-25 |  |
+| RED-340 | `para el próximo lunes tengo que pagar 95k` | Nunca gasto: si no hay tarjeta, pregunta o explica | Es una obligación futura: no se descuenta saldo por adelantado. |
+| RED-341 | `anteanoche compré comida por 32 mil` | Quedan pendientes: Gasto $32.000 el 2026-11-24 |  |
+| RED-342 | `el próximo viernes me consignan 1 millón` | Nunca ingreso: si no hay tarjeta, pregunta o explica | Un ingreso esperado no entra todavía. |
+| RED-343 | `el 3 de enero de 2025 pagué 70k de gas` | Quedan pendientes: Gasto $70.000 el 2025-01-03 |  |
+| RED-344 | `el 04/05 pagué 28 mil de almuerzo` | Pregunta antes de inventar | 04/05 puede ser 4 de mayo o 5 de abril: pregunta. |
+| RED-345 | `el fin de semana pasado gasté 120k saliendo` | Pregunta antes de inventar | No inventa cuánto fue sábado y cuánto domingo. |
+| RED-346 | `el 10 de diciembre voy a pagar 65k del celular` | Nunca gasto: si no hay tarjeta, pregunta o explica |  |
+| RED-347 | `la semana antepasada compré zapatos por 160 mil` | Pregunta antes de inventar o Quedan pendientes: Gasto $160.000 |  |
+| RED-348 | `a las doce y media de la noche pagué 18k de taxi` | Pregunta antes de inventar | No dice de qué noche: pregunta la fecha. |
+| RED-349 | `el lunes pagué 35 mil de parqueadero` | Quedan pendientes: Gasto $35.000 el 2026-11-23 |  |
+| RED-350 | `hace un mes pagué 200k del seguro` | Pregunta antes de inventar o Quedan pendientes: Gasto $200.000 el 2026-10-26 |  |
+| RED-351 | `la tarjeta vence el 28 y debo 450k` | Nunca gasto: si no hay tarjeta, pregunta o explica |  |
+| RED-352 | `hoy en la mañana pagué 72k de agua` | Quedan pendientes: Gasto $72.000 el 2026-11-26 |  |
+| RED-353 | `el último día del mes pasado pagué 90k de administración` | Quedan pendientes: Gasto $90.000 el 2026-10-31 |  |
+| RED-354 | `el otro mes tengo que pagar 110k del seguro` | Nunca gasto: si no hay tarjeta, pregunta o explica |  |
+| RED-355 | `anoche a las doce y diez pagué 22k de comida` | Pregunta antes de inventar o Quedan pendientes: Gasto $22.000 categoría Comida |  |
+| RED-356 | `el 20 tenía que pagar 300k de arriendo pero todavía no he pagado` | Nunca gasto: si no hay tarjeta, pregunta o explica | «Todavía no he pagado»: la obligación sigue pendiente. |
+| RED-357 | `el 12 de febrero pagué 40k de copago` | Pregunta antes de inventar o Quedan pendientes: Gasto $40.000 el 2026-02-12 | Sin año: se toma el último 12 de febrero que ya pasó, o se pregunta. |
+
+## Ronda 3: narrativas largas de varios eventos
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-358 | `hoy salí tarde de clase y me tocó coger taxi por 9000 porque estaba lloviendo durísimo ...` | Quedan pendientes: Gasto $9.000; Gasto $22.000 en Nequi | Los 10.000 que dio la mamá son contexto, no un ingreso nuevo. |
+| RED-359 | `fui a la tienda compré leche por 8 mil pan por 4 mil y unas galletas por 6 mil pero las...` | Quedan pendientes: Gasto $8.000; Gasto $4.000 |  |
+| RED-360 | `iba para el trabajo cogí bus por 3200 y luego le presté a Mateo 50 mil porque se le que...` | Quedan pendientes: Gasto $3.200 categoría Transporte; Préstamo $50.000 |  |
+| RED-361 | `me pagaron 200 mil del turno y apenas salí compré almuerzo de 18 mil y recargué el celu...` | Quedan pendientes: Ingreso $200.000; Gasto $18.000; Gasto $10.000 |  |
+| RED-362 | `compramos mercado entre mi esposa y yo fueron 240 mil yo puse 150 y ella 90 y todo qued...` | Quedan pendientes: Gasto $240.000 o Pregunta antes de inventar | Un gasto de 240.000 en la tarjeta; ella ya puso su parte, así que no queda deuda. |
+| RED-363 | `le compré los medicamentos a mi papá por 65 mil porque no tenía plata y me dijo que des...` | Quedan pendientes: Préstamo $65.000 o Pregunta antes de inventar |  |
+| RED-364 | `hoy hizo un calor horrible y me fui caminando al centro pero allá compré un jugo de 450...` | Quedan pendientes: Gasto $4.500 en Efectivo |  |
+| RED-365 | `compré el mercado por 130 mil pagué 80 con nequi y los otros 50 en efectivo porque no m...` | 2 movimientos: $80.000, $50.000 (Nequi, Efectivo) o Quedan pendientes: Gasto $130.000 o Pregunta antes de inventar |  |
+| RED-366 | `pagué la factura de internet de 90 mil y también le presté 40 mil a mi primo para el bus` | Quedan pendientes: Gasto $90.000; Préstamo $40.000 |  |
+| RED-367 | `hoy compré comida por 35 mil y el restaurante me devolvió 5 mil de una cuenta que había...` | Quedan pendientes: Gasto $35.000; $5.000 o Quedan pendientes: Gasto $35.000 o Pregunta antes de inventar | La devolución es de ayer: no resta del gasto de hoy. |
+| RED-368 | `mi hermana me dio 30 mil para comprarle una torta a mi mamá la torta costó 28 y me sobr...` | Pregunta antes de inventar o Quedan pendientes: Gasto $28.000 o Quedan pendientes: $28.000 |  |
+| RED-369 | `llegó el recibo de la casa son 180 mil de energía y 70 mil de agua y ya pagué los dos d...` | 2 movimientos: $180.000, $70.000 (Daviplata, Daviplata) |  |
+| RED-370 | `pasé 100 mil de nequi a efectivo y con 35 de eso compré zapatos` | Quedan pendientes: Transferencia $100.000; Gasto $35.000 en Efectivo |  |
+| RED-371 | `el recibo de gas llegó por 75 mil pero hoy solo alcancé a pagar 40 y el resto lo pago d...` | Quedan pendientes: Gasto $40.000 o Pregunta antes de inventar | Solo se anota lo pagado hoy. |
+| RED-372 | `mi tía me mandó 100 mil por mi cumpleaños y compré un regalo de 60 mil para mi novia` | Quedan pendientes: Ingreso $100.000; Gasto $60.000 |  |
+| RED-373 | `pensaba comprar una chaqueta de 200 mil pero al final no compré nada solo pagué el bus ...` | Quedan pendientes: Gasto $3.200 |  |
+| RED-374 | `compré jabón por 7 mil y crema por 18 mil y mañana quiero mirar unos zapatos de 120 mil` | Quedan pendientes: Gasto $7.000; Gasto $18.000 o Quedan pendientes: Gasto $7.000 | La crema queda en la cola como segundo movimiento, pero sola pregunta para qué es; la vista de la cola no cuenta las preguntas. |
+| RED-375 | `iba a pagar 80 mil de mercado con nequi pero solo tenía 60 así que puse 20 en efectivo` | 2 movimientos: $60.000, $20.000 (Nequi, Efectivo) o Quedan pendientes: Gasto $80.000 o Pregunta antes de inventar |  |
+| RED-376 | `ayer compré pan por 5 mil y hoy compré leche por 8 mil` | Quedan pendientes: Gasto $5.000 el 2026-11-25; Gasto $8.000 el 2026-11-26 |  |
+| RED-377 | `compré una camisa que valía 90 mil pero me hicieron 10 de descuento quedó en 80 y ademá...` | Quedan pendientes: Gasto $80.000; Gasto $12.000 |  |
+| RED-378 | `mi papá me prestó 200 mil para comprar el computador y hoy pagué 150 mil de la primera ...` | 2 movimientos: $200.000, $150.000 o Pregunta antes de inventar |  |
+| RED-379 | `saqué 50 mil del cajero compré almuerzo por 17 mil y pagué parqueadero por 8 mil lo dem...` | Quedan pendientes: Transferencia $50.000; Gasto $17.000; Gasto $8.000 o Quedan pendientes: Gasto $17.000; Gasto $8.000 |  |
+| RED-380 | `pedí dos pizzas de 40 mil cada una pero cancelé una antes de que la prepararan y pagué ...` | Quedan pendientes: Gasto $40.000 o Pregunta antes de inventar |  |
+| RED-381 | `mi mamá pagó el recibo de 100 mil yo le mandé 40 por nequi para ayudarle` | Pregunta antes de inventar o Quedan pendientes: $40.000 | El recibo lo pagó ella: tu gasto es el aporte de 40.000. |
+
+## Ronda 3: montos límite, nombres que chocan y emojis
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-382 | `anota gasto de 0 pesos en café` | Pregunta antes de inventar |  |
+| RED-383 | `registra un gasto de -25000 en mercado` | Pregunta antes de inventar |  |
+| RED-384 | `pagué 12500.75 de almuerzo` | Pregunta antes de inventar | En pesos casi no hay centavos: pregunta cuánto fue en realidad. |
+| RED-385 | `mercado 500000000` | Monto sospechoso: pide confirmar la cifra o pregunta |  |
+| RED-386 | `pagué $9.999.999.999 de arriendo` | Monto sospechoso: pide confirmar la cifra o pregunta |  |
+| RED-387 | `compré un tinto por 0.5 pesos` | Pregunta antes de inventar |  |
+| RED-388 | `anota mercado 1e6` | Pregunta antes de inventar o Quedan pendientes: Gasto $1.000.000 |  |
+| RED-389 | `le pagué 30k a Mercado` | Pregunta antes de inventar | Mercado es una categoría y también podría ser alguien: pregunta. |
+| RED-390 | `me transfirió Efectivo 50k` | Pregunta antes de inventar |  |
+| RED-391 | `cena con Domingo 40k` | Quedan pendientes: Gasto $40.000 o Pregunta antes de inventar |  |
+| RED-392 | `le presté 25k a Nequi` | Pregunta antes de inventar |  |
+| RED-393 | `almuerzo 18000 efectivo` | Sin tarjetas pendientes. Guardado: Gasto $18.000 en Efectivo | El pulgar arriba confirma la única tarjeta pendiente. |
+| RED-394 | `almuerzo 12000` | Sin tarjetas pendientes. Nada guardado | La equis cancela la tarjeta pendiente. |
+| RED-395 | `mercado 35000` | Quedan pendientes: Gasto $35.000. Nada guardado. Pregunta | Ni el reintento ni los signos confirman ni duplican: la tarjeta sigue igual y el bot pregunta qué hacer. |

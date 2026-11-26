@@ -112,7 +112,7 @@ export function gasto(b: Base, ctx: Contexto): Resultado {
   const fijo = mc ? null : heredarDeFijo(palabrasLibres(b.t, [...tramos, ...tramosDe(b.montos)]).join(' '), ctx);
   const reglaCuenta = !cuentas.length && !atajo?.cuentaId ? (regla?.cuentaId ?? fijo?.cuentaId) : undefined;
 
-  if (principales.length === 1 && principales[0].negativo) return error('Un gasto no puede ser negativo. Si te devolvieron plata, anótalo como ingreso: «+mamá 30k».');
+  if (principales.length === 1 && principales[0].negativo) return error('Un gasto no puede ser negativo. ¿Te devolvieron plata o fue un error al escribir? Si fue un reembolso, anótalo como ingreso: «+mamá 30k».');
 
   if (principales.length > 1) {
     return error('Veo varios montos. Escribe un movimiento por mensaje (para repartir un gasto entre personas usa «pagué por ivan 3000 y daniel 2500»).');

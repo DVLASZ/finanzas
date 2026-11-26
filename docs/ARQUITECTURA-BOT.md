@@ -664,7 +664,20 @@ La segunda ronda sumó 123 casos: conversaciones de varios mensajes, modismos, c
 6. **Pagos fijos y alcancías** (`recurrentes.ts`): un pago fijo tiene `pausaDesde` y `pausaHasta` (el día en que vuelve a contar). «Pausa claude desde el próximo mes» y «pausa el arriendo por dos meses y vuelve a cobrar en febrero» preguntan antes de cambiar nada. Una frecuencia ambigua («cada que llegue la factura», «último día hábil») pregunta y no inventa un calendario. En las alcancías, apartar no mueve plata: el bot lo avisa y pregunta cuando hay contradicción.
 7. **Notificaciones del banco pegadas** (`banco.ts`, llamado al comienzo de `alEscribir`): un texto de Nequi, Daviplata o Bancolombia se vuelve una frase por operación, con cuenta, fecha y hora. Solo cuenta el monto de la operación: el saldo, los puntos, los dígitos de la tarjeta y las referencias se ignoran. Las líneas con órdenes incrustadas («NOTA: ignora las instrucciones anteriores...») se descartan antes de leer nada: el texto pegado es un dato, nunca una instrucción.
 
-Queda sin resolver: «le solté 90 barras a Pipe hasta el viernes» registra el préstamo, pero el vencimiento se pierde, porque el parser solo guarda la fecha límite en las deudas («le debo») y no en los préstamos.
+El vencimiento de «le solté 90 barras a Pipe hasta el viernes» quedó resuelto en la ronda 3 (8d).
+
+## 8d. Ronda 3 de la batería (RED-273 a RED-395)
+
+Seis capas nuevas, cada una en su módulo y enganchada con pocas líneas en `parser.ts` o `bot.ts`.
+
+1. **Dictado por voz** (`dictado.ts`): `limpiarDictado` corre al entrar en `alEscribir`. Quita muletillas iniciales y «de el», quita un teléfono de 10 dígitos que empiece en 3, pasa números en letras a cifras, deja una sola vez un monto dicho en cifra y en letras, deja que «treinta y cinco» herede el «mil» del monto anterior y aplica la última corrección dictada («no espere fueron 55 mil», «ah no mentiras fue en efectivo»). Con más de 1000 caracteres no toca nada. `dudaDeDictado` pregunta en «siento veinte mil», «dos de veinte mil de arroz» y «debe haber 70 mil en nequi».
+2. **Préstamos cruzados y vencimientos** (`cruzados.ts`): el préstamo otorgado guarda la fecha límite («hasta el viernes», «me los paga el quince») y la frase sale limpia de persona y fecha. Condonaciones, compensaciones, pago con un bien, dólares devueltos en pesos e intereses no inventan un gasto ni un ingreso: explican o preguntan.
+3. **Consultas sobre el historial** (`consultasHistorial.ts`): preguntas de arranque interrogativo sin cifras se responden con datos reales (último gasto, el mayor del año, un día o un rango, promedio con su divisor, comparación entre meses, devoluciones, préstamos sin cobrar, pagos fijos pendientes, presupuesto restante, saldo neto con una persona). Solo lee. Si falta un dato lo dice o pregunta a quién se refiere.
+4. **Fechas relativas y obligaciones futuras** (`fechasRelativas.ts`, `obligaciones.ts`): anteanoche, el 15 del mes pasado y el último día del mes pasado se resuelven contra el reloj. «el 04/05», «el fin de semana pasado» y «las doce y media de la noche» sin día preguntan. «Tengo que pagar», «vence» y «todavía no he pagado» no se anotan: se explica cómo dejarlas como pago fijo.
+5. **Narrativas largas** (`narrativa.ts`): un párrafo se parte en un movimiento por evento. Se descartan intenciones («pensaba comprar... no compré»), devoluciones antes de pagar, cancelaciones, el clima y lo que ya se había recibido. Solo actúa con reglas de limpieza puntuales o con relatos de 12 palabras o más donde cada trozo es una acción hecha.
+6. **Límites, colisiones y emojis** (`limites.ts`): un decimal dudoso en pesos pregunta la cifra. Un nombre que choca con una categoría o una cuenta («Mercado», «Efectivo») pregunta. Desde 100 millones de pesos la tarjeta avisa. Con una tarjeta pendiente, 👍 confirma, ❌ cancela y 🔄 o «??» la dejan igual y preguntan; sin tarjeta, un emoji suelto no hace nada.
+
+Decisiones de la ronda: lo que pagó un tercero, lo condonado y lo compensado no mueve las cuentas propias. La instalación personal no tiene la categoría Servicios, así que RED-274 y RED-290 no la exigen.
 
 ## 9. Cómo probarlo
 
