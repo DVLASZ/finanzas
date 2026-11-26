@@ -503,7 +503,7 @@
     0%, 100% { box-shadow: 0 0 0 1px var(--anillo), 0 18px 40px -18px rgba(0, 0, 0, .5), 0 0 0 0 color-mix(in srgb, var(--marca) 0%, transparent); }
     50% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--marca) 55%, var(--anillo)), 0 18px 40px -18px rgba(0, 0, 0, .5), 0 0 26px 2px color-mix(in srgb, var(--marca) 32%, transparent); }
   }
-  .carta .monto-g { animation: monto-pop .6s cubic-bezier(.34, 1.4, .64, 1) .12s both; transform-origin: left center; }
+  .carta .monto-g { animation: monto-pop .6s cubic-bezier(.22, 1, .36, 1) .12s both; transform-origin: left center; }
   @keyframes monto-pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: none; } }
   .carta .botones .chip { transition: transform .12s ease, box-shadow .2s ease, filter .2s ease, background .2s ease; }
   .carta .botones .chip.principal:hover { filter: brightness(1.08); }
@@ -1158,3 +1158,5 @@ li.grupo.grupo-dia:hover { background: var(--elev); }
 #chat .impacto, #chat .impacto-fila { min-width: 0; max-width: 100%; box-sizing: border-box; }
 #chat .impacto-fila > span { min-width: 0; flex: 1 1 auto; }
 #chat .impacto-fila > b { flex: 0 0 auto; }
+/* con letra grande y varias alertas juntas, el hilo y el cuadro de escribir se salían de la pantalla: cada alerta cabe en un tramo y se desliza por dentro */
+.alerta-chat { max-height: 22dvh; overflow-y: auto; overscroll-behavior: contain; flex-shrink: 0; }
