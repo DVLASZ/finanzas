@@ -318,6 +318,26 @@ function interpretarAfirmado(texto: string, ctx: Contexto): Resultado {
 /** Cosas que se pagan y que no son una persona: «pago de luz» es un gasto aunque el diccionario no la tenga. */
 const SERVICIOS = /^(luz|agua|gas|internet|arriendo|alquiler|celular|plan|cuota|cuotas|tarjeta|seguro|impuesto|impuestos|predial|matricula|parqueadero|administracion|factura|recibo|recibos|credito|servicios|telefono|cable|renta|multa|suscripcion|pension)$/;
 
+/**
+ * Un concepto de gasto con un solo monto y dos cuentas, sin verbo de transferencia («almuerzo 12000 nequi daviplata»,
+ * «mercado 50k efectivo nequi»): no es pasar plata de una cuenta a otra, es un gasto. No se adivina cuál de las dos
+ * pagó: se pregunta con un botón por cuenta. Sin concepto («nequi a daviplata 12000») sigue siendo una transferencia.
+ */
+function pagoConDosCuentas(b: Base, cuentas: { id: string; inicio: number; fin: number }[], ctx: Contexto): Resultado | null {
+  if (b.montos.length !== 1 || cuentas.length > 3) return null;
+  const quitar = [...cuentas.map(c => [c.inicio, c.fin]), [b.montos[0].inicio, b.montos[0].fin]].sort((x, y) => y[0] - x[0]);
+  let resto = b.t;
+  for (const [i, j] of quitar) resto = resto.slice(0, i) + ' ' + resto.slice(j);
+  const palabras = resto.split(/[^a-z0-9ñ]+/).filter(w => w && !/^(a|de|del|con|en|y|o|desde|hacia|para|por|la|el|k|mil|lucas?|pesos?)$/.test(w) && !/^\d+$/.test(w));
+  if (!palabras.length) return null;
+  const concepto = palabras.join(' ');
+  const monto = b.montos[0].valor;
+  const nombre = (id: string): string => ctx.cuentas.find(c => c.id === id)?.nombre ?? id;
+  const opciones = cuentas.map(c => ({ titulo: `Con ${nombre(c.id)}`, frase: `${concepto} ${monto} ${nombre(c.id)}` }));
+  const lista = cuentas.length === 2 ? `${nombre(cuentas[0].id)} o con ${nombre(cuentas[1].id)}` : cuentas.map(c => nombre(c.id)).join(', ');
+  return { clase: 'pregunta', mensaje: `¿Pagaste con ${lista}?`, opciones };
+}
+
 function interpretarPlano(texto: string, ctx: Contexto): Resultado {
   const original = texto.trim();
   const t00 = limpiar(original);
@@ -385,7 +405,10 @@ function interpretarPlano(texto: string, ctx: Contexto): Resultado {
   // (las cuentas nombradas dentro de «con 2k en monedas» o «vuelto 200 monedas» son del pago, no de una transferencia)
   const pago0 = leerPago(b.t, b.montos);
   const cuentasDeVerdad = b.cuentas.filter(c => !dentroDe(c, pago0.tramos));
-  if (cuentasDeVerdad.length >= 2 || (cuentasDeVerdad.length === 1 && /\b(consigne|deposite|saque|retire|retiro|meti)\b/.test(b.t))) {
+  // «almuerzo 12000 nequi daviplata»: un concepto, un monto y dos cuentas sin verbo de pasar plata es un gasto; se pregunta con cuál pagó
+  const conCual = cuentasDeVerdad.length >= 2 && !verbosTransfer.test(b.t) ? pagoConDosCuentas(b, cuentasDeVerdad, ctx) : null;
+  if (conCual) return conCual;
+  if (cuentasDeVerdad.length >= 2 || (cuentasDeVerdad.length === 1 &&/\b(consigne|deposite|saque|retire|retiro|meti)\b/.test(b.t))) {
     if (cuentasDeVerdad.length >= 2 || verbosTransfer.test(b.t)) return transferencia(b, ctx);
   }
 

@@ -29,9 +29,9 @@ function describir(e) {
 
 const GRUPOS = { typos: 'Errores de escritura', jerga: 'Jerga, autocorrecciones e incertidumbre', historias: 'Historias largas y números en letras', negaciones: 'Negaciones e hipotéticos', deudas: 'Deudas, préstamos y abonos', numeros: 'Números, fechas y unidades', transferencias: 'Transferencias y monedas', personas: 'Personas y compartidos', ayuda: 'Preguntas de ayuda disfrazadas', pendiente: 'Con una tarjeta pendiente', varios: 'Varios movimientos, IA y límites' };
 
-let md = `# Batería adversarial del bot (RED-001 a RED-147)
+let md = `# Batería adversarial del bot (RED-001 a RED-${CASOS.length})
 
-Estas son las 147 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (\`packages/core/test/red-team-casos.ts\`) corre como prueba automática contra el bot real.
+Estas son las ${CASOS.length} frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (\`packages/core/test/red-team-casos.ts\`) corre como prueba automática contra el bot real.
 
 \`\`\`bash
 node --test packages/core/test/red-team.test.ts
