@@ -700,7 +700,7 @@ try {
     contiene(await pag.evaluate(() => document.querySelector('#texto').value), 'pasé', 'la frase quedó escrita');
     await pag.evaluate(() => { const x = document.querySelector('#texto'); x.value = ''; x.dispatchEvent(new Event('input', { bubbles: true })); });
     // una deuda
-    await irA('Chat'); await escribir('le debo 54000 a Pedro por la bici'); await pulsar('Confirmar'); await espera(500);
+    await irA('Chat'); await escribir('le debo 54000 a Pedro por la bici'); await pulsar('Compras'); await pulsar('Confirmar'); await espera(500);
     await abrirDeMas('Deudas y préstamos'); await espera(700);
     await clic('[data-persona]');
     igual(await pag.evaluate(() => (document.querySelector('#info')?.dataset.info ?? '').startsWith('ficha-')), true, 'la deuda abre su ventana');
@@ -734,6 +734,7 @@ try {
     igual(await pag.evaluate(() => document.querySelector('nav [aria-current=page]')?.dataset.p), 'chat', 'pasa al chat');
     contiene(await pag.evaluate(() => document.body.innerText), 'Marta', 'la tarjeta de confirmación nombra a Marta');
     await mostrarMontos(pag); await espera(500);
+    await pulsar('Cancelar'); await espera(400); // el abono queda como tarjeta pendiente: se descarta para que no estorbe a las pruebas siguientes
     contiene(await pag.evaluate(() => document.body.innerText), '20.000', 'con el monto del abono');
   });
 
@@ -975,6 +976,7 @@ try {
     const hay = s => pag.evaluate(x => Boolean(document.querySelector(x)), s);
     const clic = async s => { const ok = await pag.evaluate(x => { const e = document.querySelector(x); e?.click(); return Boolean(e); }, s); if (!ok) throw new Error('no hay ' + s); await espera(600); };
     await irA('Chat'); await espera(400);
+    await pag.evaluate(() => [...document.querySelectorAll('button')].filter(b => /^(Cancelar|Descartar la pendiente)$/.test(b.innerText.trim())).pop()?.click()); await espera(400); // una tarjeta pendiente de antes se descarta
     await escribir('#viaje cena 14000 #claude'); await pulsar('Guardar igual');
     await escribir('taxi de terminal a casa 6000 #viaje'); await pulsar('Guardar igual');
     await irA('Resumen'); await espera(700);

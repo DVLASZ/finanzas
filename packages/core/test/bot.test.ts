@@ -59,12 +59,13 @@ test('gasto: Cancelar no guarda', async () => {
 });
 
 test('gasto: cuentas y errores de ortografía', async () => {
-  const bot = nuevoBot();
-  assert.match(textoDe(await bot.di('pizza 36k nequi')), /Nequi/);
-  assert.match(textoDe(await bot.di('pizza 36k nekui')), /Nequi/);
-  assert.match(textoDe(await bot.di('pizza 36k NEQUÍ')), /Nequi/);
-  assert.match(textoDe(await bot.di('pizza 36k davi')), /Daviplata/);
-  assert.match(textoDe(await bot.di('pizza 36k efetivo')), /Efectivo/);
+  // cada frase en un bot limpio: con una tarjeta pendiente el bot pregunta por ella antes de seguir
+  const dice = async (f: string) => textoDe(await nuevoBot().di(f));
+  assert.match(await dice('pizza 36k nequi'), /Nequi/);
+  assert.match(await dice('pizza 36k nekui'), /Nequi/);
+  assert.match(await dice('pizza 36k NEQUÍ'), /Nequi/);
+  assert.match(await dice('pizza 36k davi'), /Daviplata/);
+  assert.match(await dice('pizza 36k efetivo'), /Efectivo/);
 });
 
 test('gasto: montos escritos de varias formas', async () => {

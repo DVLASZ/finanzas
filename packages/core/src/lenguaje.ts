@@ -9,9 +9,9 @@
  * coloquiales («me giraron», «me fían», «quedé debiendo», «me tocó poner», «saqué del cajero», «pasé de Nequi a efectivo»).
  */
 import { formatear, hallarMontos } from './dinero.ts';
-import { cuentaDePalabra } from './entidades.ts';
+import { cuentaDePalabra, grupoPorDefecto, vendeProductos } from './entidades.ts';
 import { corregirCuentasMalOidas, numerosDeDinero } from './voz.ts';
-import { limpiar } from './texto.ts';
+import { limpiar, titulo } from './texto.ts';
 import type { Contexto } from './tipos.ts';
 
 export interface OpcionDeReparto { titulo: string; frase: string }
@@ -169,7 +169,8 @@ function compartidos(t: string): Naturalizado | null {
     ?? new RegExp(String.raw`\b(?:pagu[eé](?:\s+yo)?|puse(?:\s+yo)?|me toc[oó] pagar)\s+(?:la cuenta\s+(?:de\s+)?)?(${MONTO})\s+(?:de|con|para)?\s*(?:la\s+)?(?:comida|cena|almuerzo|salida|cuenta)?\s*con\s+(${NOMBRES})(.*)$`, 'i').exec(t);
   if (m) {
     const primero = /^\d/.test(m[1]);
-    const nombres = partirNombres(primero ? m[2] : m[1]);
+    // «pagué 20k con nequi» dice con qué se pagó, no con quién: una cuenta nunca es acompañante
+    const nombres = partirNombres(primero ? m[2] : m[1]).filter(n => !limpiar(n).split(' ').every(w => cuentaDePalabra(w)));
     const monto = valorDeMonto(primero ? m[1] : m[2]);
     const resto = (primero ? m[3] : m[3]) ?? '';
     if (nombres.length && nombres.length <= 8 && monto > 0) {
@@ -377,9 +378,12 @@ function nombreAlInicio(resto: string, ctx: Pick<Contexto, 'cuentas'>, cualquier
   return { nombre: nombre.join(' '), sobra: ws.slice(nombre.length).join(' ') };
 }
 
+// «de los 40 que le presté» solo cuenta de qué deuda es el abono; si se deja, «le presté» vuelve la frase otro préstamo
+const DE_LOS = new RegExp(String.raw`\s+de\s+(?:los|las)\s+${MONTO}(?![${L}\d]).*$`, 'i');
+
 /** «Faber me pagó los 23k que me debía», «me abonó 10k Ana», «cobré 30k a Ana»: todo se dice como «Ana me pagó 30k». */
 function cobros(t: string, ctx: Pick<Contexto, 'cuentas'>, cierre: string): string | null {
-  const sin = t.replace(DEBIA, '').trim();
+  const sin = t.replace(DEBIA, '').replace(DE_LOS, '').trim();
   const cambio = sin !== t.trim();
   let m: RegExpExecArray | null;
   const verbo = new RegExp(String.raw`^(?:(?:hoy|ayer|anteayer|antier)\s+)?(?:ya\s+)?(${NOMBRE})\s+me\s+${V_COBRO}\s+(?:ya\s+)?(${ART})(${MONTO})${FIN}\s*(.*)$`, 'i');
@@ -491,13 +495,176 @@ function dudas(t: string, ctx: Pick<Contexto, 'cuentas'>, cierre: string): Natur
   return null;
 }
 
+// ---------------------------------------------------------------- 6. hacia dónde va la plata
+
+type CtxDireccion = Pick<Contexto, 'cuentas'> & Partial<Pick<Contexto, 'config' | 'abiertas' | 'aprendido'>>;
+
+const INI = String.raw`^(?:(?:hoy|ayer|anteayer|antier)\s+)*`;
+const PESOS = String.raw`(?:\s+(?:pesos|pesitos|barritas))?`;
+const DEVOLVER = /(?:\s+y)?\s+(?:no\s+)?me\s+(?:lo|los|la|las)\s+(?:devuel\w*|devolvi[oó]|ha\s+devuelto|tiene\s+que\s+devolver|va\s+a\s+devolver|paga|pague)\b.*$|\s+(?:prestad|fiad)[oa]s?\b.*$/i;
+
+const nombrePropio = (s: string): string => titulo(limpiar(partirNombres(s)[0] ?? ''));
+/** ¿Es alguien? Una persona que ya tienes o un pariente («tía», «mamá»). */
+const esGente = (w: string, ctx: CtxDireccion): boolean => esPersona(w, ctx) || grupoPorDefecto(w) === 'familia';
+const conFecha = (s: string, cierre: string): string => (FECHA.test(s) ? s : `${s}${cierre}`).replace(/\s+/g, ' ').trim();
+
+/**
+ * Lo que va tras «me pagaron 50k de/por ...» cuando es una cosa y no alguien: «una actividad», «la quincena», «mi trabajo».
+ * Con artículo nunca es una persona, salvo que lo que sigue sea un pariente o alguien conocido («la tía», «mi mamá»).
+ * Un nombre suelto («de Ana», «de ana») se deja para el camino de las personas.
+ */
+function cosaDe(resto: string, ctx: CtxDireccion): string | null {
+  const ws = limpiar(resto).replace(/^(?:de|del|por)\s+/, '').split(' ').filter(Boolean);
+  if (ws.length < 2 || !/^(?:un|una|unos|unas|el|la|los|las|lo|mi|mis)$/.test(ws[0]) || esGente(ws[1], ctx)) return null;
+  const corte = ws.findIndex((w, i) => i > 0 && /^(?:que|q|para|porque|pues)$/.test(w));
+  return ws.slice(1, corte > 0 ? corte : undefined).join(' ') || null;
+}
+
+/**
+ * Frases donde lo difícil es saber hacia dónde va la plata o quién es la persona. Lo seguro se reescribe a la forma de siempre
+ * («ingreso 50000 encontrado», «presté 20000 a carlos»); lo que tiene dos lecturas razonables se pregunta con botones.
+ */
+function direccion(t0: string, ctx: CtxDireccion, cierre: string): Naturalizado | null {
+  // «presté 5k a juan no a jose»: el «no a jose» corrige a quién, no es parte del nombre
+  const t = t0.replace(new RegExp(String.raw`((?<![${L}])a\s+[${L}]+)\s*,?\s+no\s+(?:a|para)\s+[${L}]+(?![${L}])`, 'i'), '$1');
+  if (t !== t0) return { texto: t };
+  const s = t.trim();
+  let m: RegExpExecArray | null;
+
+  // «Recibiste 20.000 de ANA MARIA en tu Nequi», «te transfirieron 30000»: avisos del banco, que hablan de ti en segunda persona
+  m = new RegExp(String.raw`${INI}(?:recibiste|te\s+(?:llegaron|lleg[oó]|consignaron|transfirieron|enviaron|giraron|depositaron|pagaron|abonaron))\s+(${MONTO})${FIN}${PESOS}\s*(.*)$`, 'i').exec(s);
+  if (m && valorDeMonto(m[1]) > 0) {
+    const ws = limpiar(m[2]).replace(/^(?:de|del)\s+/, '').split(' ').filter(w => w && !/^(?:en|a|al|por|tu|su)$/.test(w));
+    // sin decir de quién («te transfirieron 30000 a nequi») la fuente es «otros», como en «me consignaron»
+    const resto = ws.every(w => cuentaDePalabra(w)) ? [...ws, 'otros'] : ws;
+    return { texto: conFecha(`ingreso ${valorDeMonto(m[1])} ${resto.join(' ')}`, cierre) };
+  }
+
+  // «vendí la bici 200000»: sin catálogo, vender algo tuyo es plata que entra (con catálogo lo lee ventaDelCatalogo)
+  m = new RegExp(String.raw`${INI}vend[ií](?:mos)?\s+(.+)$`, 'i').exec(s);
+  const conCatalogo = ctx.config ? vendeProductos({ config: ctx.config }) : false;
+  const mv = m ? new RegExp(MONTO, 'i').exec(m[1]) : null;
+  if (m && mv && !conCatalogo && valorDeMonto(mv[0]) > 0) {
+    const cosa = m[1].replace(mv[0], ' ');
+    return { texto: conFecha(`ingreso ${valorDeMonto(mv[0])} venta ${cosa}`, cierre) };
+  }
+
+  // «me encontré 50 mil en el parque»
+  m = new RegExp(String.raw`${INI}me\s+encontr[eé]\s+(${MONTO})${FIN}`, 'i').exec(s);
+  if (m && valorDeMonto(m[1]) > 0) return { texto: `ingreso ${valorDeMonto(m[1])} encontrado${cierre}` };
+
+  // «mi tía me regaló diez mil pesitos para un helado»: un regalo que te dan es plata que entra
+  m = new RegExp(String.raw`${INI}(?:(?:mi|mis|el|la)\s+)?(?:([${L}]+)\s+)?me\s+regal(?:o|ó|aron)\s+(${MONTO})${FIN}${PESOS}(.*)$`, 'i').exec(s);
+  if (m && valorDeMonto(m[2]) > 0) {
+    const quien = m[1] && !esPalabraSuelta(m[1]) ? limpiar(m[1]) : 'regalo';
+    const cuenta = cuentaDicha(m[3], ctx);
+    return { texto: `ingreso ${valorDeMonto(m[2])} ${quien}${cuenta ? ` ${cuenta}` : ''}${cierre}` };
+  }
+
+  // «me pagaron 120 mil de una actividad», «me devolvieron 15k de nequi», «me devolvieron 20k que me debían»: sin una persona
+  const sinDebia = s.replace(DEBIA, '').trim();
+  // «mk», «parce»: muletillas del comienzo, no la persona que pagó
+  m = new RegExp(String.raw`${INI}(?:(?:mk|parce|uy|oe|bro|marica|uff|ve|vea|pues)\s+)?(?:ya\s+)?me\s+(pagaron|devolvieron|reembolsaron|abonaron|pag[oó]|devolvi[oó]|abon[oó])\s+(?:ya\s+)?(?:(?:los|las|el|la)\s+)?(${MONTO})${FIN}${PESOS}\s*(.*)$`, 'i').exec(sinDebia);
+  if (m && valorDeMonto(m[2]) > 0) {
+    const v = valorDeMonto(m[2]);
+    const fuente = /^devol/i.test(m[1]) ? 'devolucion' : /^reemb/i.test(m[1]) ? 'reembolso' : 'otros';
+    const resto = limpiarResto(m[3]);
+    const cosa = resto ? cosaDe(resto, ctx) : null;
+    if (cosa) return { texto: conFecha(`ingreso ${v} ${cosa}`, cierre) };
+    const cuenta = resto ? cuentaDicha(resto.replace(/^(?:de|del|en|a|al|por)\s+/i, '').split(/\s+/)[0], ctx) : null;
+    if (resto && cuenta) return { texto: `ingreso ${v} ${cuenta} ${fuente}${cierre}` };
+    if (!resto) {
+      // si alguien te debe, quizá es su abono: se pregunta; si nadie te debe, es plata que entra
+      const deudores = (ctx.abiertas?.teDeben ?? []).map(c => ctx.cuentas.find(x => x.tipo === 'persona' && x.clave === c)).filter(c => !!c).slice(0, 4);
+      if (!deudores.length) return { texto: `ingreso ${v} ${fuente}${cierre}` };
+      return { texto: t, pregunta: { mensaje: `¿Quién te devolvió ${formatear(v)}?`, opciones: [
+        ...deudores.map(c => ({ titulo: c.nombre, frase: `${c.nombre} me pagó ${v}${cierre}` })),
+        { titulo: 'Nadie que me deba (solo anota el ingreso)', frase: `ingreso ${v} ${fuente}${cierre}` },
+      ] } };
+    }
+  }
+
+  // «presté 10000 a Ana y Luis»: dos personas, y no se sabe si fue a cada una o entre las dos
+  m = new RegExp(String.raw`${INI}(?:le\s+|les\s+)?prest[eé]\s+(${MONTO})${FIN}\s+a\s+(${NOMBRES})(.*)$`, 'i').exec(s);
+  if (m && valorDeMonto(m[1]) > 0) {
+    const nombres = partirNombres(m[2]).filter(n => !esPalabraSuelta(n.split(' ')[0]));
+    if (nombres.length >= 2 && nombres.length <= 6) {
+      const v = valorDeMonto(m[1]), cada = Math.floor(v / nombres.length);
+      const resto = limpiarResto(m[3]);
+      const lineas = (x: number) => nombres.map(n => conFecha(`presté ${x} a ${titulo(n)} ${resto}`, cierre)).join('\n');
+      const opciones = [{ titulo: `${formatear(v)} a cada uno`, frase: lineas(v) }];
+      if (cada > 0) opciones.push({ titulo: `${formatear(cada)} a cada uno (${formatear(v)} en total)`, frase: lineas(cada) });
+      return { texto: t, pregunta: { mensaje: `¿Le prestaste ${formatear(v)} a cada uno o ${formatear(v)} entre ${juntar(nombres.map(n => titulo(n)))}?`, opciones } };
+    }
+  }
+
+  // «le di 20k a carlos para el bus y no me los devuelve»: lo que se espera de vuelta es un préstamo
+  m = new RegExp(String.raw`${INI}(?:le\s+)?(?:di|d[ií]|pas[eé]|mand[eé]|envi[eé]|gir[eé])\s+(${MONTO})${FIN}\s+a\s+(${NOMBRE})(.*)$`, 'i').exec(s);
+  if (m && valorDeMonto(m[1]) > 0 && DEVOLVER.test(m[3]) && !esPalabraSuelta(m[2].split(' ')[0])) {
+    const motivo = limpiarResto(m[3].replace(DEVOLVER, ''));
+    return { texto: conFecha(`presté ${valorDeMonto(m[1])} a ${nombrePropio(m[2])} ${motivo}`, cierre) };
+  }
+
+  // «le mandé 25k a juan»: puede ser un préstamo, un pago o un regalo; adivinar mal deja un saldo falso con Juan
+  m = new RegExp(String.raw`${INI}(?:le\s+)?(?:mand[eé]|envi[eé]|gir[eé])\s+(${MONTO})${FIN}\s+a\s+(?:(?:mi|mis)\s+)?(${NOMBRE})(.*)$`, 'i').exec(s);
+  // (si la palabra ya es una persona con categoría aprendida, como «julio», el giro ya tiene su categoría y no se pregunta)
+  const primeraPalabra = m ? limpiar(m[2].split(' ')[0]) : '';
+  let categoriaFija = false;
+  try { categoriaFija = Boolean(primeraPalabra && JSON.parse(ctx.config?.categoria_persona ?? '{}')[`per:${primeraPalabra}`]); } catch { /* config ilegible: se pregunta como siempre */ }
+  const aprendidaLaPersona = categoriaFija || (m ? Object.keys(ctx.aprendido ?? {}).some(k => limpiar(k) === primeraPalabra) : false);
+  if (m && !aprendidaLaPersona && valorDeMonto(m[1]) > 0 && !esPalabraSuelta(m[2].split(' ')[0])) {
+    const v = valorDeMonto(m[1]), n = nombrePropio(m[2]);
+    const cuenta = cuentaDicha(m[3], ctx);
+    const fin = `${cuenta ? ` ${cuenta}` : ''}${cierre}`;
+    return { texto: t, pregunta: { mensaje: `¿Qué fueron los ${formatear(v)} que le mandaste a ${n}?`, opciones: [
+      { titulo: 'Se los presté', frase: `presté ${v} a ${n}${fin}` },
+      { titulo: 'Le pagué algo', frase: `pagué ${v} a ${n}${fin}` },
+      { titulo: 'Se los regalé', frase: `le regalé ${v} a ${n}${fin}` },
+    ] } };
+  }
+
+  // «quedamos a mano con maría por 15k»: no dice quién le pagó a quién
+  m = new RegExp(String.raw`(?:quedamos|qued[eé]|estamos)\s+(?:a\s+mano|en\s+paz|pagos|parejos|a\s+paz\s+y\s+salvo)\s+con\s+(${NOMBRE})(?:\s+(?:por|con)\s+(${MONTO}))?`, 'i').exec(s);
+  if (m && !esPalabraSuelta(m[1].split(' ')[0])) {
+    const n = nombrePropio(m[1]), v = m[2] ? valorDeMonto(m[2]) : 0;
+    const opciones = v > 0
+      ? [{ titulo: `${n} me pagó ${formatear(v)}`, frase: `${n} me pagó ${v}${cierre}` }, { titulo: `Le pagué ${formatear(v)} a ${n}`, frase: `pagué ${v} a ${n}${cierre}` }]
+      : [];
+    opciones.push({ titulo: 'Cerrar la cuenta sin mover plata', frase: `cuadrar con ${limpiar(n)}` });
+    return { texto: t, pregunta: { mensaje: `¿Cómo quedaron a mano con ${n}?`, opciones } };
+  }
+
+  // «pagué 60k por mí y por ana y luis»: un gasto en partes iguales contigo incluido
+  m = new RegExp(String.raw`pagu[eé]\s+(${MONTO})${FIN}\s+(?:por|de)\s+m[ií]\s*,?\s*(?:y\s+)?(?:por\s+)?(${NOMBRES})`, 'i').exec(s)
+    ?? new RegExp(String.raw`pagu[eé]\s+(${MONTO})${FIN}\s+por\s+(${NOMBRES})\s+y\s+(?:por\s+)?m[ií](?![${L}])`, 'i').exec(s);
+  if (m && valorDeMonto(m[1]) > 0) {
+    const nombres = partirNombres(m[2].replace(/(?<![${L}])por\s+/gi, '')).filter(n => !/^(?:mi|m[ií]|yo)$/i.test(n) && !esPalabraSuelta(n.split(' ')[0]));
+    if (nombres.length) {
+      const { concepto, fecha } = conceptoDe(s);
+      return { texto: entre(concepto, valorDeMonto(m[1]), nombres, fecha) };
+    }
+  }
+
+  // «le presté mi juguete a tomás y me dio 2 mil por cuidárselo»: la única plata de la frase es la que entra
+  m = new RegExp(String.raw`^(.*?)\s+y\s+(?:([${L}]+)\s+)?me\s+(dio|dieron|regal[oó]|pag[oó]|pagaron)\s+(${MONTO})${FIN}${PESOS}(.*)$`, 'i').exec(s);
+  if (m && !/\d/.test(m[1]) && valorDeMonto(m[4]) > 0 && !/vuelt|devuelta|cambio/i.test(s)) {
+    const v = valorDeMonto(m[4]);
+    const sujeto = m[2] && !esPalabraSuelta(m[2]) ? m[2] : null;
+    const aQuien = [...m[1].matchAll(new RegExp(String.raw`(?<![${L}])a\s+(?:(?:mi|el|la)\s+)?([${L}]+)`, 'gi'))].map(x => x[1]).filter(w => !esPalabraSuelta(w)).pop();
+    const quien = sujeto ?? aQuien;
+    if (/^pag/i.test(m[3]) && quien) return { texto: conFecha(`${titulo(limpiar(quien))} me pagó ${v}`, cierre) };
+    return { texto: conFecha(`ingreso ${v} ${quien ? limpiar(quien) : 'otros'}`, cierre) };
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------- la entrada
 
 /**
  * Pasa una frase por todas las reglas del lenguaje natural. Devuelve null si no hay nada que cambiar; si algo cambió,
  * el texto nuevo; y si la frase puede significar dos cosas, una `pregunta` con las opciones.
  */
-export function naturalizar(texto: string, ctx: Pick<Contexto, 'cuentas'>): Naturalizado | null {
+export function naturalizar(texto: string, ctx: CtxDireccion): Naturalizado | null {
   // un mensaje normal es corto; uno larguísimo no es una frase de plata y las reglas no deben tardar con él
   if (texto.length > 400) return null;
   let t = sinMedidas(jergaDeDinero(texto.trim()));
@@ -508,13 +675,51 @@ export function naturalizar(texto: string, ctx: Pick<Contexto, 'cuentas'>): Natu
   if (unidad?.error) return { texto: t, error: unidad.error };
   if (unidad) { t = unidad.texto; if (unidad.aviso) avisos.push(unidad.aviso); }
   const con = (n: Naturalizado): Naturalizado => (avisos.length ? { ...n, avisos: [...avisos, ...(n.avisos ?? [])] } : n);
+  const dir = direccion(t, ctx, FECHA.exec(t)?.[0] ? ` ${FECHA.exec(t)![0]}` : '');
+  if (dir) return con(dir);
   const comp = compartidos(t);
   if (comp) return con(comp);
   const sinMonto = cobroSinMonto(t, ctx);
   if (sinMonto) return { texto: t, error: sinMonto };
+  // antes de los verbos: «retiré 40k de nequi pero los dejé en el cajero» no es un retiro que llegó al bolsillo
+  const quieta = plataQueNoLlego(t, ctx, FECHA.exec(t)?.[0] ? ` ${FECHA.exec(t)![0]}` : '');
+  if (quieta) return quieta;
   const v = verbos(t, ctx);
   if (v) return con({ texto: v });
   const duda = dudas(t, ctx, FECHA.exec(t)?.[0] ? ` ${FECHA.exec(t)![0]}` : '');
   if (duda) return duda;
   return unidad || cambioJerga ? con({ texto: t }) : null;
+}
+
+// ---------------------------------------------------------------- 7. plata que no llegó a donde parece
+
+/**
+ * Dos frases que parecen transferencias y no lo son. «Retiré 40k de nequi pero los dejé en el cajero»: salió del banco y no llegó
+ * al bolsillo. «Le pasé mi plata a mi hermana para que me la guarde»: sigue siendo tuya, pero ya no está en tus cuentas.
+ * No se adivina: se pregunta qué pasó, con un botón por cada lectura.
+ */
+function plataQueNoLlego(t: string, ctx: CtxDireccion, cierre: string): Naturalizado | null {
+  const s = limpiar(t);
+  const v = valorDeMonto(new RegExp(MONTO, 'i').exec(s)?.[0] ?? '');
+  if (!v) return null;
+  if (/\b(?:saque|retire|retiro)\b/.test(s) && /\b(?:deje|olvide|quedo|quedaron)\b.*\bcajero\b/.test(s)) {
+    const banco = ctx.cuentas.find(c => c.id === cuentaDicha(s, ctx) && c.id !== 'efectivo') ?? cuentasDeBanco(ctx)[0];
+    if (!banco) return null;
+    return { texto: t, pregunta: { mensaje: `¿Qué pasó con los ${formatear(v)} que dejaste en el cajero?`, opciones: [
+      { titulo: 'Los recuperé', frase: `cambio ${v} ${banco.clave} a efectivo${cierre}` },
+      { titulo: 'Se perdieron', frase: `plata perdida en el cajero ${v} ${banco.clave}${cierre}` },
+      { titulo: 'El cajero no los entregó', frase: `=No anoto nada: si el cajero no te dio la plata, el saldo de ${banco.nombre} sigue igual. Si el banco te la descontó, reclama y anótala cuando sepas qué pasó.` },
+    ] } };
+  }
+  const guarda = /\ba\s+(mi\s+|la\s+|el\s+|su\s+)?([a-zñ]+)\s+para\s+que\s+(?:me\s+)?(?:la|lo|las|los)\s+(?:guarde|guardara|cuide|cuidara|tenga|tuviera)\b/.exec(s);
+  if (guarda && /\b(?:pase|di|entregue|deje|mande)\b/.test(s)) {
+    const n = guarda[2];
+    const quien = guarda[1] ? `tu ${n}` : titulo(n);
+    return { texto: t, pregunta: { mensaje: `¿Cómo anoto los ${formatear(v)} que tiene ${quien}?`, opciones: [
+      { titulo: 'Me los guarda y me los devuelve', frase: `preste ${v} a ${n}${cierre}` },
+      { titulo: 'Se los di', frase: `le regale ${v} a ${n}${cierre}` },
+      { titulo: 'Fueron a otra cuenta mía', frase: '=Si la plata quedó en una cuenta tuya, escríbelo así: «pasé 30000 de efectivo a nequi».' },
+    ] } };
+  }
+  return null;
 }

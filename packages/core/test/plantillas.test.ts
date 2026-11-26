@@ -130,6 +130,7 @@ test('empresa: efectivo, monedas y «En otras cuentas», sus categorías y sus g
   for (const esperada of ['Insumos', 'Impuestos y trámites', 'Transporte a eventos']) assert.ok(cats.includes(esperada), `falta ${esperada}`);
   const t = textoDe(await b.di('63000 botellas'));
   assert.match(t, /Gasto · Insumos · \$63\.000/);
+  await b.pulsa('no'); // con una tarjeta pendiente el bot pregunta por ella antes de seguir con otro gasto
   const s = await b.di('le regalé 20000 a Rosa');
   assert.deepEqual(s[0].botones?.filter(x => x.id.startsWith('resp:')).map(x => x.titulo), ['Socios', 'Clientes', 'Proveedores', 'Otros', 'Es un apodo de...', 'No es una persona']);
 });

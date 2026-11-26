@@ -27,8 +27,9 @@ import { textoRevision } from './revision.ts';
 import { aplicarCambio, interpretar, resolverFaltante, type Propuesta } from './parser.ts';
 import { hallarMontos, aMinor, formatear } from './dinero.ts';
 import { contextoDe, type Datos, type Pendiente, type Repo } from './repo.ts';
-import { ayudaDeTema, buscarAyuda, esPreguntaDeAyuda, temasParecidos, type RespuestaDeAyuda } from './ayudaGuiada.ts';
-import { dividirLinea, MAX_MOVIMIENTOS_POR_MENSAJE } from './lineas.ts';
+import { ayudaDeTema, buscarAyuda, consultaDisfrazada, esPreguntaDeAyuda, temasParecidos, type RespuestaDeAyuda } from './ayudaGuiada.ts';
+import { dividirTodo, MAX_MOVIMIENTOS_POR_MENSAJE } from './lineas.ts';
+import { incertidumbre } from './incertidumbre.ts';
 import { descendientes, leerSubcategorias, MAX_NIVELES, puedeIrDentro } from './subcategorias.ts';
 import { leerMetas, textoAvance, textoMetas, totalApartado, type Meta } from './metas.ts';
 import { describirFrecuencia, leerRecurrentes, type Frecuencia, type Recurrente } from './recurrentes.ts';
@@ -106,6 +107,18 @@ function textoLista(lista: string[]): string {
   return lista.length
     ? ['🛒 Lista de compras:', ...lista.map(x => `• ${x}`), '', 'Cuando compres algo, dime «compré arroz» y lo tacho.'].join('\n')
     : 'La lista de compras está vacía. Para agregar: «falta arroz y sal».';
+}
+
+type Suelta = 'confirma' | 'cancela' | 'borra' | 'gracias';
+
+/** Una palabra suelta de confirmar, cancelar o agradecer (ya pasada por `limpiar`), o null si el mensaje dice otra cosa. */
+function palabraSuelta(t: string): Suelta | null {
+  const s = t.trim();
+  if (/^(?:ok|okey|okay|oki|dale|listo|si|sii|confirmar|confirmo|confirma|de una|vale|guardalo|guardar|perfecto|correcto|esta bien|asi esta bien)$/.test(s)) return 'confirma';
+  if (/^(?:borra|borralo|borrala|borrar)$/.test(s)) return 'borra';
+  if (/^(?:no|nop|nel|cancela|cancelar|cancelalo|cancelala|olvidalo|mejor no|no gracias|descarta|descartar|descartalo|descartala)$/.test(s)) return 'cancela';
+  if (/^(?:gracias|muchas gracias|mil gracias|grax|gracias parce|chevere|genial|super)$/.test(s)) return 'gracias';
+  return null;
 }
 
 export async function procesar(
@@ -224,6 +237,11 @@ class Motor {
 
     const p = this.pend;
 
+    // 0) Palabras sueltas («ok», «no», «borra», «gracias»): con una tarjeta pendiente actúan solo sobre ella;
+    //    sin tarjeta se contesta corto. Nunca son un gasto sin monto ni una corrección del concepto.
+    const suelta = palabraSuelta(t);
+    if (suelta && (p || suelta !== 'borra')) return this.alPalabraSuelta(suelta, p);
+
     // 1) Estaba esperando una respuesta (categoría, lugar, persona)
     if (p && p.propuesta.faltantes.length) {
       const r = resolverFaltante(p.propuesta, texto, this.ctx);
@@ -232,9 +250,10 @@ class Motor {
         if (nuevo.clase === 'error') return [{ texto: r.error, botones: [{ id: 'no', titulo: '❌ Cancelar' }] }];
         // si escribió otra cosa completa, se procesa como mensaje nuevo (abajo)
       } else {
-        if (r.aprende) await this.repo.guardarAprendido(r.aprende.palabra, { categoriaId: r.aprende.categoriaId });
+        // lo aprendido se guarda al confirmar: si la tarjeta se cancela, no queda una regla de algo que no pasó
         if (r.aprende) this.ctx.aprendido[r.aprende.palabra] = { categoriaId: r.aprende.categoriaId };
-        return this.mostrar({ ...p, propuesta: r.propuesta });
+        const aprende = r.aprende ? [...(p.aprende ?? []), r.aprende] : p.aprende;
+        return this.mostrar({ ...p, propuesta: r.propuesta, aprende });
       }
     }
 
@@ -247,8 +266,24 @@ class Motor {
     }
 
     // 3) Varios movimientos en un mensaje: se van mostrando de a uno
-    const partes = dividirLinea(texto);
-    if (partes.length > 1 && !p?.editando) return this.siguienteDe(partes, partes.length);
+    // (una sola línea que no se anota, como «pagué 10000 y me devolvieron los mismos 10000», no se parte)
+    const todas = !/[\n;]/.test(texto) && incertidumbre(texto) ? [texto] : dividirTodo(texto, this.nombresDeCuentas());
+    const partes = todas.slice(0, MAX_MOVIMIENTOS_POR_MENSAJE);
+
+    // Un movimiento nuevo con una tarjeta sin confirmar: no se reemplaza en silencio. La nueva queda en la cola
+    // y se pregunta qué hacer con la pendiente.
+    if (p && !p.editando && (partes.length > 1 || interpretar(texto, this.ctx).clase === 'movimiento')) return this.avisarPendiente(p, partes);
+
+    if (partes.length > 1 && !p?.editando) {
+      const salida = await this.siguienteDe(partes, partes.length);
+      const faltan = todas.slice(MAX_MOVIMIENTOS_POR_MENSAJE);
+      if (!faltan.length) return salida;
+      // más de la cuenta: se muestran los primeros y lo que sobra queda listo para mandarlo en otro mensaje
+      return [{
+        texto: `Son ${todas.length} movimientos: te muestro los primeros ${partes.length} de ${todas.length}. Faltan ${faltan.length}: toca el botón y quedan escritos para mandarlos cuando termines estos.`,
+        botones: [{ id: `poner:${faltan.join('\n')}`, titulo: `✍️ Escribir los ${faltan.length} que faltan` }],
+      }, ...salida];
+    }
 
     // 4) Mensaje nuevo. Si estabas editando, el mensaje completo reemplaza la tarjeta y mantiene
     //    la referencia al movimiento original (que se anula solo al confirmar).
@@ -261,6 +296,9 @@ class Motor {
     if (res.clase === 'pregunta') {
       return [{ texto: `❓ ${res.mensaje}`, botones: [...res.opciones.map(o => ({ id: `ia:${o.frase}`, titulo: o.titulo })), { id: 'no', titulo: '❌ Cancelar' }] }];
     }
+    // «quiero mirar quién me debe», «cuánto me queda»: es una consulta dicha con otras palabras
+    const consulta = res.clase === 'error' ? consultaDisfrazada(texto) : null;
+    if (consulta) return this.alEscribir(consulta);
     if (res.clase === 'error' && esPreguntaDeAyuda(texto)) return [this.respuestaDeAyuda(texto)];
     if (res.clase === 'error') {
       // Una línea sin plata («Jabón baño») parece algo por comprar: se ofrece anotarla en la lista.
@@ -273,6 +311,40 @@ class Motor {
     }
     const reemplazaId = p?.editando ? p.reemplazaId : undefined;
     return this.mostrar({ propuesta: res.propuesta, editando: Boolean(reemplazaId), reemplazaId });
+  }
+
+  /** Los nombres de las cuentas de plata y de las personas, para que «nequi 15k efectivo 10k» o «almuerzo 25000 marta 20000» no se partan como dos gastos. */
+  private nombresDeCuentas(): string[] {
+    return this.ctx.cuentas.filter(c => c.tipo === 'dinero' || c.tipo === 'persona').map(c => limpiar(c.nombre));
+  }
+
+  /** «ok», «no», «borra», «gracias» sueltos. Con tarjeta pendiente: confirman, cancelan o la dejan como está. */
+  private async alPalabraSuelta(suelta: Suelta, p: Pendiente | null): Promise<Salida[]> {
+    if (!p) return [{ texto: suelta === 'gracias' ? '¡Con gusto! Cuando quieras, escríbeme otro movimiento.' : 'Listo, no hay nada pendiente.' }];
+    if (suelta === 'confirma') return this.confirmar();
+    if (suelta === 'cancela' || suelta === 'borra') return this.alPulsar('no');
+    const salida = await this.mostrar(p);
+    salida[0].texto = `¡Con gusto! Esta tarjeta sigue pendiente, confírmala o cancélala:\n${salida[0].texto}`;
+    return salida;
+  }
+
+  /** Llegó un movimiento nuevo con una tarjeta sin confirmar: la nueva va a la cola y se pregunta por la pendiente. */
+  private async avisarPendiente(p: Pendiente, nuevas: string[]): Promise<Salida[]> {
+    const siguientes = [...(p.siguientes ?? []), ...nuevas];
+    const total = (p.total ?? 1) + nuevas.length;
+    await this.repo.guardarPendiente({ ...p, siguientes, total });
+    this.pend = { ...p, siguientes, total };
+    const lo = nuevas.length === 1 ? `«${nuevas[0]}»` : `los ${nuevas.length} nuevos`;
+    const pregunta = p.propuesta.faltantes.length
+      ? `Primero responde su pregunta (${p.propuesta.faltantes[0].pregunta}) o descártala, y sigo con ${lo}.`
+      : `¿La guardo o la descarto? Después te muestro ${lo}.`;
+    return [{
+      texto: `Tienes una tarjeta pendiente sin confirmar:\n${tarjeta(p.propuesta, this.ctx, this.saldosPara(p))}\n${pregunta}`,
+      botones: [
+        ...(p.propuesta.faltantes.length ? [] : [{ id: 'ok', titulo: '✅ Guardar la pendiente' }]),
+        { id: 'no', titulo: '❌ Descartar la pendiente' },
+      ],
+    }];
   }
 
   /** La respuesta del chat a una pregunta de uso: el tema que mejor responde y sus ejemplos como botones que dejan la frase escrita. */
@@ -308,6 +380,8 @@ class Motor {
       const [texto, ...resto] = restantes;
       const res = interpretar(texto, this.ctx);
       if (res.clase === 'movimiento') {
+        // en una lista el recorrido del bus o del taxi no frena las demás tarjetas: se puede poner después con Editar
+        if (total > 1) res.propuesta.faltantes = res.propuesta.faltantes.filter(f => f.campo !== 'desde' && f.campo !== 'hasta');
         const n = total - restantes.length + 1;
         const salida = await this.mostrar({ propuesta: res.propuesta, editando: false, siguientes: resto, total });
         const cabeza = total > 1 ? `📋 Movimiento ${n} de ${total}` : '';
@@ -507,6 +581,12 @@ class Motor {
   private async confirmar(): Promise<Salida[]> {
     const p = this.pend;
     if (!p) return [{ texto: 'No hay nada pendiente por confirmar.' }];
+    // en una lista, confirmar una tarjeta que solo espera la categoría la guarda en Otros (se cambia luego con Editar)
+    // para que las demás no se queden atascadas detrás de una pregunta
+    const otros = this.ctx.cuentas.find(c => c.id === 'cat:otros');
+    if ((p.total ?? 1) > 1 && otros && p.propuesta.faltantes.length && p.propuesta.faltantes.every(f => f.campo === 'categoria')) {
+      p.propuesta = { ...p.propuesta, categoriaId: otros.id, faltantes: [] };
+    }
     if (p.propuesta.faltantes.length) {
       return [{ texto: `Antes de guardar: ${p.propuesta.faltantes[0].pregunta}`, botones: [{ id: 'no', titulo: '❌ Cancelar' }] }];
     }
@@ -522,6 +602,7 @@ class Motor {
     // El nuevo recuerda a quién reemplazó para que «Deshacer» pueda devolver el original.
     if (p.reemplazaId) hecho.movimiento.propuesta = { ...p.propuesta, reemplazaA: p.reemplazaId };
     await this.repo.guardarMovimiento(hecho.movimiento, hecho.cuentasNuevas, hecho.compromisos);
+    for (const a of p.aprende ?? []) await this.repo.guardarAprendido(a.palabra, { categoriaId: a.categoriaId });
     if (p.reemplazaId) await this.repo.anularMovimiento(p.reemplazaId, aLocal(this.ctx.ahora));
     if (p.propuesta.tipo === 'apertura') await this.repo.setConfig('fecha_apertura', p.propuesta.ocurridoEn);
     const ap = p.propuesta.apodoNuevo;

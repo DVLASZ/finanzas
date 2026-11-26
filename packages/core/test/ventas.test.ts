@@ -57,6 +57,7 @@ test('venta con cliente conocido: pregunta si pagó o se lo fiaron (las líneas 
   const s = await a.di('15 galletas a granel Tomás');
   assert.match(textoDe(s), /Venta · Galletas · \$7\.500/);
   assert.match(textoDe(s), /¿Tomás pagó o se lo fiaste\?/);
+  await a.pulsa('no'); // la tarjeta pendiente se descarta antes de seguir con otra venta
   const s2 = await a.di('8 paq por 10 unidades. Tomás');
   assert.match(textoDe(s2), /Venta · Galletas · \$48\.000/);
 });
@@ -177,6 +178,7 @@ test('catálogo: lo creado con el texto de la pantalla funciona en una venta', a
   const pres = ['granel=500', 'paquete de 10=6000'].map(x => presentacionDeTexto(x)!);
   const a = app({ catalogo: JSON.stringify({ productos: [{ id: 'galletas', nombre: 'Galletas', alias: [], presentaciones: pres }] }) });
   assert.match(textoDe(await a.di('8 paq por 10 unidades. Tomás')), /\$48\.000/);
+  await a.pulsa('no');
   assert.match(textoDe(await a.di('15 galletas a granel')), /\$7\.500/);
 });
 

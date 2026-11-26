@@ -39,6 +39,8 @@ export interface Pendiente {
   siguientes?: string[];
   /** Cuántos movimientos traía el mensaje completo (para decir "2 de 3"). */
   total?: number;
+  /** Categorías que se aprendieron al responder la tarjeta: se guardan solo si se confirma. */
+  aprende?: { palabra: string; categoriaId: string }[];
 }
 
 export interface Repo {

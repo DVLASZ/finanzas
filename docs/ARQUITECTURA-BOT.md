@@ -140,7 +140,16 @@ Probado:
 - «gasté 5000, no pagué propina»: gasto de $5.000 con el aviso «Ignoré «no pagué propina», porque dice que no pasó.».
 - «no gasté nada», «Ana no me pagó 5000», «nunca pago menos de 5000 en almuerzo»: el aviso de que no pasó, sin tarjeta.
 - «Nora me pagó 5000»: ingreso normal (Nora no es «no»).
-- «no me acuerdo si pagué 5000»: gasto de $5.000 con concepto «No me acuerdo si». El «no» va seguido de «me acuerdo», que no es un verbo de plata.
+- «no me acuerdo si pagué 5000»: ya no saca tarjeta (ver «Hipótesis, dudas y correcciones»).
+
+#### Hipótesis, dudas y correcciones (`incertidumbre.ts`)
+
+Antes de las negaciones, `interpretar` pasa por `incertidumbre` y `corregida`. En `bot.ts` una sola línea que `incertidumbre` detiene no se parte en varios movimientos.
+
+- No se anota nada, con un mensaje que lo dice: «iba a», «pensaba», «quería», «voy a pagar», «si me pagan», «todavía no llegan»; «no me acuerdo si», «no sé si» (salvo que diga «anota 15k»); «me cobraron de más ... no me han devuelto»; pagar y que devuelvan lo mismo (neto cero); «gasté 0». «Me van a pagar 50k» sigue siendo un ingreso.
+- Se pregunta con botones: «como 10 o 12, no sé» da «¿Fueron 10.000 o 12.000?»; «le pagué 80k a Faber y solo le debía 50k» da «Veo dos montos: 80.000 y 50.000. ¿Cuánto fue el pago?»; «no sé cuánto» sin cifra da «¿Cuánto fue?».
+- Se anota corregido: «gasté 20k no 2k» toma el primero; «pagué 30 y me devolvieron 10» y «pagué 30.000 y me hicieron descuento de 5.000» anotan el neto.
+- Una fecha que no existe («almuerzo 5000 31/02») no se corre a marzo ni se cambia por hoy: se pide revisarla y no sale tarjeta.
 
 ### 2.8 Lenguaje cotidiano (`lenguaje.ts`)
 
@@ -559,7 +568,7 @@ Cada punto trae la frase, lo que pasa hoy (probado) y la causa probable. La marc
 
 ### 8.2 Cuentas y categorías
 
-8. INTEGRIDAD. «almuerzo 12000 nequi daviplata» y «mecato 5000 efectivo nequi» dan una transferencia entre esas cuentas, no un gasto. Causa: dos cuentas en la frase bastan para `transferencia` (`parser.ts:374-375`).
+8. INTEGRIDAD. «almuerzo 12000 nequi daviplata» y «mecato 5000 efectivo nequi» dan una transferencia entre esas cuentas, no un gasto. Causa: dos cuentas en la frase bastan para `transferencia` (`parser.ts:374-375`). Con dos montos y dos cuentas («pagué 20k con nequi y 10k en efectivo») ya no sale transferencia: `dosMontosDosCuentas` (`parser/movimientos.ts`) pregunta si son dos gastos. Con un solo monto sigue pendiente.
 9. INTEGRIDAD. «Compra aprobada por $45.900 en EXITO con tu tarjeta» y «almuerzo 12000 con tarjeta de credito» salen de Efectivo. Causa: «tarjeta» no es alias de ninguna cuenta (`entidades.ts:12-19`) y sin cuenta se usa Efectivo (`movimientos.ts:103`).
 10. INTEGRIDAD. «saqué 100k del cajero» elige Nequi sin preguntar, aunque también existe Daviplata. Causa: `verbos` toma la primera cuenta de banco que encuentra (`lenguaje.ts:268-269`). «saqué 100000» sin «cajero» sí pregunta de qué cuenta (`lenguaje.ts:467-472`).
 11. INTEGRIDAD. «taxi 8000 de la casa a la universidad» sale en Universidad y sin recorrido. Causa: el nombre exacto de una categoría gana al diccionario (`entidades.ts:251-252`).
@@ -622,6 +631,23 @@ Para movimientos, sí, con estas excepciones verificadas en el código:
 - `ia:<frase>` (`bot.ts:202`) procesa la frase como si se escribiera: termina en tarjeta si es un movimiento, pero si la frase es un comando lo ejecuta. Las frases de esos botones las arma el propio bot. Probado: «cancelar el pago» ofrece el botón `ia:deshacer` (`lenguaje.ts:442-444`) y pulsarlo ejecuta el comando `deshacer`, que sin nada guardado responde «No hay nada que deshacer.».
 
 Lo que no es un movimiento (anular, metas, pagos fijos, personas, listas, topes, cierre de meses, subcategorías, existencias y lo aprendido) se cambia sin tarjeta, como se lista en 8.7.
+
+## 8b. Capas de defensa añadidas por la batería RED
+
+Después de la radiografía se escribió una batería adversarial de 147 frases (`docs/BATERIA-RED-TEAM.md`, código en `packages/core/test/red-team-casos.ts`) más los cinco puntos de integridad de la sección 8. Todas pasan hoy. Estas son las capas que se agregaron, en el orden en que actúan sobre un mensaje.
+
+1. **Antes de interpretar** (`interpretar` en `parser.ts`, cuatro pasos seguidos sobre el texto):
+   - `corregirTypos` (`fuzzy.ts`): reemplaza las palabras desconocidas por la más cercana del vocabulario (verbos de plata, palabras del diccionario de categorías y cuentas con sus alias) con distancia de Damerau-Levenshtein: una letra de diferencia para palabras de 4 y 5 letras, dos para 6 o más, nunca bajo 4 letras. No toca nombres propios (mayúscula en medio de la frase o después de «a», «de», «con», «para», «por»), números ni palabras ya conocidas, y no corrige si hay empate entre dos candidatos. Una tabla corta de errores muy comunes resuelve los casos donde otra palabra de uso diario queda igual de cerca («pagarn» a «pagaron»).
+   - `aclararIlegible`: una palabra imposible en español (cuatro consonantes seguidas de tres letras distintas, como «Ibgrwsi») no se adivina como gasto: el bot pregunta si fue plata que entró o un gasto.
+   - `expandirCantidades` (`cantidades.ts`): «3 polas a 4500 cada una» pasa a 13500, y lo mismo con kilos, horas, pasajes, «c/u», «de a dos mil» y «dos millones y medio». Ignora lo que no es plata: fechas, 500 megas, 600 ml, cuotas y fracciones.
+   - `incertidumbre` y `corregida` (`incertidumbre.ts`): lo hipotético («iba a gastar»), lo negado («no me pagó»), lo dudoso («no me acuerdo si») y lo futuro («todavía no llegan») no producen tarjeta y el bot lo dice. Una autocorrección en la misma frase toma el primer monto, un descuento o una devolución se restan (el neto cero no se anota) y un rango dudoso («10 o 12») se pregunta. Montos negativos, cero o absurdos se rechazan con un mensaje claro.
+2. **Lenguaje cotidiano** (`lenguaje.ts`): los casos de dirección de la plata. Un aviso del banco en segunda persona («Recibiste 20.000 de ANA MARIA»), vender algo tuyo, encontrarte plata, un regalo que te dan y «me devolvieron» sin persona son ingresos. «Presté a Ana y Luis» son dos personas y se pregunta si el monto es para cada una o entre las dos. «No a jose» corrige a quién prestaste. «Le mandé 25k a juan» pregunta si fue préstamo, pago o regalo, salvo que la persona ya tenga una categoría aprendida o fija. «Le di 20k a carlos y no me los devuelve» es un préstamo. Una persona con nombre parecido a otra que ya existe (Danyel y Daniel) se pregunta antes de crearla. Una cuenta nunca cuenta como persona en un gasto compartido.
+3. **Transferencias y monedas** (`parser/movimientos.ts` y `lenguaje.ts`): una frase con dos montos y dos cuentas que no se pudo dividir pregunta «¿Son dos gastos?». Sacar dinero de una alcancía que no existe como cuenta, un giro que no llegó y dar plata en custodia preguntan con botones. Pasar dólares sin decir cuántos pesos llegaron pregunta por el valor y nunca inventa la tasa.
+4. **Dividir el mensaje** (`lineas.ts`, `dividirTodo`): además de líneas y «;», parte por «y» cuando cada trozo trae su monto, por listas numeradas, por pares «palabra monto» repetidos y por cuentas distintas («pagué 20k con nequi y 10k en efectivo» son dos gastos). No parte unidades de medida ni nombres de cuentas o de personas. Con más de 10 movimientos se muestran los primeros y se avisa cuántos faltan con un botón que deja escritos los que sobran.
+5. **Flujo del bot** (`bot.ts`): las palabras sueltas «ok», «no», «borra» y «gracias» actúan solo sobre la tarjeta pendiente (confirman o cancelan) y nunca anulan un movimiento ya guardado; sin tarjeta pendiente se contestan con una frase corta. Un movimiento nuevo con una tarjeta pendiente no la reemplaza en silencio: el bot muestra la pendiente y pregunta si se guarda o se descarta, y deja la nueva en cola. Lo aprendido (categoría de una palabra) se guarda al confirmar, no al responder, así que cancelar la tarjeta no deja una regla de algo que no pasó. Las preguntas de ayuda sin monto se responden con la guía, y una consulta dicha con otras palabras («cuánto me queda») se contesta como consulta.
+6. **Validación de la IA** (`ia.ts`, `validarFrasesIA`): cada tipo de movimiento que propone la IA tiene que estar respaldado por palabras del texto original. Un préstamo, una deuda, un abono, una transferencia o un cambio de moneda inventados se descartan cuando la persona solo habló de un gasto, y las frases con un verbo de esos tipos que la persona no usó también.
+
+Lo que sigue siendo débil (ver la sección 8): «almuerzo 12000 nequi daviplata» sale como transferencia y el reparto entre varias personas sigue dependiendo de que se nombren.
 
 ## 9. Cómo probarlo
 
