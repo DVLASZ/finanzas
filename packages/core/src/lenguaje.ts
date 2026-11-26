@@ -162,6 +162,15 @@ function compartidos(t: string): Naturalizado | null {
     const nm = new RegExp(String.raw`\bcon\s+(${NOMBRES})`, 'i').exec(t);
     const mt = new RegExp(MONTO, 'i').exec(t);
     if (nm && mt && valorDeMonto(mt[0]) > 0) return { texto: t, pregunta: preguntaDeReparto(concepto, valorDeMonto(mt[0]), partirNombres(nm[1]), fecha, 'vaca') };
+    // «hicimos vaca de 80k para el regalo»: sin nombres no se sabe si los 80k son tu parte o el total de todos
+    if (!nm && mt && valorDeMonto(mt[0]) > 0) {
+      const v = valorDeMonto(mt[0]), c = concepto === 'varios' ? 'vaca' : concepto;
+      return { texto: t, pregunta: { mensaje: `¿Cuánto puso cada uno? No sé si los ${formatear(v)} son lo tuyo o el total de la vaca.`, opciones: [
+        { titulo: `Los ${formatear(v)} los puse yo`, frase: [c, v, fecha].filter(Boolean).join(' ') },
+        { titulo: 'Solo puse mi parte', frase: `=Dime cuánto pusiste tú. Por ejemplo: «${c} ${Math.round(v / 4 / 100) * 100}».` },
+        { titulo: 'Quiero dividirla con nombres', frase: `=Dime con quién fue. Por ejemplo: «${c} ${v} entre ana, luis y yo».` },
+      ] } };
+    }
   }
 
   // «(fui a comer) con Ana y Luis, pagué 60k (por los 3)»
@@ -174,6 +183,8 @@ function compartidos(t: string): Naturalizado | null {
     const monto = valorDeMonto(primero ? m[1] : m[2]);
     const resto = (primero ? m[3] : m[3]) ?? '';
     if (nombres.length && nombres.length <= 8 && monto > 0) {
+      // «con un cliente»: alguien sin nombre no se puede cobrar ni dividir, lo que pagaste es un gasto tuyo
+      if (/^(?:un|una|unos|unas|algunos|varios)\s/i.test((primero ? m[2] : m[1]).trim())) return { texto: [concepto, monto, fecha].filter(Boolean).join(' ') };
       if (SENALES_PARTES_IGUALES.test(t)) return { texto: entre(concepto, monto, nombres, fecha) };
       // la frontera va a mano: \b no ve la é final como letra
       if (/(?<![a-záéíóúñ])(?:invit[eé]|yo invito|yo pago todo|lo pagu[eé] todo)(?![a-záéíóúñ])/i.test(t)) return { texto: [concepto, monto, fecha].filter(Boolean).join(' ') };
@@ -202,7 +213,17 @@ function cuentaDicha(texto: string, ctx: Pick<Contexto, 'cuentas'>): string | nu
   return null;
 }
 
-function verbos(t: string, ctx: Pick<Contexto, 'cuentas'>): string | null {
+/** «sábado» -> «24/10»: el próximo sábado después de hoy (hora de Colombia), en la forma que entiende la fecha límite de una deuda. */
+function proximoDia(dia: string, ahora: Date): string {
+  const DIAS = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+  const objetivo = DIAS.indexOf(limpiar(dia));
+  const hoy = new Date(ahora.getTime() - 5 * 3600_000);
+  const falta = ((objetivo - hoy.getUTCDay() + 6) % 7) + 1;
+  const f = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate() + falta));
+  return `${f.getUTCDate()}/${f.getUTCMonth() + 1}`;
+}
+
+function verbos(t: string, ctx: Pick<Contexto, 'cuentas'> & Partial<Pick<Contexto, 'ahora'>>): string | null {
   const f = FECHA.exec(t)?.[0] ?? '';
   const cierre = f ? ` ${f}` : '';
   let m: RegExpExecArray | null;
@@ -211,7 +232,7 @@ function verbos(t: string, ctx: Pick<Contexto, 'cuentas'>): string | null {
   if (cobro) return cobro;
 
   // «me debe ivan 20k», «me deben 20k Ana», «me quedó debiendo Pedro 15000»: te deben a ti, es un préstamo
-  m = new RegExp(String.raw`^(?:(?:hoy|ayer|anteayer|antier)\s+)?me\s+(?:deb(?:e|en)|qued[oó]\s+debiendo)\s+(.+)$`, 'i').exec(t.trim());
+  m = new RegExp(String.raw`^(?:(?:hoy|ayer|anteayer|antier)\s+)?me\s+(?:deb(?:e|en)|qued(?:[oó]|aron)\s+debiendo)\s+(.+)$`, 'i').exec(t.trim());
   if (m) {
     const nm = new RegExp(String.raw`^(${NOMBRE})\s+(${MONTO})${FIN}`, 'i').exec(m[1]);
     const nombreDelante = nm && !esPalabraSuelta(nm[1].split(' ')[0]) ? nm : null;
@@ -249,11 +270,37 @@ function verbos(t: string, ctx: Pick<Contexto, 'cuentas'>): string | null {
   m = new RegExp(String.raw`^(?:(?:hoy|ayer|anteayer|antier)\s+)?(${NOMBRE})\s+me\s+debe\s+(${MONTO})`, 'i').exec(t);
   if (m && valorDeMonto(m[2]) > 0 && !/^(la|el|un|una)$/i.test(m[1])) return `presté ${valorDeMonto(m[2])} a ${partirNombres(m[1])[0]}${cierre}`;
 
+  // «me fían 20k en la tienda (de la esquina)»: compra fiada, deuda con la tienda; no sale plata de ninguna cuenta
+  m = new RegExp(String.raw`\bme\s+f[ií](?:aron|an|[oó]|aba)\b[^\d]*(${MONTO})${FIN}[^\d]*?\b(?:en|donde|con|de)\s+((?:la|el)\s+tienda(?:\s+de\s+(?:la|el)\s+[${L}]+)?)(?!\s+de\s+(?!(?:la|el)\s))`, 'i').exec(t);
+  if (m && valorDeMonto(m[1]) > 0) return `le debo ${valorDeMonto(m[1])} a ${m[2]}${cierre}`;
+
+  // «apúnteme 32 mil de la tienda, se los pago el sábado»: lo mismo; el día que dice es el plazo, no la fecha de la compra
+  m = new RegExp(String.raw`^(?:(?:hoy|ayer|anteayer|antier)\s+)?(?:ap[uú]nte|an[oó]te|f[ií]e)me\s+(${MONTO})${FIN}\s*(.*)$`, 'i').exec(t.trim());
+  if (m && valorDeMonto(m[1]) > 0) {
+    const quien = new RegExp(String.raw`(?<![${L}])(?:de|en|donde|del)\s+((?:la|el)\s+tienda(?:\s+de\s+(?:la|el)\s+[${L}]+)?|(?:do[nñ]a?\s+)?[${L}]+)`, 'i').exec(m[2])?.[1]?.replace(/^do[nñ]a?\s+/i, '');
+    if (quien && !esPalabraSuelta(quien.split(' ')[0]) || /^(?:la|el)\s+tienda/i.test(quien ?? '')) {
+      const plazo = new RegExp(String.raw`(?<![${L}])(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)(?![${L}])`, 'i').exec(m[2])?.[1];
+      const limite = plazo && ctx.ahora ? ` hasta el ${proximoDia(plazo, ctx.ahora)}` : '';
+      return `le debo ${valorDeMonto(m[1])} a ${quien}${limite}`;
+    }
+  }
+
   // «me fiaron 20k en la tienda de doña Rosa», «me fían el almuerzo, 15k, donde Pedro»
-  m = new RegExp(String.raw`\bme\s+fi(?:aron|an|[oó]|aba)\b[^\d]*(${MONTO})[^\d]*?(?:\b(?:en|donde|con|a)\s+(?:la tienda de\s+|donde\s+)?(?:do[nñ]a?\s+)?(${NOMBRE}))`, 'i').exec(t);
+  m = new RegExp(String.raw`\bme\s+f[ií](?:aron|an|[oó]|aba)\b[^\d]*(${MONTO})[^\d]*?(?:\b(?:en|donde|con|a)\s+(?:la tienda de\s+|donde\s+)?(?:do[nñ]a?\s+)?(${NOMBRE}))`, 'i').exec(t);
   if (m && valorDeMonto(m[1]) > 0) return `le debo ${valorDeMonto(m[1])} a ${partirNombres(m[2])[0]}${cierre}`;
   m = new RegExp(String.raw`\b(?:le\s+)?qued[eé]\s+debiendo\s+(${MONTO})\s+(?:a|con)\s+(${NOMBRE})`, 'i').exec(t);
   if (m && valorDeMonto(m[1]) > 0) return `le debo ${valorDeMonto(m[1])} a ${partirNombres(m[2])[0]}${cierre}`;
+
+  // «le solté 90 barras a Pipe hasta el viernes»: plata que se da y se espera de vuelta es un préstamo (el plazo no se guarda)
+  m = new RegExp(String.raw`(?<![${L}])(?:le\s+)?solt[eé]\s+(${MONTO})${FIN}${PESOS}\s+a\s+(?:(?:mi|mis)\s+)?([${L}]+)`, 'i').exec(t);
+  if (m && valorDeMonto(m[1]) > 0 && !esPalabraSuelta(m[2])) {
+    const dia = f && !/(?<![a-záéíóúñ])(?:hasta|para|antes\s+de)\s+(?:el\s+)?(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)/i.test(t) ? cierre : '';
+    return `presté ${valorDeMonto(m[1])} a ${m[2]}${dia}`;
+  }
+
+  // «me descuadré con 15 lucas en la tienda»: se gastó de más; se anota como el gasto que fue
+  m = new RegExp(String.raw`(?<![${L}])me\s+descuadr[eé]\s+(?:con|en|por|de)?\s*(${MONTO})${FIN}\s*(.*)$`, 'i').exec(t);
+  if (m && valorDeMonto(m[1]) > 0) return `gasté ${valorDeMonto(m[1])} ${limpiarResto(m[2])}${cierre}`.replace(/\s+/g, ' ').trim();
 
   // «me tocó poner 30k para el taxi»
   m = new RegExp(String.raw`\bme\s+toc[oó]\s+(?:poner|pagar|sacar)\s+(${MONTO})(?:\s+(?:de|para|por|en)\s+(?:el|la|los|las)?\s*(.+))?$`, 'i').exec(t);
@@ -480,12 +527,67 @@ function dudas(t: string, ctx: Pick<Contexto, 'cuentas'>, cierre: string): Natur
     return { texto: t, error: '¿Cuánto sacaste del cajero? Escríbelo así: «saqué 100k del cajero».' };
   }
 
+  // «me hicieron un cruce de 40k por nequi»: puede ser un pago, una transferencia entre tus cuentas o una compensación
+  m = new RegExp(String.raw`(?<![${L}])(?:hicieron|hice|hizo|hicimos)\s+(?:un|el)\s+cruce\b[^\d]*(${MONTO})${FIN}`, 'i').exec(s);
+  if (m && valorDeMonto(m[1]) > 0) {
+    const v = valorDeMonto(m[1]), cuenta = cuentaDicha(s, ctx);
+    return { texto: t, pregunta: { mensaje: `¿Qué fue el cruce de ${formatear(v)}?`, opciones: [
+      { titulo: 'Un pago que recibí (entra plata)', frase: `ingreso ${v} ${cuenta && cuenta !== 'efectivo' ? `${cuenta} ` : ''}otros${cierre}` },
+      { titulo: 'Una transferencia entre mis cuentas', frase: `=Dime de qué cuenta a cuál. Por ejemplo: «pasé ${v} de efectivo a nequi».` },
+      { titulo: 'Una compensación con alguien', frase: `=Dime con quién fue y quién pagó. Por ejemplo: «Ana me pagó ${v}» o «pagué ${v} a Ana».` },
+    ] } };
+  }
+
+  // «abono a la quincena 300k»: puede ser plata que entra o un abono tuyo a otra persona
+  m = new RegExp(String.raw`${ini}abon[oó]\s+(?:a|de|en|para)\s+(?:la|el|mi)\s+(quincena|nomina|sueldo|salario|mesada)\s+(?:de\s+)?(${MONTO})${FIN}\s*$`, 'i').exec(s);
+  if (m && valorDeMonto(m[2]) > 0) {
+    const v = valorDeMonto(m[2]);
+    return { texto: t, pregunta: { mensaje: `¿El abono de ${formatear(v)} es plata que entró o que pagaste tú?`, opciones: [
+      { titulo: `Me abonaron de la ${m[1].toLowerCase()} (entra plata)`, frase: `ingreso ${v} ${limpiar(m[1])}${cierre}` },
+      { titulo: 'Yo le abono a otra persona', frase: `=Dime a quién le abonaste. Por ejemplo: «pagué ${v} a Pedro».` },
+    ] } };
+  }
+
+  // «mijito, guárdeme 50 mil para el recibo»: apartar la plata no es haber pagado el recibo
+  m = new RegExp(String.raw`(?<![${L}])(?:gu[aá]rd(?:e|a)me|ap[aá]rt(?:e|a)me|sep[aá]r(?:e|a)me)\s+(${MONTO})${FIN}\s+(?:para|pa)\s+(?:el|la|los|las|mi|mis)?\s*([${L}]+(?:\s+[${L}]+)?)\s*$`, 'i').exec(s);
+  if (m && valorDeMonto(m[1]) > 0) {
+    const v = valorDeMonto(m[1]), cosa = limpiar(m[2]);
+    return { texto: t, pregunta: { mensaje: `¿Los ${formatear(v)} para ${cosa} los apartas o ya los pagaste?`, opciones: [
+      { titulo: 'Apartarlos en una alcancía', frase: `=Para apartar, crea una meta y luego aparta de a poco. Por ejemplo: «meta ${cosa} ${v}» y después «ahorré ${v} para ${cosa}».` },
+      { titulo: `Ya pagué ${cosa}`, frase: `${cosa} ${v}${cierre}` },
+    ] } };
+  }
+
+  // «le pasé la mano a mi hermana con 25 lucas»: ayuda en plata, y no se sabe si fue regalo, préstamo o pago
+  m = new RegExp(String.raw`${ini}(?:le\s+)?(?:pas[eé]|di|ech[eé])\s+(?:la|una)\s+mano\s+a\s+(?:(?:mi|mis|la|el)\s+)?([${L}]+)\s+con\s+(${MONTO})${FIN}`, 'i').exec(s);
+  if (m && valorDeMonto(m[2]) > 0 && !esPalabraSuelta(m[1])) {
+    const v = valorDeMonto(m[2]), n = titulo(limpiar(m[1]));
+    return { texto: t, pregunta: { mensaje: `¿Qué fueron los ${formatear(v)} que le diste a ${n}?`, opciones: [
+      { titulo: 'Se los presté', frase: `presté ${v} a ${n}${cierre}` },
+      { titulo: 'Le pagué algo', frase: `pagué ${v} a ${n}${cierre}` },
+      { titulo: 'Se los regalé', frase: `le regalé ${v} a ${n}${cierre}` },
+    ] } };
+  }
+
+  // «compré una crema por internet 28k»: puede ser un medicamento, cuidado personal o cocina; no se asigna categoría a ciegas
+  const sinTilde = limpiar(s);
+  const crema = /(?<![a-z])cremas?(?![a-z])/.test(sinTilde) && !/\b(?:de|para)\s+(?:leche|cocina|torta|postre)|\b(?:dental|chantilly|pastelera|de\s+crema|salud|personal|belleza)\b/.test(sinTilde);
+  const mCrema = crema ? new RegExp(MONTO, 'i').exec(s) : null;
+  if (mCrema && valorDeMonto(mCrema[0]) > 0) {
+    const v = valorDeMonto(mCrema[0]);
+    return { texto: t, pregunta: { mensaje: `¿Para qué es la crema de ${formatear(v)}?`, opciones: [
+      { titulo: 'Para la piel o un tratamiento (salud)', frase: `crema salud ${v}${cierre}` },
+      { titulo: 'Cuidado personal o belleza', frase: `crema personal ${v}${cierre}` },
+      { titulo: 'Es de cocina', frase: `crema comida ${v}${cierre}` },
+    ] } };
+  }
+
   // «me fié 20000», «quedé debiendo 15000», «me deben 20k», «puse yo 20000»: falta una pieza
   if (/\d/.test(s)) {
-    if (new RegExp(String.raw`(?<![${L}])me\s+fi(?:aron|an|[oó]|aba|[eé])(?![${L}])`, 'i').test(s) || new RegExp(String.raw`(?<![${L}])qued[eé]\s+debiendo(?![${L}])`, 'i').test(s)) {
+    if (new RegExp(String.raw`(?<![${L}])me\s+f[ií](?:aron|an|[oó]|aba|[eé])(?![${L}])`, 'i').test(s) || new RegExp(String.raw`(?<![${L}])qued[eé]\s+debiendo(?![${L}])`, 'i').test(s)) {
       return { texto: t, error: '¿A quién le debes? Escríbelo así: «me fiaron 20k donde Pedro» o «le debo 20k a Pedro».' };
     }
-    if (new RegExp(String.raw`${ini}me\s+(?:deb(?:e|en)|qued[oó]\s+debiendo)\s+${MONTO}${FIN}\s*$`, 'i').test(s)) {
+    if (new RegExp(String.raw`${ini}me\s+(?:deb(?:e|en)|qued(?:[oó]|aron)\s+debiendo)\s+${MONTO}${FIN}(?:\s+(?:de|del|por|en|para)\s+.*)?$`, 'i').test(s)) {
       return { texto: t, error: '¿Quién te debe? Escríbelo así: «Pedro me debe 20k» o «presté 20k a Pedro».' };
     }
     if (new RegExp(String.raw`${ini}pus[eé](?:\s+yo)?\s+${MONTO}${FIN}\s*$`, 'i').test(s)) {
@@ -497,7 +599,7 @@ function dudas(t: string, ctx: Pick<Contexto, 'cuentas'>, cierre: string): Natur
 
 // ---------------------------------------------------------------- 6. hacia dónde va la plata
 
-type CtxDireccion = Pick<Contexto, 'cuentas'> & Partial<Pick<Contexto, 'config' | 'abiertas' | 'aprendido'>>;
+type CtxDireccion = Pick<Contexto, 'cuentas'> & Partial<Pick<Contexto, 'config' | 'abiertas' | 'aprendido' | 'ahora'>>;
 
 const INI = String.raw`^(?:(?:hoy|ayer|anteayer|antier)\s+)*`;
 const PESOS = String.raw`(?:\s+(?:pesos|pesitos|barritas))?`;
@@ -547,6 +649,13 @@ function direccion(t0: string, ctx: CtxDireccion, cierre: string): Naturalizado 
   if (m && mv && !conCatalogo && valorDeMonto(mv[0]) > 0) {
     const cosa = m[1].replace(mv[0], ' ');
     return { texto: conFecha(`ingreso ${valorDeMonto(mv[0])} venta ${cosa}`, cierre) };
+  }
+
+  // «hoy hice un rebusque y me gané 65k»: plata que entra por lo que hiciste
+  m = new RegExp(String.raw`(?<![${L}])me\s+gan[eé]\s+(${MONTO})${FIN}`, 'i').exec(s);
+  if (m && valorDeMonto(m[1]) > 0) {
+    const fuente = /(?<![a-záéíóúñ])(rebusque|camello|chamba|turno|rifa)(?![a-záéíóúñ])/i.exec(s)?.[1] ?? 'otros';
+    return { texto: conFecha(`ingreso ${valorDeMonto(m[1])} ${limpiar(fuente)}`, cierre) };
   }
 
   // «me encontré 50 mil en el parque»

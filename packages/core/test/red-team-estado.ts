@@ -47,7 +47,10 @@ async function vistasGuardadas(bot: Bot): Promise<Vista[]> {
     const tipoDe = (id: string): string | undefined => d.cuentas.find(c => c.id === id)?.tipo;
     return {
       tipo: m.tipo,
-      monto: m.asientos.filter(a => a.monto > 0 && a.moneda === 'COP').reduce((s, a) => s + a.monto, 0),
+      // en un gasto en efectivo con vuelto, las monedas que entran no son parte del monto: cuenta lo que va a la categoría
+      monto: m.tipo === 'gasto'
+        ? m.asientos.filter(a => a.monto > 0 && a.moneda === 'COP' && tipoDe(a.cuentaId) !== 'dinero').reduce((s, a) => s + a.monto, 0)
+        : m.asientos.filter(a => a.monto > 0 && a.moneda === 'COP').reduce((s, a) => s + a.monto, 0),
       cuentas: ids.filter(id => tipoDe(id) === 'dinero').map(nombre),
       cat: nombre(ids.find(id => tipoDe(id) === 'categoria') ?? ''),
       personas: ids.filter(id => tipoDe(id) === 'persona').map(nombre),

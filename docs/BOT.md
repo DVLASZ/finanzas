@@ -416,6 +416,8 @@ Cada tarjeta trae su botón, y la primera suma «Confirmar los N»: guarda todas
 
 El bot los muestra uno por uno, cada uno con su tarjeta ("Movimiento 2 de 3"). Lo que sigue a un + se toma como plata que entra. Si pulsas Cancelar en uno, sigue con el siguiente. Una parte que no entiende la avisa y pasa a la que sigue. El máximo es 10 por mensaje.
 
+Mientras tanto la lista se arregla escribiendo: `el segundo fue 8000`, `el del taxi fue en nequi`, `quita el de mecato`, `quita el primero`, `los tres fueron en efectivo`, `todo fue para la reunión del trabajo` (les pone el evento), `confirma los otros` y `mejor cancela todo`. «Ese fue con tarjeta» con varios en la lista no dice cuál: el bot pregunta y no cambia ninguno. A los que esperan en la lista solo se les cambia el monto, la cuenta o el evento; lo demás se dice cuando aparezca su tarjeta.
+
 ## Ventas
 
 Solo en las apps con catálogo (la de empresa). El bot calcula el total con los precios del catálogo.
@@ -467,6 +469,8 @@ fin recurrente internet 21/12/2026
 terminar pago fijo internet 21/12/2026
 cancelar pago internet el 21 de diciembre de 2026
 ```
+
+La pausa también se puede programar: `pausa claude desde el próximo mes` (sigue activo hasta el día 1 del mes siguiente) o `pausa el arriendo por dos meses y vuelve a cobrar en febrero`. El bot pregunta con Confirmar y Cancelar antes de cambiar nada. `pausaHasta` es el día en que vuelve a contar; si «dos meses» y «febrero» no coinciden, manda la fecha que dijiste y el bot lo avisa. `reanudar recurrente` borra la pausa programada.
 
 ## Metas de ahorro
 
@@ -528,6 +532,8 @@ Solo en la empresa. Es la plata del negocio que está en cuentas personales de l
 ## Alertas del banco
 
 El botón «Pegar alerta» del chat lee una notificación copiada de Nequi, Bancolombia o Banco de Bogotá (si el navegador no deja leer el portapapeles, la pegas en un cuadro). Saca el monto (el primero, no el saldo), si fue pago o plata que llegó, el comercio o la persona, la cuenta, la fecha y la hora, y arma la frase que ya entiende el bot. Todo con reglas: no usa IA ni gasta cuota. La frase pasa por la tarjeta de confirmación como cualquier mensaje, así que nada se guarda sin que pulses Confirmar. Si la app no tiene la cuenta de ese banco, la tarjeta lo dice y hay que cambiar la cuenta. La lectura está en `packages/core/src/notificaciones.ts`.
+
+Si pegas la notificación directamente en el chat (Nequi, Daviplata o Bancolombia, una o varias operaciones), `banco.ts` la convierte en una frase por operación, con cuenta, fecha y hora, antes de dividir el mensaje. Solo cuenta el monto de la operación: saldos, puntos, dígitos de tarjeta, referencias y códigos se ignoran, y cualquier texto que parezca una orden se descarta. Si la instalación no tiene la cuenta del banco, la frase queda sin cuenta y la tarjeta usa la de siempre.
 
 ## Consultas y comandos
 
@@ -608,6 +614,30 @@ Si escribes un mensaje completo nuevo, reemplaza la tarjeta. Si estás editando 
 Al confirmar, primero se guarda el nuevo y después se anula el original: si algo falla en medio, no se pierde nada. El nuevo recuerda a quién reemplazó, así que Deshacer anula la edición y devuelve el original.
 
 En un compartido, cambiar el monto reparte de nuevo si las partes eran iguales («Repartí de nuevo: cada uno $4.000»). Si las partes eran distintas no se tocan y la tarjeta avisa.
+
+### Aclarar como se habla
+
+Con una tarjeta pendiente también vale decirlo con tus palabras. La tarjeta cambia en su sitio (no nace otro movimiento) y el bot dice qué cambió en una línea. Si la tarjeta tenía una pregunta (por ejemplo de qué grupo es una persona nueva), la pregunta sigue ahí.
+
+```
+mentiras, fue en nequi          la cuenta
+eran 21 mil                     el monto (también «era 4500», «fueron 47000 con el domicilio»)
+no, fue antier                  la fecha
+no era comida, era una recarga  el concepto y su categoría
+era con Paula, no Laura         la persona
+y ponle mitad y mitad           gasto compartido con la persona de la tarjeta
+Ana me da 30 y Luis 30          compartido con lo que pone cada uno (30 en una cena de 90.000 son 30 mil)
+no, fue un regalo               de préstamo a gasto en Regalos, sin deuda
+espera, me los devuelve         de regalo a préstamo
+eso fue un préstamo de mi mamá  de ingreso a deuda con tu mamá
+ya le había abonado 20          la deuda queda en lo que falta
+```
+
+Una cuenta que no tienes («con la tarjeta de crédito») no cambia nada: el bot dice cuáles hay. Con una pregunta con botones abierta, escribir la respuesta también sirve: después de «saqué 200000», «de nequi para efectivo» elige esa opción, y «era a Andrés Felipe, no Andrés Gómez» repite la pregunta con el nombre bien.
+
+`guarda`, `sí, guarda` y `confirma` guardan como «ok». Si lo único que falta es la categoría, `guarda` la deja en Otros y lo dice; un «sí» con preguntas sin responder no guarda.
+
+Lo recién guardado se corrige empezando por «corrige» o «me equivoqué»: `corrige, fueron 87000` anula el original (queda marcado, no se borra) y guarda el nuevo; Deshacer lo devuelve. Si el cambio trae una pregunta o un aviso, queda como tarjeta para revisarla.
 
 ## Categorías por palabra, pagos fijos y etiquetas sugeridas
 

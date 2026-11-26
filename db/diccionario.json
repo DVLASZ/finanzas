@@ -10,11 +10,22 @@
     { "id": "cat:mecato",        "palabras": ["mecato", "galleta", "dulce", "donas", "postre", "helado", "mango", "crispetas", "lecherita", "quesillo", "gatorade", "trident", "chicle", "paquete", "coca", "tinto"] },
     { "id": "cat:comida",        "palabras": ["arepa", "empanada", "pizza", "almuerzo", "comida", "sandwich", "salchipapa", "hawaiano", "leche", "chorizo", "arroz", "salsa de tomate", "fresas", "perro", "desayuno", "cena", "restaurante", "pan"] },
     { "id": "cat:universidad",   "palabras": ["materiales", "lapiz", "cuaderno", "fotocopia", "impresion"] },
-    { "id": "cat:salidas",       "palabras": ["cine", "entrada", "salida", "concierto", "rifa", "cerveza"] },
+    { "id": "cat:salidas",       "palabras": ["cine", "entrada", "salida", "concierto", "rifa", "cerveza", "parche", "pola", "polas", "trago", "tragos", "rumba", "fiesta", "discoteca"] },
     { "id": "cat:personal",      "palabras": ["peluque","zapatos", "costura", "jeans", "ropa", "barberia"] },
     { "id": "cat:reparaciones", "palabras": ["reparacion", "reparar", "arreglo", "arreglar", "repuesto", "repuestos", "llanta", "mecanico", "taller"] },
-    { "id": "cat:salud",         "palabras": ["medicina", "droguer", "farmacia", "doctor", "cita medica"] },
+    { "id": "cat:salud",         "palabras": ["medicina", "medicinas", "medicamento", "medicamentos", "droguer", "farmacia", "doctor", "cita medica"] },
     { "id": "cat:compras",       "palabras": ["audifonos", "adaptador", "sombrilla", "compra"] }
+  ],
+  "_finalidad": "Se miran ANTES que el nombre de la categoría y que las palabras de arriba: para qué es la compra manda sobre el lugar donde se hizo (el uber a la universidad es Transporte, no Universidad). Con varios ids gana el primero que exista en la instalación.",
+  "finalidad": [
+    { "ids": ["cat:regalos"],        "palabras": ["torta de cumpleanos", "ponque de cumpleanos", "pastel de cumpleanos", "detalle para", "obsequio"] },
+    { "ids": ["cat:transporte"],     "palabras": ["uber", "didi", "cabify", "indriver", "taxi", "gasolina", "tanque", "tanquee", "tanquear", "tanqueo", "combustible", "acpm", "peaje", "peajes", "parqueadero", "parqueo"] },
+    { "ids": ["cat:juegos"],         "palabras": ["saldo de juego", "saldo de juegos", "recarga de juego", "recarga de juegos", "free fire", "robux", "playstation", "xbox"] },
+    { "ids": ["cat:salud"],          "palabras": ["salud prepagada", "medicina prepagada", "seguro medico", "seguro de salud", "poliza de salud", "gym", "gimnasio", "eps"] },
+    { "ids": ["cat:universidad"],    "palabras": ["libros del colegio", "libros para el colegio", "libros escolares", "libros de texto", "utiles escolares", "utiles del colegio", "pension del colegio", "matricula", "curso", "cursos"] },
+    { "ids": ["cat:mascotas", "cat:personal"], "palabras": ["concentrado", "para el perro", "para la perra", "para mi perro", "del perro", "para el gato", "para mi gato", "del gato", "veterinario", "veterinaria"] },
+    { "ids": ["cat:bebe", "cat:personal"],     "palabras": ["panal", "panales", "biberon", "biberones", "tetero", "teteros"] },
+    { "ids": ["cat:impuestos", "cat:otros"],   "palabras": ["impuesto", "impuestos", "predial"] }
   ],
   "prestamos_inicio": ["prestamo", "regreso", "le di a", "retorno", "le preste"]
 }

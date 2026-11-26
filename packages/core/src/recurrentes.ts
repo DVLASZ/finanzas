@@ -51,12 +51,20 @@ const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', '
 export const frecuenciaDe = (r: Recurrente): Frecuencia => r.frecuencia ?? 'mensual';
 
 /** Un solo punto de verdad: ¿el pago fijo cuenta en esa fecha? Pausado nunca; con `fin`, hasta ese día inclusive. */
-export const activoEn = (r: Recurrente, fecha: string): boolean => !r.pausado && (!r.fin || fecha.slice(0, 10) <= r.fin);
+export const activoEn = (r: Recurrente, fecha: string): boolean => !r.pausado && (!r.fin || fecha.slice(0, 10) <= r.fin) && !enPausaProgramada(r, fecha);
+
+/** ¿Esa fecha cae en la pausa programada? Cuenta desde `pausaDesde`; `pausaHasta` es el día en que vuelve a contar. */
+export function enPausaProgramada(r: Recurrente, fecha: string): boolean {
+  const f = fecha.slice(0, 10);
+  return !!r.pausaDesde && f >= r.pausaDesde && (!r.pausaHasta || f < r.pausaHasta);
+}
 
 /** En qué punto está un pago fijo hoy. Si está pausado y además terminó, gana «terminado». */
-export function estadoDeFijo(r: Recurrente, hoy: string): 'activo' | 'pausado' | 'terminado' {
-  if (r.fin && r.fin < hoy.slice(0, 10)) return 'terminado';
-  return r.pausado ? 'pausado' : 'activo';
+export function estadoDeFijo(r: Recurrente, hoy: string): 'activo' | 'pausado' | 'pausa programada' | 'terminado' {
+  const dia = hoy.slice(0, 10);
+  if (r.fin && r.fin < dia) return 'terminado';
+  if (r.pausado || enPausaProgramada(r, dia)) return 'pausado';
+  return r.pausaDesde && r.pausaDesde > dia ? 'pausa programada' : 'activo';
 }
 
 /** El día de la semana de un nombre («lunes» → 1), o 0. */
@@ -72,9 +80,15 @@ export function leerRecurrentes(config: Record<string, string>): Recurrente[] {
       .filter((x): x is Recurrente => x && typeof x.frase === 'string' && typeof x.concepto === 'string' && Number.isInteger(x.dia) && Number(x.monto) > 0)
       // se conservan los pausados y terminados (sirven para reconocer movimientos); solo se limpian los campos mal formados
       .map(x => {
-        const { pausado, fin, ...resto } = x;
+        const { pausado, fin, pausaDesde, pausaHasta, ...resto } = x;
         const r: Recurrente = { ...resto };
         if (pausado === true) r.pausado = true;
+        const fechaBuena = (f: unknown): f is string => typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f);
+        if (fechaBuena(pausaDesde)) {
+          r.pausaDesde = pausaDesde;
+          // un regreso que no es posterior al inicio no tiene sentido: se descarta y la pausa queda abierta
+          if (fechaBuena(pausaHasta) && pausaHasta > pausaDesde) r.pausaHasta = pausaHasta;
+        }
         if (typeof fin === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fin)) r.fin = fin;
         return r;
       });
@@ -104,7 +118,7 @@ export function ocurrencias(r: Recurrente, desde: string, hasta: string): string
   const res: string[] = [];
   if (r.pausado) return res;
   const tope = r.fin && r.fin < hasta ? r.fin : hasta;
-  for (let f = desde; f <= tope && res.length < 400; f = sumarDias(f, 1)) if (coincide(r, f)) res.push(f);
+  for (let f = desde; f <= tope && res.length < 400; f = sumarDias(f, 1)) if (coincide(r, f) && !enPausaProgramada(r, f)) res.push(f);
   return res;
 }
 
@@ -221,4 +235,65 @@ export function mesDeNombre(nombre: string): number {
   const n = limpiar(nombre);
   const i = MESES.indexOf(n === 'setiembre' ? 'septiembre' : n);
   return i >= 0 ? i + 1 : 0;
+}
+
+// ---------------------------------------------------------------- pausa programada dicha con palabras
+const NUMEROS: Record<string, number> = { un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12 };
+
+const dosDigitos = (n: number): string => String(n).padStart(2, '0');
+
+/** El día 1 de ese mes (1 a 12), en el primer año en que cae después de `despuesDe` («AAAA-MM-DD»). */
+function primeroDelMes(mes: number, despuesDe: string): string {
+  const a = Number(despuesDe.slice(0, 4));
+  const esteAno = `${a}-${dosDigitos(mes)}-01`;
+  return esteAno > despuesDe ? esteAno : `${a + 1}-${dosDigitos(mes)}-01`;
+}
+
+/** Suma meses a una fecha; si el día no existe en el mes de llegada (31 de enero + 1), queda el último de ese mes. */
+function sumarMeses(f: string, n: number): string {
+  const total = Number(f.slice(0, 4)) * 12 + Number(f.slice(5, 7)) - 1 + n;
+  const a = Math.floor(total / 12);
+  const m = (total % 12) + 1;
+  const d = Math.min(Number(f.slice(8, 10)), new Date(Date.UTC(a, m, 0)).getUTCDate());
+  return `${a}-${dosDigitos(m)}-${dosDigitos(d)}`;
+}
+
+/**
+ * Entiende la cola de «pausa claude desde el próximo mes» o «pausa el arriendo por dos meses y vuelve a cobrar en febrero»
+ * (texto ya sin tildes). Devuelve desde qué día no cuenta y, si se dijo, el día en que vuelve. Si «dos meses» y «febrero» no
+ * coinciden manda la fecha explícita y se deja un aviso. Nulo si no dice ni desde cuándo ni hasta cuándo.
+ */
+export function leerPausa(cola: string, hoy: string): { desde: string; hasta?: string; aviso?: string } | null {
+  const t = limpiar(cola);
+  const dia = hoy.slice(0, 10);
+  let desde = dia;
+  let dijoDesde = false;
+  if (/\b(?:desde|a partir d[el]|empezando)(?: el| la)? (?:proximo mes|mes que viene|mes siguiente)\b/.test(t)) {
+    desde = sumarMeses(`${dia.slice(0, 8)}01`, 1);
+    dijoDesde = true;
+  } else {
+    const m = t.match(/\b(?:desde|a partir d[el])(?: el| la)? ([a-z]+)\b/);
+    const mes = m ? mesDeNombre(m[1]) : 0;
+    if (mes) { desde = primeroDelMes(mes, dia); dijoDesde = true; }
+  }
+  // «por dos meses»
+  const por = t.match(/\bpor (\d{1,2}|[a-z]+) mes(?:es)?\b/);
+  const meses = por ? (NUMEROS[por[1]] ?? Number(por[1])) : 0;
+  const porMeses = meses >= 1 && meses <= 24 ? sumarMeses(desde, meses) : '';
+  // «vuelve a cobrar en febrero», «hasta febrero», «retoma en marzo»
+  let hasta = '';
+  const palabras = t.split(/\s+/);
+  palabras.forEach((w, i) => {
+    const mes = mesDeNombre(w);
+    // el mes que sigue a «desde» o «a partir de» es el inicio, no el regreso
+    const esInicio = /\b(?:desde|partir)\b/.test(palabras.slice(Math.max(0, i - 2), i).join(' '));
+    if (mes && !hasta && !esInicio) hasta = primeroDelMes(mes, desde);
+  });
+  if (!dijoDesde && !porMeses && !hasta) return null;
+  let aviso: string | undefined;
+  if (hasta && porMeses && hasta.slice(0, 7) !== porMeses.slice(0, 7)) {
+    aviso = `«${por![0]}» llegaría hasta ${MESES[Number(porMeses.slice(5, 7)) - 1]}, pero dijiste que vuelve en ${MESES[Number(hasta.slice(5, 7)) - 1]}. Uso la fecha que dijiste.`;
+  }
+  const fin = hasta || porMeses;
+  return { desde, ...(fin ? { hasta: fin } : {}), ...(aviso ? { aviso } : {}) };
 }

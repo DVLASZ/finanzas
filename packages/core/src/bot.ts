@@ -25,14 +25,20 @@ import { corteDeTurno, textoCorte } from './operacion.ts';
 import { textoJornales } from './trabajadores.ts';
 import { textoRevision } from './revision.ts';
 import { aplicarCambio, interpretar, resolverFaltante, type Propuesta } from './parser.ts';
+import {
+  aclarar, buscarEnLista, correccionDeGuardado, corregirNombreEnOpciones, editarFrase, elegirOpcion, leerOrdenDeCola, sinMuletillaDeRegistro,
+  type Opcion, type Orden,
+} from './aclaraciones.ts';
 import { hallarMontos, aMinor, formatear } from './dinero.ts';
 import { contextoDe, type Datos, type Pendiente, type Repo } from './repo.ts';
+import { alAprender, alConfirmarAprender } from './aprender.ts';
 import { ayudaDeTema, buscarAyuda, consultaDisfrazada, esPreguntaDeAyuda, temasParecidos, type RespuestaDeAyuda } from './ayudaGuiada.ts';
 import { dividirTodo, MAX_MOVIMIENTOS_POR_MENSAJE } from './lineas.ts';
+import { leerNotificacionBancaria } from './banco.ts';
 import { incertidumbre } from './incertidumbre.ts';
 import { descendientes, leerSubcategorias, MAX_NIVELES, puedeIrDentro } from './subcategorias.ts';
 import { leerMetas, textoAvance, textoMetas, totalApartado, type Meta } from './metas.ts';
-import { describirFrecuencia, leerRecurrentes, type Frecuencia, type Recurrente } from './recurrentes.ts';
+import { describirFrecuencia, leerPausa, leerRecurrentes, type Frecuencia, type Recurrente } from './recurrentes.ts';
 import { avisoDeExistencias, conConteo, existencias, existenciasDe, productoPorNombre } from './existencias.ts';
 import { leerCatalogo } from './ventas.ts';
 
@@ -109,16 +115,30 @@ function textoLista(lista: string[]): string {
     : 'La lista de compras está vacía. Para agregar: «falta arroz y sal».';
 }
 
-type Suelta = 'confirma' | 'cancela' | 'borra' | 'gracias';
+type Suelta = 'confirma' | 'guarda' | 'cancela' | 'borra' | 'gracias';
 
 /** Una palabra suelta de confirmar, cancelar o agradecer (ya pasada por `limpiar`), o null si el mensaje dice otra cosa. */
 function palabraSuelta(t: string): Suelta | null {
   const s = t.trim();
-  if (/^(?:ok|okey|okay|oki|dale|listo|si|sii|confirmar|confirmo|confirma|de una|vale|guardalo|guardar|perfecto|correcto|esta bien|asi esta bien)$/.test(s)) return 'confirma';
+  // «guarda» es una orden de guardar: si solo falta la categoría, se guarda en Otros (ver alPalabraSuelta)
+  if (/^(?:(?:si|dale|ok|listo) )?(?:guarda|guardalo|guardala|guardar|guardalo ya)$/.test(s)) return 'guarda';
+  if (/^(?:ok|okey|okay|oki|dale|listo|si|sii|confirmar|confirmo|confirma|si confirma|si confirmo|de una|vale|perfecto|correcto|esta bien|asi esta bien)$/.test(s)) return 'confirma';
   if (/^(?:borra|borralo|borrala|borrar)$/.test(s)) return 'borra';
   if (/^(?:no|nop|nel|cancela|cancelar|cancelalo|cancelala|olvidalo|mejor no|no gracias|descarta|descartar|descartalo|descartala)$/.test(s)) return 'cancela';
   if (/^(?:gracias|muchas gracias|mil gracias|grax|gracias parce|chevere|genial|super)$/.test(s)) return 'gracias';
   return null;
+}
+
+/**
+ * La última pregunta con botones que hizo el bot («¿De qué cuenta sacaste $200.000?»), por repositorio. Vive solo en
+ * memoria mientras la app está abierta: así «de nequi para efectivo» responde la pregunta sin guardar nada en la nube.
+ */
+const preguntasAbiertas = new WeakMap<Repo, { mensaje: string; opciones: Opcion[] }>();
+
+/** La pregunta con un botón por opción (y Cancelar); queda abierta para que también se pueda responder escribiendo. */
+function salidaDePregunta(repo: Repo, mensaje: string, opciones: Opcion[]): Salida {
+  preguntasAbiertas.set(repo, { mensaje, opciones });
+  return { texto: `❓ ${mensaje}`, botones: [...opciones.map(o => ({ id: `ia:${o.frase}`, titulo: o.titulo })), { id: 'no', titulo: '❌ Cancelar' }] };
 }
 
 export async function procesar(
@@ -153,6 +173,7 @@ class Motor {
   // ---------------------------------------------------------------- botones
 
   async alPulsar(id: string): Promise<Salida[]> {
+    if ((id === 'ok' || id === 'no') && this.datos.config.pausa_fijo_pendiente && !this.pend) return this.resolverPausaPendiente(id === 'ok');
     if (id === 'ok') return this.confirmar();
     if (id === 'okall') return this.confirmarTodos();
     if (id === 'cubrir') return this.cubrirFalta();
@@ -205,6 +226,7 @@ class Motor {
       const p = this.ctx.cuentas.find(c => c.tipo === 'persona' && c.id === id);
       return p ? this.estadoDePersona(p) : [{ texto: 'Esa persona ya no está.' }];
     }
+    if (id.startsWith('aprende!:')) return alConfirmarAprender(id.slice(9), this.ctx, this.repo);
     if (id.startsWith('lista+:')) return this.agregarALista(id.slice(7));
     // «ayuda:<tema>»: la explicación de ese tema; «poner:<frase>» la maneja la app (deja la frase escrita), aquí no hace nada
     if (id.startsWith('ayuda:')) { const r = ayudaDeTema(id.slice(6), this.ctx); return r ? [this.salidaDeAyuda([r])] : [{ texto: 'Ese tema ya no está.' }]; }
@@ -229,6 +251,13 @@ class Motor {
   async alEscribir(texto: string): Promise<Salida[]> {
     const t = limpiar(texto);
 
+    // una pausa esperando respuesta: «ok»/«no» la resuelven; cualquier otra cosa la deja sin efecto
+    if (this.datos.config.pausa_fijo_pendiente) {
+      if (/^(?:ok|si|dale|listo|confirmo|confirmar)$/.test(t)) return this.resolverPausaPendiente(true);
+      await this.repo.setConfig('pausa_fijo_pendiente', '');
+      if (/^(?:no|cancelar|cancela)$/.test(t)) return [{ texto: 'Listo, no cambié nada.' }];
+    }
+
     // Topes mensuales: «tope mecato 60000» / «quitar tope mecato»
     const tope = t.match(/^tope ([a-z ]+?) (\d[\d.,]*\s?(?:k|mil)?)$/);
     if (tope) return this.fijarTope(tope[1], tope[2]);
@@ -237,13 +266,29 @@ class Motor {
 
     const p = this.pend;
 
+    // Una notificación del banco pegada se vuelve una frase por operación (ver banco.ts); con una sola, esa frase es el mensaje.
+    // Es un movimiento nuevo: no se toma como respuesta ni corrección de la tarjeta pendiente.
+    const banco = leerNotificacionBancaria(texto, this.ctx);
+    if (banco?.frases.length === 1) texto = banco.frases[0];
+    if (!banco) texto = sinMuletillaDeRegistro(texto);
+
     // 0) Palabras sueltas («ok», «no», «borra», «gracias»): con una tarjeta pendiente actúan solo sobre ella;
     //    sin tarjeta se contesta corto. Nunca son un gasto sin monto ni una corrección del concepto.
     const suelta = palabraSuelta(t);
     if (suelta && (p || suelta !== 'borra')) return this.alPalabraSuelta(suelta, p);
 
+    // 0b) La conversación sigue: una aclaración de la tarjeta («mentiras, fue en nequi»), una orden sobre la cola
+    //     («quita el del taxi»), una corrección de lo recién guardado («corrige, fueron 87000») o la respuesta escrita
+    //     a la última pregunta con botones. Va antes de las preguntas de la tarjeta: «eran 21 mil» no es un lugar.
+    const abierta = preguntasAbiertas.get(this.repo);
+    preguntasAbiertas.delete(this.repo);
+    if (!banco) {
+      const conversado = await this.conversar(texto, p, abierta);
+      if (conversado) return conversado;
+    }
+
     // 1) Estaba esperando una respuesta (categoría, lugar, persona)
-    if (p && p.propuesta.faltantes.length) {
+    if (p && !banco && p.propuesta.faltantes.length) {
       const r = resolverFaltante(p.propuesta, texto, this.ctx);
       if ('error' in r) {
         const nuevo = interpretar(texto, this.ctx);
@@ -260,14 +305,14 @@ class Motor {
     // 2) Hay una tarjeta sin confirmar: ¿el texto es una corrección? («monto 6000», «nequi»,
     //    «vuelto 5k y 500 monedas», «ayer»...). Solo se acepta si TODO el texto es una corrección,
     //    así un gasto nuevo nunca se confunde con una.
-    if (p) {
+    if (p && !banco) {
       const cambio = aplicarCambio(p.propuesta, texto, this.ctx);
       if (cambio) return this.mostrar({ ...p, propuesta: cambio });
     }
 
     // 3) Varios movimientos en un mensaje: se van mostrando de a uno
     // (una sola línea que no se anota, como «pagué 10000 y me devolvieron los mismos 10000», no se parte)
-    const todas = !/[\n;]/.test(texto) && incertidumbre(texto) ? [texto] : dividirTodo(texto, this.nombresDeCuentas());
+    const todas = banco ? banco.frases : !/[\n;]/.test(texto) && incertidumbre(texto) ? [texto] : dividirTodo(texto, this.nombresDeCuentas());
     const partes = todas.slice(0, MAX_MOVIMIENTOS_POR_MENSAJE);
 
     // Un movimiento nuevo con una tarjeta sin confirmar: no se reemplaza en silencio. La nueva queda en la cola
@@ -293,9 +338,7 @@ class Motor {
     const res = interpretar(texto, this.ctx);
     if (res.clase === 'comando') return this.comando(res.comando, res.arg);
     // la frase puede significar dos cosas: se pregunta con botones en vez de adivinar
-    if (res.clase === 'pregunta') {
-      return [{ texto: `❓ ${res.mensaje}`, botones: [...res.opciones.map(o => ({ id: `ia:${o.frase}`, titulo: o.titulo })), { id: 'no', titulo: '❌ Cancelar' }] }];
-    }
+    if (res.clase === 'pregunta') return [salidaDePregunta(this.repo, res.mensaje, res.opciones)];
     // «quiero mirar quién me debe», «cuánto me queda»: es una consulta dicha con otras palabras
     const consulta = res.clase === 'error' ? consultaDisfrazada(texto) : null;
     if (consulta) return this.alEscribir(consulta);
@@ -313,6 +356,145 @@ class Motor {
     return this.mostrar({ propuesta: res.propuesta, editando: Boolean(reemplazaId), reemplazaId });
   }
 
+  // ---------------------------------------------------------------- memoria de la conversación (ver aclaraciones.ts)
+
+  /** Lo que se dice sobre la tarjeta, la cola o lo recién guardado; null si el texto es otra cosa. */
+  private async conversar(texto: string, p: Pendiente | null, abierta?: { mensaje: string; opciones: Opcion[] }): Promise<Salida[] | null> {
+    if (!p) {
+      if (leerOrdenDeCola(texto)?.que === 'cancelarTodo') return [{ texto: 'Listo, no hay nada pendiente.' }];
+      const resto = correccionDeGuardado(texto);
+      if (resto) return this.corregirGuardado(resto);
+      if (!abierta) return null;
+      const nombre = corregirNombreEnOpciones(texto, abierta.opciones);
+      if (nombre) {
+        const mensaje = abierta.mensaje.replace(nombre.viejo, nombre.nombre);
+        const s = salidaDePregunta(this.repo, mensaje, nombre.opciones);
+        return [{ ...s, texto: `Listo, con ${nombre.nombre}. ${s.texto}` }];
+      }
+      const opcion = elegirOpcion(texto, abierta.opciones.map(o => o.frase), this.ctx);
+      return opcion ? this.alEscribir(opcion) : null;
+    }
+    // escribir una de las opciones de la pregunta es responderla: eso lo hace resolverFaltante
+    if (p.propuesta.faltantes[0]?.opciones?.some(o => limpiar(o) === limpiar(texto))) return null;
+    const orden = leerOrdenDeCola(texto);
+    if (orden) {
+      const r = await this.ordenDeCola(orden, p);
+      if (r) return r;
+    }
+    const a = aclarar(p.propuesta, texto, this.ctx);
+    if (!a) return null;
+    // «ese fue con tarjeta» con varios movimientos no dice cuál: se pregunta y no se toca ninguno
+    if (a.referente && p.siguientes?.length) return [this.cualDeTodos(p, limpiar(texto).replace(/^.*?\b(?:ese|eso|esa|este|esto|esta)\s+/, ''))];
+    if ('aviso' in a) return this.conNota(a.aviso, p);
+    return this.conNota(a.nota, { ...p, propuesta: a.propuesta });
+  }
+
+  /** Muestra la tarjeta con una nota corta arriba. */
+  private async conNota(nota: string, p: Pendiente): Promise<Salida[]> {
+    const s = await this.mostrar(p);
+    if (nota && s[0]) s[0].texto = `${nota}\n${s[0].texto}`;
+    return s;
+  }
+
+  /** La tarjeta y lo que sigue en la cola, como se nombran en una lista. */
+  private listaDeCola(p: Pendiente): string[] {
+    return [`${p.propuesta.concepto} ${formatear(p.propuesta.monto, p.propuesta.moneda)}`, ...(p.siguientes ?? [])];
+  }
+
+  private cualDeTodos(p: Pendiente, resto: string): Salida {
+    const lista = this.listaDeCola(p);
+    return {
+      texto: `¿Cuál de los ${lista.length}? No quiero cambiar el que no es.\n${lista.map((x, i) => `${i + 1}. ${x}`).join('\n')}\nDime, por ejemplo, «el primero ${resto}» o «el segundo ${resto}».`,
+    };
+  }
+
+  /** Quitar uno, cambiar uno, cambiar todos, cancelar todo o confirmar el resto de un mensaje con varios movimientos. */
+  private async ordenDeCola(orden: Orden, p: Pendiente): Promise<Salida[] | null> {
+    const cola = [...(p.siguientes ?? [])];
+    const n = 1 + cola.length;
+    if (orden.que === 'cancelarTodo') {
+      await this.repo.guardarPendiente(null);
+      this.pend = null;
+      return [{ texto: n > 1 ? `Listo, descarté los ${n}. No se guardó nada.` : 'Listo, lo descarté. No se guardó nada.' }];
+    }
+    if (orden.que === 'confirmarResto') return p.propuesta.faltantes.length ? this.confirmar() : this.confirmarTodos();
+    const ORD = ['primero', 'segundo', 'tercero', 'cuarto', 'quinto', 'sexto', 'séptimo', 'octavo', 'noveno', 'décimo'];
+    if (orden.que === 'todos') {
+      const a0 = aclarar(p.propuesta, orden.resto, this.ctx);
+      if (!a0 || !('propuesta' in a0)) return null;
+      let fallan = 0;
+      const nueva = cola.map(frase => {
+        const r = interpretar(frase, this.ctx);
+        const a = r.clase === 'movimiento' ? aclarar(r.propuesta, orden.resto, this.ctx) : null;
+        const f = r.clase === 'movimiento' && a && 'propuesta' in a ? editarFrase(frase, r.propuesta, a.propuesta, this.ctx) : null;
+        if (!f) fallan++;
+        return f ?? frase;
+      });
+      const nota = fallan ? `Listo, cambié ${n - fallan} de ${n}; los otros ${fallan} dímelos cuando te los muestre.` : `Listo, cambié los ${n}.`;
+      return this.conNota(nota, { ...p, propuesta: a0.propuesta, siguientes: nueva });
+    }
+    // quitar o editar: ¿cuál?
+    const textos = [`${p.propuesta.concepto} ${p.propuesta.mensajeOriginal}`, ...cola];
+    let i: number;
+    if ('pos' in orden.cual) {
+      i = orden.cual.pos === -1 ? n - 1 : orden.cual.pos;
+      if (i >= n) return [{ texto: `Solo tengo ${n === 1 ? 'uno pendiente' : `${n} en la lista`}. ¿Cuál quieres cambiar?` }];
+    } else {
+      const hay = buscarEnLista(orden.cual.palabra, textos);
+      if (!hay.length) return null; // «quita el arroz» puede ser de la lista de compras
+      if (hay.length > 1) return [this.cualDeTodos(p, orden.que === 'editar' ? orden.resto : '')];
+      i = hay[0];
+    }
+    if (orden.que === 'quitar') {
+      if (i === 0) {
+        await this.repo.guardarPendiente(null);
+        this.pend = null;
+        const nota = `Listo, quité «${p.propuesta.concepto}».`;
+        if (!cola.length) return [{ texto: `${nota} No queda nada pendiente.` }];
+        const s = await this.siguienteDe(cola, p.total ?? n);
+        if (s[0]) s[0].texto = `${nota}\n${s[0].texto}`;
+        return s;
+      }
+      const [fuera] = cola.splice(i - 1, 1);
+      return this.conNota(`Listo, quité «${fuera}». ${cola.length ? `Quedan ${cola.length + 1}.` : 'Queda solo este.'}`, { ...p, siguientes: cola, total: (p.total ?? n) - 1 });
+    }
+    if (i === 0) {
+      const a = aclarar(p.propuesta, orden.resto, this.ctx);
+      if (!a) return [{ texto: `No entendí qué cambiar del ${ORD[0]}. Prueba así: «el ${ORD[0]} fue 8000» o «el ${ORD[0]} fue en nequi».` }];
+      return 'aviso' in a ? this.conNota(a.aviso, p) : this.conNota(a.nota, { ...p, propuesta: a.propuesta });
+    }
+    const frase = cola[i - 1];
+    const r = interpretar(frase, this.ctx);
+    const a = r.clase === 'movimiento' ? aclarar(r.propuesta, orden.resto, this.ctx) : null;
+    if (a && 'aviso' in a) return [{ texto: a.aviso }];
+    const nueva = r.clase === 'movimiento' && a ? editarFrase(frase, r.propuesta, a.propuesta, this.ctx) : null;
+    if (!nueva) return [{ texto: `Eso del ${ORD[i] ?? `número ${i + 1}`} te lo cambio cuando te lo muestre: ahí dime «${orden.resto}».` }];
+    cola[i - 1] = nueva;
+    return this.conNota(`Listo, el ${ORD[i] ?? `número ${i + 1}`} queda así: «${nueva}».`, { ...p, siguientes: cola });
+  }
+
+  /** «corrige, fueron 87000» sin tarjeta pendiente: edita lo último que se guardó (el original queda anulado, no borrado). */
+  private async corregirGuardado(resto: string): Promise<Salida[] | null> {
+    const m = this.ultimoPropio();
+    const antes = m?.propuesta as Propuesta | undefined;
+    if (!m || !antes) return null;
+    const a = aclarar(antes, resto, this.ctx);
+    if (a && 'aviso' in a) return [{ texto: a.aviso }];
+    const cambio = a ? a.propuesta : aplicarCambio(antes, resto, this.ctx);
+    if (!cambio) return null;
+    const nota = a ? a.nota.replace(/^Listo, /, '') : 'lo cambié.';
+    const tarjeta = await this.mostrar({ propuesta: cambio, editando: true, reemplazaId: m.id });
+    // si la tarjeta trae una pregunta o un aviso, la persona la revisa antes de guardar
+    const limpia = tarjeta[0]?.botones?.some(b => b.id === 'ok') && !/⚠️|❓/.test(tarjeta[0].texto);
+    if (!limpia) {
+      if (tarjeta[0]) tarjeta[0].texto = `Corrijo «${m.descripcion}»: ${nota} Revisa la tarjeta antes de guardarla.\n${tarjeta[0].texto}`;
+      return tarjeta;
+    }
+    const r = await this.confirmar();
+    if (r[0]) r[0].texto = `Corregí «${m.descripcion}»: ${nota} El original quedó anulado.\n${r[0].texto}`;
+    return r;
+  }
+
   /** Los nombres de las cuentas de plata y de las personas, para que «nequi 15k efectivo 10k» o «almuerzo 25000 marta 20000» no se partan como dos gastos. */
   private nombresDeCuentas(): string[] {
     return this.ctx.cuentas.filter(c => c.tipo === 'dinero' || c.tipo === 'persona').map(c => limpiar(c.nombre));
@@ -322,6 +504,16 @@ class Motor {
   private async alPalabraSuelta(suelta: Suelta, p: Pendiente | null): Promise<Salida[]> {
     if (!p) return [{ texto: suelta === 'gracias' ? '¡Con gusto! Cuando quieras, escríbeme otro movimiento.' : 'Listo, no hay nada pendiente.' }];
     if (suelta === 'confirma') return this.confirmar();
+    if (suelta === 'guarda') {
+      // «guarda» con solo la categoría por responder: se guarda en Otros y se dice, para cambiarla luego con Editar
+      const f = p.propuesta.faltantes;
+      const otros = this.ctx.cuentas.find(c => c.id === 'cat:otros');
+      if (!f.length || !otros || !f.every(x => x.campo === 'categoria')) return this.confirmar();
+      this.pend = { ...p, propuesta: { ...p.propuesta, categoriaId: otros.id, faltantes: [] } };
+      const r = await this.confirmar();
+      r[0].texto = `Lo guardé en Otros porque no me dijiste la categoría; si quieres, cámbiala con Editar.\n${r[0].texto}`;
+      return r;
+    }
     if (suelta === 'cancela' || suelta === 'borra') return this.alPulsar('no');
     const salida = await this.mostrar(p);
     salida[0].texto = `¡Con gusto! Esta tarjeta sigue pendiente, confírmala o cancélala:\n${salida[0].texto}`;
@@ -820,6 +1012,7 @@ class Motor {
       case 'cierre_abrir': { await this.repo.setConfig('cerrado_hasta', ''); return [{ texto: '🔓 Abrí todos los meses. Puedes anotar y corregir fechas de antes.' }]; }
       case 'cierre_ver': { const h = this.cerradoHasta(); return [{ texto: h ? `🔒 Cerrado hasta el ${describirDia(h)}. Para abrirlo escribe «abrir meses».` : 'No hay meses cerrados. Para cerrar uno: «cerrar mes octubre».' }]; }
       case 'subcategoria': return this.crearSubcategoria(arg ?? '');
+      case 'aprender': return alAprender(arg ?? '', this.ctx, this.repo);
       case 'metas': return [{ texto: textoMetas(leerMetas(this.datos.config)) }];
       case 'meta_fijar': return this.fijarMeta(arg ?? '');
       case 'meta_apartar': return this.moverMeta(arg ?? '', 1);
@@ -1068,6 +1261,23 @@ class Motor {
     return [{ texto: sumar ? `📦 Sumé ${cantidad}: ahora hay ${total} ${unidades} de ${producto.nombre}.` : `📦 Quedó anotado: ${total} ${unidades} de ${producto.nombre}. Cada venta las va restando.` }];
   }
 
+  /** Responde a la pregunta «¿Pauso X desde...?»: aplica o descarta la pausa programada que quedó esperando. */
+  private async resolverPausaPendiente(aplicar: boolean): Promise<Salida[]> {
+    const guardada = this.datos.config.pausa_fijo_pendiente;
+    await this.repo.setConfig('pausa_fijo_pendiente', '');
+    if (!aplicar) return [{ texto: 'Listo, no cambié nada.' }];
+    try {
+      const { concepto, desde, hasta } = JSON.parse(guardada ?? '') as { concepto: string; desde: string; hasta?: string };
+      const lista = leerRecurrentes(this.datos.config);
+      const r = lista.find(x => x.concepto === concepto);
+      if (!r) return [{ texto: `Ya no tengo el pago fijo «${concepto}»; no cambié nada.` }];
+      const cambiado: Recurrente = { ...r, pausaDesde: desde };
+      if (hasta) cambiado.pausaHasta = hasta; else delete cambiado.pausaHasta;
+      await this.repo.setConfig('recurrentes', JSON.stringify(lista.map(x => (x === r ? cambiado : x))));
+      return [{ texto: `Quedó: ${concepto} en pausa desde el ${diaCorto(desde)}${hasta ? ` y vuelve a contar el ${diaCorto(hasta)}` : ' hasta que lo reanudes'}.` }];
+    } catch { return [{ texto: 'No pude leer esa pausa; no cambié nada.' }]; }
+  }
+
   /** «claude|2026-12-21»: pausa, reanuda o termina un pago fijo que ya existe, y deja el resto como estaba. */
   private async cambiarFijo(arg: string, accion: 'pausar' | 'reanudar' | 'fin'): Promise<Salida[]> {
     const [texto, fechaIso = ''] = arg.split('|');
@@ -1080,12 +1290,26 @@ class Motor {
     const r = hallados[0];
     let cambiado: Recurrente;
     let respuesta: string;
+    if (accion === 'pausar' && fechaIso) {
+      // pausa con fechas: se pregunta antes de tocar nada; el «ok» la aplica (ver aplicarPausaPendiente)
+      const hoy = aLocal(this.ctx.ahora).slice(0, 10);
+      const p = leerPausa(fechaIso, hoy);
+      if (!p) return [{ texto: `No entendí hasta cuándo pausar ${r.concepto}. Dime por ejemplo «pausa ${texto} desde el próximo mes» o «pausa ${texto} por dos meses».` }];
+      await this.repo.setConfig('pausa_fijo_pendiente', JSON.stringify({ concepto: r.concepto, desde: p.desde, ...(p.hasta ? { hasta: p.hasta } : {}) }));
+      const cuando = `desde el ${diaCorto(p.desde)}${p.hasta ? ` hasta el ${diaCorto(p.hasta)} (ese día vuelve a contar)` : ' sin fecha de regreso'}`;
+      return [{
+        texto: `${p.aviso ? `${p.aviso}\n` : ''}¿Pauso ${r.concepto} ${cuando}? ${p.desde > hoy ? 'Hasta entonces sigue activo.' : 'No lo cuento ni lo aviso en ese tiempo.'}`,
+        botones: [{ id: 'ok', titulo: '✅ Confirmar' }, { id: 'no', titulo: '❌ Cancelar' }],
+      }];
+    }
     if (accion === 'pausar') {
       cambiado = { ...r, pausado: true };
       respuesta = `Pausé: ${r.concepto}. No lo cuento ni lo aviso hasta que lo reanudes con «reanudar recurrente ${texto}».`;
     } else if (accion === 'reanudar') {
       cambiado = { ...r };
       delete cambiado.pausado;
+      delete cambiado.pausaDesde;
+      delete cambiado.pausaHasta;
       respuesta = `Reanudé: ${r.concepto}.`;
     } else {
       if (fechaIso === 'mala') return [{ texto: 'Esa fecha no existe. Escríbela así: «fin recurrente claude 21/12/2026».' }];

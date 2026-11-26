@@ -7,5 +7,6 @@ import type { Diccionario } from './tipos.ts';
 
 export const DICCIONARIO: Diccionario = {
   categorias: datos.categorias,
+  finalidad: datos.finalidad,
   prestamos_inicio: datos.prestamos_inicio,
 };

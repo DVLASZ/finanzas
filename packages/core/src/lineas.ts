@@ -5,6 +5,10 @@
  */
 
 import { numerosDeDinero } from './voz.ts';
+import { calcular } from './calculos.ts';
+
+/** «almuerzo 28000 más 10% de propina» ya viene con su total, para que no se parta en dos gastos (ver calculos.ts). */
+const conCuenta = (s: string): string => { const c = calcular(s); return typeof c === 'string' ? c : s; };
 
 /** Máximo de movimientos por mensaje, para no volverse una cola eterna. */
 export const MAX_MOVIMIENTOS_POR_MENSAJE = 10;
@@ -219,9 +223,10 @@ export function dividirLinea(texto: string, cuentas: string[] = []): string[] {
  * `cuentas` son los nombres de las cuentas de la app, para no tomar «nequi 15k efectivo 10k» por dos gastos.
  */
 export function dividirTodo(texto: string, cuentas: string[] = []): string[] {
+  if (!/[\n;]/.test(texto) && typeof calcular(texto) !== 'string') return [texto]; // una cuenta que se pregunta no se parte
   const nombres = new Set(cuentas.flatMap(c => c.toLowerCase().split(/\s+/)));
   // «quince mil» y «sesenta lucas» pasan a números antes de contar cantidades: así «ayer pagué quince mil de almuerzo y hoy me giraron ochenta mil» se parte en dos
-  const filas = unirFragmentos(texto.split(/\r?\n|;/).map(x => numerosDeDinero(x.trim())).filter(Boolean))
+  const filas = unirFragmentos(texto.split(/\r?\n|;/).map(x => conCuenta(numerosDeDinero(x.trim()))).filter(Boolean))
     .flatMap(f => cortarNumerada(f) ?? [f]);
   const partes: string[] = [];
   for (const fila of filas) {
