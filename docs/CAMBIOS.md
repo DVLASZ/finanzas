@@ -6,6 +6,8 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-24
 
+- La ayuda del chat entiende mejor las preguntas de todos los días sobre plata que entra: «como registro una plata que me ingresa como pago de una actividad», «cuando me paguen la quincena como lo anoto» o «como registro un pago que me hicieron» responden con el tema de ingresos. «Como saco el total del mes» lleva a los saldos y no al cajero.
+- Radiografía técnica del intérprete de lenguaje natural, con el orden real de las reglas y una lista de puntos débiles para pruebas de estrés: [ARQUITECTURA-BOT.md](ARQUITECTURA-BOT.md).
 - La guía de usuario también existe como página interactiva de un solo archivo, [GUIA-USUARIO.html](GUIA-USUARIO.html): tiene índice, botón para volver arriba, un espacio para el enlace y la clave de acceso, botones para copiar cada frase del chat y 15 capturas reales incrustadas (hechas con datos inventados). Se genera con `npm run capturas:guia` y `npm run guia:html`.
 - El chat responde las preguntas de uso en la conversación: «cómo anoto un gasto», «cómo agrego una persona», «cómo pauso un pago fijo», «para qué sirve esto» ya no se cobran como un gasto sin monto ni se ofrecen para la lista de compras. Traen una explicación corta y botones con ejemplos que dejan la frase escrita. Cuando falta el monto de un gasto, el mensaje ahora empieza con «¡Casi!» y pregunta cuánto fue.
 - Guía de usuario paso a paso para quien va a instalar y probar la app: [GUIA-USUARIO.md](GUIA-USUARIO.md).

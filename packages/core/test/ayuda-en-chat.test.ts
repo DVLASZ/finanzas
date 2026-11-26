@@ -71,3 +71,21 @@ test('las preguntas de editar y borrar llevan al tema de corregir, no al de gast
     assert.match(botones, quiere, p);
   }
 });
+
+test('preguntas cotidianas sobre plata que entra llevan al tema de ingresos', async () => {
+  for (const p of [
+    'como registro una plata que me ingresa como pago de una actividad', 'como anoto plata que me entra por un trabajo',
+    'cuando me paguen la quincena como lo anoto', 'como registro un pago que me hicieron', 'como anoto una plata que me llega por un trabajo',
+    'como registro lo que me pagaron por una actividad', 'como pongo que me consignaron la nomina',
+  ]) {
+    const s = await nuevoBot().di(p);
+    const botones = s.flatMap(x => x.botones ?? []).map(b => b.id).join(' ');
+    assert.match(botones, /poner:ingreso 50000/, p);
+    assert.doesNotMatch(textoDe(s), /Me falta|No estoy seguro/, p);
+  }
+});
+
+test('«como saco el total del mes» lleva a saldos y no al cajero', async () => {
+  const botones = (await nuevoBot().di('como saco el total del mes')).flatMap(x => x.botones ?? []).map(b => b.id).join(' ');
+  assert.match(botones, /poner:saldo/);
+});
