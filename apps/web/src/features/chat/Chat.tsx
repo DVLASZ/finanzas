@@ -318,7 +318,7 @@ export function Chat() {
   return (
     <>
       {avisos.map((a, i) => (
-        <div key={i} class={`alerta mx-4 mt-3 ${a.nivel === 'urgente' ? 'urgente' : a.nivel === 'aviso' ? 'aviso' : ''}`}>
+        <div key={i} class={`alerta alerta-chat mx-4 mt-3 ${a.nivel === 'urgente' ? 'urgente' : a.nivel === 'aviso' ? 'aviso' : ''}`}>
           {verTexto(quitarEmojis(a.texto))}
           <div class="botones">{a.acciones!.map((x, j) => <button key={j} class="chip" data-aviso={`${i}.${j}`} onClick={() => alAviso(i, j)}>{x.titulo}</button>)}</div>
         </div>

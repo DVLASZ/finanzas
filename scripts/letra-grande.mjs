@@ -177,6 +177,16 @@ try {
 
     const escribir = async t => { await pag.type('#texto', t); await pag.keyboard.press('Enter'); await espera(700); await escalar(); };
     const pulsar = async titulo => { await pag.evaluate(t => [...document.querySelectorAll('button')].filter(x => x.innerText.trim() === t).pop()?.click(), titulo); await espera(700); await escalar(); };
+    // en las plantillas con categorías propias el gasto pregunta «¿En qué categoría?» antes de poder confirmarse: se contesta con la primera
+    const confirmar = async () => {
+      await pag.evaluate(() => {
+        if ([...document.querySelectorAll('button')].some(x => x.innerText.trim() === 'Confirmar' && !x.disabled && !x.classList.contains('inactivo'))) return;
+        const b = [...document.querySelectorAll('#chat button.chip')].filter(x => !x.classList.contains('inactivo') && !/Cancelar|Editar|Deshacer|Descartar|Etiqueta/.test(x.innerText))[0];
+        b?.click();
+      });
+      await espera(500);
+      await pulsar('Confirmar');
+    };
     const irA = async n => { await pag.evaluate(x => [...document.querySelectorAll('nav button')].find(b => b.getAttribute('aria-label') === x || b.innerText.trim() === x)?.click(), n); await espera(500); await escalar(); };
     const abrirEdicion = async () => {
       await pag.evaluate(() => document.querySelector('#editar')?.remove());
@@ -189,16 +199,16 @@ try {
 
     // datos de ejemplo con textos largos, como los de la vida real
     await escribir('saldo inicial efectivo 3111000 monedas 6950 bancolombia 80413003');
-    await pulsar('Confirmar');
+    await confirmar();
     for (const t of ['carne cerdo 50000', 'transporte de cal para la finca 20000', 'jornal pedro 165000 nequi', 'compra de botellas para la asociación 63000']) {
       await escribir(t);
-      await pulsar('Confirmar');
+      await confirmar();
     }
     await escribir('ingreso 769000 venta carne');
-    await pulsar('Confirmar');
+    await confirmar();
     await escribir('presté 575000 a Marta');
-    await pulsar('Confirmar');
-    await escribir('tope comida 400000'); await escribir('meta viaje 8000000'); await escribir('ahorré 1200000 para viaje'); await escribir('cada quincena el 5 internet y teléfono 120000'); await pulsar('Confirmar');
+    await confirmar();
+    await escribir('tope comida 400000'); await escribir('meta viaje 8000000'); await escribir('ahorré 1200000 para viaje'); await escribir('cada quincena el 5 internet y teléfono 120000'); await confirmar();
     await escribir('falta arroz y sal y panela y aceite y harina de maíz'); await escribir('ayuda');
 
     const pantallas = [
