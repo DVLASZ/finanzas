@@ -1,6 +1,6 @@
-# Batería adversarial del bot (RED-001 a RED-840)
+# Batería adversarial del bot (RED-001 a RED-900)
 
-Estas son las 840 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
+Estas son las 900 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
 
 ```bash
 node --test packages/core/test/red-team.test.ts
@@ -1061,3 +1061,73 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-838 | `Pásame quiénes pagaron la cuota de noviembre y quiénes siguen debiendo` | Responde con datos (menciona «debe|nadie|deuda|cuota»), sin tarjeta |  |
 | RED-839 | `Laura ya había pagado los 50k de noviembre; esta consignación que aparece es la misma` | Responde con datos (menciona «duplic|una sola|no anot|ya»), sin tarjeta |  |
 | RED-840 | `Cierra las cuentas del fondo: Jorge pagó 60k, Diana 50k, y todavía faltan 40k de cuotas` | 2 movimientos: $60.000, $50.000 o Pregunta antes de inventar |  |
+
+## Ronda 7: dictado por voz ruidoso
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-841 | `Gaste quince mil en almuerzo` | Gasto, $15.000 |  |
+| RED-842 | `Me pago Jorge cincuenta lucas por Nequi` | Ingreso, $50.000, en Nequi |  |
+| RED-843 | `Compre dos cafes de tres mil` | Gasto, $6.000 o Pregunta antes de inventar | Pregunta si los 3.000 son el total o cada uno, o los multiplica. |
+| RED-844 | `Ponle cien mil a transporte` | Pregunta antes de inventar o Responde con datos (menciona «tope»), sin tarjeta | Es un tope, no un gasto: pregunta si lo quiere fijar. |
+| RED-845 | `Veinte mil de mecato en efectivo` | Gasto, $20.000, en Efectivo, categoría Mecato |  |
+| RED-846 | `Pague el recibo de luz por ochenta y cinco mil pesos` | Gasto, $85.000 |  |
+| RED-847 | `Le preste treinta mil a Faber` | Préstamo, $30.000, con Faber |  |
+| RED-848 | `Me dieron dos mil de cambio` | Pregunta antes de inventar | Un cambio no es plata nueva: pregunta si es el vuelto. |
+| RED-849 | `Almuerzo doce cero cero cero` | Pregunta antes de inventar o Gasto, $12.000 | Dictado por dígitos: se confirma antes de guardar. |
+| RED-850 | `Cinco mil coma cincuenta` | Pregunta antes de inventar | Decimal ambiguo ($5.000,50 o $5.050): pregunta. |
+| RED-851 | `Pagué con la débito veinte mil en gasolina` | Gasto, $20.000 |  |
+| RED-852 | `Jorge me debe veinte mil, no débito` | Préstamo, $20.000, con Jorge |  |
+| RED-853 | `Gasté cuarenta, no, cuatro mil en pan` | Gasto, $4.000 |  |
+| RED-854 | `Eh, como treinta lucas, más o menos, en mercado` | Pregunta antes de inventar o Gasto, $30.000 | Una estimación: la tarjeta o la pregunta lo dicen antes de guardar. |
+| RED-855 | `Me gasté diez mil en la cena y cinco en el parqueadero` | 2 movimientos: $10.000, $5.000 |  |
+| RED-856 | `No gasté quince mil en taxi, fueron ocho mil` | Gasto, $8.000 o Pregunta antes de inventar |  |
+| RED-857 | `Le pagué a Laura veinte mil, ella me pagó otros diez` | 2 movimientos: $20.000, $10.000 o Pregunta antes de inventar |  |
+| RED-858 | `Le presté a Pipe quince mil` | Préstamo, $15.000, con Pipe |  |
+| RED-859 | `Me tomé un tinto de dos mil quinientos` | Gasto, $2.500 |  |
+| RED-860 | `Treinta, treinta mil de almuerzo` | Gasto, $30.000 o Pregunta antes de inventar |  |
+| RED-861 | `Pasé cien mil de Bancolombia pa Nequi` | Transferencia, $100.000, Bancolombia a Nequi |  |
+| RED-862 | `Me devolvieron diez mil de lo del almuerzo` | Ingreso, $10.000 o  o Pregunta antes de inventar |  |
+| RED-863 | `La cuenta fue cuarenta y cinco y dejé cinco de propina` | 2 movimientos: $45.000, $5.000 o Gasto, $50.000 o Pregunta antes de inventar |  |
+| RED-864 | `Saqué cien del cajero y pagué veinte de almuerzo` | 2 movimientos: $100.000, $20.000 o Pregunta antes de inventar |  |
+| RED-865 | `El parqueadero fueron siete quinientos` | Gasto, $7.500 |  |
+| RED-866 | `Daniel me debe quince, le di cinco hoy` | Pregunta antes de inventar o 2 movimientos: $15.000, $5.000 o Préstamo, $15.000, con Daniel |  |
+| RED-867 | `Le mandé a Karla, perdón, a Diana, cuarenta mil` | Préstamo, $40.000, con Diana o Quedan pendientes: $40.000 o Pregunta antes de inventar |  |
+| RED-868 | `Veinte mil de mercado en el mercado` | Gasto, $20.000 |  |
+| RED-869 | `Ayer gasté doce mil en desayuno` | Quedan pendientes: Gasto $12.000 el 2026-10-18 |  |
+| RED-870 | `Pagué doscientos, digo, doscientos mil de arriendo` | Gasto, $200.000 |  |
+| RED-871 | `Aboné treinta lucas a lo que le debo a Jorge` (antes: le debo 100000 a Jorge por compra) |  |  |
+| RED-872 | `Faber me devolvió veinte de los cincuenta que le presté` (antes: presté 50000 a Faber) |  o Ingreso, $20.000, con Faber |  |
+| RED-873 | `Tres empanadas a cuatro mil cada una` | Gasto, $12.000 |  |
+| RED-874 | `No fueron veinte de gasolina, fueron veinte de gas` | Gasto, $20.000 o Pregunta antes de inventar |  |
+| RED-875 | `Eh... pagué... [ruido] ... treinta mil... a Laura... por la cuota` | Pregunta antes de inventar | No sabe si lo envió o lo recibió: pregunta. |
+
+## Ronda 7: alertas del banco pegadas
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-876 | `BANCOLOMBIA / Compra aprobada / Valor: $38.500 / Comercio: SUPERMERCADO LA 14 / Tarjeta débito ...` | Gasto, $38.500, en Bancolombia |  |
+| RED-877 | `Compra aprobada por COP 125.900 en RESTAURANTE EL PARQUE / Tarjeta crédito terminada en 1...` | Gasto, $125.900 o Quedan pendientes: $125.900 |  |
+| RED-878 | `Nequi / Enviaste $50.000 a Jorge. / Fecha: 26/11/2026 / Hora: 20:14 / Movimiento: 841902 / Saldo ...` | Quedan pendientes: $50.000 en Nequi |  |
+| RED-879 | `¡Listo! Recibiste $75.000 de Laura por Nequi. / 27/11/2026 09:31 / Referencia 009812 / Tu sal...` | Quedan pendientes: $75.000 en Nequi |  |
+| RED-880 | `DaviPlata / Transacción exitosa / Débito por $42.000 / Destino: DAVIPLATA - Diana / Fecha 26/11...` | Quedan pendientes: $42.000 en Daviplata |  |
+| RED-881 | `DaviPlata / Has recibido $18.500 / De: Alejandro / Fecha: 27/11/2026 / Hora: 08:10 / Código: 671245` | Quedan pendientes: $18.500 en Daviplata |  |
+| RED-882 | `Banco de Bogotá / RETIRO EXITOSO / Valor $200.000 / Cajero: BOG CENTRO 04 / Cuenta **** 6620 / 26...` | Quedan pendientes: Transferencia $200.000 |  |
+| RED-883 | `Bancolombia / Pago PSE aprobado / Valor: $96.800 / Comercio: SERVICIOS HOGAR SAS / Fecha: 26/11...` | Quedan pendientes: $96.800 en Bancolombia |  |
+| RED-884 | `Nequi / No se pudo enviar $80.000 a Mateo. / Transacción rechazada. / Fecha 26/11/2026 21:05 / ...` | Sin tarjeta: no anota nada | Lo rechazado no movió plata. |
+| RED-885 | `Bancolombia / Compra NO aprobada / Valor solicitado: $64.900 / Comercio: FARMACIA CENTRAL / Tar...` | Sin tarjeta: no anota nada | Una compra declinada no es un gasto. |
+| RED-886 | `Nequi: Enviaste $25.000 a Pipe. 26/11/2026 16:10. Ref 778812. / Nequi: Enviaste $25.000 a...` | Quedan pendientes: $25.000 | La misma referencia pegada dos veces es una sola operación. |
+| RED-887 | `Compra aprobada $32.000 COMIDAS DON PEPE 26/11/2026 12:10 Ref 001122 / Compra aprobada $3...` | Quedan pendientes: $32.000; $32.000 | Otra hora y otra referencia: son dos compras. |
+| RED-888 | `Bancolombia / Pago tarjeta de crédito exitoso / Valor: $450.000 / Tarjeta: **** 1930 / Cuenta d...` | Quedan pendientes: $450.000 |  |
+| RED-889 | `BANCO DE BOGOTÁ / Avance tarjeta crédito aprobado / Valor: $300.000 / Tarjeta **** 1930 / Fecha...` | Quedan pendientes: $300.000; $12.000 o Quedan pendientes: $300.000 o Pregunta antes de inventar |  |
+| RED-890 | `Nequi / Estamos procesando tu envío de $70.000 a Daniel. / Estado: pendiente / 26/11/2026 17:...` | Sin tarjeta: no anota nada | Pendiente no es hecho: no se anota hasta que salga. |
+| RED-891 | `Nequi / Estamos procesando tu envío de $70.000 a Daniel. / Estado: pendiente / 26/11/20...` | Quedan pendientes: $70.000 | La confirmación de la misma referencia anota la operación una sola vez. |
+| RED-892 | `DaviPlata / Retiro en cajero aprobado / Retiro: $100.000 / Comisión: $4.500 / Total debitado: $...` | Quedan pendientes: $100.000; $4.500 |  |
+| RED-893 | `Bancolombia / Transferencia realizada / Valor: $250.000 / Destino: NEQUI - cuenta propia / Fech...` | Quedan pendientes: Transferencia $250.000 |  |
+| RED-894 | `Banco de Bogotá / ABONO EN CUENTA $120.000 / Origen: TRANSFERENCIA DE ESTEBAN / Fecha: 27/11/...` | Quedan pendientes: $120.000 |  |
+| RED-895 | `Bancolombia / Reversión de pago PSE / Abono: $56.000 / Comercio: TIENDA ONLINE / Fecha 27/11/20...` | Quedan pendientes: $56.000 |  |
+| RED-896 | `Compra aprobada USD 18,50 / Comercio: APP DIGITAL / Tarjeta crédito **** 1930 / Valor en peso...` | Pregunta antes de inventar o Sin tarjeta: no anota nada o Quedan pendientes: Gasto | Se queda en dólares: no inventa una tasa. |
+| RED-897 | `Nequi / Recibiste $40.000 de Paula. / Saldo anterior: $100.000 / Saldo actual: $140.000 / Fecha...` | Quedan pendientes: $40.000 en Nequi |  |
+| RED-898 | `Bancolombia / Compra aprobada / Valor $19.900 / Comercio: PANADERÍA 24H / Aprobación 00019900 / C...` | Quedan pendientes: $19.900 en Bancolombia |  |
+| RED-899 | `Banco de Bogotá / Transferencia a Laura / Valor: $90.000 / Estado: FALLIDA / Motivo: cuenta des...` | Sin tarjeta: no anota nada | Una transferencia fallida no movió plata. |
+| RED-900 | `Bancolombia / Compra aprobada: $28.000 - CAFÉ CENTRAL / Compra aprobada: $12.000 - PARQUEAD...` | Quedan pendientes: $28.000; $12.000 |  |

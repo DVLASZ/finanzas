@@ -22,6 +22,7 @@ const peso = (n: number): string => formatear(n, 'COP');
 /** Nombres de pila de uso común: escritos en minúscula («con ana») siguen siendo una persona. */
 const NOMBRES = new Set(['ana', 'luis', 'juan', 'pedro', 'maria', 'carlos', 'jose', 'luisa', 'laura', 'sofia', 'andres', 'david', 'camila', 'daniel', 'paula', 'diana', 'karla', 'jorge', 'mateo', 'felipe', 'valentina', 'sara', 'julian', 'pipe', 'nicolas', 'lucia', 'marta', 'miguel', 'sergio', 'diego', 'carolina', 'natalia', 'esteban', 'faber', 'ivan', 'ricardo', 'alejandra', 'paola', 'fernando', 'gabriel', 'manuel', 'oscar', 'hugo', 'rosa', 'elena']);
 const cap = (s: string): string => s[0].toUpperCase() + s.slice(1);
+const PALABRAS: Record<string, number> = { uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, veinte: 20, treinta: 30, cuarenta: 40, cincuenta: 50, sesenta: 60, setenta: 70, ochenta: 80, noventa: 90 };
 
 /** Evalúa una cuenta de solo números y + - x /. Devuelve null si trae otra cosa. */
 function evaluar(expr: string): number | null {
@@ -60,6 +61,47 @@ export function auditar(texto: string, ctx: Contexto, confirmado = false): Audit
   const t = limpiar(original);
   const dinero = ctx.cuentas.filter(c => c.tipo === 'dinero' && c.moneda === 'COP');
 
+  // Ronda 7, voz: lo que el reconocedor deja torcido
+  const sinNo = original.replace(/[,\s]+no\s+d[eé]bito\s*$/i, '');
+  if (sinNo !== original) return { reescribir: sinNo };
+  // «Cinco mil coma cincuenta»: ¿$5.000,50 o $5.050?
+  const coma = t.match(/\b(\d{3,})\s+coma\s+(\d{1,3}|[a-z]+)\b/);
+  if (coma) {
+    const dec = PALABRAS[coma[2]] ?? Number(coma[2]);
+    const entero = Number(coma[1]);
+    if (Number.isFinite(dec)) {
+      return { pregunta: { mensaje: `¿Quisiste decir ${peso(entero)},${String(dec).padStart(2, '0')} (los centavos no se llevan: quedaría ${peso(entero)}) o ${peso(entero + dec)}?`, opciones: [{ titulo: `${peso(entero)}`, frase: `gasto ${entero}` }, { titulo: `${peso(entero + dec)}`, frase: `gasto ${entero + dec}` }] } };
+    }
+  }
+  // «Ponle cien mil a transporte»: ¿tope o gasto?
+  const ponle = t.match(/^ponle\s+(\d\S*)\s+(?:a|en|para)\s+([a-z ]+)$/);
+  if (ponle) {
+    const catId = categorizar(ponle[2], ctx);
+    const cat = ctx.cuentas.find(x => x.id === catId && x.tipo === 'categoria');
+    const v = monto1(ponle[1]);
+    if (cat && v) return { pregunta: { mensaje: `¿Quieres fijar el tope de ${cat.nombre} en ${peso(v)} al mes, o anotar un gasto de ${peso(v)}?`, opciones: [{ titulo: `Tope de ${cat.nombre}`, frase: `tope ${cat.clave} ${v}` }, { titulo: 'Un gasto', frase: `${cat.clave} ${v}` }] } };
+  }
+  // «Aboné treinta lucas a lo que le debo a Jorge»: es un pago de esa deuda
+  const abonoDeuda = original.match(/^(?:abon[eé]|pagu[eé])\s+(.+?)\s+a lo que (?:le )?debo a\s+([A-Za-zÁÉÍÓÚáéíóúñ]+)\s*$/i);
+  if (abonoDeuda && monto1(limpiar(abonoDeuda[1]))) return { reescribir: `le pague ${monto1(limpiar(abonoDeuda[1]))} a ${abonoDeuda[2]}` };
+  // «Faber me devolvió veinte de los cincuenta que le presté»: dichos cortos, son miles
+  const devolvio = t.match(/^([a-z]+) me devolvio (\d{1,3}|[a-z]+) de los (\d{1,3}|[a-z]+) que le (?:preste|di|debia)/);
+  const aDevuelto = devolvio ? (PALABRAS[devolvio[2]] ?? Number(devolvio[2])) : NaN;
+  if (devolvio && aDevuelto > 0 && aDevuelto < 1000) return { reescribir: `${cap(devolvio[1])} me pago ${aDevuelto * 1000}` };
+  // «Le pagué a Laura veinte mil, ella me pagó otros diez»: dos movimientos de sentido contrario
+  const ida = original.match(/^(.+?\d{3,}.*?),?\s+(?:ella|[eé]l)\s+me\s+pag[oó]\s+(?:otros|otras)?\s*(.+)$/i);
+  if (ida) {
+    const quien = ida[1].match(/\ba\s+([A-ZÁÉÍÓÚ][A-Za-záéíóúñ]+)/)?.[1];
+    const primero = monto1(limpiar(ida[1])) ?? 0;
+    const lo = monto1(limpiar(ida[2])) ?? (PALABRAS[limpiar(ida[2])] ?? 0) * (primero >= 1000 ? 1000 : 1);
+    if (quien && lo) return { reescribir: `${ida[1].trim()}; ${quien} me pago ${lo}`, comando: undefined };
+  }
+  // «Eh... pagué... [ruido] ... treinta mil... a Laura»: no se sabe si lo envió o lo recibió
+  if (/\[ruido\]|\.{3}.*\.{3}/.test(original) && monto1(t)) {
+    const quien = original.match(/\ba\s+([A-ZÁÉÍÓÚ][A-Za-záéíóúñ]+)/)?.[1];
+    const v = monto1(t) as number;
+    if (quien) return { pregunta: { mensaje: `Se cortó el audio. ¿Le pagaste ${peso(v)} a ${quien}, o te los pagó ella o él a ti?`, opciones: [{ titulo: `Le pagué yo`, frase: `le pague ${v} a ${quien}` }, { titulo: `Me pagó`, frase: `${quien} me pago ${v}` }] } };
+  }
   // Defecto 19: la calculadora responde y no anota
   const cuenta = t.match(/^(?:cuanto es|cuanto da|cuanto son|cuanto suma|calcula|suma)\s+(.+)$/);
   if (cuenta) {
@@ -101,7 +143,8 @@ export function auditar(texto: string, ctx: Contexto, confirmado = false): Audit
     if (bancos.length > 1) return { pregunta: { mensaje: `¿De cuál cuenta sacaste ${cajero[1]}?`, opciones: bancos.slice(0, 6).map(c => ({ titulo: c.nombre, frase: `saque ${cajero[1]} de ${c.clave} a efectivo` })) } };
   }
   // Defecto 13: «compré 2 cafés de 3000»
-  const cantidad = t.match(/^(?:compre|pague|gaste)?\s*(\d{1,2})\s+([a-z]+)\s+de\s+(\d[\d.,]*(?:\s?(?:k|mil|lucas?))?)$/);
+  const cantidad = t.match(/^(?:compre|pague|gaste)?\s*(\d{1,2}|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+([a-z]+)\s+de\s+(\d[\d.,]*(?:\s?(?:k|mil|lucas?))?)$/);
+  if (cantidad) cantidad[1] = String(PALABRAS[cantidad[1]] ?? cantidad[1]);
   if (cantidad && Number(cantidad[1]) >= 2 && !/\b(?:cada|c\/u|total)\b/.test(t)) {
     const v = monto1(cantidad[3]);
     if (v) return { pregunta: { mensaje: `¿Los ${peso(v)} son por los ${cantidad[1]} ${cantidad[2]} o por cada uno?`, opciones: [{ titulo: `En total: ${peso(v)}`, frase: `${cantidad[2]} ${v}` }, { titulo: `Cada uno: ${peso(v * Number(cantidad[1]))}`, frase: `${cantidad[1]} ${cantidad[2]} a ${v} cada una` }] } };

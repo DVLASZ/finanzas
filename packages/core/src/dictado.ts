@@ -71,12 +71,17 @@ export function limpiarDictado(texto: string, ctx?: Contexto): string {
   t = t.replace(/(?<![\d.,])(\d{1,3})\s*mil\s+(cien|doscientos|trescientos|cuatrocientos|quinientos|seiscientos|setecientos|ochocientos|novecientos)\b/gi, (_m, n: string, c: string) => String(Number(n) * 1000 + CIENTOS[c.toLowerCase()]));
   t = t.replace(/(?<![\d.,])(\d{1,3})\s*mil\s+(\d{3})(?![\d.,])/gi, (_m, n: string, c: string) => String(Number(n) * 1000 + Number(c)));
   t = numerosDeDinero(t);
+  // «diez mil en la cena y cinco en el parqueadero»: el segundo monto, dicho corto, hereda los miles
+  if (/\b\d{1,3}000\b/.test(t)) {
+    const SUELTOS: Record<string, number> = { un: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, veinte: 20, treinta: 30, cuarenta: 40, cincuenta: 50, sesenta: 60, setenta: 70, ochenta: 80, noventa: 90 };
+    t = t.replace(/(\by\s+)(un|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|veinte|treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa)(\s+(?:de|en|para)\s)/i, (_m, y: string, w: string, r: string) => y + String(SUELTOS[w.toLowerCase()] * 1000) + r);
+  }
   // el mismo monto en cifra y en letras: «25.000 veinticinco mil» es uno solo
   t = t.replace(/(?<![\d.,])(\d[\d.,]{3,})\s+(\d[\d.,]{3,})(?![\d.,])/g, (m, a: string, b: string) => (a.replace(/\D/g, '') === b.replace(/\D/g, '') ? a : m));
   // «compré 3000 de pan y 2000 de queso»: dos movimientos; el verbo del primero vale para el segundo
-  const dos = new RegExp(String.raw`^((?:anota\w*|compr\w+|pagu\w+|gast\w+)\s+${MONTO}\s+de\s+.+?)\s+y\s+(${MONTO}\s+de\s+.+)$`, 'i').exec(t.trim());
+  const dos = new RegExp(String.raw`^((?:me\s+)?(?:anota[\p{L}]*|compr[\p{L}]+|pagu[\p{L}]+|gast[\p{L}]+)\s+${MONTO}\s+(?:de|en)\s+.+?)\s+y\s+(${MONTO}\s+(?:de|en)\s+.+)$`, "iu").exec(t.trim());
   // (con otro «y monto» después es una lista de tres o más, que parte la lógica de siempre)
-  if (dos && !/\sy\s+\d/i.test(`${dos[1]} ${dos[2]}`)) t = `${dos[1]}; ${/^\S+/.exec(dos[1])![0]} ${dos[2]}`;
+  if (dos && !/\sy\s+\d/i.test(`${dos[1]} ${dos[2]}`)) t = `${dos[1]}; ${/^(?:me\s+)?\S+/i.exec(dos[1])![0]} ${dos[2]}`;
   // «le presté 20k a Faber y 30k a Laura»: un préstamo para cada uno, con el mismo verbo
   const prestamos = new RegExp(String.raw`^(le\s+prest[\p{L}]+|prest[\p{L}]+|le\s+pas[\p{L}]+|le\s+di|le\s+debo|debo)\s+(${MONTO})\s+a\s+([\p{L}]+)\s+y\s+(${MONTO})\s+a\s+([\p{L}]+)$`, 'iu').exec(t.trim());
   if (prestamos) t = prestamos[1] + ' ' + prestamos[2] + ' a ' + prestamos[3] + '; ' + prestamos[1] + ' ' + prestamos[4] + ' a ' + prestamos[5];
@@ -87,7 +92,7 @@ export function limpiarDictado(texto: string, ctx?: Contexto): string {
   // «; además Laura me debe 20k»: «además» no es parte del nombre
   t = t.replace(/;\s*(?:ademas|además|tambien|también)\s+/gi, '; ');
   // «a Mateo, digo, a Marta»: manda el último nombre
-  t = t.replace(/\b(a|para|con)\s+[\p{L}]+,?\s+digo,?\s+(?:a|para|con)\s+/giu, '$1 ');
+  t = t.replace(/\b(a|para|con)\s+[\p{L}]+,?\s+(?:digo|perd[oó]n|mejor dicho|quise decir),?\s+(?:a|para|con)\s+/giu, '$1 ');
   return aplicarCorreccion(t, ctx).replace(/[ \t]+/g, ' ').trim();
 }
 
