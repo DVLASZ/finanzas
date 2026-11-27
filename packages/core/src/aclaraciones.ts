@@ -310,7 +310,7 @@ function aclararUna(p: Propuesta, texto: string, ctx: Contexto): Aclarado | null
 const nombreCuenta = (id: string, ctx: Contexto): string => ctx.cuentas.find(c => c.id === id)?.nombre ?? id;
 
 /** Cambia el nombre de una persona en la tarjeta: la persona, el reparto, el concepto y las preguntas. */
-function cambiarPersona(p: Propuesta, viejo: string, nuevo: string): Propuesta {
+export function cambiarPersona(p: Propuesta, viejo: string, nuevo: string): Propuesta {
   const re = new RegExp(`\\b${viejo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
   const cambiar = (s: string): string => s.replace(re, nuevo);
   return {

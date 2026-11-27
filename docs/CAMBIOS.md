@@ -4,6 +4,12 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-12-03
+
+- Corregir lo ya guardado con palabras: `cambia el almuerzo de ayer de 15k a 17k`, `el mercado del viernes pasado fue por Nequi`, `corrige la deuda con Karla, ya no son 20k sino 15k` (la deuda cambia, no se anota ningún abono).
+- `borra el de 20k` con dos iguales pregunta cuál; `borra los dos últimos`, `borra lo del aseo` y `todavía no me ha pagado` anulan solo lo que dices.
+- `la devolví y me devolvieron toda la plata` propone la devolución como ingreso del mismo monto.
+
 ## 2026-12-02
 
 - Con una tarjeta pendiente puedes decir `no fue un regalo, fue un préstamo que me hizo`, `David fue el que pagó mi comida`, `era Laura`, `éramos cuatro, no tres`, `mi parte era 25` o `al revés` y cambia la misma tarjeta.

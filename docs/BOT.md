@@ -695,3 +695,10 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - Con una tarjeta pendiente: «no fue un regalo, fue un préstamo que me hizo», «eso era un préstamo, no un regalo», «David fue el que pagó mi comida», «era Laura», «éramos cuatro, no tres», «mi parte era 25» y «al revés» (en una transferencia) cambian la misma tarjeta.
 - Con dos movimientos pendientes, «ese taxi fue por Nequi» o «corrige el almuerzo: fueron 22k» tocan solo el que nombras.
 - Después de borrar con palabras, «aunque mejor déjalo» lo restaura mientras la app siga abierta.
+
+## Corregir o borrar lo que ya guardaste
+
+- «Cambia el almuerzo de ayer de 15k a 17k», «el mercado del viernes pasado fue por Nequi», «el préstamo no fue para Faber, fue para Jorge» o «ponle que fue por fotocopias» corrigen el movimiento que nombras. Si dos encajan igual, te pregunta cuál.
+- «Corrige la deuda con Karla, ya no son 20k sino 15k» cambia el valor de la deuda; no queda anotado ningún abono.
+- «Borra el de 20k» (si hay dos), «borra los dos últimos» o «borra lo del aseo» anulan solo eso. «Todavía no me ha pagado» anula el último abono que recibiste.
+- «La devolví y me devolvieron toda la plata» propone la devolución como un ingreso del mismo monto.
