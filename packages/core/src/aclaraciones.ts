@@ -57,6 +57,21 @@ function sinEntrada(t: string): { r: string; marcado: boolean; referente: boolea
 
 const VERBO = /^(?:fue|fueron|era|eran|es|son|salio|salieron|costo|costaron|valio|valieron|quedo|quedaron)\b\s*/;
 
+/**
+ * Las correcciones dichas con más palabras se vuelven la frase corta que ya entiende `aclarar`: «ponle 9.500 mejor» es «fue 9.500»,
+ * «eran 18k no 15k» es «eran 18k», «no fue en efectivo fue por nequi» es «fue por nequi».
+ */
+function afinar(r: string): string {
+  let s = r.replace(/\s+(?:mejor|por favor|nomas|no mas)$/, '');
+  s = s.replace(/^(?:ponle|ponlo|pon|ponla|dejalo en|dejala en|dejalo|cambialo a|cambiala a|cambiale|cambialo|cambiala)\s+/, 'fue ');
+  // «fue en efectivo fue por nequi»: manda lo último que se dijo
+  const cl = s.split(/\s+(?=(?:fue|fueron|era|eran|es)\s)/);
+  if (cl.length > 1 && /^(?:fue|fueron|era|eran|es)\b/.test(cl[0])) s = cl[cl.length - 1];
+  // «eran 18k no 15k», «fue ayer no hoy»: lo que va después de «no» es lo que se descarta
+  s = s.replace(/^((?:fue|fueron|era|eran|es|son)?\s*\S.*?)\s+no\s+(?:era\s+|fue\s+|eran\s+)?(?:\d[\d.,]*\s?(?:k|mil|lucas?)?|hoy|ayer|antier|[a-z]+)$/, '$1');
+  return s;
+}
+
 /** Una propuesta nueva armada con una frase, conservando la cuenta, la fecha y el evento de la tarjeta. */
 function rehacer(p: Propuesta, frase: string, ctx: Contexto): Propuesta | null {
   const r = interpretar(frase, ctx);
@@ -82,7 +97,9 @@ function compartido(p: Propuesta, personas: { nombre: string; monto: number }[])
  * entiende qué quiere pero no se puede (una cuenta que no existe), o null si el texto no es una aclaración.
  */
 export function aclarar(p: Propuesta, texto: string, ctx: Contexto): Aclarado | null {
-  const { r, marcado, referente } = sinEntrada(limpiar(texto));
+  const base = sinEntrada(limpiar(texto));
+  const { marcado, referente } = base;
+  const r = afinar(base.r);
   if (!r) return null;
   const monto = formatear(p.monto, p.moneda);
   const listo = (propuesta: Propuesta, nota: string): Aclarado => ({ propuesta, nota, referente });

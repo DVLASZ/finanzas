@@ -4,6 +4,12 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-28
+
+- Las correcciones dichas con más palabras cambian la tarjeta pendiente: `perdón, eran 18k, no 15k`, `ponle 9.500 mejor`, `eso fue ayer, no hoy`.
+- `no lo guardes`, `olvídalo, al final no compré nada` y `mejor cancela eso` cancelan la tarjeta pendiente.
+- `borra ese último movimiento`, `elimina esa deuda` o `borra el almuerzo` anulan lo ya guardado; si hay dos iguales, pregunta cuál.
+
 ## 2026-11-27
 
 - Cuentas entre amigos dichas como se hablan: `lo pagó Faber y yo le debo la mitad`, `pagué el uber de 14k y Esteban me pasa la mitad`, `voy con 20`, `nos toca de a 12k`.
