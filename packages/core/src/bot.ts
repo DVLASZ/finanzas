@@ -7,7 +7,7 @@
  * Flujo: mensaje -> tarjeta "Entendí: ..." -> [Confirmar] [Editar] [Cancelar]. Nada se guarda
  * hasta confirmar. Tras confirmar quedan [Editar] [Deshacer]. El bot nunca borra: solo anula.
  */
-import { calcularSaldos, compromisosSaldados, deudasPorPersona, gastoHabitual, resumenSaldos } from './consultas.ts';
+import { calcularSaldos, compromisosSaldados, deudasPorPersona, gastoHabitual, resumenSaldos, topesPausados } from './consultas.ts';
 import { auditar } from './auditoria.ts';
 import { hablarCasa } from './hogarAsociacion.ts';
 import { hablarPresupuesto } from './topesHablados.ts';
@@ -285,6 +285,8 @@ class Motor {
     if (tope) return this.fijarTope(tope[1], tope[2]);
     const quitar = t.match(/^(?:quitar|sin) tope ([a-z ]+)$/);
     if (quitar) return this.quitarTope(quitar[1]);
+    const pausarTope = t.match(/^(pausar|pausa|reanudar|reactivar|activar) (?:el )?tope (?:de |del )?([a-z ]+)$/);
+    if (pausarTope) return this.pausarTope(pausarTope[2], !/^(?:reanudar|reactivar|activar)$/.test(pausarTope[1]));
 
     const p = this.pend;
 
@@ -1640,13 +1642,27 @@ ${r[0].texto}`;
     if (m.valor > 0 && m.valor < 1000) return [{ texto: `Un tope de ${formatear(aMinor(m.valor, 'COP'))} es demasiado bajo: pon uno de por lo menos $1.000, por ejemplo «tope ${cat.clave} 60000».` }];
     if (!(m.valor > 0) || m.valor > 2_000_000_000) return [{ texto: `El tope tiene que ser mayor que cero. Para quitarlo escribe «quitar tope ${cat.clave}».` }];
     await this.repo.setPresupuesto(cat.id, aMinor(m.valor, 'COP'));
+    // un tope nuevo se activa solo
+    if (topesPausados(this.datos.config).includes(cat.id)) await this.repo.setConfig('topes_pausados', JSON.stringify(topesPausados(this.datos.config).filter(x => x !== cat.id)));
     return [{ texto: `📊 Tope de ${cat.nombre}: ${formatear(aMinor(m.valor, 'COP'))} al mes. Lo verás en las tarjetas de Saldos y Resumen.` }];
+  }
+
+  /** Pausa o reactiva un tope sin borrarlo: mientras está en pausa no avisa ni cuenta, y el monto se conserva. */
+  private async pausarTope(categoria: string, pausar: boolean): Promise<Salida[]> {
+    const cat = this.ctx.cuentas.find(c => c.tipo === 'categoria' && (c.clave === categoria || c.clave.startsWith(categoria)));
+    if (!cat) return [{ texto: 'No conozco esa categoría.' }];
+    if (!this.datos.presupuestos[cat.id]) return [{ texto: `${cat.nombre} no tiene tope. Fíjalo con «tope ${cat.clave} 60000».` }];
+    const lista = topesPausados(this.datos.config).filter(x => x !== cat.id);
+    if (pausar) lista.push(cat.id);
+    await this.repo.setConfig('topes_pausados', JSON.stringify(lista));
+    return [{ texto: pausar ? `⏸️ Tope de ${cat.nombre} en pausa: sigue guardado en ${formatear(this.datos.presupuestos[cat.id])} pero no avisa. Para activarlo escribe «reanudar tope ${cat.clave}».` : `▶️ Tope de ${cat.nombre} activo otra vez: ${formatear(this.datos.presupuestos[cat.id])} al mes.` }];
   }
 
   private async quitarTope(categoria: string): Promise<Salida[]> {
     const cat = this.ctx.cuentas.find(c => c.tipo === 'categoria' && (c.clave === categoria || c.clave.startsWith(categoria)));
     if (!cat) return [{ texto: 'No conozco esa categoría.' }];
     await this.repo.setPresupuesto(cat.id, null);
+    if (topesPausados(this.datos.config).includes(cat.id)) await this.repo.setConfig('topes_pausados', JSON.stringify(topesPausados(this.datos.config).filter(x => x !== cat.id)));
     return [{ texto: `Quité el tope de ${cat.nombre}.` }];
   }
 }

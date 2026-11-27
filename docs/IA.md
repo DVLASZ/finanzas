@@ -4,6 +4,10 @@
 
 Las reglas del bot entienden casi todo lo de todos los días, pero una frase muy suelta como "me llegaron cincuenta mil de mi tía y gasté 5 lukas en mecato" se les escapa. Para esos casos el servidor puede pedirle ayuda a una IA.
 
+## La guía de ayuda no usa la IA
+
+«Pregúntale cómo decirlo» busca en temas escritos (palabras y frases clave) y no llama al modelo: así funciona sin internet, no gasta la cuota diaria y siempre da un ejemplo con tus cuentas. Si no encuentra tema, lo dice y deja tocar uno de la lista. Cuando una frase no la entiende el bot al escribirla en el chat, ahí sí entra la IA. Si algún día se quiere que la guía le pregunte al modelo, hace falta una ruta nueva en el Worker con su propio tope diario; hoy no se justifica.
+
 ## Qué hace y qué no
 
 > [!NOTE]
