@@ -89,3 +89,34 @@ export const reiniciarLimites = (): void => { intentosFallidos.reiniciar(); peti
 
 /** La conexión de quien pide (Cloudflare la pone siempre); sin ella no se limita, que es lo que pasa en las pruebas. */
 export const conexionDe = (req: Request): string | null => req.headers.get('CF-Connecting-IP');
+
+// ---------------------------------------------------------------- salidas del Worker (SSRF)
+
+/**
+ * Una dirección a la que el Worker puede llamar: solo `https`, sin usuario ni contraseña, sin puerto raro y con un nombre
+ * de dominio público. Se rechazan los números de IP (incluidos `127.0.0.1`, `169.254.169.254`, `[::1]`, `2130706433` y
+ * `0x7f.1`), `localhost`, los nombres sin punto y los sufijos de redes internas.
+ */
+export function urlPublicaHttps(texto: unknown): URL | null {
+  if (typeof texto !== 'string' || texto.length > 600 || /[\u0000-\u0020\\]/.test(texto)) return null;
+  let u: URL;
+  try { u = new URL(texto); } catch { return null; }
+  if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443')) return null;
+  const h = u.hostname.toLowerCase();
+  if (!h.includes('.') || h.startsWith('[') || /^[\d.x]+$/i.test(h) || /^0x/i.test(h)) return null;
+  if (/(^|\.)(localhost|local|internal|intranet|lan|home|corp|localdomain)$/.test(h) || h.endsWith('.')) return null;
+  return u;
+}
+
+/** Los servicios de avisos que usan los navegadores (Chrome, Firefox, Safari, Edge). Un aviso solo sale hacia uno de estos. */
+const SERVICIOS_PUSH = [
+  /^fcm\.googleapis\.com$/, /^android\.googleapis\.com$/,
+  /(^|\.)push\.services\.mozilla\.com$/,
+  /(^|\.)push\.apple\.com$/,
+  /(^|\.)notify\.windows\.com$/,
+];
+
+export function esServicioDePush(endpoint: unknown): boolean {
+  const u = urlPublicaHttps(endpoint);
+  return Boolean(u && SERVICIOS_PUSH.some(re => re.test(u.hostname.toLowerCase())));
+}

@@ -34,7 +34,7 @@ export interface Contexto { req: Request; url: URL; env: Env; repo: D1Repo }
 export type Ruta = (c: Contexto) => Promise<Response | null>;
 
 export const json = (datos: unknown, status = 200): Response =>
-  new Response(JSON.stringify(datos), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+  new Response(JSON.stringify(datos), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } }); // datos financieros: ningún navegador ni proxy los guarda
 
 /** Comparación en tiempo constante (no filtra información por el tiempo de respuesta). */
 export function igualesSeguro(a: string, b: string): boolean {

@@ -19,7 +19,7 @@ function celular() {
   ecdh.generateKeys();
   const auth = randomBytes(16);
   const suscripcion: Suscripcion = {
-    endpoint: 'https://push.ejemplo.test/abc123',
+    endpoint: 'https://fcm.googleapis.com/fcm/send/abc123',
     keys: { p256dh: aBase64Url(ecdh.getPublicKey()), auth: aBase64Url(auth) },
   };
   const abrir = (cuerpo: Uint8Array): string => {
@@ -60,7 +60,7 @@ test('push: cada aviso se cifra distinto (sal y llave nuevas) y otro celular no 
 
 test('push: la firma VAPID se verifica con la llave pública que se le da al navegador', async () => {
   const llaves = await crearLlavesVapid();
-  const cab = await cabeceraVapid('https://push.ejemplo.test/abc123', llaves, 1_800_000_000_000);
+  const cab = await cabeceraVapid('https://fcm.googleapis.com/fcm/send/abc123', llaves, 1_800_000_000_000);
   const m = /^vapid t=([\w-]+)\.([\w-]+)\.([\w-]+), k=([\w-]+)$/.exec(cab);
   assert.ok(m, cab);
   assert.equal(m[4], llaves.publica);
@@ -69,7 +69,7 @@ test('push: la firma VAPID se verifica con la llave pública que se le da al nav
   const publica = createPublicKey({ key: { kty: 'EC', crv: 'P-256', x: aBase64Url(crudo.slice(1, 33)), y: aBase64Url(crudo.slice(33)) }, format: 'jwk' });
   assert.ok(verify('sha256', Buffer.from(`${m[1]}.${m[2]}`), { key: publica, dsaEncoding: 'ieee-p1363' }, Buffer.from(deBase64Url(m[3]))));
   const datos = JSON.parse(Buffer.from(deBase64Url(m[2])).toString()) as { aud: string; exp: number };
-  assert.equal(datos.aud, 'https://push.ejemplo.test');
+  assert.equal(datos.aud, 'https://fcm.googleapis.com');
   assert.equal(datos.exp, 1_800_000_000 + 12 * 3600);
 });
 
