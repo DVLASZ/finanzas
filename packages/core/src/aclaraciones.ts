@@ -16,7 +16,7 @@ import type { Contexto } from './tipos.ts';
 export type Aclarado = { propuesta: Propuesta; nota: string; referente: boolean } | { aviso: string; referente: boolean };
 
 /** Muletillas del comienzo que anuncian una corrección: se quitan y dejan marcado que es una aclaración. */
-const RE_ENTRADA = /^(?:mentiras|perdon|perdona|espera|esperate|ah|ay|uy|oye|ojo|corrijo|corrige|corregir|correccion|me equivoque|error|no(?! me\b)|mejor|y|pero|eh|bueno|ya|ahh|ups)\b\s*/;
+const RE_ENTRADA = /^(?:si|mentiras|revise|perdon|perdona|espera|esperate|ah|ay|uy|oye|ojo|corrijo|corrige|corregir|correccion|me equivoque|error|no(?! me\b)|mejor|y|pero|eh|bueno|ya|ahh|ups)\b\s*/;
 /** «ese», «eso»: hablan de un movimiento sin decir cuál. */
 const RE_REFERENTE = /^(?:ese|eso|esa|este|esto|esta)\b\s*/;
 /** Palabras que suenan a una cuenta que no está creada. */
@@ -68,7 +68,8 @@ function afinar(r: string): string {
   const cl = s.split(/\s+(?=(?:fue|fueron|era|eran|es)\s)/);
   if (cl.length > 1 && /^(?:fue|fueron|era|eran|es)\b/.test(cl[0])) s = cl[cl.length - 1];
   // «eran 18k no 15k», «fue ayer no hoy»: lo que va después de «no» es lo que se descarta
-  s = s.replace(/^((?:fue|fueron|era|eran|es|son)?\s*\S.*?)\s+no\s+(?:era\s+|fue\s+|eran\s+)?(?:\d[\d.,]*\s?(?:k|mil|lucas?)?|hoy|ayer|antier|[a-z]+)$/, '$1');
+  s = s.replace(/^((?:fue|fueron|era|eran|es|son)?\s*\S.*?)\s+no\s+(?:era\s+|fue\s+|eran\s+)?(?:(?:un|una|el|la)\s+)?(?:\d[\d.,]*\s?(?:k|mil|lucas?)?|hoy|ayer|antier|[a-z]+)$/, '$1');
+  s = s.replace(/\s+(?:la|el)\s+que\s+.*$/, ''); // «era Laura la que quedó debiéndome» es «era Laura»
   return s;
 }
 
@@ -97,6 +98,25 @@ function compartido(p: Propuesta, personas: { nombre: string; monto: number }[])
  * entiende qué quiere pero no se puede (una cuenta que no existe), o null si el texto no es una aclaración.
  */
 export function aclarar(p: Propuesta, texto: string, ctx: Contexto): Aclarado | null {
+  const entera = aclararUna(p, texto, ctx);
+  if (entera) return entera;
+  // una corrección con varias cosas («eran 54k y salieron de Nequi», «perdón, eran 18k, no 15k, me confundí») se aplica por trozos, en orden
+  const trozos = texto.split(/[,;]|\s+y\s+/i).map(s => s.trim()).filter(Boolean);
+  if (trozos.length < 2) return null;
+  let actual = p;
+  const notas: string[] = [];
+  let referente = false;
+  for (const t of trozos) {
+    if (notas.length && /^no\s+\S/i.test(t)) continue; // «..., no en Compras»: lo que va después de «no» es lo que se descarta
+    const a = aclararUna(actual, t, ctx);
+    if (!a) continue;
+    if ('aviso' in a) return a;
+    actual = a.propuesta; notas.push(a.nota); referente = referente || a.referente;
+  }
+  return notas.length ? { propuesta: actual, nota: notas.join(' '), referente } : null;
+}
+
+function aclararUna(p: Propuesta, texto: string, ctx: Contexto): Aclarado | null {
   const base = sinEntrada(limpiar(texto));
   const { marcado, referente } = base;
   const r = afinar(base.r);
@@ -188,6 +208,14 @@ export function aclarar(p: Propuesta, texto: string, ctx: Contexto): Aclarado | 
     }
   }
 
+  // ---- la categoría: «ponlo como Salidas», «eso va en Transporte», «ponle categoría Universidad»
+  const cat = /^(?:ponle|ponlo|pon|ponla|eso va|va|es|fue)?\s*(?:en|como|de)?\s*(?:la )?(?:categoria )?(?:de )?([a-z ]{3,30}?)(?: (?:fue|era|porque|que)\b.*)?$/.exec(r);
+  if (cat && (marcado || conVerbo || /^(?:ponle|ponlo|pon|ponla|eso va|va)\b/.test(r)) && (p.tipo === 'gasto' || p.tipo === 'compartido')) {
+    const buscada = cat[1].trim();
+    const cuentaCat = ctx.cuentas.find(x => x.tipo === 'categoria' && (x.clave === buscada || limpiar(x.nombre) === buscada));
+    if (cuentaCat) return listo({ ...p, categoriaId: cuentaCat.id, faltantes: p.faltantes.filter(x => x.campo !== 'categoria') }, 'Listo, cambié la categoría a ' + cuentaCat.nombre + '.');
+  }
+
   // ---- la persona: «era con Paula, no Laura»
   const per = /^(?:con|a|para) ([a-z]+(?: [a-z]+)?)(?: no (?:con |a |para )?(?:era )?(?:con |a )?([a-z]+(?: [a-z]+)?))?$/.exec(sinVerbo);
   if (per && conVerbo && !hallarCuentas(per[1], ctx).length && !/^(?:la|el|los|las|un|una)\b/.test(per[1])) {
@@ -200,9 +228,14 @@ export function aclarar(p: Propuesta, texto: string, ctx: Contexto): Aclarado | 
 
   // ---- el monto: «eran 21 mil», «fueron 47000 con el domicilio»
   if (marcado || conVerbo) {
-    const sinCola = sinVerbo.replace(/\s+(?:con (?:el|la|los|las|todo|todo y) .+|en total|con todo|total|nada mas|no mas|pesos)$/, '');
-    const ms = hallarMontos(sinCola).filter(m => m.explicito);
-    if (ms.length === 1 && (sinCola.slice(0, ms[0].inicio) + sinCola.slice(ms[0].fin)).replace(/\b(?:monto|valor|total|el|la)\b/g, '').trim() === '') {
+    const sinCola = sinVerbo.replace(/\s+(?:con (?:el|la|los|las|todo|todo y) .+|en total|con todo|total|nada mas|no mas|pesos|los dos|las dos|en total los dos)$/, '');
+    let ms = hallarMontos(sinCola).filter(m => m.explicito);
+    // «déjalo en 10» dicho sobre $12.000 es de miles
+    if (!ms.length && p.monto >= 1000) {
+      const chico = hallarMontos(sinCola).filter(m => m.valor >= 1 && m.valor < 1000);
+      if (chico.length === 1) ms = [{ ...chico[0], valor: chico[0].valor * 1000, explicito: true }];
+    }
+    if (ms.length === 1 && (sinCola.slice(0, ms[0].inicio) + sinCola.slice(ms[0].fin)).replace(/\b(?:monto|valor|total|el|la|de|en|por|a)\b/g, '').trim() === '') {
       const n = aMinor(ms[0].valor, p.moneda);
       const nueva = p.tipo === 'gasto' || p.tipo === 'compartido' || p.tipo === 'ingreso' ? aplicarCambio(p, `monto ${ms[0].valor}`, ctx) : { ...p, monto: n };
       if (nueva) return listo(nueva, `Listo, cambié el monto a ${formatear(n, p.moneda)}.`);

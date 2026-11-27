@@ -4,6 +4,11 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-30
+
+- Una corrección con varias cosas se aplica por trozos: `eran 54k y salieron de Nequi`, `déjalo en 10, que ella me descontó dos`, `ponlo como Salidas, fue comiendo con los parceros`.
+- `no lo guardes, me equivoqué antes de confirmar` y `ahora sí, borra ese gasto` cancelan la tarjeta pendiente.
+
 ## 2026-11-29
 
 - Revisión de seguridad OWASP Top 10:2025 (docs/SEGURIDAD-OWASP-2025.md).
