@@ -54,7 +54,7 @@ const COMUNES = `
   cositas cosita parce parcero llave mano marica mija mijo senor senora seno amigo amiga amigos amigas novio novia esposo esposa
   hijo hija hijos casa calle parque tienda centro trabajo oficina colegio universidad clase clases banco cajero plata dinero
   pesitos pesito plata platica total cuenta cuentas valor precio costo cuesta costo costaron vale valio salio salieron
-  david paso pasa pasan pasar pasado pasada pasamos pasaron pasando base caso casos peso paga pagas pagan pagar pagado pagada pagamos
+  david ademas paso pasa pasan pasar pasado pasada pasamos pasaron pasando base caso casos peso paga pagas pagan pagar pagado pagada pagamos
   pagando pagare pagara pagaria pagues debe deben debes deber debia debian debido debiendo gasta gastan gastar gastado gastamos
   gastando gastes compra compran comprar comprado compramos comprando presta prestan prestar prestado prestada prestamos
   prestame cobra cobran cobrar cobrado cobraron cobro sobre sobra sobras sobro resto resta saca sacar sacamos sacaron saco

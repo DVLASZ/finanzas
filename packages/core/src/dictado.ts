@@ -69,6 +69,15 @@ export function limpiarDictado(texto: string, ctx?: Contexto): string {
   const dos = new RegExp(String.raw`^((?:anota\w*|compr\w+|pagu\w+|gast\w+)\s+${MONTO}\s+de\s+.+?)\s+y\s+(${MONTO}\s+de\s+.+)$`, 'i').exec(t.trim());
   // (con otro «y monto» después es una lista de tres o más, que parte la lógica de siempre)
   if (dos && !/\sy\s+\d/i.test(`${dos[1]} ${dos[2]}`)) t = `${dos[1]}; ${/^\S+/.exec(dos[1])![0]} ${dos[2]}`;
+  // «le presté 20k a Faber y 30k a Laura»: un préstamo para cada uno, con el mismo verbo
+  const prestamos = new RegExp(String.raw`^(le\s+prest[\p{L}]+|prest[\p{L}]+|le\s+pas[\p{L}]+|le\s+di|le\s+debo|debo)\s+(${MONTO})\s+a\s+([\p{L}]+)\s+y\s+(${MONTO})\s+a\s+([\p{L}]+)$`, 'iu').exec(t.trim());
+  if (prestamos) t = prestamos[1] + ' ' + prestamos[2] + ' a ' + prestamos[3] + '; ' + prestamos[1] + ' ' + prestamos[4] + ' a ' + prestamos[5];
+  const meDebe = new RegExp(String.raw`^([\p{L}]+)\s+me\s+([\p{L}]+)\s+(${MONTO})\s+y\s+([\p{L}]+)(?:\s+me\s+[\p{L}]+)?\s+(${MONTO})$`, 'iu').exec(t.trim());
+  if (meDebe && /^(?:debe|deben|pag[oó]|abon[oó]|devolvi[oó]|presta|prest[oó]|transfiri[oó]|gir[oó])$/i.test(meDebe[2])) {
+    t = meDebe[1] + ' me ' + meDebe[2] + ' ' + meDebe[3] + '; ' + meDebe[4] + ' me ' + meDebe[2] + ' ' + meDebe[5];
+  }
+  // «; además Laura me debe 20k»: «además» no es parte del nombre
+  t = t.replace(/;\s*(?:ademas|además|tambien|también)\s+/gi, '; ');
   // «a Mateo, digo, a Marta»: manda el último nombre
   t = t.replace(/\b(a|para|con)\s+[\p{L}]+,?\s+digo,?\s+(?:a|para|con)\s+/giu, '$1 ');
   return aplicarCorreccion(t, ctx).replace(/[ \t]+/g, ' ').trim();

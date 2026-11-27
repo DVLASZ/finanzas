@@ -135,7 +135,7 @@ function palabraSuelta(t: string): Suelta | null {
   if (/^(?:borra|borralo|borrala|borrar)$/.test(s)) return 'borra';
   if (/^(?:no|nop|nel|cancela|cancelar|cancelalo|cancelala|olvidalo|mejor no|no gracias|descarta|descartar|descartalo|descartala)$/.test(s)) return 'cancela';
   // «no lo guardes», «espera, no lo guardes», «olvídalo, al final no compré nada», «mejor cancela eso»: se dicen con más palabras pero cancelan lo mismo
-  if (/^(?:no,? |espera,? |mejor |oye,? |ah,? |ahora si |ya |entonces )*(?:no (?:lo|la) (?:guardes|guarde|anotes|registres|apuntes)(?: .*)?|olvid(?:a|alo|ala|e)(?: eso| esto)?(?: al final no .+)?|(?:cancela|cancelalo|descarta)(?: ese| esa| eso| esto| el| la)?(?: gasto| movimiento| registro| pendiente| hipotetico)?|al final no (?:lo )?(?:compre|gaste|pague|hice).*|me equivoque antes de confirmar|todavia no (?:lo|la) he pagado|no (?:lo|la) (?:he )?pagado todavia)$/.test(s)) return 'cancela';
+  if (/^(?:no,? |espera,? |mejor |oye,? |ah,? |ahora si |ya |entonces )*(?:no (?:lo|la) (?:guardes|guarde|anotes|registres|apuntes)(?: .*)?|olvid(?:a|alo|ala|e)(?: eso| esto)?(?: al final no .+)?|(?:cancela|cancelalo|descarta)(?: ese| esa| eso| esto| el| la)?(?: gasto| movimiento| registro| pendiente| hipotetico| (?!todo|todos|todas|toda)[a-z]+)?|al final no (?:lo )?(?:compre|gaste|pague|hice).*|me equivoque antes de confirmar|todavia no (?:lo|la) he pagado|no (?:lo|la) (?:he )?pagado todavia)$/.test(s)) return 'cancela';
   if (/^(?:no |espera |mejor |ahora si |ya |entonces )*borra(?: ese| esa| eso| esto| el| la)?(?: gasto| movimiento| registro| pendiente)?(?: hipotetico)?$/.test(s)) return 'borra'; // solo actúa con una tarjeta pendiente
   if (/^(?:gracias|muchas gracias|mil gracias|grax|gracias parce|chevere|genial|super)$/.test(s)) return 'gracias';
   return null;
@@ -303,7 +303,7 @@ class Motor {
     if (suelta && (p || suelta !== 'borra')) return this.alPalabraSuelta(suelta, p);
 
     // 0a) Una pregunta sobre el historial («cuál fue mi último gasto») solo se contesta: no crea nada ni toca la tarjeta pendiente
-    const historial = banco ? null : responderHistorial(texto, this.datos, this.ctx.ahora);
+    const historial = banco ? null : responderHistorial(texto.replace(/^(?:(?:espera|oye|ah|ay|primero|a ver|dime)[,\s]+)+/i, ''), this.datos, this.ctx.ahora);
     if (historial) return [{ texto: historial }];
 
     // 0b) La conversación sigue: una aclaración de la tarjeta («mentiras, fue en nequi»), una orden sobre la cola
@@ -322,6 +322,9 @@ class Motor {
     if (p && !banco && p.propuesta.faltantes.length && !traeMonto) {
       const r = resolverFaltante(p.propuesta, texto, this.ctx);
       if ('error' in r) {
+        // «nequi» mientras la tarjeta pregunta la categoría: es un cambio de la tarjeta, no una categoría equivocada
+        const cambio = aplicarCambio(p.propuesta, texto, this.ctx);
+        if (cambio) return this.mostrar({ ...p, propuesta: cambio });
         const nuevo = interpretar(texto, this.ctx);
         if (nuevo.clase === 'error') return [{ texto: r.error, botones: [{ id: 'no', titulo: '❌ Cancelar' }] }];
         // si escribió otra cosa completa, se procesa como mensaje nuevo (abajo)
@@ -460,6 +463,16 @@ class Motor {
     }
     // escribir una de las opciones de la pregunta es responderla: eso lo hace resolverFaltante
     if (p.propuesta.faltantes[0]?.opciones?.some(o => limpiar(o) === limpiar(texto))) return null;
+    // «A Daniel» cuando el de arriba ya tiene todo y el que sigue es un préstamo sin nombre: es de ese
+    const aQuien = /^(?:a|para|con)\s+([A-ZÁÉÍÓÚÑ][\p{L}]+)$/iu.exec(texto.trim());
+    if (aQuien && p.siguientes?.length && !p.propuesta.persona && !p.propuesta.personas?.length) {
+      const k = p.siguientes.findIndex(fr => /^(?:le\s+)?prest[\p{L}]*\s+\d[\d.,]*\s?(?:k|mil)?$/iu.test(fr.trim()));
+      if (k >= 0) {
+        const siguientes = [...p.siguientes];
+        siguientes[k] = siguientes[k].trim() + ' a ' + aQuien[1];
+        return this.conNota('Listo, el préstamo es para ' + aQuien[1] + '.', { ...p, siguientes });
+      }
+    }
     // varios movimientos a la vez: «el primero sí, el segundo no», «bus en efectivo, comida en Nequi» (ver colas.ts)
     const selectivas = leerSelectivas(texto, [`${p.propuesta.concepto} ${p.propuesta.persona ?? ''} ${p.propuesta.mensajeOriginal}`, ...(p.siguientes ?? [])]);
     if (selectivas && !p.propuesta.faltantes.some(f => f.opciones?.some(o => limpiar(o) === limpiar(texto)))) {
@@ -629,11 +642,19 @@ ${r[0].texto}`;
       this.pend = { ...p, propuesta: cabeza, siguientes: frases, total: quedan.length };
       salida = await this.mostrar(this.pend);
     }
-    // si todo lo que queda se aprobó, se guarda
-    if (confirmar.size && quedan.every(i => confirmar.has(i))) {
-      const guardados = await this.confirmarTodos();
-      if (guardados[0] && aviso) guardados[0].texto = `${aviso}\n${guardados[0].texto}`;
-      return guardados;
+    // los que se aprobaron, de arriba hacia abajo, se guardan; se para en el primero que todavía tiene una pregunta abierta
+    let prefijo = 0;
+    while (prefijo < quedan.length && confirmar.has(quedan[prefijo])) prefijo++;
+    if (prefijo > 0) {
+      const guardados: Salida[] = [];
+      for (let k = 0; k < prefijo && this.pend && !this.pend.propuesta.faltantes.length; k++) {
+        const r = await this.confirmar();
+        guardados.push(...r);
+      }
+      if (guardados.length) {
+        if (aviso) guardados[0].texto = `${aviso}\n${guardados[0].texto}`;
+        return guardados;
+      }
     }
     if (salida[0] && aviso) salida[0].texto = `${aviso}\n${salida[0].texto}`;
     return salida;

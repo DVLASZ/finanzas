@@ -32,10 +32,16 @@ const palabraDe = (t: string): string => t.replace(/^(?:(?:el|la|lo|los|las|del|
 export function leerSelectivas(texto: string, textos: string[]): ParteDeCola[] | null {
   if (texto.length > 160 || textos.length > 8) return null; // una orden de cola es corta
   const n = textos.length;
-  const trozos = texto.split(/[,;]|\s+y\s+(?=(?:el|la)\s+(?:primero|primera|segundo|segunda|tercero|ultimo|ultima)\b|\S+\s+(?:si|sí|no|en|por|con)\b)/i).map(limpiar).filter(Boolean);
+  const trozos = texto.split(/[,;]|\.\s+|\s+y\s+(?=(?:el|la)\s+(?:primero|primera|segundo|segunda|tercero|ultimo|ultima)\b|\S+\s+(?:si|sí|no|en|por|con)\b)/i).map(limpiar).filter(Boolean);
   if (!trozos.length || trozos.length > 6) return null;
   const partes: ParteDeCola[] = [];
   let m: RegExpExecArray | null;
+  const indice0 = (palabra: string): number | null => { const hay = buscarEnLista(palabra, textos); return hay.length === 1 ? hay[0] : null; };
+  const doble = /^(.+?)\s+y\s+(.+?)\s+(si|no)$/.exec(limpiar(texto));
+  if (doble) {
+    const a = indice0(palabraDe(doble[1])), b = indice0(palabraDe(doble[2]));
+    if (a !== null && b !== null && a !== b) return [{ i: a, decision: doble[3] as 'si' | 'no' }, { i: b, decision: doble[3] as 'si' | 'no' }];
+  }
   const indice = (palabra: string): number | null => {
     const hay = buscarEnLista(palabra, textos);
     return hay.length === 1 ? hay[0] : null;
@@ -43,7 +49,44 @@ export function leerSelectivas(texto: string, textos: string[]): ParteDeCola[] |
   const ord = (o: string): number => { const v = ORDINAL[o]; return v === -1 ? n - 1 : v; };
   let ultimo = -1; // el último movimiento nombrado, para «sí, pero los 20 eran 25» y «no, fue en efectivo»
   for (let t of trozos) {
-    t = t.replace(/^(?:y|pero|bueno|entonces|ah|mejor)\s+/, '');
+    t = t.replace(/^(?:y|pero|bueno|entonces|ah|mejor)\s+/, '').replace(/\s+(?:dejalo|dejalos|dejala|nomas|ese|esa)$/, '').replace(/\s+(?:no )?me (?:ha )?llego$|\s+no me ha llegado$/, ' no');
+    if ((m = /^(?:los dos|las dos|ambos|ambas|todos|todas)\s+(si|no)$/.exec(t))) {
+      for (let i = 0; i < n; i++) partes.push({ i, decision: m[1] as 'si' | 'no' });
+      continue;
+    }
+    // «la otra no»: el movimiento que todavía no se nombró (con dos, el otro)
+    if ((m = /^(?:la otra|el otro|la otra|lo otro)\s+(si|no)$/.exec(t))) {
+      const nombrados = new Set(partes.map(x => x.i));
+      const otro = Array.from({ length: n }, (_, k) => k).filter(k => !nombrados.has(k));
+      if (otro.length !== 1) return null;
+      partes.push({ i: otro[0], decision: m[1] as 'si' | 'no' });
+      continue;
+    }
+    // «el almuerzo déjalo como está»: no cambia nada
+    if (/\b(?:dejalo|dejala) (?:como esta|igual)\b|\bsin cambios\b/.test(t)) continue;
+    // «el pan 12000»: ese movimiento pasa a valer eso
+    if ((m = /^(?:el |la |los |las )?([a-z]+) (\d[\d.,]*\s?(?:k|mil)?)$/.exec(t)) && !/^(?:si|no)$/.test(m[1])) {
+      const i = indice(palabraDe(m[1]));
+      if (i !== null) { partes.push({ i, cambio: 'fue ' + m[2] }); ultimo = i; continue; }
+    }
+    // «ese no», «esa sí»: el movimiento del que se venía hablando, o el de arriba
+    if ((m = /^(?:ese|esa|este|esta|eso)\s+(si|no)$/.exec(t))) {
+      partes.push({ i: ultimo >= 0 ? ultimo : 0, decision: m[1] as 'si' | 'no' });
+      continue;
+    }
+    // «cancela el almuerzo»: quitar uno por su nombre
+    if ((m = /^(?:cancela|cancelalo|quita|quitale|borra|descarta|olvida)\s+(?:el |la |lo |los |las )?(.+)$/.exec(t))) {
+      const i = indice(palabraDe(m[1]));
+      if (i === null) return null;
+      partes.push({ i, decision: 'no' });
+      ultimo = i;
+      continue;
+    }
+    // «universidad para la cartulina»: la categoría de ese movimiento
+    if ((m = /^([a-z]+(?: [a-z]+)?) para (?:el |la |los |las )?(.+)$/.exec(t)) && !/^(?:si|no|pero|y)\b/.test(m[1])) {
+      const i = indice(palabraDe(m[2]));
+      if (i !== null) { partes.push({ i, cambio: 'ponlo en ' + m[1] }); ultimo = i; continue; }
+    }
     // «los dos primeros sí»
     if ((m = /^(?:los|las) (dos|tres|2|3) (primeros|primeras|ultimos|ultimas)\s+(.+)$/.exec(t))) {
       const k = m[1] === 'dos' || m[1] === '2' ? 2 : 3;
@@ -96,6 +139,6 @@ export function leerSelectivas(texto: string, textos: string[]): ParteDeCola[] |
     return null;
   }
   // una sola parte sin decisión ni cambio claro no es una orden sobre varios: la entienden las órdenes de siempre
-  if (partes.length === 1 && !partes[0].decision) return null;
+  if (partes.length === 1 && !partes[0].decision && n < 2) return null;
   return partes.length ? partes : null;
 }
