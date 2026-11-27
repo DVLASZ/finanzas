@@ -11,7 +11,7 @@ const sin = (s: string): string => s.normalize('NFD').replace(/\p{M}/gu, '').toL
 const corto = (t: string, n = 110): string => t.replace(/\n/g, ' | ').slice(0, n);
 
 /** Lo que se ve de una cosa (tarjeta o movimiento) para compararla con un Item. */
-interface Vista { tipo: string; monto: number; cuentas: string[]; cat: string; personas: string[]; concepto: string; etiqueta: string | null; fecha: string; vence: string; reparto: { nombre: string; monto: number }[] }
+interface Vista { tipo: string; monto: number; cuentas: string[]; cat: string; personas: string[]; concepto: string; etiqueta: string | null; fecha: string; vence: string; reparto: { nombre: string; monto: number }[]; pregunta?: string }
 
 export const ahoraDe = (caso: Caso): Date => (caso.ahora ? new Date(caso.ahora) : AHORA);
 
@@ -26,7 +26,8 @@ async function vistaDePropuesta(bot: Bot, p: Propuesta, ahora: Date): Promise<Vi
   };
 }
 
-async function vistasPendientes(bot: Bot, ahora: Date): Promise<Vista[]> {
+/** `conPreguntas`: una frase de la cola que todavía pide un dato (p. ej. «¿Para qué es la crema?») cuenta como una vista con su pregunta. */
+async function vistasPendientes(bot: Bot, ahora: Date, conPreguntas = false): Promise<Vista[]> {
   const p = await bot.repo.leerPendiente();
   if (!p) return [];
   const d = await bot.repo.cargar();
@@ -35,6 +36,7 @@ async function vistasPendientes(bot: Bot, ahora: Date): Promise<Vista[]> {
   for (const frase of p.siguientes ?? []) {
     const r = interpretar(frase, ctx);
     if (r.clase === 'movimiento') vistas.push(await vistaDePropuesta(bot, r.propuesta, ahora));
+    else if (conPreguntas && r.clase === 'pregunta') vistas.push({ tipo: 'pregunta', monto: 0, cuentas: [], cat: '', personas: [], concepto: '', etiqueta: null, fecha: '', vence: '', reparto: [], pregunta: r.mensaje });
   }
   return vistas;
 }
@@ -60,6 +62,7 @@ async function vistasGuardadas(bot: Bot): Promise<Vista[]> {
 }
 
 function cumpleItem(i: Item, v: Vista): string | null {
+  if (i.pregunta && !sin(v.pregunta ?? '').includes(sin(i.pregunta))) return `la cola no trae la pregunta «${i.pregunta}»`;
   if (i.tipo && v.tipo !== i.tipo) return `tipo ${v.tipo} y se esperaba ${i.tipo}`;
   if (i.tipoNo && v.tipo === i.tipoNo) return `no debía ser ${i.tipoNo}`;
   if (i.monto !== undefined && v.monto !== i.monto) return `monto ${v.monto} y se esperaba ${i.monto}`;
@@ -102,7 +105,7 @@ export async function conversar(bot: Bot, caso: Caso, ahora: Date): Promise<stri
 
 export async function evaluarEstado(bot: Bot, e: Extract<Esp, { t: 'estado' }>, ultimo: string, ahora: Date): Promise<string | null> {
   if (e.pend) {
-    const r = cumpleLista('pendiente', e.pend, await vistasPendientes(bot, ahora));
+    const r = cumpleLista('pendiente', e.pend, await vistasPendientes(bot, ahora, e.pend.some(i => i.pregunta)));
     if (r) return `${r}. Última respuesta: «${corto(ultimo)}»`;
   }
   if (e.guard) {
