@@ -42,7 +42,7 @@ import { responderHistorial } from './consultasHistorial.ts';
 import { ayudaDeTema, buscarAyuda, consultaDisfrazada, esPreguntaDeAyuda, temasParecidos, type RespuestaDeAyuda } from './ayudaGuiada.ts';
 import { dividirTodo, MAX_MOVIMIENTOS_POR_MENSAJE } from './lineas.ts';
 import { narrar } from './narrativa.ts';
-import { leerNotificacionBancaria } from './banco.ts';
+import { leerNotificacionBancaria, referenciasDeAlerta } from './banco.ts';
 import { incertidumbre } from './incertidumbre.ts';
 import { cruzado } from './cruzados.ts';
 import { hablada } from './habladas.ts';
@@ -154,6 +154,8 @@ const ultimosBorrados = new WeakMap<Repo, string[]>();
 /** Los movimientos entre los que se preguntó «¿Cuál borro?»: la siguiente frase (el de la comida) elige uno. */
 const borradoPendiente = new WeakMap<Repo, string[]>();
 const preguntasAbiertas = new WeakMap<Repo, { mensaje: string; opciones: Opcion[] }>();
+/** Referencias de alertas del banco ya anotadas (por app): pegar la misma alerta otra vez no duplica. */
+const refsDeBanco = new WeakMap<Repo, Set<string>>();
 
 /** La pregunta con un botón por opción (y Cancelar); queda abierta para que también se pueda responder escribiendo. */
 function salidaDePregunta(repo: Repo, mensaje: string, opciones: Opcion[]): Salida {
@@ -302,6 +304,14 @@ class Motor {
     // Una notificación del banco pegada se vuelve una frase por operación (ver banco.ts); con una sola, esa frase es el mensaje.
     // Es un movimiento nuevo: no se toma como respuesta ni corrección de la tarjeta pendiente.
     const banco = leerNotificacionBancaria(texto, this.ctx);
+    // lo rechazado, lo pendiente y lo que no es un movimiento se explica y no se anota
+    if (banco?.respuesta) return [{ texto: banco.respuesta }];
+    // la misma referencia pegada otra vez (en este mensaje o en uno anterior) no se anota dos veces
+    const refs = banco ? referenciasDeAlerta(texto) : [];
+    if (refs.length) {
+      if (refs.every(x => (refsDeBanco.get(this.repo)?.has(x) ?? false))) return [{ texto: 'Esa operación ya la anoté (tiene la misma referencia), así que no la repetí.' }];
+      { const vistas = refsDeBanco.get(this.repo) ?? new Set<string>(); for (const x of refs) vistas.add(x); refsDeBanco.set(this.repo, vistas); }
+    }
     if (banco?.frases.length === 1) texto = banco.frases[0];
     if (!banco) texto = limpiarDictado(sinMuletillaDeRegistro(texto), this.ctx); // el dictado por voz, ya como se escribe (ver dictado.ts)
     // traslados entre cuentas propias, retiros con comisión y tarjeta de crédito, dichos como se hablan (ver traslados.ts)

@@ -6,6 +6,9 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-27
 
+- Alertas del banco con renglones rotulados (Bancolombia, Nequi, Daviplata, Banco de Bogotá): se ignoran saldos, referencias y dígitos de tarjeta; lo rechazado o pendiente no se anota; la misma referencia no se anota dos veces.
+- Dictado por voz: «cinco mil coma cincuenta» pregunta, «diez mil en la cena y cinco en el parqueadero» son dos, «a Karla, perdón, a Diana» se queda con Diana.
+
 
 - Topes que se pausan y se reanudan (`pausar tope comida`, botón «Pausar tope»): el monto queda guardado y mientras está en pausa no avisa ni cuenta.
 - Categorías con movimientos: «Pasar movimientos» a otra categoría y «Archivar categoría» con el conteo de lo que tiene.
