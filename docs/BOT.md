@@ -681,3 +681,9 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - «Pagué el uber de 14k y Esteban me pasa la mitad» anota el gasto compartido con Esteban. Si dices «cada uno me da 20k» sin nombres, te pregunta quiénes son.
 - Perdonar una deuda, cuadrar cuentas o pasarte de lo que debías no se anota como gasto: el bot te explica y te deja anotar solo lo que sí se pasó.
 - «Me faltan 3k, se los pido a Pipe» no anota nada hasta que te los presten.
+
+## Corregir y borrar con palabras
+
+- Con una tarjeta pendiente puedes decir «perdón, eran 18k, no 15k», «ponle 9.500 mejor», «eso fue ayer, no hoy» o «no fue en efectivo, fue por Nequi» y cambia la misma tarjeta.
+- «No lo guardes», «olvídalo» o «mejor cancela eso» la cancelan.
+- Ya guardado: «borra ese último movimiento», «elimina esa deuda», «borra el almuerzo» o «se anotó dos veces, borra una» lo anulan (queda marcado como anulado, no se borra). Si dos encajan igual, te pregunta cuál.

@@ -62,6 +62,8 @@ async function vistasGuardadas(bot: Bot): Promise<Vista[]> {
 }
 
 function cumpleItem(i: Item, v: Vista): string | null {
+  if (i.de && !sin(v.cuentas[0] ?? '').includes(sin(i.de))) return `sale de «${v.cuentas[0]}» y se esperaba ${i.de}`;
+  if (i.a && !sin(v.cuentas[1] ?? '').includes(sin(i.a))) return `entra a «${v.cuentas[1]}» y se esperaba ${i.a}`;
   if (i.pregunta && !sin(v.pregunta ?? '').includes(sin(i.pregunta))) return `la cola no trae la pregunta «${i.pregunta}»`;
   if (i.tipo && v.tipo !== i.tipo) return `tipo ${v.tipo} y se esperaba ${i.tipo}`;
   if (i.tipoNo && v.tipo === i.tipoNo) return `no debía ser ${i.tipoNo}`;

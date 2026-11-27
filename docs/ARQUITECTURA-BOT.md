@@ -691,6 +691,18 @@ Una sola capa nueva, `habladas.ts`, que corre al principio de `interpretar` (ant
 
 Decisiones de la ronda: el pasaje a la universidad va a «Viaje semanal» en la plantilla personal (RED-446 acepta las dos categorías), y en RED-374 la cola ahora exige la pregunta por la crema. Los nombres de la tabla original que son de personas reales se cambiaron por Jorge, Esteban y Ale para que `npm run privacidad` pase.
 
+## 8f. Ronda 5 de la batería (RED-501 a RED-670): corregir, anular y editar
+
+Esta ronda mide lo que pasa después de que algo ya se dijo: corregir la tarjeta, borrar lo guardado, contestar con preguntas de por medio, editar el historial y confirmar a pedazos. **Pasan 69 de los 170 casos nuevos; 101 quedan pendientes** y están marcados en `docs/BATERIA-RED-TEAM.md` y listados en `packages/core/test/red-team-pendientes.ts` (la prueba los salta, `RED_INFORME=1` los sigue midiendo). No se disimulan: cuando uno pase se quita de esa lista.
+
+Lo que entra:
+
+1. **Correcciones largas de la tarjeta** (`afinar` en `aclaraciones.ts`): «perdón, eran 18k, no 15k», «ponle 9.500 mejor», «eso fue ayer, no hoy» y «no fue en efectivo, fue por Nequi» se vuelven la frase corta que `aclarar` ya entendía. Lo que va después de «no» se descarta y, si hay dos «fue», manda el último.
+2. **Cancelar con más palabras** (`palabraSuelta` en `bot.ts`): «no lo guardes», «olvídalo, al final no compré nada», «mejor cancela eso», «todavía no lo he pagado» cancelan la tarjeta pendiente igual que «no».
+3. **Anular lo guardado con palabras** (`anulaciones.ts`): «borra ese último movimiento», «deshaz lo que acabas de anotar», «elimina esa deuda», «borra el almuerzo», «se anotó dos veces, borra una», «mentiras, al final no los compré» eligen el movimiento por lo último, el tipo, el concepto, el monto o el día. Si encajan varios, pregunta cuál con botones. Los comandos de siempre («deshacer», «deshacer 3», «anula el último», «borra») siguen por su camino.
+
+Lo que sigue pendiente, por grupos: correcciones que cambian el tipo de lo que se anotó o a otra persona (regalo a préstamo, «era Laura, no Karla»), correcciones con varios movimientos en cola, responder una pregunta atrasada con otro registro en medio («el primero va en Comida», «ambos en efectivo»), editar un movimiento ya guardado por fecha y monto («cambia el almuerzo de ayer de 15k a 17k») y las confirmaciones parciales de un lote («el primero sí, el segundo no»). Ahí hay trabajo de verdad por hacer: hoy un movimiento guardado solo se edita con «editar» y las respuestas siguen la cola en orden, sin entender «el primero» o «el segundo» como respuesta a una pregunta.
+
 ## 9. Cómo probarlo
 
 El núcleo corre en Node sin red y sin navegador. `MemoriaRepo` guarda todo en memoria y `tests/ayudas.ts` trae un bot listo con el reloj fijo:
