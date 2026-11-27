@@ -316,3 +316,17 @@ export async function aplicarEdicion(repo: Repo, ahora: Date, id: string, cambio
   await repo.editarMovimiento(r.movimiento, r.cuentasNuevas);
   return r;
 }
+
+/**
+ * Pasa todos los movimientos de una categoría a otra (uno por uno, con las mismas reglas que editar: un mes cerrado o un
+ * movimiento que no se puede cambiar se salta). Sirve para vaciar una categoría antes de archivarla.
+ */
+export async function pasarMovimientosDeCategoria(repo: Repo, ahora: Date, desdeId: string, haciaId: string): Promise<{ hechos: number; fallaron: number }> {
+  const datos = await repo.cargar();
+  const ids = datos.movimientos.filter(m => m.estado === 'ok' && m.asientos.some(a => a.cuentaId === desdeId)).map(m => m.id);
+  let hechos = 0, fallaron = 0;
+  for (const id of ids) {
+    try { await aplicarEdicion(repo, ahora, id, { categoriaId: haciaId }); hechos++; } catch { fallaron++; }
+  }
+  return { hechos, fallaron };
+}
