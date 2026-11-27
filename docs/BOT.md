@@ -674,6 +674,13 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - Metas: «crea una meta de 1.500.000 para cambiar de celular», «metí 100k al ahorro del viaje», «¿cuánto me falta para la meta de la bici?», «cancela la meta de la consola», «le saqué 20k al ahorro del viaje». Las metas no se comparten y los aportes no se hacen solos.
 - «El bolsillo de ahorros me generó 8k de rendimientos» es un ingreso a esa cuenta.
 
+## La casa y la asociación con tus palabras
+
+- Entre familia: «mamá pagó el recibo de 120k y yo le debo mi mitad», «el arriendo vale 900k y lo dividimos entre mamá, Mateo y yo», «le pasé a mamá 150k para que pagara el agua» (queda como anticipo), «mamá me devolvió 40k».
+- Si dices que algo se paga «todos los meses» sin el día, te pregunto el día del mes: «cada mes el 5 internet 180000».
+- No llevo un fondo común: te digo cómo hacerlo con un préstamo a la persona o con una meta.
+- En la asociación cada obligación es una cuenta con la persona: «Pipe me debe 50000 por cuota», «a Pipe le pusieron multa de 15k», «Jorge me pagó 60000», «le presté 500000 a Alejandro». «¿Quién debe la cuota?» muestra las deudas. No llevo la lista de asociados ni el estado de cada cuota, y no compenso deudas sin que me lo digas.
+
 ## Lo que el bot no hace
 
 - No borra nada, solo anula.
