@@ -61,15 +61,18 @@ const VERBO = /^(?:fue|fueron|era|eran|es|son|salio|salieron|costo|costaron|vali
  * Las correcciones dichas con más palabras se vuelven la frase corta que ya entiende `aclarar`: «ponle 9.500 mejor» es «fue 9.500»,
  * «eran 18k no 15k» es «eran 18k», «no fue en efectivo fue por nequi» es «fue por nequi».
  */
-function afinar(r: string): string {
+const DIGITO: Record<string, string> = { dos: '2', tres: '3', cuatro: '4', cinco: '5', seis: '6', siete: '7', ocho: '8', nueve: '9' };
+
+function afinar(r: string, negado = false): string {
   let s = r.replace(/\s+(?:mejor|por favor|nomas|no mas)$/, '');
+  s = s.replace(/^mi parte (?:era|fue|es|son)\s+/, 'fue ');
   s = s.replace(/^(?:ponle|ponlo|pon|ponla|dejalo en|dejala en|dejalo|cambialo a|cambiala a|cambiale|cambialo|cambiala)\s+/, 'fue ');
   // «fue en efectivo fue por nequi»: manda lo último que se dijo
   const cl = s.split(/\s+(?=(?:fue|fueron|era|eran|es)\s)/);
-  if (cl.length > 1 && /^(?:fue|fueron|era|eran|es)\b/.test(cl[0])) s = cl[cl.length - 1];
+  if (negado && cl.length > 1 && /^(?:fue|fueron|era|eran|es)\b/.test(cl[0])) s = cl[cl.length - 1];
   // «eran 18k no 15k», «fue ayer no hoy»: lo que va después de «no» es lo que se descarta
   s = s.replace(/^((?:fue|fueron|era|eran|es|son)?\s*\S.*?)\s+no\s+(?:era\s+|fue\s+|eran\s+)?(?:(?:un|una|el|la)\s+)?(?:\d[\d.,]*\s?(?:k|mil|lucas?)?|hoy|ayer|antier|[a-z]+)$/, '$1');
-  s = s.replace(/\s+(?:la|el)\s+que\s+.*$/, ''); // «era Laura la que quedó debiéndome» es «era Laura»
+  s = s.replace(/\s+(?:la|el)\s+que\s+(?:quedo|esta|estaba|me)\b.*$/, ''); // «era Laura la que quedó debiéndome» es «era Laura»
   return s;
 }
 
@@ -119,10 +122,45 @@ export function aclarar(p: Propuesta, texto: string, ctx: Contexto): Aclarado | 
 function aclararUna(p: Propuesta, texto: string, ctx: Contexto): Aclarado | null {
   const base = sinEntrada(limpiar(texto));
   const { marcado, referente } = base;
-  const r = afinar(base.r);
+  const r = afinar(base.r, /^(?:ah |ay |uy )?(?:no|mentiras)\b/.test(limpiar(texto)));
   if (!r) return null;
   const monto = formatear(p.monto, p.moneda);
   const listo = (propuesta: Propuesta, nota: string): Aclarado => ({ propuesta, nota, referente });
+
+  // ---- «al revés»: una transferencia que iba al otro lado
+  if (/^al reves\b/.test(r) && p.tipo === 'transferencia' && p.cuentaId && p.cuentaDestinoId) {
+    return listo({ ...p, cuentaId: p.cuentaDestinoId, cuentaDestinoId: p.cuentaId }, 'Listo, la pasé al revés: de ' + nombreCuenta(p.cuentaDestinoId, ctx) + ' a ' + nombreCuenta(p.cuentaId, ctx) + '.');
+  }
+
+  // ---- «éramos cuatro, no tres»: el reparto se vuelve a calcular con los que eran
+  const eran = /^(?:eramos|somos|eran|fuimos) (dos|tres|cuatro|cinco|seis|siete|ocho|nueve|\d)$/.exec(r);
+  const reparto = p.avisos.findIndex(a => /\$[\d.]+ entre \d+/.test(a));
+  if (eran && reparto >= 0) {
+    // el aviso de la tarjeta dice el total y entre cuántos se dividió: «$60.000 entre 3: anoté solo tu parte»
+    const m = /\$([\d.]+) entre \d+/.exec(p.avisos[reparto])!;
+    const total = Number(m[1].replace(/\./g, ''));
+    const n = Number(DIGITO[eran[1]] ?? eran[1]);
+    const mio = Math.round(total / n);
+    const avisos = [...p.avisos];
+    avisos[reparto] = '$' + m[1] + ' entre ' + n + ': anoté solo tu parte ($' + String(mio).replace(/\B(?=(\d{3})+$)/g, '.') + '). Si quieres cobrarle a alguien, dime quiénes eran.';
+    return listo({ ...p, monto: mio, avisos }, 'Listo, con ' + eran[1] + ' tu parte es ' + formatear(mio, p.moneda) + '.');
+  }
+
+  // ---- el ingreso que en realidad fue un préstamo: «no fue un regalo, fue un préstamo que me hizo»
+  if (p.tipo === 'ingreso' && /^(?:fue |era |es )?(?:un )?prestamo(?: que me (?:hizo|dio))?$/.test(r)) {
+    const quien = p.persona ?? /\bde ([A-ZÁÉÍÓÚÑ][\p{L}]+)/u.exec(p.mensajeOriginal)?.[1];
+    if (!quien) return { aviso: '¿Quién te hizo el préstamo? Escríbelo así: «Ana me prestó 50000».', referente };
+    const nueva = rehacer(p, quien + ' me prestó ' + pesos(p), ctx);
+    if (nueva && nueva.tipo === 'deuda') return listo(nueva, 'Listo, quedó como préstamo de ' + (nueva.persona ?? quien) + ': le debes ' + monto + '.');
+  }
+
+  // ---- «David fue el que pagó mi comida»: lo pagó otro, así que le debes
+  const pago = /^([a-z]{3,}) (?:fue|es|era) (?:el|la) que (?:pago|invito|cubrio)\b/.exec(r);
+  if (pago && (p.tipo === 'gasto' || p.tipo === 'compartido') && !ctx.cuentas.some(c => c.tipo === 'dinero' && c.clave === pago[1])) {
+    const quien = originales(texto, pago[1]);
+    const nueva = rehacer(p, 'le debo ' + pesos(p) + ' a ' + quien, ctx);
+    if (nueva && nueva.tipo === 'deuda') return listo(nueva, 'Listo, ' + quien + ' pagó y le debes ' + monto + '.');
+  }
 
   // ---- qué fue: regalo, préstamo o deuda
   if (/^(?:(?:fue|era|es) (?:un |una )?regalo|se (?:lo|la|los|las) regale|no me (?:lo|la|los|las) (?:va a )?devuelve)$/.test(r)
@@ -258,8 +296,14 @@ function aclararUna(p: Propuesta, texto: string, ctx: Contexto): Aclarado | null
   // ---- qué se compró: «no era comida, era una recarga», «era la cuota del celular»
   const doble = /^(?:era|es|fue) (?:un |una |el |la |de )?(.+?) (?:era|es|fue|sino) (?:un |una |el |la |de )?(.+)$/.exec(r);
   const simple = /^(?:era|es|fue) (?:un |una |el |la |los |las )(.+)$/.exec(r);
+  const solo = /^([a-z]{3,})$/.exec(sinVerbo);
+  if (solo && conVerbo && personasDe(p).length === 1 && !ctx.cuentas.some(c => c.tipo === 'dinero' && c.clave === solo[1]) && !/^(?:ayer|hoy|antier|anteayer|anoche|manana|regalo|prestamo|deuda|gasto|ingreso|efectivo|justo)$/.test(solo[1])) {
+    const viejo = personasDe(p)[0];
+    const nuevoNombre = originales(texto, solo[1]);
+    return listo(cambiarPersona(p, viejo, nuevoNombre), 'Listo, cambié a ' + viejo + ' por ' + nuevoNombre + '.');
+  }
   const nuevo = doble?.[2] ?? simple?.[1];
-  if (nuevo && !/\d/.test(nuevo)) { const c = cambiarConcepto(p, nuevo, ctx); return listo(c, notaDeConcepto(c, ctx)); }
+  if (nuevo && !/\d/.test(nuevo) && !/^(?:lunes|martes|miercoles|jueves|viernes|sabado|domingo|ayer|hoy|antier|anteayer|anoche)\b/.test(nuevo)) { const c = cambiarConcepto(p, nuevo, ctx); return listo(c, notaDeConcepto(c, ctx)); }
   return null;
 }
 
@@ -323,6 +367,7 @@ function referente(t: string): Referente | null {
 export function leerOrdenDeCola(texto: string): Orden | null {
   let t = limpiar(texto);
   for (let i = 0; i < 3; i++) t = t.replace(/^(?:mejor|entonces|bueno|y|ok|ah|no)\s+/, '');
+  t = t.replace(/^(?:corrige|corrijo|cambia|arregla|ajusta)\s+/, '');
   if (/^(?:cancela|cancelar|cancelalo|cancelalos|descarta|descartar|descartalos|borra|borrar|borralos|bota|olvida|olvidalo|elimina)(?: (?:todo|todos|todas|todo eso|toda la lista|la lista))$|^(?:no guardes nada|olvida todo|olvidalo todo|nada de eso)$/.test(t)) {
     return { que: 'cancelarTodo' };
   }
@@ -335,6 +380,8 @@ export function leerOrdenDeCola(texto: string): Orden | null {
   if (ed) return { que: 'editar', cual: { pos: ORDINALES[ed[1]] }, resto: ed[2] };
   const ep = /^(?:el|la|lo) (?:del|de la|de los|de las|de) ([a-z]+(?: [a-z]+)?) ((?:fue|era|eran|fueron|es|son|en|con|por|costo|vale|valio)\b.*)$/.exec(t);
   if (ep) return { que: 'editar', cual: { palabra: ep[1] }, resto: ep[2] };
+  const sust = /^(?:ese|esa|el|la) ([a-z]+) ((?:fue|era|eran|fueron|es|son|en|con|por|costo|vale|valio)\b.*)$/.exec(t);
+  if (sust) return { que: 'editar', cual: { palabra: sust[1] }, resto: sust[2] };
   const todos = new RegExp(`^(?:(?:los|las) ${NUMEROS}(?: (?:movimientos|gastos))?|todos|todas|todo|ambos|ambas)(?: (?:los|las) (?:movimientos|gastos))? (.+)$`).exec(t);
   if (todos) return { que: 'todos', resto: todos[1] };
   return null;

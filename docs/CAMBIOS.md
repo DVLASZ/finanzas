@@ -4,6 +4,13 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-12-02
+
+- Con una tarjeta pendiente puedes decir `no fue un regalo, fue un préstamo que me hizo`, `David fue el que pagó mi comida`, `era Laura`, `éramos cuatro, no tres`, `mi parte era 25` o `al revés` y cambia la misma tarjeta.
+- Con dos movimientos pendientes, `ese taxi fue por Nequi` o `corrige el almuerzo: fueron 22k` tocan solo ese.
+- `aunque mejor déjalo` restaura lo que acabas de borrar con palabras.
+- `David` ya no se confunde con la cuenta Daviplata, y `me pagó Jorge los 50k` es un ingreso.
+
 ## 2026-12-01
 
 - Con varios movimientos pendientes puedes decir `el primero sí, el segundo no`, `sí al café, la comida no`, `Faber sí, Jorge no` o `bus en efectivo, comida en Nequi`.
