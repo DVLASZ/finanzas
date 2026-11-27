@@ -160,7 +160,7 @@ function sinPlata(texto: string, t: string, ps: Palabra[], cants: Cantidad[]): H
   const deudas = /\b(?:debia|debias|debe|debo|debes|debiamos|deuda|prestaste|preste)\b/.test(t);
   const saldar = quien ? [{ titulo: `Saldar con ${quien}`, frase: `saldar la deuda con ${normalizar(quien)}` }] : [];
   const cuentaDe = (s: string): string => s.match(/\b(nequi|daviplata|efectivo)\b/)?.[1] ?? '';
-  if (deudas && /\b(?:perdon\w*|dejaramos asi|dejemos asi|dejamos asi)\b/.test(t)) {
+  if (deudas && /\b(?:perdon\w*|dejaramos asi|dejemos asi|dejamos asi)\b/.test(t) && !/^\s*perd[oó]n[,\s]+(?:la|el|lo|fue|era|eran|es)\b/i.test(texto)) {
     return { pregunta: { mensaje: `Perdonar o dejar así una deuda no mueve plata, así que no lo anoto como gasto ni como ingreso.${quien ? ` Si quedó saldada, escribe «saldar la deuda con ${normalizar(quien)}».` : ' ¿Con quién era?'}`, opciones: saldar } };
   }
   if (deudas && /\b(?:cuadr\w+|a paz|en cero|en ceros|a mano|con eso quedo (?:listo|saldad\w+)|quedamos listos)\b/.test(t)) {
@@ -244,6 +244,9 @@ export function hablada(texto: string): Hablada | null {
     const resto = (mePago[3] ?? '').replace(/^por transferencia(?: bancaria)?$/, '').trim();
     return { texto: quien + ' me pagó ' + mePago[2] + (resto ? ' ' + resto : '') };
   }
+  // «registra una deuda de 25k con Karla»: le debes 25.000 a Karla
+  const deudaCon = /^(?:registra|anota|apunta|guarda)\s+(?:una )?deuda de (\d[\d.,]*(?:\s?(?:k|mil|lucas?|barras?))?) con ([a-z]{3,})(?: (.*))?$/.exec(t);
+  if (deudaCon) return { texto: 'le debo ' + deudaCon[1] + ' a ' + (ps.find(x => x.n === deudaCon[2])?.orig ?? deudaCon[2]) + (deudaCon[3] ? ' ' + deudaCon[3] : '') };
   const intento = intencion(t, ps, texto);
   if (intento) return intento;
   const cuadre = sinPlata(texto, t, ps, cants); if (cuadre) return cuadre;

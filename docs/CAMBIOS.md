@@ -4,6 +4,13 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-12-04
+
+- `Laura me debe 15k y Sofía me debe 20k` y `debo 10k a Faber y 15k a Jorge` se parten en un movimiento por persona.
+- `A Daniel` completa el préstamo de la cola que no tenía nombre.
+- Varias órdenes sobre la cola (`Laura sí, Sofía sí`, `Comida y pan sí`) guardan de arriba hacia abajo hasta la primera tarjeta con una pregunta abierta.
+- La batería de seguridad y de conversación llega a 670 casos y todos pasan; no queda ninguno pendiente.
+
 ## 2026-12-03
 
 - Corregir lo ya guardado con palabras: `cambia el almuerzo de ayer de 15k a 17k`, `el mercado del viernes pasado fue por Nequi`, `corrige la deuda con Karla, ya no son 20k sino 15k` (la deuda cambia, no se anota ningún abono).
