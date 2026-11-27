@@ -24,7 +24,7 @@ export type Esp =
 /** Lo que se mira de una tarjeta pendiente o de un movimiento guardado. Todo es opcional. */
 export interface Item {
   tipo?: string; monto?: number; cuenta?: string; cat?: string; catNo?: string; catIn?: string[]; persona?: string; sinPersona?: string;
-  concepto?: string; etiqueta?: string | null; fecha?: string; vence?: string; tipoNo?: string; personas?: { nombre: string; monto: number }[];
+  concepto?: string; etiqueta?: string | null; fecha?: string; vence?: string; pregunta?: string; tipoNo?: string; personas?: { nombre: string; monto: number }[];
 }
 
 export interface Caso {
@@ -471,7 +471,7 @@ export const CASOS: Caso[] = [
   c(371, 'narrativas', 'el recibo de gas llegó por 75 mil pero hoy solo alcancé a pagar 40 y el resto lo pago después', o(PEND(G1(40000)), PREG), { nota: 'Solo se anota lo pagado hoy.' }),
   c(372, 'narrativas', 'mi tía me mandó 100 mil por mi cumpleaños y compré un regalo de 60 mil para mi novia', PEND({ tipo: 'ingreso', monto: 100000 }, G1(60000))),
   c(373, 'narrativas', 'pensaba comprar una chaqueta de 200 mil pero al final no compré nada solo pagué el bus de 3200', PEND(G1(3200))),
-  c(374, 'narrativas', 'compré jabón por 7 mil y crema por 18 mil y mañana quiero mirar unos zapatos de 120 mil', o(PEND(G1(7000), G1(18000)), PEND(G1(7000))), { nota: 'La crema queda en la cola como segundo movimiento, pero sola pregunta para qué es; la vista de la cola no cuenta las preguntas.' }),
+  c(374, 'narrativas', 'compré jabón por 7 mil y crema por 18 mil y mañana quiero mirar unos zapatos de 120 mil', PEND(G1(7000), { pregunta: 'crema' }), { nota: 'El jabón sale primero y la crema queda en la cola con su pregunta («¿Para qué es la crema?»); los zapatos son una intención y no entran.' }),
   c(375, 'narrativas', 'iba a pagar 80 mil de mercado con nequi pero solo tenía 60 así que puse 20 en efectivo', o(V([60000, 20000], { cuentas: ['Nequi', 'Efectivo'] }), PEND(G1(80000)), PREG)),
   c(376, 'narrativas', 'ayer compré pan por 5 mil y hoy compré leche por 8 mil', PEND(G1(5000, { fecha: '2026-11-25' }), G1(8000, { fecha: '2026-11-26' })), { ahora: '2026-11-26T20:00:00Z' }),
   c(377, 'narrativas', 'compré una camisa que valía 90 mil pero me hicieron 10 de descuento quedó en 80 y además pagué 12 de parqueadero', PEND(G1(80000), G1(12000))),
