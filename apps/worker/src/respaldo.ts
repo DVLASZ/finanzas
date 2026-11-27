@@ -57,6 +57,7 @@ export async function respaldarEnGitHub(
   const cifrado = await cifrar(JSON.stringify(await repo.cargar()), env.RESPALDO_CLAVE);
   const r = await llamar(`https://api.github.com/repos/${env.RESPALDO_REPO}/contents/${ruta}`, {
     method: 'PUT',
+    redirect: 'manual', // el token de GitHub no sigue ninguna redirección
     headers: { Authorization: `Bearer ${env.RESPALDO_TOKEN}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json', 'User-Agent': 'finanzas-respaldo' },
     body: JSON.stringify({ message: `respaldo ${ruta}`, content: btoa(cifrado) }),
   });

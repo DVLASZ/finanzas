@@ -144,8 +144,8 @@ export class D1Repo implements Repo {
     await this.db.batch([
       this.db.prepare("UPDATE movimientos SET estado = 'anulado', anulado_en = ?, actualizado_en = ?, cambio_en = datetime('now','-5 hours') WHERE id = ? AND estado = 'ok'")
         .bind(cuando, cuando, id),
-      this.db.prepare("UPDATE compromisos SET estado = 'anulada' WHERE id LIKE ? AND estado = 'activa'")
-        .bind(`${id}-c%`),
+      this.db.prepare("UPDATE compromisos SET estado = 'anulada' WHERE substr(id, 1, length(?)) = ? AND estado = 'activa'")
+        .bind(`${id}-c`, `${id}-c`),
     ]);
     await this.reconciliar(id);
   }
@@ -168,8 +168,8 @@ export class D1Repo implements Repo {
     await this.db.batch([
       this.db.prepare("UPDATE movimientos SET estado = 'ok', anulado_en = NULL, actualizado_en = ?, cambio_en = datetime('now','-5 hours') WHERE id = ? AND estado = 'anulado'")
         .bind(cuando, id),
-      this.db.prepare("UPDATE compromisos SET estado = 'activa' WHERE id LIKE ? AND estado = 'anulada'")
-        .bind(`${id}-c%`),
+      this.db.prepare("UPDATE compromisos SET estado = 'activa' WHERE substr(id, 1, length(?)) = ? AND estado = 'anulada'")
+        .bind(`${id}-c`, `${id}-c`),
     ]);
     await this.reconciliar(id);
   }

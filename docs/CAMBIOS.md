@@ -4,6 +4,14 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-29
+
+- Revisión de seguridad OWASP Top 10:2025 (docs/SEGURIDAD-OWASP-2025.md).
+- Los avisos al celular solo salen hacia los servicios de avisos de los navegadores; el buzón solo llama a https públicos; ningún `fetch` con clave sigue redirecciones.
+- La clave del buzón tiene el mismo freno de fuerza bruta que el token y los intentos fallidos quedan en el registro.
+- El servidor revisa ids, fechas, montos, largos y cantidad de asientos, y rechaza cuerpos de más de 2 MB.
+- Las respuestas de la API llevan `Cache-Control: no-store`; el CSV neutraliza también las celdas que empiezan por tabulación.
+
 ## 2026-11-28
 
 - Las correcciones dichas con más palabras cambian la tarjeta pendiente: `perdón, eran 18k, no 15k`, `ponle 9.500 mejor`, `eso fue ayer, no hoy`.

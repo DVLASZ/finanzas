@@ -5,6 +5,7 @@ Por dónde empezar según lo que quieras hacer.
 ## Usar la app
 
 - [INICIO.md](INICIO.md): de cero a la app instalada en el celular.
+- [SEGURIDAD-OWASP-2025.md](SEGURIDAD-OWASP-2025.md): matriz de controles OWASP Top 10:2025, SSRF y XSS, con la prueba de cada uno.
 - [ARQUITECTURA-BOT.md](ARQUITECTURA-BOT.md): cómo piensa el bot, paso a paso, y dónde es frágil.
 - [BATERIA-RED-TEAM.md](BATERIA-RED-TEAM.md): las 147 frases difíciles con las que se prueba el bot.
 - [GUIA-USUARIO.md](GUIA-USUARIO.md) y [GUIA-USUARIO.html](GUIA-USUARIO.html): guía paso a paso para quien va a instalar y probar la app (el HTML es un solo archivo para abrir en el celular).

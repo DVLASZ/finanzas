@@ -55,6 +55,29 @@ const MAX_VALOR_CONFIG = 60000;
 
 const esTexto = (x: unknown): x is string => typeof x === 'string' && x.length > 0;
 
+/** Los ids se usan en consultas con LIKE y en rutas: solo letras, números y `_ : . ! -` (el `!` lo traen los ids de la importación del Excel), y no kilométricos. */
+const ID_OK = /^[\w:.!-]{1,80}$/; // el `!` lo traen los ids de la importación del Excel («xl:FEB!A5»)
+const FECHA_OK = /^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?(?:[.\d]*Z?)?$/;
+const MAX_ASIENTOS = 40;
+const MAX_MONTO = 1e13; // más que cualquier fortuna en pesos, y todavía un entero exacto
+
+/** Lo que toda petición de afuera tiene que cumplir antes de llegar a la base: formas, largos y rangos. */
+function limitesDeMovimiento(m: Movimiento): string | null {
+  if (!ID_OK.test(m.id)) return 'El id del movimiento no sirve';
+  if (m.ocurridoEn.length > 40 || !FECHA_OK.test(m.ocurridoEn)) return 'La fecha del movimiento no sirve';
+  if (typeof m.creadoEn === 'string' && (m.creadoEn.length > 40 || !FECHA_OK.test(m.creadoEn))) return 'La fecha de creación no sirve';
+  if (m.descripcion.length > 200) return 'La descripción es muy larga';
+  if (m.asientos.length < 2 || m.asientos.length > MAX_ASIENTOS) return 'Cantidad de asientos fuera de rango';
+  for (const a of m.asientos) {
+    if (a.cuentaId.length > 80 || !Number.isSafeInteger(a.monto) || Math.abs(a.monto) > MAX_MONTO) return 'Monto o cuenta fuera de rango';
+  }
+  for (const campo of ['etiqueta', 'nota'] as const) {
+    const v = (m as unknown as Record<string, unknown>)[campo];
+    if (v != null && (typeof v !== 'string' || v.length > 500)) return `El campo ${campo} no sirve`;
+  }
+  return null;
+}
+
 /** Revisa lo de afuera de la petición: que sea una lista y que no sea gigante. Devuelve el motivo o null. */
 export function validarOps(ops: unknown): string | null {
   if (!Array.isArray(ops)) return 'Falta la lista ops';
@@ -80,6 +103,8 @@ export function validarOp(op: unknown): string | null {
           if (!a || !esTexto(a.cuentaId) || !(a.moneda in DECIMALES)) return 'Asiento mal formado';
         }
         try { validarAsientos(m.asientos); } catch (e) { return (e as Error).message; }
+        { const limite = limitesDeMovimiento(m); if (limite) return limite; }
+        if (o.cuentasNuevas.length > 50 || o.compromisos.length > 50) return 'Movimiento mal formado';
         break;
       }
       case 'editar': {
@@ -91,11 +116,12 @@ export function validarOp(op: unknown): string | null {
           if (!a || !esTexto(a.cuentaId) || !(a.moneda in DECIMALES)) return 'Asiento mal formado';
         }
         try { validarAsientos(m.asientos); } catch (e) { return (e as Error).message; }
+        { const limite = limitesDeMovimiento(m); if (limite) return limite; }
         break;
       }
-      case 'anular': if (!esTexto(o.id) || !esTexto(o.cuando)) return 'Anulación mal formada'; break;
-      case 'restaurar': if (!esTexto(o.id) || !esTexto(o.cuando)) return 'Restauración mal formada'; break;
-      case 'compromisos': if (!Array.isArray(o.lista)) return 'Compromisos mal formados'; break;
+      case 'anular': if (!esTexto(o.id) || !ID_OK.test(o.id) || !esTexto(o.cuando) || o.cuando.length > 40) return 'Anulación mal formada'; break;
+      case 'restaurar': if (!esTexto(o.id) || !ID_OK.test(o.id) || !esTexto(o.cuando) || o.cuando.length > 40) return 'Restauración mal formada'; break;
+      case 'compromisos': if (!Array.isArray(o.lista) || o.lista.length > 500) return 'Compromisos mal formados'; break;
       case 'aprendido': if (!esTexto(o.palabra) || !o.valor || typeof o.valor !== 'object') return 'Palabra aprendida mal formada'; break;
       case 'presupuesto':
         if (!esTexto(o.categoriaId) || !(o.monto === null || Number.isFinite(o.monto))) return 'Presupuesto mal formado';

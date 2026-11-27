@@ -124,5 +124,13 @@ const aviso = t => console.log(`AVISO ${t}`);
   faltan.length ? faltan.forEach(m => falla(`Worker: ${m}`)) : ok('Worker: cabeceras de seguridad en la página, la API y los errores; sin scripts en línea');
 }
 
+// ---- 6. la suite de OWASP Top 10:2025 (XSS, SQLi, fórmulas, acceso, SSRF, validación, cabeceras, errores, cadena de suministro)
+{
+  const r = spawnSync(process.execPath, ['--test', 'apps/worker/test/seguridad-owasp-2025.test.ts'], { cwd: raiz, encoding: 'utf8' });
+  const total = /ℹ tests (\d+)/.exec(r.stdout)?.[1] ?? '?';
+  if (r.status === 0) ok(`OWASP 2025: ${total} pruebas de seguridad pasan (ver docs/SEGURIDAD-OWASP-2025.md)`);
+  else falla(`OWASP 2025: fallaron pruebas. Corre «node --test apps/worker/test/seguridad-owasp-2025.test.ts».\n${r.stdout.split('\n').filter(l => l.startsWith('✖')).join('\n')}`);
+}
+
 console.log(mal ? `\n${mal} problema(s) de seguridad.` : '\nSin hallazgos.');
 process.exit(mal ? 1 : 0);

@@ -8,6 +8,7 @@
  *   BUZON_NOMBRE    cómo se presenta esta app al enviar («Mamá»)
  */
 import type { Datos } from '../../../packages/core/src/index.ts';
+import { urlPublicaHttps } from './seguridad.ts';
 
 export interface EnvBuzon { BUZON_CLAVE?: string; BUZON_DESTINOS?: string; BUZON_NOMBRE?: string }
 
@@ -23,7 +24,7 @@ export function leerAviso(x: unknown): Omit<AvisoBuzon, 'id' | 'estado'> | strin
   if (typeof o.de !== 'string' || !o.de.trim() || o.de.length > 40) return 'Falta quién lo manda (hasta 40 letras)';
   if (!Number.isInteger(o.monto) || (o.monto as number) <= 0 || (o.monto as number) > 2_000_000_000) return 'El monto tiene que ser un número entero mayor que cero';
   if (o.concepto !== undefined && (typeof o.concepto !== 'string' || o.concepto.length > 80)) return 'El concepto es muy largo (hasta 80 letras)';
-  if (o.propuesta !== undefined && (typeof o.propuesta !== 'string' || o.propuesta.length > 120 || /[\u0000-\u001f]/.test(o.propuesta))) return 'La frase propuesta es muy larga (hasta 120 letras, en una sola l�nea)';
+  if (o.propuesta !== undefined && (typeof o.propuesta !== 'string' || o.propuesta.length > 120 || /[\u0000-\u001f]/.test(o.propuesta))) return 'La frase propuesta es muy larga (hasta 120 letras, en una sola línea)';
   const propuesta = typeof o.propuesta === 'string' ? o.propuesta.trim() : '';
   return { de: o.de.trim(), monto: o.monto as number, concepto: ((o.concepto as string | undefined) ?? '').trim(), cuando: new Date().toISOString(), ...(propuesta ? { propuesta } : {}) };
 }
@@ -54,11 +55,14 @@ export async function enviarAlBuzon(
 ): Promise<{ ok: boolean; motivo?: string }> {
   const d = destinosDe(env)[dato.destino];
   if (!d?.url || !d.clave) return { ok: false, motivo: `No tengo configurado el destino «${dato.destino}».` };
+  // solo https a un dominio público: nunca a una IP, a localhost ni a una red interna (SSRF)
+  if (!urlPublicaHttps(d.url)) return { ok: false, motivo: `El destino «${dato.destino}» no es una dirección https pública.` };
   const aviso = leerAviso({ de: dato.de ?? env.BUZON_NOMBRE ?? 'Otra app', monto: dato.monto, concepto: dato.concepto, propuesta: dato.propuesta });
   if (typeof aviso === 'string') return { ok: false, motivo: aviso };
   try {
     const r = await llamar(`${d.url.replace(/\/$/, '')}/api/buzon`, {
       method: 'POST',
+      redirect: 'manual', // la clave del buzón no se manda a donde redirija el otro servidor
       headers: { Authorization: `Bearer ${d.clave}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(aviso),
     });

@@ -5,6 +5,7 @@
  *  - VAPID (RFC 8292): el servidor se identifica ante Google/Mozilla con una firma ES256.
  *  - Cifrado del mensaje (RFC 8291, aes128gcm): el aviso viaja cifrado con las llaves del celular.
  */
+import { esServicioDePush } from './seguridad.ts';
 
 export interface Suscripcion {
   endpoint: string;
@@ -87,8 +88,11 @@ export async function cifrarAviso(texto: string, s: Suscripcion, sal?: Uint8Arra
 export type EstadoEnvio = 'ok' | 'caducada' | 'fallo';
 
 export async function enviarAviso(s: Suscripcion, aviso: { titulo: string; cuerpo: string }, llaves: LlavesVapid): Promise<EstadoEnvio> {
+  // una suscripción guardada antes de esta revisión puede apuntar a cualquier sitio: tampoco se le manda nada
+  if (!esServicioDePush(s.endpoint)) return 'caducada';
   try {
     const r = await fetch(s.endpoint, {
+      redirect: 'manual', // una redirección no puede llevar el aviso a otro sitio
       method: 'POST',
       headers: {
         Authorization: await cabeceraVapid(s.endpoint, llaves),
@@ -110,7 +114,8 @@ export async function enviarAviso(s: Suscripcion, aviso: { titulo: string; cuerp
 export function suscripcionValida(x: unknown): x is Suscripcion {
   const s = x as Suscripcion | null;
   return Boolean(
-    s && typeof s.endpoint === 'string' && /^https:\/\//.test(s.endpoint) && s.endpoint.length < 600
+    // solo hacia los servicios de avisos de los navegadores: sin esto, quien tenga el token haría que el Worker llame a cualquier sitio (SSRF)
+    s && typeof s.endpoint === 'string' && esServicioDePush(s.endpoint) && s.endpoint.length < 600
     && typeof s.keys?.p256dh === 'string' && typeof s.keys?.auth === 'string'
     && s.keys.p256dh.length < 200 && s.keys.auth.length < 50,
   );

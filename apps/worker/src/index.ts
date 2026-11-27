@@ -86,6 +86,9 @@ async function atender(req: Request, env: Env): Promise<Response> {
     return new Response('Finanzas: la app web aún no está desplegada.', { status: 404 });
 }
 
+/** Lo más grande que acepta la API en un cuerpo (2 MB). */
+export const MAX_CUERPO = 2_000_000;
+
 /** 429 con el aviso de cuánto esperar. */
 function limitado(esperaS: number): Response {
   const r = json({ error: 'Demasiadas peticiones. Espera un momento.', esperaS }, 429);
@@ -105,8 +108,11 @@ async function api(req: Request, url: URL, env: Env): Promise<Response> {
   const soloLectura = !principal && Boolean(env.API_TOKEN_LECTURA) && tokenValido(req, env.API_TOKEN_LECTURA ?? '');
   if (!principal && !soloLectura) {
     if (conexion) intentosFallidos.anotar(conexion);
+    console.warn('seguridad: token equivocado en', req.method, url.pathname); // nunca el token ni lo que traía la petición
     return json({ error: 'No autorizado' }, 401);
   }
+  // un cuerpo gigante se rechaza sin leerlo: la foto más grande son 300 KB y la sincronización más grande unos cientos
+  if (!['GET', 'HEAD', 'DELETE'].includes(req.method) && Number(req.headers.get('content-length') ?? 0) > MAX_CUERPO) return json({ error: 'La petición es demasiado grande.' }, 413);
   if (conexion) {
     if (!peticiones.anotar(conexion)) return limitado(peticiones.esperaS(conexion));
     // la IA y la lectura de comprobantes gastan la cuota gratis de Workers AI

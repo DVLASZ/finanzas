@@ -12,7 +12,8 @@ const COLUMNAS = ['fecha', 'hora', 'tipo', 'descripcion', 'categoria', 'cuenta',
 /** Entre comillas si trae coma, comilla o salto de línea; y sin fórmulas: Excel ejecuta lo que empieza con = + - @. */
 function celda(v: string | number): string {
   let t = String(v);
-  if (/^[=+@]/.test(t) || (/^-/.test(t) && typeof v === 'string')) t = `'${t}`;
+  // también las que empiezan por tabulación o retorno de carro, que Excel salta antes de leer la fórmula
+  if (/^[=+@\t\r]/.test(t) || (/^-/.test(t) && typeof v === 'string')) t = `'${t}`;
   return /[",\n;]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
 }
 
