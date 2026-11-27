@@ -674,3 +674,10 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - «para el próximo lunes tengo que pagar 95k» no se anota como gasto: el bot te dice cómo dejarlo como pago fijo.
 - Un párrafo largo se parte en un movimiento por cada cosa que pasó; lo que pensabas hacer y no hiciste se descarta.
 - Con una tarjeta pendiente, 👍 confirma y ❌ cancela.
+
+## Cuentas entre amigos dichas como se hablan
+
+- «El queso costó 10k, lo pagó Faber y yo le debo la mitad» anota que le debes $5.000 a Faber. También sirven «voy con 20», «nos toca de a 12k», «pidió la pizza de 42k entre tres, le debo mi parte» y «me cubrió los 18k».
+- «Pagué el uber de 14k y Esteban me pasa la mitad» anota el gasto compartido con Esteban. Si dices «cada uno me da 20k» sin nombres, te pregunta quiénes son.
+- Perdonar una deuda, cuadrar cuentas o pasarte de lo que debías no se anota como gasto: el bot te explica y te deja anotar solo lo que sí se pasó.
+- «Me faltan 3k, se los pido a Pipe» no anota nada hasta que te los presten.
