@@ -34,7 +34,7 @@ test('hogar: «ivan me pagó 40k nequi» sigue siendo el cobro de siempre', asyn
 
 test('asociación: la multa es plata por cobrar, la cuota y la multa juntas son dos', async () => {
   const b = conGente();
-  assert.match(textoDe(await b.di('A Pipe le pusieron multa de 15k por no ir a la reunión')), /Préstamo · le prestas a Pipe · \$15\.000/);
+  assert.match(textoDe(await b.di('A Pipe le pusieron multa de 15k por no ir a la reunión')), /Préstamo · te debe Pipe .* · \$15\.000/);
   await b.pulsa('ok');
   const t = textoDe(await b.di('Karla debe la cuota de 50k y además una multa de 20k'));
   assert.match(t, /Movimiento 1 de 2/);

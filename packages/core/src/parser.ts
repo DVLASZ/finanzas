@@ -314,6 +314,15 @@ export function interpretar(texto: string, ctx: Contexto): Resultado {
   const neg = sinNegadas(corregida(texto));
   if (neg.todas) return error(AVISO_NEGADO);
   const r = interpretarAfirmado(neg.texto, ctx);
+  // un millón en una comida o un pasaje: la tarjeta lo dice antes de confirmar (revisa los ceros)
+  if (r.clase === 'movimiento' && r.propuesta.tipo === 'gasto' && r.propuesta.moneda === 'COP' && r.propuesta.monto >= 1_000_000
+    && ['cat:comida', 'cat:mecato', 'cat:transporte', 'cat:viaje-semanal'].includes(r.propuesta.categoriaId ?? '')) {
+    r.propuesta.avisos.push('⚠️ Es un monto muy alto para esto: revisa los ceros antes de confirmar.');
+  }
+  // «Marta me debe 10000» (sin «presté», «le di»...) no dice que saliera plata: se anota lo que te deben, sin tocar tus cuentas
+  if (r.clase === 'movimiento' && r.propuesta.tipo === 'prestamo' && /\bme (?:debe|deben|quedo debiendo|quedaron debiendo|adeuda)\b/.test(limpiar(texto)) && !/\b(?:preste|prestamo|le di|le pase|le mande|le gire|le meti)\b/.test(limpiar(texto))) {
+    r.propuesta.sinSalida = true;
+  }
   if (neg.ignoradas.length && r.clase === 'movimiento') {
     r.propuesta.avisos.push(...neg.ignoradas.map(c => `Ignoré «${c}», porque dice que no pasó.`));
   }

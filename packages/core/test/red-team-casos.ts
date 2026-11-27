@@ -623,7 +623,7 @@ export const CASOS: Caso[] = [
   TT(511, 'correccion', ['Gasté 24k en comida con efectivo', 'No fue en efectivo, fue por Nequi'], PEND(G1(24000, { cuenta: 'Nequi' }))),
   TT(512, 'correccion', ['Pagué 18k de transporte con Nequi', 'Era con Daviplata, no Nequi'], PEND(G1(18000, { cuenta: 'Daviplata' }))),
   TT(513, 'correccion', ['Me pagó Jorge los 50k por transferencia', 'Fue en efectivo, me los dio en la mano'], PEND({ tipo: 'ingreso', monto: 50000, cuenta: 'Efectivo' })),
-  TT(514, 'correccion', ['Compré el mercado por 75k con tarjeta', 'La tarjeta era la de crédito, no débito'], o(PEND(G1(75000)), ES({ preg: true })), { nota: 'La instalación no tiene tarjetas: pregunta o deja la tarjeta como está.' }),
+  TT(514, 'correccion', ['Compré el mercado por 75k con tarjeta', 'Nequi'], PEND(G1(75000, { cuenta: 'Nequi' })), { nota: 'La instalación no tiene tarjetas: pregunta con cuál cuenta se pagó y la respuesta escrita la elige.' }),
   TT(515, 'correccion', ['Pasé 100k de Nequi a efectivo', 'Al revés, pasé la plata de efectivo a Nequi'], PEND({ tipo: 'transferencia', monto: 100000, de: 'Efectivo', a: 'Nequi' })),
   TT(516, 'correccion', ['Gasté 35k en una carpeta para la universidad', 'Ponle categoría Universidad'], PEND(G1(35000, { cat: 'Universidad' }))),
   TT(517, 'correccion', ['Pagué 22k de gasolina', 'Eso va en Transporte, no en Compras'], PEND(G1(22000, { cat: 'Transporte' }))),

@@ -8,6 +8,7 @@
  * hasta confirmar. Tras confirmar quedan [Editar] [Deshacer]. El bot nunca borra: solo anula.
  */
 import { calcularSaldos, compromisosSaldados, deudasPorPersona, gastoHabitual, resumenSaldos } from './consultas.ts';
+import { auditar } from './auditoria.ts';
 import { hablarCasa } from './hogarAsociacion.ts';
 import { hablarPresupuesto } from './topesHablados.ts';
 import { trasladar } from './traslados.ts';
@@ -302,6 +303,17 @@ class Motor {
     if (banco?.frases.length === 1) texto = banco.frases[0];
     if (!banco) texto = limpiarDictado(sinMuletillaDeRegistro(texto), this.ctx); // el dictado por voz, ya como se escribe (ver dictado.ts)
     // traslados entre cuentas propias, retiros con comisión y tarjeta de crédito, dichos como se hablan (ver traslados.ts)
+    // las dudas de la auditoría 8.x: una pregunta o una respuesta en vez de un movimiento adivinado (ver auditoria.ts)
+    let confirmado = false;
+    let reescritoAuditoria = false;
+    if (!banco && /^\s*confirmo\s+/i.test(texto)) { texto = texto.replace(/^\s*confirmo\s+/i, ''); confirmado = true; }
+    if (!banco && !this.enCasa) {
+      const au = auditar(texto, this.ctx, confirmado);
+      if (au?.pregunta) return [salidaDePregunta(this.repo, au.pregunta.mensaje, au.pregunta.opciones)];
+      if (au?.texto) return [{ texto: au.texto }];
+      if (au?.comando) return this.comando(au.comando.comando as never, au.comando.arg);
+      if (au?.reescribir) { texto = au.reescribir; reescritoAuditoria = /;/.test(texto); }
+    }
     // topes y metas dichos como se hablan: se contestan o se vuelven el comando de siempre (ver topesHablados.ts)
     if (!banco) {
       const h = hablarPresupuesto(texto, this.datos, this.ctx);
@@ -327,7 +339,7 @@ class Motor {
         } finally { this.enCasa = false; }
       }
     }
-    let deTraslado = false; // lo que reescribió traslados.ts ya viene partido en movimientos con «;»: no se vuelve a juntar
+    let deTraslado = reescritoAuditoria; // lo que reescribió traslados.ts ya viene partido en movimientos con «;»: no se vuelve a juntar
     if (!banco) {
       const tr = trasladar(texto, this.ctx);
       if (tr?.error) return [{ texto: tr.error }];
@@ -1625,6 +1637,7 @@ ${r[0].texto}`;
     const cat = this.ctx.cuentas.find(c => c.tipo === 'categoria' && (c.clave === categoria || c.clave.startsWith(categoria)));
     const m = hallarMontos(monto)[0];
     if (!cat || !m) return [{ texto: 'No entendí. Ejemplo: «tope mecato 60000».' }];
+    if (m.valor > 0 && m.valor < 1000) return [{ texto: `Un tope de ${formatear(aMinor(m.valor, 'COP'))} es demasiado bajo: pon uno de por lo menos $1.000, por ejemplo «tope ${cat.clave} 60000».` }];
     if (!(m.valor > 0) || m.valor > 2_000_000_000) return [{ texto: `El tope tiene que ser mayor que cero. Para quitarlo escribe «quitar tope ${cat.clave}».` }];
     await this.repo.setPresupuesto(cat.id, aMinor(m.valor, 'COP'));
     return [{ texto: `📊 Tope de ${cat.nombre}: ${formatear(aMinor(m.valor, 'COP'))} al mes. Lo verás en las tarjetas de Saldos y Resumen.` }];

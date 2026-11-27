@@ -681,6 +681,14 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - No llevo un fondo común: te digo cómo hacerlo con un préstamo a la persona o con una meta.
 - En la asociación cada obligación es una cuenta con la persona: «Pipe me debe 50000 por cuota», «a Pipe le pusieron multa de 15k», «Jorge me pagó 60000», «le presté 500000 a Alejandro». «¿Quién debe la cuota?» muestra las deudas. No llevo la lista de asociados ni el estado de cada cuota, y no compenso deudas sin que me lo digas.
 
+## Cuando una frase es dudosa
+
+- «Me dieron 2000 de cambio» pregunta si es el vuelto de algo (no es plata nueva).
+- «Marta me debe 10000» anota lo que te deben sin sacar plata de tus cuentas; «le presté 10000 a Marta» sí la saca.
+- «Gasté 5000 pero no en mecato» pregunta en qué categoría fue; «compré 2 cafés de 3000» pregunta si son el total o cada uno; «con tarjeta» y «del cajero» preguntan de cuál cuenta.
+- «Cuánto es 5000 + 3000» responde `$8.000` y no anota nada. Un millón en una comida lleva el aviso de revisar los ceros. Un tope de menos de $1.000 se rechaza.
+- «5.000,50», «12 000» y «5ooo» se leen como $5.000, $12.000 y $5.000.
+
 ## Lo que el bot no hace
 
 - No borra nada, solo anula.

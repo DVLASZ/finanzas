@@ -300,7 +300,7 @@ export function responderHistorial(texto: string, datos: Datos, ahora: Date): st
   if (periodo && (pide || /\b(?:cuanto|cuanta)\b.*\b(?:gaste|gastado|gasto)\b/.test(t))) {
     if (!pide) {
       const total = gastoDe(categoria, periodo);
-      return `🧾 En ${periodo.nombre}${categoria ? `, en ${categoria.nombre}` : ''} gastaste ${formatear(total)}.`;
+      return `🧾 ${/^(?:ayer|hoy|anteayer|antier)$/.test(periodo.nombre) ? periodo.nombre[0].toUpperCase() + periodo.nombre.slice(1) : "En " + periodo.nombre}${categoria ? `, en ${categoria.nombre}` : ''} gastaste ${formatear(total)}.`;
     }
     const efectivo = t.includes('efectivo');
     const salida = /\b(?:salio|salieron|gaste|gastos?)\b/.test(t);
@@ -324,7 +324,8 @@ export function responderHistorial(texto: string, datos: Datos, ahora: Date): st
     const cierto = /\b(?:cierto|verdad)$/.test(t);
     const nada = /\bno he gastado nada\b|\bno gaste nada\b/.test(t);
     const veredicto = cierto && nada ? (total === 0 ? 'Cierto: ' : 'No: ') : '';
-    return `🧾 ${veredicto}en ${p.nombre}${de} gastaste ${formatear(total)}.`;
+    const dia = /^(?:ayer|hoy|anteayer|antier)$/.test(p.nombre);
+    return `🧾 ${veredicto}${dia ? (veredicto ? p.nombre : p.nombre[0].toUpperCase() + p.nombre.slice(1)) : (veredicto ? 'en ' : 'En ') + p.nombre}${de} gastaste ${formatear(total)}.`;
   }
 
   return null;

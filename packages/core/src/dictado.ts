@@ -62,6 +62,10 @@ export function limpiarDictado(texto: string, ctx?: Contexto): string {
   }
   // «el quince de noviembre»: el día dicho en letras
   t = t.replace(new RegExp(String.raw`\b(${DIAS.join('|')})(\s+de\s+(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b)`, 'gi'), (_m, d: string, resto: string) => `${DIAS.indexOf(d.toLowerCase()) + 1}${resto}`);
+  // «5.000,50»: los centavos no existen en pesos; «12 000» es doce mil; «5ooo» es cinco mil escrito con la letra o
+  t = t.replace(/(?<![\d.,])(\d{1,3}(?:\.\d{3})+),\d{1,2}(?![\d])/g, '$1');
+  t = t.replace(/(?<![\d.,])(\d{1,3}) (\d{3})(?![\d.,:]|\s?(?:am|pm|a\.m|p\.m))/g, '$1$2');
+  t = t.replace(/\b(\d+)([oO]{2,})\b/g, (_m, n: string, o: string) => n + '0'.repeat(o.length));
   // «125 mil quinientos», «8 mil 500»: los miles y lo que sigue son un solo monto
   const CIENTOS: Record<string, number> = { cien: 100, doscientos: 200, trescientos: 300, cuatrocientos: 400, quinientos: 500, seiscientos: 600, setecientos: 700, ochocientos: 800, novecientos: 900 };
   t = t.replace(/(?<![\d.,])(\d{1,3})\s*mil\s+(cien|doscientos|trescientos|cuatrocientos|quinientos|seiscientos|setecientos|ochocientos|novecientos)\b/gi, (_m, n: string, c: string) => String(Number(n) * 1000 + CIENTOS[c.toLowerCase()]));
