@@ -4,6 +4,12 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-11-27
+
+- Cuentas entre amigos dichas como se hablan: `lo pagó Faber y yo le debo la mitad`, `pagué el uber de 14k y Esteban me pasa la mitad`, `voy con 20`, `nos toca de a 12k`.
+- Perdonar, cuadrar o pagar de más una deuda no se anota como gasto: el bot explica y ofrece solo lo que sí se pasó.
+- `me faltan 3k, se los pido a Pipe` no anota nada.
+
 ## 2026-11-26
 
 - El bot entiende dictado por voz con muletillas, números en letras y correcciones («ah no mentiras fue en efectivo»).

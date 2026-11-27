@@ -18,6 +18,7 @@ import { quitarComasDeMiles, repartoEnOtroOrden } from './reparto.ts';
 import { diaDeSemana, mesDeNombre } from './recurrentes.ts';
 import { naturalizar } from './lenguaje.ts';
 import { cruzado, vencimientoDePrestamo } from './cruzados.ts';
+import { hablada } from './habladas.ts';
 import { aclararIlegible, corregirTypos } from './fuzzy.ts';
 import { expandirCantidades } from './cantidades.ts';
 import { calcular } from './calculos.ts';
@@ -288,6 +289,10 @@ export function interpretar(texto: string, ctx: Contexto): Resultado {
   const cuenta = calcular(texto); if (typeof cuenta !== 'string') return cuenta; texto = cuenta; // «28000 más 10% de propina» es 30800; va antes de corregirTypos, que lee «rebajaron» como «regalaron» (ver calculos.ts)
   const duda = dudaDeNumeroONombre(texto, ctx); if (duda) return duda; // decimales en pesos y nombres que chocan con cuentas o categorías (ver limites.ts)
   const dictada = dudaDeDictado(texto); if (dictada) return dictada; // «siento veinte mil», «dos de veinte mil de arroz»: se pregunta (ver dictado.ts)
+  // cuentas entre amigos dichas como se hablan: «lo pagó Faber y le debo la mitad», «me pasa la mitad» (ver habladas.ts)
+  const hab = hablada(texto);
+  if (hab?.pregunta) return { clase: 'pregunta', ...hab.pregunta };
+  if (hab?.texto) texto = hab.texto;
   texto = corregirTypos(texto, ctx); // «gsate 12 mil en almurzo» se lee «gaste 12 mil en almuerzo» (ver fuzzy.ts)
   const ilegible = aclararIlegible(texto, ctx); if (ilegible) return ilegible; // «Ibgrwsi 50k»: se pregunta, no se inventa un gasto
   texto = expandirCantidades(texto); // «3 polas a 4500 cada una» es 13500 (ver cantidades.ts)

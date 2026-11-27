@@ -679,6 +679,18 @@ Seis capas nuevas, cada una en su módulo y enganchada con pocas líneas en `par
 
 Decisiones de la ronda: lo que pagó un tercero, lo condonado y lo compensado no mueve las cuentas propias. La instalación personal no tiene la categoría Servicios, así que RED-274 y RED-290 no la exigen.
 
+## 8e. Ronda 4 de la batería (RED-396 a RED-500)
+
+Una sola capa nueva, `habladas.ts`, que corre al principio de `interpretar` (antes de `corregirTypos`, que le cambiaba «David» por «davi») y también en `alEscribir` para que el mensaje no se parta por `;` o por « y ». Reescribe la frase hablada con una que el parser ya entiende, o pregunta.
+
+1. **Yo debo mi parte.** Si junto a «pagó», «puso», «compró», «adelantó», «invitó» o «me cubrió» hay un nombre y una señal de que debes («le debo», «me toca», «voy con 20», «nos toca de a 12k», «mi parte», «la mitad», «éramos cuatro»), la frase queda como `le debo <cuota> a <nombre> por <motivo>`. La cuota es lo que se dice; si no se dice, el total entre los que eran. Un número chico sin «k» ni «mil» es de miles («pagó 36»).
+2. **Pagué yo y me deben.** Con «pagué», «compré» o «puse» al comienzo y «me debe», «me pasa la mitad», «cada uno me», «mitad y mitad» o «entre ella y yo», sale `<motivo> <total> entre ana, luis y yo` (partes iguales) o `pagué por ana 7000 y luis 3000`. «Mañana» y «más tarde» dichos de cuándo pagan no son la fecha del gasto. Si no dice quiénes son los otros («cada uno me da 20k»), pregunta sus nombres.
+3. **Cuentas que se cierran sin plata.** Perdonar, «dejemos así», «a paz», «cuadramos» y «con eso quedó listo» junto a una deuda no son un gasto ni un ingreso: el bot lo explica y ofrece solo lo que sí se pasó (por ejemplo «Solo los $3.000» por Nequi).
+4. **Pagos de más y a pedazos.** «Me debía 7k y me dio 10» cierra la deuda y pregunta por el sobrante; «le di 10k pero solo le debía 8k» ofrece pagar lo debido (y, si dice que le quedó debiendo, anotar también eso); «le aboné 10 ayer y hoy otros 5» ofrece los dos abonos. «Ya le pasé por Nequi los 5k del queso a Faber» es el pago de esa deuda.
+5. **Intención.** «Me faltan 3k, se los pido a Pipe» no anota nada: todavía no se los han prestado.
+
+Decisiones de la ronda: el pasaje a la universidad va a «Viaje semanal» en la plantilla personal (RED-446 acepta las dos categorías), y en RED-374 la cola ahora exige la pregunta por la crema. Los nombres de la tabla original que son de personas reales se cambiaron por Jorge, Esteban y Ale para que `npm run privacidad` pase.
+
 ## 9. Cómo probarlo
 
 El núcleo corre en Node sin red y sin navegador. `MemoriaRepo` guarda todo en memoria y `tests/ayudas.ts` trae un bot listo con el reloj fijo:
