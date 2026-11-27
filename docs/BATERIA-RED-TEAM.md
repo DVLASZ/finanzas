@@ -1,6 +1,6 @@
-# Batería adversarial del bot (RED-001 a RED-670)
+# Batería adversarial del bot (RED-001 a RED-730)
 
-Estas son las 670 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
+Estas son las 730 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
 
 ```bash
 node --test packages/core/test/red-team.test.ts
@@ -856,3 +856,78 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-668 | `Tengo dos gastos: 12k de taxi y 18k de mercado  //  El segundo por Nequi` | Quedan pendientes: Gasto $12.000; Gasto $18.000 en Nequi |  |
 | RED-669 | `Debo 10k a Faber y 15k a Jorge; además gasté 8k en bus  //  Faber sí, Jorge no. El bus ...` | Quedan pendientes: Deuda $10.000 | La deuda pide categoría y una respuesta de tres frases no la contesta: el bot repite la pregunta y deja la cola como está. |
 | RED-670 | `Gasté 12k en comida y 8k en pan; además Laura me debe 20k  //  Comida y pan sí  //  Sí,...` | Sin tarjetas pendientes. Guardado: Gasto $12.000; Gasto $8.000; Préstamo $25.000 | Laura ya es conocida: el préstamo corregido a 25.000 se guarda sin más preguntas. |
+
+## Ronda 6: traslados entre cuentas propias y retiros
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-671 | `Pasé 150k de Nequi a Bancolombia, son cuentas mías` | Transferencia, $150.000, Nequi a Bancolombia |  |
+| RED-672 | `Me mandé 80 lucas de Bancolombia pa Nequi` | Transferencia, $80.000, Bancolombia a Nequi |  |
+| RED-673 | `Moví 60 mil de mi Daviplata a mi cuenta de ahorros` | Transferencia, $60.000, Daviplata a Ahorros |  |
+| RED-674 | `Saqué 200k del cajero con mi tarjeta de ahorros` | Transferencia, $200.000, Ahorros a Efectivo | Un retiro es un traslado a efectivo, nunca un gasto. |
+| RED-675 | `Consigné 90 mil en Bancolombia de la plata que tenía guardada` | Transferencia, $90.000, Efectivo a Bancolombia |  |
+| RED-676 | `Recargué Nequi con 50k desde mi cuenta de ahorros` | Transferencia, $50.000, Ahorros a Nequi |  |
+| RED-677 | `Retiré 70 lucas de Daviplata y las tengo en el bolsillo` | Transferencia, $70.000, Daviplata a Efectivo |  |
+| RED-678 | `Pasé 100k a Nequi y después 40k de Nequi a Bancolombia` | 2 movimientos: $100.000, $40.000 o Pregunta antes de inventar | De dónde salieron los primeros 100k no se dijo: puede preguntar antes de armar las dos transferencias. |
+| RED-679 | `Me pasé 35 mil entre mis cuentas, no me cobraron nada` | Pregunta antes de inventar o Transferencia, $35.000 | No dice cuáles cuentas: pregunta y no inventa una comisión. |
+| RED-680 | `Mandé 120k a mi otra cuenta y el banco me cobró 3k por moverla` | 2 movimientos: $120.000, $3.000 o Pregunta antes de inventar | La comisión es un gasto aparte de la transferencia. |
+| RED-686 | `Me envié 45k a mi Nequi desde mi Bancolombia` | Transferencia, $45.000, Bancolombia a Nequi |  |
+| RED-687 | `Saqué 100k del banco y de ahí pagué 25k de almuerzo` | 2 movimientos: $100.000, $25.000 o Pregunta antes de inventar |  |
+| RED-688 | `Metí al banco los 150k que tenía en la casa` | Pregunta antes de inventar o Transferencia, $150.000 | Hay varios bancos: pregunta a cuál, y nunca es un ingreso. |
+| RED-689 | `Pasé 80k a Nequi desde el banco` | Pregunta antes de inventar o Transferencia, $80.000 | Con dos bancos propios, pregunta cuál fue el de origen. |
+| RED-690 | `Saqué 60k de la cuenta y los moví` | Pregunta antes de inventar | No dice a dónde fueron: pregunta y no lo toma como gasto. |
+| RED-691 | `Le mandé 70k a Jorge a su Nequi, eso no es mío` | Nunca transferencia: si no hay tarjeta, pregunta o explica | Es plata de un tercero: nunca un traslado entre cuentas propias. |
+| RED-692 | `Pasé 90k de mi cuenta de nómina a mi cuenta de ahorros` | Transferencia, $90.000, Nómina a Ahorros |  |
+| RED-693 | `De los 200k que saqué, solo gasté 35k en la tienda` | 2 movimientos: $200.000, $35.000 o Gasto, $35.000 o Pregunta antes de inventar |  |
+| RED-695 | `Pasé 100k a Nequi, pero después devolví los mismos 100k a Bancolombia` | 2 movimientos: $100.000, $100.000 o Pregunta antes de inventar |  |
+| RED-697 | `Saqué 50k para tener sencillo, todavía no me los he gastado` | Transferencia, $50.000 o Pregunta antes de inventar |  |
+| RED-698 | `Pasé 300k de mi cuenta al bolsillo de ahorros del mismo banco` | Transferencia, $300.000 o Pregunta antes de inventar |  |
+| RED-699 | `De Davivienda me mandé 75k a Nequi` | Transferencia, $75.000, Davivienda a Nequi |  |
+| RED-700 | `Pasé 150k de Nequi a Bancolombia, bueno, eran 105k` | Transferencia, $105.000, Nequi a Bancolombia |  |
+| RED-702 | `Saqué 150k para la vuelta, compré mercado por 42k y gasolina por 20k` | 3 movimientos: $150.000, $42.000, $20.000 o Pregunta antes de inventar |  |
+| RED-704 | `Saqué 40k del bolsillo de transporte y los devolví a mi saldo normal` | Transferencia, $40.000 o Pregunta antes de inventar o Nunca gasto: si no hay tarjeta, pregunta o explica | Mover plata entre bolsillos propios no es consumo. |
+| RED-705 | `Dejé programado pasar 100k a ahorros para el viernes, todavía no ha salido` | Nunca transferencia ni gasto ni ingreso: si no hay tarjeta, pregunta o explica | Una transferencia programada no se registra como hecha. |
+| RED-706 | `Intenté pasar 80k a Nequi, pero la transacción salió rechazada` | Nunca transferencia ni gasto ni ingreso: si no hay tarjeta, pregunta o explica | Lo rechazado no movió plata. |
+| RED-707 | `Me salió dos veces el mismo envío de 50k entre mis cuentas, pero solo lo hice una vez` | Pregunta antes de inventar o Transferencia, $50.000 | Una sola transferencia: la segunda notificación es un duplicado. |
+| RED-708 | `Mandé 120k de Bancolombia a Nequi, pero sigue pendiente` | Nunca transferencia ni gasto ni ingreso: si no hay tarjeta, pregunta o explica | Pendiente no es ejecutada: no se mueven los saldos. |
+| RED-710 | `¿Cuánta plata he movido entre mis cuentas este mes sin contarla como gasto?` | Responde con datos (menciona «transfer|movid|trasl|cuentas»), sin tarjeta |  |
+
+## Ronda 6: comisiones bancarias y 4x1000
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-681 | `Saqué 100 mil y me cobraron 4 mil por usar el cajero` | 2 movimientos: $100.000, $4.000 o Pregunta antes de inventar | Retiro de 100.000 a efectivo y comisión de 4.000 como gasto, no un gasto de 104.000. |
+| RED-682 | `Retiré 250k y me descontaron el cuatro por mil` | 2 movimientos: $250.000, $1.000 o Pregunta antes de inventar | El 4x1000 no se calcula solo (decisión del dueño): si no dice cuánto fue, pregunta el valor que cobró el banco. |
+| RED-683 | `Me cobraron mil pesos de 4x1000 cuando saqué 250 mil` | 2 movimientos: $1.000, $250.000 o 2 movimientos: $250.000, $1.000 o Pregunta antes de inventar | Un solo gasto de GMF de 1.000; no se calcula otra vez. |
+| RED-684 | `El banco me quitó 12k de cuota de manejo` | Gasto, $12.000, categoría banco |  |
+| RED-685 | `Por mandar esos 200 mil me cobraron 3.500 de comisión` | Gasto, $3.500, categoría banco o 2 movimientos: $200.000, $3.500 o Pregunta antes de inventar | La comisión es de 3.500; los 200.000 son la transferencia, no el gasto. |
+| RED-694 | `Me apareció un cobro de 2.800 por una transferencia` | Gasto, $2.800, categoría banco |  |
+| RED-696 | `El banco me devolvió los 3.500 de comisión que me había cobrado` | Ingreso, $3.500 o Pregunta antes de inventar | Es la devolución de un cobro: entra a la cuenta; no es sueldo. |
+| RED-701 | `Saqué 300k, me cobraron 5k del cajero y 1.200 de cuatro por mil` | 3 movimientos: $300.000, $5.000, $1.200 o Pregunta antes de inventar |  |
+| RED-703 | `Consigné 200k en el banco y me cobraron 2 mil por la consignación` | 2 movimientos: $200.000, $2.000 o Pregunta antes de inventar |  |
+| RED-709 | `Mandé 100k a mi otra cuenta y llegaron 98k porque descontaron 2k` | 2 movimientos: $100.000, $2.000 o Pregunta antes de inventar |  |
+
+## Ronda 6: tarjeta de crédito, cuotas, abonos e intereses
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-711 | `Compré unos audífonos de 240k a 3 cuotas con la tarjeta de crédito` | Quedan pendientes: Deuda $240.000 | La tarjeta es una deuda con la persona Tarjeta: la compra se anota completa, una sola vez. Las cuotas se entienden pero no se llevan (ver docs/BOT.md). |
+| RED-712 | `Pagué 85k con la tarjeta, a una sola cuota` | Quedan pendientes: Deuda $85.000 o Pregunta antes de inventar | Un consumo con la tarjeta de crédito, no el pago de la tarjeta. |
+| RED-713 | `Aboné 150k a la tarjeta desde Nequi` (antes: debo 600000 a Tarjeta por compras) |  | Abonar a la tarjeta baja la deuda; no es un gasto nuevo. |
+| RED-714 | `Pagué los 620k que debía de la tarjeta este mes` (antes: debo 620000 a Tarjeta por compras) |  |  |
+| RED-715 | `Me cobraron 18k de intereses de la tarjeta` | Quedan pendientes: Deuda $18.000 o Gasto, $18.000, categoría banco | Los intereses son un gasto financiero que además aumenta lo que se debe a la tarjeta. |
+| RED-716 | `La tarjeta me cobró 25 mil de cuota de manejo` | Quedan pendientes: Deuda $25.000 o Gasto, $25.000, categoría banco |  |
+| RED-717 | `Hice un avance de 100k de la tarjeta y me llegó a la cuenta` | Pregunta antes de inventar o Quedan pendientes: Deuda $100.000 | Un avance es deuda con la tarjeta, no un ingreso; si no dice a qué cuenta llegó, pregunta. |
+| RED-718 | `Saqué 200k de avance y me cobraron 12k por hacerlo` | 2 movimientos: $200.000, $12.000 o Pregunta antes de inventar |  |
+| RED-719 | `Diferí el mercado de 180k a dos cuotas` | Quedan pendientes: Deuda $180.000 o Pregunta antes de inventar | Una sola compra de 180.000 en dos cuotas; no son dos compras. |
+| RED-720 | `Este mes me toca pagar la tercera cuota del computador, son 130k` | Gasto, $130.000 o Pregunta antes de inventar o  |  |
+| RED-721 | `Compré ropa por 200k con la tarjeta y hoy aboné 50k` | 2 movimientos: $200.000, $50.000 o Pregunta antes de inventar | La compra y el abono son dos movimientos distintos. |
+| RED-722 | `Debía 400k de la tarjeta y solo alcancé a pagar 250k` (antes: debo 400000 a Tarjeta por compras) |  o Pregunta antes de inventar | Queda debiendo 150.000. |
+| RED-723 | `Debía 180k y por error pagué 200k a la tarjeta` (antes: debo 180000 a Tarjeta por compras) | Pregunta antes de inventar o Responde con datos (menciona «mas de lo que|excedente|a favor»), sin tarjeta o  | Pasa de lo que se debe: avisa y deja elegir. |
+| RED-724 | `Anularon la compra de 90k que había hecho con la tarjeta` (antes: debo 90000 a Tarjeta por compras) | Responde con datos (menciona «anul|borr|cual»), sin tarjeta | Anula la compra original en vez de crear un ingreso. |
+| RED-725 | `Me devolvieron 30k de los 120k que había comprado con la tarjeta` (antes: debo 120000 a Tarjeta por compras) | Ingreso, $30.000 o  o Pregunta antes de inventar | Un reembolso parcial baja el gasto neto a 90.000. |
+| RED-726 | `Pagué 150k de la cena con mi tarjeta y Laura me va a pasar 50k` | Pregunta antes de inventar o Quedan pendientes: $150.000 | Laura todavía no pagó: es plata por cobrar, no un ingreso. |
+| RED-727 | `Compré un televisor de 900k a cuotas con la tarjeta` | Pregunta antes de inventar o Quedan pendientes: Deuda $900.000 | No inventa cuántas cuotas son. |
+| RED-728 | `De los 300k que pagué, 25k eran intereses y el resto abonó a la deuda` (antes: debo 600000 a Tarjeta por compras) | 2 movimientos: $25.000, $275.000 o 2 movimientos: $275.000, $25.000 o Pregunta antes de inventar |  |
+| RED-729 | `Me cobraron 40 dólares en la tarjeta por una suscripción` | Quedan pendientes: Gasto categoría Suscripciones | Se queda en dólares, en la cuenta de dólares: nunca se convierte a pesos por su cuenta. |
+| RED-730 | `¿Cuánto debo realmente de la tarjeta si ya aboné 150k?` (antes: debo 500000 a Tarjeta por compras; le pagué 150000 a Tarjeta) | Responde con datos (menciona «350»), sin tarjeta | Saldo = lo que se debe menos lo ya abonado. |

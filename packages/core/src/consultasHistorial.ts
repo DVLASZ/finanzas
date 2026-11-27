@@ -133,6 +133,15 @@ export function responderHistorial(texto: string, datos: Datos, ahora: Date): st
   };
   const apertura = config.fecha_apertura ?? '2000-01-01 00:00:00';
 
+  // lo que se movió entre cuentas propias: no es gasto ni ingreso, se cuenta aparte
+  if (/\b(?:movido|movi|mover|pasado|trasladado|transferido)\b.*\b(?:entre (?:mis )?cuentas|cuentas propias)\b|\b(?:traslados|transferencias) entre (?:mis )?cuentas\b/.test(t)) {
+    const p = periodo ?? { ...rangoPeriodo('mes', ahora), nombre: 'este mes' };
+    const mov = filtrarMovimientos(datos, { desde: p.desde, hasta: p.hasta, tipos: ['transferencia'] });
+    const total = mov.reduce((s, m) => s + m.asientos.filter(x => x.monto > 0 && x.moneda === 'COP').reduce((u, x) => u + x.monto, 0), 0);
+    if (!mov.length) return `🔁 En ${p.nombre} no has movido plata entre tus cuentas.`;
+    return `🔁 En ${p.nombre} moviste ${formatear(total, 'COP')} entre tus cuentas, en ${mov.length} ${mov.length === 1 ? 'traslado' : 'traslados'}. Eso no cuenta como gasto ni como ingreso.`;
+  }
+
   // el último gasto, ingreso o movimiento que se anotó
   const ultimo = t.match(/\bultim[oa] (gasto|ingreso|movimiento|compra)\b/);
   if (ultimo) {

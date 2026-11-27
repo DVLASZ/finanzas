@@ -709,6 +709,21 @@ Lo que entra:
 
 Con esto la ronda queda en 670 de 670: `red-team-pendientes.ts` está vacío y ya no se salta ningún caso. Dos piezas cierran las preguntas a su movimiento y las confirmaciones parciales: «A Daniel» responde al préstamo de la cola que no tiene nombre, «Laura me debe 15k y Sofía me debe 20k» (y «Faber me debe 15k y Jorge 20k», «debo 10k a Faber y 15k a Jorge») se parten en un movimiento por persona, y una respuesta de varias órdenes se aplica de arriba hacia abajo hasta la primera tarjeta que todavía tiene una pregunta abierta. Cuando la tarjeta de arriba pregunta la categoría, una respuesta de tres frases no es una categoría: el bot repite la pregunta y no toca la cola (RED-669).
 
+### Ronda 6, parte 1: traslados, retiros, comisiones y tarjeta de crédito (RED-671 a RED-730)
+
+Sesenta casos nuevos, todos en verde, corren con una instalación que tiene Bancolombia, Davivienda, Ahorros y Nómina y la persona «Tarjeta» (`prepararLote` en `red-team.test.ts`). La pieza nueva es `traslados.ts`: `trasladar` va en `alEscribir` justo después de `limpiarDictado` y reescribe la frase con lo que el parser ya entendía, o pregunta.
+
+1. **Traslados entre cuentas propias**: «me mandé 80 lucas de Bancolombia pa Nequi», «recargué Nequi con 50k desde mi cuenta de ahorros», «de Davivienda me mandé 75k a Nequi» pasan a «pasé 80000 de bancolombia a nequi». El origen y el destino salen de las palabras que preceden a cada cuenta (de, desde, a, pa, hacia). «Bueno, eran 105k» manda el último monto. Un envío a una persona («le mandé 70k a Jorge a su Nequi») nunca es un traslado propio.
+2. **Retiros y consignaciones**: «saqué 200k del cajero con mi tarjeta de ahorros» es de Ahorros a Efectivo; «consigné 90 mil en Bancolombia» es de Efectivo a Bancolombia. Con «del banco» y varias cuentas de banco se pregunta cuál; con una sola, es esa.
+3. **Comisiones y 4x1000**: «saqué 100 mil de Bancolombia y me cobraron 4 mil por usar el cajero» son dos movimientos (la transferencia y `comision cajero 4000 bancolombia`). El 4x1000 no se calcula: si el banco lo descontó y no se dice cuánto, se pregunta el valor. Un cobro suelto («me apareció un cobro de 2.800 por una transferencia») es un gasto de Costos del banco. «Intereses» entró al diccionario de esa categoría.
+4. **Lo que no pasó**: programado, pendiente, rechazado o intentado no se anota; el bot lo dice. Sin las dos cuentas («entre mis cuentas», «mi otra cuenta», «el bolsillo») pregunta cuáles.
+5. **Compras después del retiro**: «saqué 150k de Nequi, compré mercado por 42k y gasolina por 20k» son tres movimientos. Lo que `traslados.ts` no alcanza a partir se deja al flujo de siempre. `bot.ts` no vuelve a juntar con `hablada` lo que ya viene partido por «;».
+6. **Tarjeta de crédito**: es la persona «Tarjeta». Si la instalación no la tiene, nada cambia. Con ella, una compra con la tarjeta es una deuda con Tarjeta, el abono es el pago de esa deuda («le pagué 150000 a Tarjeta con nequi»), los intereses y la cuota de manejo suben la deuda en Costos del banco, un avance es «Tarjeta me prestó» en la cuenta donde llegó (o en efectivo si salió del cajero) y «cuánto debo de la tarjeta» es el saldo con esa persona. Las cuotas se entienden en la frase pero no se llevan: la deuda queda completa.
+7. **Consulta**: «cuánta plata he movido entre mis cuentas este mes» suma los traslados del periodo aparte de gastos e ingresos (`consultasHistorial.ts`).
+8. **Anulaciones**: «anularon la compra de 90k» anula el movimiento de ese monto (`anulaciones.ts`).
+
+Dos expectativas se ajustaron al comportamiento real y su nota lo dice: RED-711 ya no pide las cuotas en el concepto (no se guardan) y RED-729 acepta el gasto en dólares tal cual, sin convertirlo.
+
 ## 9. Cómo probarlo
 
 El núcleo corre en Node sin red y sin navegador. `MemoriaRepo` guarda todo en memoria y `tests/ayudas.ts` trae un bot listo con el reloj fijo:
