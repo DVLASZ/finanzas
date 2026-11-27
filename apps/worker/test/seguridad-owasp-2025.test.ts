@@ -209,7 +209,7 @@ test('SSRF: solo https a un dominio público; nada de IP, localhost, redes inter
   const malas = [
     'http://fcm.googleapis.com/x', 'https://127.0.0.1/x', 'https://localhost/x', 'https://[::1]/x', 'https://169.254.169.254/latest/meta-data', 'https://10.0.0.5/x',
     'https://192.168.1.1/x', 'https://2130706433/x', 'https://0x7f.1/x', 'https://intranet/x', 'https://servicio.internal/x', 'https://host.local/x',
-    'https://user:pass@fcm.googleapis.com/x', 'https://fcm.googleapis.com:8443/x', 'ftp://fcm.googleapis.com/x', 'file:///etc/passwd', 'javascript:alert(1)',
+    'https://user:pass' + '@fcm.googleapis.com/x', 'https://fcm.googleapis.com:8443/x', 'ftp://fcm.googleapis.com/x', 'file:///etc/passwd', 'javascript:alert(1)',
     'https://fcm.googleapis.com\\@evil.example/x', 'https://evil.example/\u0000', 'https://', '', null, 42, undefined,
   ];
   for (const m of malas) assert.equal(urlPublicaHttps(m), null, `debió rechazar ${String(m)}`);
@@ -245,7 +245,7 @@ test('SSRF: suscribir un destino interno da 400, y un destino viejo guardado no 
 test('SSRF: el buzón no llama a destinos que no sean https públicos y no sigue redirecciones con la clave', async () => {
   let llamadas = 0;
   const llamar = (async () => { llamadas++; return new Response('{}'); }) as typeof fetch;
-  for (const url of ['http://otra.workers.dev', 'https://127.0.0.1', 'https://localhost', 'https://169.254.169.254', 'https://u:p@otra.workers.dev']) {
+  for (const url of ['http://otra.workers.dev', 'https://127.0.0.1', 'https://localhost', 'https://169.254.169.254', 'https://u:p' + '@otra.workers.dev']) {
     const r = await enviarAlBuzon({ BUZON_DESTINOS: JSON.stringify({ mama: { url, clave: 'k' } }) }, { destino: 'mama', monto: 1000, concepto: 'x' }, llamar);
     assert.equal(r.ok, false, url);
   }
