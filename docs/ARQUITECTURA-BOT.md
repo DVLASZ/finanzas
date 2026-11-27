@@ -738,6 +738,20 @@ Cincuenta y cinco casos nuevos, todos en verde. La pieza es `topesHablados.ts`: 
 
 Lo que la app no tiene (topes por quincena, año o semana, programar un tope, avisos propios, presupuestos y metas compartidas) queda como explicación; si algún día se necesita, es una pieza nueva con su dato y su pantalla.
 
+### Ronda 6, parte 3: el hogar y la asociación (RED-786 a RED-840)
+
+Cincuenta y cinco casos nuevos, todos en verde, con la batería en 840 de 840. Corren con las personas de la casa y de la asociación ya creadas (`prepararLote`). La pieza es `hogarAsociacion.ts`: `hablarCasa` va en `alEscribir` después de `hablarPresupuesto` y reescribe con los movimientos de siempre o explica. Lo que se reescribe se ejecuta con `enCasa` encendido para no volver a reescribirse.
+
+La app no tiene asociados con cuotas, un fondo común ni conciliaciones. Cada obligación es una cuenta por cobrar o por pagar con una persona:
+
+1. **Hogar**: «mamá pagó el recibo de 120k y yo le debo mi mitad» es una deuda de 60.000 con Mamá; «Mateo pagó el internet, nos toca 60k a cada uno», lo mismo con Mateo; «el arriendo vale 900k y lo dividimos entre mamá, Mateo y yo» y «mamá pone 20, Mateo 20 y yo los otros 20» son gastos entre tres. «Le pasé a mamá 150k para que pagara el agua» es un anticipo (préstamo), no el gasto. «Mamá me devolvió 40k» es un ingreso de Mamá. «Yo pagué el agua de 70k y mamá me pasó su mitad» son dos movimientos.
+2. **Lo que se repite**: «todos los meses», «cada mes» o «cada quincena» sin el día del mes pregunta el día y no registra pagos futuros.
+3. **Fondo común**: no existe. «Puse 100k en el fondo» se explica y propone un préstamo a la persona o una meta; «del fondo sacamos 75k para pagar el gas» se anota como el gasto de gas.
+4. **Asociación**: la multa («a Pipe le pusieron multa de 15k») y la cuota que alguien debe son cuentas por cobrar; «Jorge pagó» y «Diana dejó pagadas tres cuotas de 50k» son pagos de esa persona; «Karla pagó 100k de capital y 8k de intereses» son el pago y un ingreso aparte por intereses; el préstamo del fondo es un préstamo a la persona. Un préstamo con interés pregunta si el porcentaje es mensual, anual o sobre el total, y los pagos que alguien «va a hacer» no se anotan.
+5. **Lo que no hace**: no lleva la lista de asociados, el estado de cada cuota ni el periodo de cada pago; no cierra periodos ni concilia. «¿Quién debe la cuota?» muestra `deudas`; el cierre anota los pagos dichos y deja lo que falta como aviso. Compensar o descontar («le descontamos 20k») nunca se hace solo: propone el saldo neto y espera tu orden. Un pago repetido («es la misma consignación») no se anota dos veces.
+
+Varias expectativas aceptan la explicación en lugar de una tarjeta (están marcadas en cada caso).
+
 ## 9. Cómo probarlo
 
 El núcleo corre en Node sin red y sin navegador. `MemoriaRepo` guarda todo en memoria y `tests/ayudas.ts` trae un bot listo con el reloj fijo:

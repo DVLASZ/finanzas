@@ -6,6 +6,9 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-27
 
+- La casa y la asociación con palabras de todos los días (`hogarAsociacion.ts`): deudas entre familia, anticipos, multas y cuotas como cuentas por cobrar, préstamos del fondo, intereses aparte del capital.
+- Un pago fijo dicho sin el día del mes pregunta el día.
+
 - Topes y metas con palabras de todos los días (`topesHablados.ts`): fijar, subir, bajar, quitar, consultar, simular y cambiar el objetivo de una meta. Lo que no existe (topes por quincena o año, metas compartidas) se explica.
 - `125 mil quinientos` y `8 mil 500` se leen como un solo monto.
 - Los rendimientos de una cuenta de ahorros entran como ingreso.

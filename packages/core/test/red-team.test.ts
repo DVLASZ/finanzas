@@ -263,6 +263,12 @@ function prepararLote(bot: Bot, caso: Caso): void {
   const d = bot.repo.datos;
   for (const nombre of ['Bancolombia', 'Davivienda', 'Ahorros', 'Nómina']) d.cuentas.push(dinero(nombre.toLowerCase().replace('ó', 'o'), nombre, 'COP', true));
   d.config.alias_cuentas = JSON.stringify({ bancolombia: ['bancolombia', 'bancol'], davivienda: ['davivienda'], ahorros: ['ahorros'], nomina: ['nomina'] });
+  // desde RED-786 también están las personas de la casa y de la asociación
+  if (Number(caso.id.slice(4)) >= 786) {
+    for (const n of ['Mamá', 'Mateo', 'Jorge', 'Laura', 'Pipe', 'Diana', 'Alejandro', 'David', 'Karla', 'Esteban', 'Sofía', 'Paula', 'Daniel', 'Faber']) {
+      d.cuentas.push({ id: 'p:' + n.toLowerCase().replace('á', 'a').replace('í', 'i'), nombre: n, clave: n.toLowerCase().replace('á', 'a').replace('í', 'i'), tipo: 'persona', moneda: 'COP', grupo: 'amigos' });
+    }
+  }
   d.cuentas.push({ id: 'p:tarjeta', nombre: 'Tarjeta', clave: 'tarjeta', tipo: 'persona', moneda: 'COP', grupo: 'empresa' });
 }
 

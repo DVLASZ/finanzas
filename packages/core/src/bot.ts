@@ -8,6 +8,7 @@
  * hasta confirmar. Tras confirmar quedan [Editar] [Deshacer]. El bot nunca borra: solo anula.
  */
 import { calcularSaldos, compromisosSaldados, deudasPorPersona, gastoHabitual, resumenSaldos } from './consultas.ts';
+import { hablarCasa } from './hogarAsociacion.ts';
 import { hablarPresupuesto } from './topesHablados.ts';
 import { trasladar } from './traslados.ts';
 import { limpiarDictado } from './dictado.ts';
@@ -170,6 +171,8 @@ export async function procesar(
 }
 
 class Motor {
+  /** true mientras se ejecuta lo que reescribió hogarAsociacion.ts: no se vuelve a reescribir */
+  private enCasa = false;
   // (campos explícitos: Node ejecuta TypeScript "borrando tipos" y no admite parámetros-propiedad)
   private repo: Repo;
   private datos: Datos;
@@ -308,6 +311,20 @@ class Motor {
         for (const f of h.frases) salidas.push(...await this.alEscribir(f));
         if (h.extra && salidas.length) salidas[0] = { ...salidas[0], texto: salidas[0].texto + '\n' + h.extra };
         return salidas;
+      }
+    }
+    // la casa y la asociación dichas como se hablan: cuentas por cobrar y por pagar con personas (ver hogarAsociacion.ts)
+    if (!banco && !this.enCasa) {
+      const h = hablarCasa(texto, this.ctx);
+      if (h?.texto) return [{ texto: h.texto }];
+      if (h?.reescribir || h?.frases) {
+        this.enCasa = true;
+        try {
+          const salidas: Salida[] = [];
+          for (const fr of h.frases ?? [h.reescribir as string]) salidas.push(...await this.alEscribir(fr));
+          if (h.extra && salidas.length) salidas[salidas.length - 1] = { ...salidas[salidas.length - 1], texto: salidas[salidas.length - 1].texto + '\n' + h.extra };
+          return salidas;
+        } finally { this.enCasa = false; }
       }
     }
     let deTraslado = false; // lo que reescribió traslados.ts ya viene partido en movimientos con «;»: no se vuelve a juntar
