@@ -133,8 +133,8 @@ function palabraSuelta(t: string): Suelta | null {
   if (/^(?:borra|borralo|borrala|borrar)$/.test(s)) return 'borra';
   if (/^(?:no|nop|nel|cancela|cancelar|cancelalo|cancelala|olvidalo|mejor no|no gracias|descarta|descartar|descartalo|descartala)$/.test(s)) return 'cancela';
   // «no lo guardes», «espera, no lo guardes», «olvídalo, al final no compré nada», «mejor cancela eso»: se dicen con más palabras pero cancelan lo mismo
-  if (/^(?:no,? |espera,? |mejor |oye,? |ah,? )*(?:no (?:lo|la) (?:guardes|guarde|anotes|registres|apuntes)|olvid(?:a|alo|ala|e)(?: eso| esto)?(?: al final no .+)?|(?:cancela|cancelalo|descarta)(?: ese| esa| eso| esto| el| la)?(?: gasto| movimiento| registro| pendiente| hipotetico)?|al final no (?:lo )?(?:compre|gaste|pague|hice).*|me equivoque antes de confirmar|todavia no (?:lo|la) he pagado|no (?:lo|la) (?:he )?pagado todavia)$/.test(s)) return 'cancela';
-  if (/^(?:no |espera |mejor )*borra(?: ese| esa| eso| esto| el| la)?(?: gasto| movimiento| registro| pendiente| hipotetico)$/.test(s)) return 'borra'; // solo actúa con una tarjeta pendiente
+  if (/^(?:no,? |espera,? |mejor |oye,? |ah,? |ahora si |ya |entonces )*(?:no (?:lo|la) (?:guardes|guarde|anotes|registres|apuntes)(?: .*)?|olvid(?:a|alo|ala|e)(?: eso| esto)?(?: al final no .+)?|(?:cancela|cancelalo|descarta)(?: ese| esa| eso| esto| el| la)?(?: gasto| movimiento| registro| pendiente| hipotetico)?|al final no (?:lo )?(?:compre|gaste|pague|hice).*|me equivoque antes de confirmar|todavia no (?:lo|la) he pagado|no (?:lo|la) (?:he )?pagado todavia)$/.test(s)) return 'cancela';
+  if (/^(?:no |espera |mejor |ahora si |ya |entonces )*borra(?: ese| esa| eso| esto| el| la)?(?: gasto| movimiento| registro| pendiente)?(?: hipotetico)?$/.test(s)) return 'borra'; // solo actúa con una tarjeta pendiente
   if (/^(?:gracias|muchas gracias|mil gracias|grax|gracias parce|chevere|genial|super)$/.test(s)) return 'gracias';
   return null;
 }
