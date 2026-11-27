@@ -666,6 +666,14 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - «¿Cuánta plata he movido entre mis cuentas este mes?» suma los traslados sin contarlos como gasto.
 - Tarjeta de crédito: crea la persona «Tarjeta» (`agregar persona Tarjeta`). Después «compré unos audífonos de 240k con la tarjeta» es una deuda con Tarjeta, «aboné 150k a la tarjeta desde Nequi» la paga, «me cobraron 18k de intereses de la tarjeta» la sube y «cuánto debo de la tarjeta» da el saldo. Las cuotas se dicen pero no se llevan: la deuda queda completa.
 
+## Topes y metas dichos con tus palabras
+
+- «Ponme un tope de 300k al mes en comida», «súbeme el presupuesto de transporte a 150k» o «bájame el tope de salidas a 100 mil» dejan el tope en ese monto (no lo suman al anterior). «Déjame 100k para transporte y 200k para comida» fija dos.
+- «¿Cuánto me queda del presupuesto de salidas?», «¿cuánto me pasé en comida?» y «si gasto 40k en ropa, ¿me paso?» se contestan sin anotar nada.
+- Los topes son mensuales y de una sola persona. Si pides uno por quincena, por año o compartido, te digo la cuenta que sirve (250k por quincena son 500k al mes). Los avisos de cada tope son fijos, al 80 % y al 100 %.
+- Metas: «crea una meta de 1.500.000 para cambiar de celular», «metí 100k al ahorro del viaje», «¿cuánto me falta para la meta de la bici?», «cancela la meta de la consola», «le saqué 20k al ahorro del viaje». Las metas no se comparten y los aportes no se hacen solos.
+- «El bolsillo de ahorros me generó 8k de rendimientos» es un ingreso a esa cuenta.
+
 ## Lo que el bot no hace
 
 - No borra nada, solo anula.

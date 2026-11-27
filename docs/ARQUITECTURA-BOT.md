@@ -724,6 +724,20 @@ Sesenta casos nuevos, todos en verde, corren con una instalación que tiene Banc
 
 Dos expectativas se ajustaron al comportamiento real y su nota lo dice: RED-711 ya no pide las cuotas en el concepto (no se guardan) y RED-729 acepta el gasto en dólares tal cual, sin convertirlo.
 
+### Ronda 6, parte 2: topes de presupuesto y metas de ahorro (RED-731 a RED-785)
+
+Cincuenta y cinco casos nuevos, todos en verde. La pieza es `topesHablados.ts`: `hablarPresupuesto` va en `alEscribir` antes de `trasladar`, y devuelve una respuesta que no guarda nada, o los comandos de siempre (`tope comida 300000`, `ahorré 100000 para viaje`, `saque 50000 de la meta emergencias`) que `alEscribir` ejecuta uno por uno.
+
+1. **Fijar, subir y bajar un tope**: «ponme un tope de 300k al mes en comida», «súbeme el presupuesto de transporte a 150k», «déjame 100k para transporte y 200k para comida» (dos topes). Queda en el monto que se dice, no se suma al anterior. Si la categoría no existe (domicilios, apuestas, «cosas de la U»), pregunta cuál en vez de elegir una. «Quita el presupuesto de mecato» quita solo el tope.
+2. **Consultas y simulación**: cuánto queda, cuánto se pasó, «ya me gasté 180k y el tope era 150k» (muestra el exceso y no toca el tope), «voy por el 75 % si el tope es 200k» y «si gasto 40k en ropa, ¿me paso?» (dice si se pasa y que no anotó nada).
+3. **Lo que los topes no tienen**: por quincena, por año, semanales, programados desde un mes, avisos a medida, presupuestos compartidos. En cada caso explica la cuenta que sí sirve (250k por quincena son 500k al mes; 2 millones al año son unos 166.667 al mes) y no fija nada. Los avisos son solo al 80 % y al 100 %.
+4. **Metas**: «crea una meta de 1.500.000 para cambiar de celular», «metí 100k al ahorro del viaje», «le saqué 20k al ahorro», «réstale 40k», «cuánto me falta para la meta de la bici», «cancela esa meta», «ahora quiero ahorrar dos millones» (cambia el objetivo y deja lo ahorrado). «Usé los 120k que había separado para pagar el arriendo» saca de la meta y deja el gasto como tarjeta. Un aporte que se hará («el viernes voy a meterle 100k») no mueve nada. Las metas compartidas, los aportes automáticos y pasar lo apartado a otra meta se explican y piden el comando de siempre.
+5. **Cuentas sueltas**: «tengo 350k de 1.2 millones, ¿qué porcentaje llevo?» (29,2 % y faltan 850.000) y «la meta era de 500k, tenía 480k y guardé 30k» (completa, sobran 10.000).
+6. **Rendimientos**: «el bolsillo de ahorros me generó 8k de rendimientos» es un ingreso a esa cuenta, no un aporte tuyo.
+7. **«125 mil quinientos»** y «8 mil 500» son un solo monto (`dictado.ts`).
+
+Lo que la app no tiene (topes por quincena, año o semana, programar un tope, avisos propios, presupuestos y metas compartidas) queda como explicación; si algún día se necesita, es una pieza nueva con su dato y su pantalla.
+
 ## 9. Cómo probarlo
 
 El núcleo corre en Node sin red y sin navegador. `MemoriaRepo` guarda todo en memoria y `tests/ayudas.ts` trae un bot listo con el reloj fijo:

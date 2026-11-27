@@ -62,6 +62,10 @@ export function limpiarDictado(texto: string, ctx?: Contexto): string {
   }
   // «el quince de noviembre»: el día dicho en letras
   t = t.replace(new RegExp(String.raw`\b(${DIAS.join('|')})(\s+de\s+(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b)`, 'gi'), (_m, d: string, resto: string) => `${DIAS.indexOf(d.toLowerCase()) + 1}${resto}`);
+  // «125 mil quinientos», «8 mil 500»: los miles y lo que sigue son un solo monto
+  const CIENTOS: Record<string, number> = { cien: 100, doscientos: 200, trescientos: 300, cuatrocientos: 400, quinientos: 500, seiscientos: 600, setecientos: 700, ochocientos: 800, novecientos: 900 };
+  t = t.replace(/(?<![\d.,])(\d{1,3})\s*mil\s+(cien|doscientos|trescientos|cuatrocientos|quinientos|seiscientos|setecientos|ochocientos|novecientos)\b/gi, (_m, n: string, c: string) => String(Number(n) * 1000 + CIENTOS[c.toLowerCase()]));
+  t = t.replace(/(?<![\d.,])(\d{1,3})\s*mil\s+(\d{3})(?![\d.,])/gi, (_m, n: string, c: string) => String(Number(n) * 1000 + Number(c)));
   t = numerosDeDinero(t);
   // el mismo monto en cifra y en letras: «25.000 veinticinco mil» es uno solo
   t = t.replace(/(?<![\d.,])(\d[\d.,]{3,})\s+(\d[\d.,]{3,})(?![\d.,])/g, (m, a: string, b: string) => (a.replace(/\D/g, '') === b.replace(/\D/g, '') ? a : m));
