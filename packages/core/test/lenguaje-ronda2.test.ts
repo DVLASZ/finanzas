@@ -185,7 +185,7 @@ test('«me fiaron 20000 donde Pedro» es deuda con Pedro', async () => {
 });
 
 test('«me quedó debiendo Pedro 15000» es un préstamo: Pedro te debe', async () => {
-  assert.match(await dice('me quedó debiendo Pedro 15000'), /Préstamo · le prestas a Pedro · \$15\.000/);
+  assert.match(await dice('me quedó debiendo Pedro 15000'), /Préstamo · te debe Pedro .* · \$15\.000/);
 });
 
 test('«quedé debiendo 15000» pregunta a quién', async () => {
@@ -193,8 +193,8 @@ test('«quedé debiendo 15000» pregunta a quién', async () => {
 });
 
 test('«me debe ivan 20k» es igual que «ivan me debe 20k»', async () => {
-  assert.match(await dice('me debe ivan 20k'), /Préstamo · le prestas a Ivan · \$20\.000/);
-  assert.match(await dice('ivan me debe 20k'), /Préstamo · le prestas a Ivan · \$20\.000/);
+  assert.match(await dice('me debe ivan 20k'), /Préstamo · te debe Ivan .* · \$20\.000/);
+  assert.match(await dice('ivan me debe 20k'), /Préstamo · te debe Ivan .* · \$20\.000/);
 });
 
 test('«me deben 20k» pregunta quién', async () => {

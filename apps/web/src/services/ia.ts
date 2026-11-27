@@ -1,5 +1,5 @@
 /** Ayuda de la IA del servidor: frases que las reglas no entendieron, con o sin internet. */
-import { validarFrasesIA } from '../../../../packages/core/src/index.ts';
+import { leerFrasesIA, validarFrasesIA } from '../../../../packages/core/src/index.ts';
 import { ctx as contexto } from '../state/store.ts';
 import { leer, escribir } from './almacen.ts';
 import { hayServidor } from './estado.ts';
@@ -31,7 +31,7 @@ export async function pedirAyudaIA(texto: string): Promise<AyudaIA> {
     const d = (await r.json().catch(() => ({}))) as { frases?: string[]; error?: string };
     if (!r.ok) return { frases: [], error: d.error, reintentar: r.status === 429 || r.status >= 500 };
     const c = contexto.peek();
-    const frases = Array.isArray(d.frases) ? d.frases.filter(x => typeof x === 'string') : [];
+    const frases = leerFrasesIA({ frases: d.frases }) ?? [];
     return { frases: c ? validarFrasesIA(frases, texto, c) : [] };
   } catch {
     return { frases: [], reintentar: true };

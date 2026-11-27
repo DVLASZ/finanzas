@@ -679,7 +679,7 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-511 | `Gasté 24k en comida con efectivo  //  No fue en efectivo, fue por Nequi` | Quedan pendientes: Gasto $24.000 en Nequi |  |
 | RED-512 | `Pagué 18k de transporte con Nequi  //  Era con Daviplata, no Nequi` | Quedan pendientes: Gasto $18.000 en Daviplata |  |
 | RED-513 | `Me pagó Jorge los 50k por transferencia  //  Fue en efectivo, me los dio en la mano` | Quedan pendientes: Ingreso $50.000 en Efectivo |  |
-| RED-514 | `Compré el mercado por 75k con tarjeta  //  La tarjeta era la de crédito, no débito` | Quedan pendientes: Gasto $75.000 o Pregunta | La instalación no tiene tarjetas: pregunta o deja la tarjeta como está. |
+| RED-514 | `Compré el mercado por 75k con tarjeta  //  Nequi` | Quedan pendientes: Gasto $75.000 en Nequi | La instalación no tiene tarjetas: pregunta con cuál cuenta se pagó y la respuesta escrita la elige. |
 | RED-515 | `Pasé 100k de Nequi a efectivo  //  Al revés, pasé la plata de efectivo a Nequi` | Quedan pendientes: Transferencia $100.000 |  |
 | RED-516 | `Gasté 35k en una carpeta para la universidad  //  Ponle categoría Universidad` | Quedan pendientes: Gasto $35.000 categoría Universidad |  |
 | RED-517 | `Pagué 22k de gasolina  //  Eso va en Transporte, no en Compras` | Quedan pendientes: Gasto $22.000 categoría Transporte |  |

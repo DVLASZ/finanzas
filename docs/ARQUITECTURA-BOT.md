@@ -752,6 +752,36 @@ La app no tiene asociados con cuotas, un fondo común ni conciliaciones. Cada ob
 
 Varias expectativas aceptan la explicación en lugar de una tarjeta (están marcadas en cada caso).
 
+### 8.10 Estado de los defectos (cierre del 2026-11-27)
+
+Cada defecto de arriba se volvió a probar uno por uno. `packages/core/test/auditoria.test.ts` tiene una prueba por cada defecto cerrado; las reglas viven en `auditoria.ts` (preguntas y respuestas), `dictado.ts` (montos), `parser.ts` (tarjetas), `asientos.ts` y `ia.ts`.
+
+Resueltos y con prueba:
+- 1, 2, 6, 8, 11, 18, 20, 21: ya funcionaban por rondas anteriores (los textos del banco, «vendí», «no me acuerdo si», dos cuentas, el recorrido con universidad, la propina, «Ana y Luis» y «no a Luis»).
+- 3: «me dieron 2000 de cambio» pregunta si es el vuelto; no crea un ingreso.
+- 4: «llegaron 1000 galletas» suma existencias si el producto está en el catálogo y, si no, pregunta si son unidades o plata.
+- 5: «Marta me debe 10000» anota lo que te deben contra la apertura, sin sacar plata de ninguna cuenta (campo `sinSalida`); «le presté 10000 a Marta» sí la saca.
+- 7: «pero no en mecato» excluye Mecato y pregunta la categoría con botones.
+- 9 y 10: «con tarjeta» y «saqué 100k del cajero» preguntan con cuál cuenta cuando hay varias.
+- 12: «transporte 3000» es la categoría, no un recorrido; pregunta a dónde fue.
+- 13: «compré 2 cafés de 3000» pregunta si son el total o cada uno.
+- 14, 15, 16: «5.000,50» pierde los centavos, «12 000» son doce mil y «5ooo» son cinco mil.
+- 17: un millón en una comida, un pasaje o un mecato lleva en la tarjeta el aviso «revisa los ceros».
+- 19: «cuánto es 5000 + 3000» responde `$8.000` y no anota nada.
+- 22 y 23: nombres de pila comunes en minúscula son personas; «con Ana y Luis» es un gasto entre tres.
+- 24: «pagué 15.000 de almuerzo con Nequi y el taxi 7000 en efectivo» son dos movimientos.
+- 25: «10/15» se ofrece como 15/10 con botones.
+- 26: «porque ayer no pude pagar» ya no mueve la fecha. «El lunes» dicho un lunes se sigue anotando de hoy (RED-607 acepta las dos lecturas); si fue el lunes anterior, se corrige con «fue el lunes pasado».
+- 27, 30 y 32: con una tarjeta pendiente «sí», «ok», «gracias» y «borra» actúan sobre ella; la palabra de una categoría que se cancela no se aprende.
+- 28: «cuánto me deben» muestra las deudas y «cuánto gasté ayer» responde «Ayer gastaste…».
+- 29: «cómo registro que vendí algo» lleva al tema Ingreso y «cómo guardo plata para un viaje» al tema Meta.
+- 33: un tope menor a $1.000 se rechaza.
+- 35: un mensaje de más de 400 letras con un solo monto se pregunta en corto.
+- 36: la app vuelve a limpiar y recortar las frases de la IA con `leerFrasesIA`.
+- 37 y 38: la IA no puede cambiar el tipo de un movimiento sin respaldo en lo escrito, repetir frases, partir un monto ni proponer más movimientos que montos dichos.
+
+Queda como decisión y no como defecto: 31 («deshacer 2» anula los dos últimos sin preguntar; es un comando explícito y lo anulado se restaura desde Movimientos).
+
 ## 9. Cómo probarlo
 
 El núcleo corre en Node sin red y sin navegador. `MemoriaRepo` guarda todo en memoria y `tests/ayudas.ts` trae un bot listo con el reloj fijo:

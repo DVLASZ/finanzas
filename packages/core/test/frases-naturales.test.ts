@@ -22,7 +22,7 @@ const ENTIENDE: [string, RegExp][] = [
   ['mercado un palo', /\$1\.000\.000/],
   ['mecato dos barras', /Mecato · \$2\.000/],
   ['tinto 3 mil', /\$3\.000/],
-  ['gasolina 50 lucas con tarjeta', /\$50\.000/],
+  ['gasolina 50 lucas con tarjeta nequi', /\$50\.000/],
   // plata que entra
   ['me giraron 80 mil a neki', /Ingreso · .* \$80\.000 · Nequi/],
   ['me soltaron 30 lucas', /Ingreso · .* \$30\.000/],
@@ -33,13 +33,13 @@ const ENTIENDE: [string, RegExp][] = [
   // deudas y préstamos
   ['me fiaron 20k en la tienda de doña Rosa', /Deuda · le debes a Rosa · \$20\.000/],
   ['quedé debiendo 15 mil a Pedro', /Deuda · le debes a Pedro · \$15\.000/],
-  ['Luis me debe 20k del taxi', /Préstamo · le prestas a Luis · \$20\.000/],
+  ['Luis me debe 20k del taxi', /Préstamo · te debe Luis .* · \$20\.000/],
   ['le presté 40k a Ana', /Préstamo · le prestas a Ana · \$40\.000/],
   // verbos de uso diario
   ['me tocó poner 30k para el taxi', /Gasto · Transporte · Taxi · \$30\.000/],
   ['pasé 50k de nequi a efectivo', /Transferencia · \$50\.000 · Nequi → Efectivo/],
   ['pasé de efectivo a nequi 30 mil', /Transferencia · \$30\.000 · Efectivo → Nequi/],
-  ['saqué 100k del cajero', /Transferencia · \$100\.000 · .* → Efectivo/],
+  ['saqué 100k del cajero de nequi', /Transferencia · \$100\.000 · .* → Efectivo/],
   // gastos compartidos con reparto claro
   ['fui a comer con Ana y Luis, pagué 60k por los 3', /Gasto compartido · .* \$60\.000[\s\S]*Tu parte: \$20\.000/],
   ['comimos con Ana y Luis, pagué 60 mil entre los tres', /Gasto compartido[\s\S]*Tu parte: \$20\.000/],
