@@ -46,10 +46,11 @@ export function leerAnulacion(texto: string, movimientos: Movimiento[], ahora: D
 
   let candidatos = recientes;
   let filtrado = false;
-  // tipo de movimiento
+  // tipo de movimiento («todavía no me ha pagado» habla del abono recibido)
+  const hablaDeAbono = arrepentido && /no me ha pagado/.test(t);
   for (const [palabra, tipos] of TIPOS) {
-    const quiere = arrepentido && /no me ha pagado/.test(t) ? 'pago' : palabra;
-    if (new RegExp(`\\b${quiere === 'pago' ? '(?:pago|abono|pagado)' : quiere}\\b`).test(t) || (palabra === 'pago' && arrepentido && /no me ha pagado/.test(t))) {
+    const dice = hablaDeAbono ? palabra === 'pago' : new RegExp(String.raw`\b${palabra === 'pago' ? '(?:(?:el|ese|este|un|mi) (?:pago|abono)|abono)' : palabra}\b`).test(t);
+    if (dice) {
       candidatos = candidatos.filter(m => tipos.includes(tipoDe(m)) || (palabra === 'pago' && m.descripcion.toLowerCase().includes('abon')));
       filtrado = true;
       break;
