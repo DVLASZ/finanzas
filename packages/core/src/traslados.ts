@@ -15,7 +15,7 @@ import type { Contexto } from './tipos.ts';
 export interface Traslado { texto?: string; error?: string }
 
 const MONTO = String.raw`(\d[\d.,]*(?:\s?(?:k|mil|lucas?|barras?))?)`;
-const TRASLADA = /\b(?:pase|pasar|pasamos|movi|mover|mande|mandar|envie|enviar|transferi|transferir|traslade|trasladar|recargue|recargar|consigne|consignar|meti|meter|deposite|depositar|retire|retirar|saque|sacar|envio)\b/;
+const TRASLADA = /\b(?:pase|pasar|pasamos|movi|mover|mande|mandar|envie|enviar|transferi|transferir|traslade|trasladar|recargue|recargar|consigne|consignar|meti|meter|deposite|depositar|retire|retirar|saque|sacar|envio|pasa|manda|mueve)\b/;
 const RETIRA = /\b(?:retire|retirar|saque|sacar)\b/;
 const CONSIGNA = /\b(?:consigne|consignar|meti|meter|deposite|depositar)\b/;
 const A_UN_TERCERO = /\ble(?:s)? (?:mande|envie|pase|transferi|consigne|deposite|gire)\b|\bno es mio\b|\bsu (?:nequi|cuenta|daviplata)\b/;
@@ -54,6 +54,8 @@ function direccion(t: string, cuentas: Mencion[], recarga: boolean): { de?: stri
   let de: string | undefined; let a: string | undefined;
   for (const c of cuentas) {
     const antes = t.slice(Math.max(0, c.inicio - 28), c.inicio);
+    // «al bolsillo de ahorros» va a esa cuenta; «del bolsillo de ahorros» sale de ella
+    if (/\b(?:a|al|pa|para|hacia|en)\s+(?:mi |la |el )?(?:cuenta|tarjeta|bolsillo)\s+de\s*$/.test(antes)) { a ??= c.clave; continue; }
     if (/\b(?:de|desde|del)\s+(?:(?:mi|la|el|mis|esa|esta)\s+)?(?:(?:cuenta|tarjeta|bolsillo)\s+(?:de\s+)?)?$/.test(antes)) de ??= c.clave;
     else if (/\b(?:a|al|pa|para|hacia|en|con)\s+(?:(?:mi|la|el|mis)\s+)?(?:(?:cuenta|tarjeta|bolsillo)\s+(?:de\s+)?)?$/.test(antes)) a ??= c.clave;
     else if (recarga && !a) a = c.clave;
