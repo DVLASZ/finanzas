@@ -6,6 +6,11 @@
  */
 import { formatear, hallarMontos } from './dinero.ts';
 import { hallarCuentas, categorizar } from './entidades.ts';
+import { limpiarDictado } from './dictado.ts';
+import { hablada } from './habladas.ts';
+import { dividirTodo } from './lineas.ts';
+import { narrar } from './narrativa.ts';
+import { interpretar } from './parser.ts';
 import { limpiar } from './texto.ts';
 import type { Contexto } from './tipos.ts';
 
@@ -65,6 +70,16 @@ export function auditar(texto: string, ctx: Contexto, confirmado = false): Audit
   }
   if (texto.length > 160) return null;
   let original = texto.trim();
+  // una cuenta enredada seguida de una pregunta («... ¿cuánto me debe?»): primero se anota lo que pasó, y después se pregunta
+  const iq = original.indexOf('¿');
+  if (iq > 25) {
+    const antes = original.slice(0, iq).trim().replace(/[.;,]\s*$/, '');
+    const hechos = /\b(?:pague|gaste|preste|debia|debo|me pago|me paso|me mando|me debe|me debia|me devolvio|le devolvi|saque|movi|compre|puse|recibi|le mande|le di)\b/.test(limpiar(antes));
+    const pideTotales = /^¿\s*(?:cuanto|cuánto|quien|quién|cuantos|cuántos|cuanta|cuánta|como (?:queda|va|quedo)|cómo (?:queda|va|quedó)|me alcanza|que me debe|qué me debe)/i.test(original.slice(iq));
+    if ((limpiar(antes).match(/\d+/g)?.length ?? 0) >= 1 && hechos && pideTotales && !/^confirmo /i.test(antes)) {
+      return { pregunta: { mensaje: '¿Anoto primero lo que pasó? Son dos cosas en un mensaje: lo que pasó y una pregunta. Lo anoto sin la pregunta y, cuando lo confirmes, me preguntas lo que quieras («deudas», «cuánto llevo en mecato»...).', opciones: [{ titulo: 'Sí, anotar lo que pasó', frase: antes }, { titulo: 'No', frase: 'no' }] } };
+    }
+  }
   // lo que se pide en contra de sí mismo: «registra 10k... no guardes ese movimiento», «no registres nada, pero... guarda»
   const tn = limpiar(original);
   if (/\bno (?:lo |ese |el )?(?:guardes?|registres?)\b/.test(tn) && /\b(?:registra|guarda|anota|guarde|registre)\b/.test(tn.replace(/\bno (?:lo |ese |el )?(?:guardes?|registres?)\b/g, ''))) {
@@ -117,6 +132,9 @@ export function auditar(texto: string, ctx: Contexto, confirmado = false): Audit
     const v = monto1(t) as number;
     if (quien) return { pregunta: { mensaje: `Se cortó el audio. ¿Le pagaste ${peso(v)} a ${quien}, o te los pagó ella o él a ti?`, opciones: [{ titulo: `Le pagué yo`, frase: `le pague ${v} a ${quien}` }, { titulo: `Me pagó`, frase: `${quien} me pago ${v}` }] } };
   }
+  // «pagué con 100 mil en efectivo, me dieron 22 mil»: el pago y el vuelto son de la caja, no movimientos
+  const sinCaja = original.replace(/,?\s*(?:y\s+)?pagu[eé] con \S+(?:\s(?:mil|k))?\s+en efectivo,?\s*(?:y\s+)?me dieron \S+(?:\s(?:mil|k))?(?:\s+de\s+(?:cambio|vuelto))?,?/i, ',');
+  if (sinCaja !== original) return { reescribir: sinCaja.replace(/,\s*,/g, ',').replace(/\s+/g, ' ').trim() };
   // Defecto 19: la calculadora responde y no anota
   const cuenta = t.match(/^(?:cuanto es|cuanto da|cuanto son|cuanto suma|calcula|suma)\s+(.+)$/);
   if (cuenta) {
@@ -186,4 +204,28 @@ export function auditar(texto: string, ctx: Contexto, confirmado = false): Audit
     if (A && !b && a !== A) return { reescribir: `${base} con ${A}` };
   }
   return null;
+}
+
+/**
+ * Varias operaciones enredadas en una sola frase («saqué 200k con 4k de comisión, pagué 60k entre tres y Laura me pasó su parte»):
+ * lo que las reglas no alcanzan a partir bien se propone por separado, con un botón, en vez de anotar la mitad. Va después de
+ * las reglas que sí saben partir (traslados, casa, narrativas) y no toca lo del efectivo (billete, vuelto, monedas).
+ */
+export function enredado(texto: string, ctx: Contexto, confirmado = false): Auditada | null {
+  if (confirmado || /\n/.test(texto) || texto.length < 70 || texto.length > 420) return null;
+  if (/billete|monedas?|vuelto|\bcambio\b|pagu[eé] con/i.test(texto)) return null;
+  const nombres = ctx.cuentas.filter(c => c.tipo === 'dinero').map(c => c.clave);
+  const dictado = limpiarDictado(texto, ctx);
+  if (hablada(dictado)) return null; // las cuentas entre amigos ya tienen su propio camino (habladas.ts)
+  const hechas = narrar(dictado, nombres);
+  const nums = [...limpiar(dictado).matchAll(/(?<![\d/:])\d[\d.,]*(?:\s?(?:k|mil))?(?![\d/:])/g)].length;
+  const piezas = (hechas?.length ?? 0) >= 2 ? (hechas as string[]) : dividirTodo(dictado, nombres);
+  const algunaNoSirve = nums >= 2 && piezas.length >= 2 && piezas.some(x => { try { return interpretar(x, ctx).clase === 'error'; } catch { return true; } });
+  if (!(((hechas?.length ?? 0) < 2 && nums >= 3 && piezas.length < nums) || algunaNoSirve)) return null;
+  const trozos: string[] = [];
+  for (const p of dictado.split(/,\s*|\s+(?:luego|despu[eé]s)\s+|\s+y\s+(?=(?:con|hoy|aparte|tambi[eé]n|de ah[ií]|yo)\b)/i).map(x => x.trim()).filter(Boolean)) {
+    if (/\d/.test(p) || !trozos.length) trozos.push(p); else trozos[trozos.length - 1] += ', ' + p;
+  }
+  if (trozos.length < 2) return null;
+  return { pregunta: { mensaje: `Veo ${nums} cifras y varias operaciones enredadas en una frase. ¿Las anoto por separado así?\n${trozos.map(x => '• ' + x).join('\n')}`, opciones: [{ titulo: 'Sí, por separado', frase: trozos.join('; ') }, { titulo: 'No, las escribo yo', frase: 'no' }] } };
 }

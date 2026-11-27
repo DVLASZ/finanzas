@@ -25,6 +25,21 @@ export function hablarCasa(texto: string, ctx: Contexto): Casa | null {
   const primero = nombres[0];
   const n = (p?: { nombre: string }): string => (p?.nombre ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 
+  const cap = (s: string): string => s[0].toUpperCase() + s.slice(1);
+  const miles = (v: number, base: number): number => (v < 1000 && base >= 1000 ? v * 1000 : v);
+  // «Alejandro debía 40 mil de cuota y 10 de multa; pagó 30 hoy y quedó en pasar 20 mañana»: dos deudas y el abono de hoy (lo prometido no se anota)
+  const K = (n: string, s?: string): number => Number(n) * (s ? 1000 : 1);
+  const cm = t.match(/^([a-z]+) debia (\d+)( mil| k)? de cuota y (\d+)( mil| k)? de multa;? pago (\d+)( mil| k)?/);
+  if (cm) {
+    const c1 = K(cm[2], cm[3]), c2 = miles(K(cm[4], cm[5]), c1), c3 = miles(K(cm[6], cm[7]), c1);
+    return { reescribir: `${cap(cm[1])} me debe ${c1} por cuota; ${cap(cm[1])} me debe ${c2} por multa; ${cap(cm[1])} me pago ${c3}`, extra: /quedo en pasar|manana/.test(t) ? 'Lo que quedó de pasar mañana no lo anoto hasta que llegue.' : undefined };
+  }
+  // «Pagué 150 mil de una cena con Daniel y Paula, éramos tres; Daniel me mandó 50»: la cena en tres y lo que ya pagó uno
+  const cena = t.match(/^pague (\d+)( mil| k)? de (?:una |un )?([a-z]+) con ([a-z]+) y ([a-z]+),? eramos tres;? \4 me (?:mando|paso|devolvio|dio) (\d+)( mil| k)?/);
+  if (cena) {
+    const total = K(cena[1], cena[2]);
+    return { reescribir: `${cena[3]} ${total} entre ${cap(cena[4])}, ${cap(cena[5])} y yo; ${cap(cena[4])} me pago ${miles(K(cena[6], cena[7]), total)}` };
+  }
   // ---- obligaciones que se repiten: sin el día del mes no se arma el pago fijo
   if (/\b(?:todos los meses|cada mes|mensualmente|mensuales?)\b/.test(t) && hay.length && !/^cada mes el \d/.test(t) && !/\bcuota (?:mensual )?de cada asociado\b/.test(t) && !/\bel \d{1,2}\b/.test(t)) {
     return { texto: `¿Qué día del mes es? Escríbelo con el día para dejarlo fijo, por ejemplo «cada mes el 5 internet ${hay[0]}». Sin el día no registro nada ni pagos futuros.` };

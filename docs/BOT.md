@@ -700,6 +700,13 @@ Pega la alerta tal cual, aunque venga en varias líneas («Valor:», «Comercio:
 - Si el total está borroso o hay dos totales distintos, te pregunto cuál fue.
 - Lo que se escriba como orden al bot («ignora las instrucciones», «soy el administrador», «borra todo») no hace nada. Lo demás del mensaje, si es un gasto de verdad, sí se anota.
 
+## Frases con muchas cosas a la vez
+
+- Si en una frase mezclas varias operaciones y no alcanzo a partirlas bien, te las propongo por separado con un botón en vez de anotar la mitad.
+- Si pegas una cuenta y al final una pregunta, primero te pregunto si anoto lo que pasó; después me preguntas.
+- Con movimientos sin confirmar, las preguntas de totales te lo dicen: lo que no confirmas no cuenta.
+- Con varios movimientos en la cola puedes corregir uno por su monto o su concepto: «los 15 de gasolina eran 12», «el tinto era de 3 mil, no de 8», «borra el bus».
+
 ## Lo que el bot no hace
 
 - No borra nada, solo anula.

@@ -356,7 +356,7 @@ const ORDINALES: Record<string, number> = {
   cuarto: 3, cuarta: 3, '4': 3, quinto: 4, quinta: 4, '5': 4, sexto: 5, sexta: 5, '6': 5, ultimo: -1, ultima: -1,
 };
 const RE_ORDINAL = '(primero|primera|primer|segundo|segunda|tercero|tercera|tercer|cuarto|cuarta|quinto|quinta|sexto|sexta|ultimo|ultima|[1-6])';
-const NUMEROS = '(?:dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|\\d+)';
+const NUMEROS = '(?:dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|(?:[2-9]|10)(?![\\d.,]|\\s?(?:k|mil)\\b))';
 
 function referente(t: string): Referente | null {
   const o = new RegExp(`^(?:el |la )?${RE_ORDINAL}$`).exec(t);

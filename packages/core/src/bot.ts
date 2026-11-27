@@ -8,7 +8,7 @@
  * hasta confirmar. Tras confirmar quedan [Editar] [Deshacer]. El bot nunca borra: solo anula.
  */
 import { calcularSaldos, compromisosSaldados, deudasPorPersona, gastoHabitual, resumenSaldos, topesPausados } from './consultas.ts';
-import { auditar } from './auditoria.ts';
+import { auditar, enredado } from './auditoria.ts';
 import { leerComprobante } from './comprobantes.ts';
 import { sanitizarEntrada } from './sanitizar.ts';
 import { hablarCasa } from './hogarAsociacion.ts';
@@ -357,11 +357,16 @@ class Motor {
         } finally { this.enCasa = false; }
       }
     }
-    let deTraslado = reescritoAuditoria; // lo que reescribió traslados.ts ya viene partido en movimientos con «;»: no se vuelve a juntar
+    let deTraslado = reescritoAuditoria || (this.enCasa && /;/.test(texto)); // lo que reescribió traslados.ts ya viene partido en movimientos con «;»: no se vuelve a juntar
     if (!banco) {
       const tr = trasladar(texto, this.ctx);
       if (tr?.error) return [{ texto: tr.error }];
       if (tr?.texto) { texto = tr.texto; deTraslado = true; }
+    }
+    // varias operaciones enredadas que nada partió bien: se proponen por separado (ver auditoria.ts)
+    if (!banco && !deTraslado && !this.enCasa) {
+      const en = enredado(texto, this.ctx, confirmado);
+      if (en?.pregunta) return [salidaDePregunta(this.repo, en.pregunta.mensaje, en.pregunta.opciones)];
     }
 
     // 0) Palabras sueltas («ok», «no», «borra», «gracias»): con una tarjeta pendiente actúan solo sobre ella;
@@ -371,7 +376,10 @@ class Motor {
 
     // 0a) Una pregunta sobre el historial («cuál fue mi último gasto») solo se contesta: no crea nada ni toca la tarjeta pendiente
     const historial = banco ? null : responderHistorial(texto.replace(/^(?:(?:espera|oye|ah|ay|primero|a ver|dime)[,\s]+)+/i, ''), this.datos, this.ctx.ahora);
-    if (historial) return [{ texto: historial }];
+    // lo que está sin confirmar todavía no cuenta en ningún total: se avisa junto a la respuesta (o solo, si es una pregunta de totales)
+    const sinConfirmar = p ? `\n⏳ Tienes ${1 + (p.siguientes?.length ?? 0)} ${p.siguientes?.length ? 'movimientos' : 'movimiento'} sin confirmar: todavía no cuentan. Confírmalos y te doy el total exacto.` : '';
+    if (historial) return [{ texto: historial + sinConfirmar }];
+    if (p && /^\s*¿?\s*cuanto\s+(?:gaste|puse|llevo|queda|quedo|me deben|me debe|debo|falta|pendiente)\b/.test(t)) return [{ texto: `Todavía no puedo contarlo: eso depende de lo que confirmes.${sinConfirmar}` }];
 
     // 0b) La conversación sigue: una aclaración de la tarjeta («mentiras, fue en nequi»), una orden sobre la cola
     //     («quita el del taxi»), una corrección de lo recién guardado («corrige, fueron 87000») o la respuesta escrita
@@ -630,7 +638,7 @@ class Motor {
     }
     if (i === 0) {
       const a = aclarar(p.propuesta, orden.resto, this.ctx);
-      if (!a) return [{ texto: `No entendí qué cambiar del ${ORD[0]}. Prueba así: «el ${ORD[0]} fue 8000» o «el ${ORD[0]} fue en nequi».` }];
+      if (!a) return [{ texto: `No entendí qué cambiar del ${ORD[0]}. ¿Qué quieres cambiar? Prueba así: «el ${ORD[0]} fue 8000» o «el ${ORD[0]} fue en nequi».` }];
       return 'aviso' in a ? this.conNota(a.aviso, p) : this.conNota(a.nota, { ...p, propuesta: a.propuesta });
     }
     const frase = cola[i - 1];

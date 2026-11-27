@@ -6,6 +6,10 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-27
 
+- La batería llega a 1.000 casos y todos pasan (ronda 7, parte 3).
+- Varias operaciones enredadas en una frase se proponen por separado con un botón; una cuenta seguida de una pregunta pregunta si anota primero lo que pasó.
+- Cola: corregir por monto o concepto («los 15 de gasolina eran 12»); las preguntas de totales avisan lo que está sin confirmar.
+
 - Recibos y tirillas pegados como texto: un solo gasto por lo pagado, con la fecha del recibo; cotizaciones, facturas a crédito y compras anuladas no se anotan.
 - Entradas hostiles: se quitan invisibles, HTML, SQL, JSON y órdenes al bot antes de leer el mensaje (`sanitizar.ts`); un permiso inventado no cambia nada.
 - Alertas del banco: pago mínimo de tarjeta, abono de nómina, pago de factura, avisos de cupo y comprobantes de envío y recepción.
