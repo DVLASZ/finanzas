@@ -687,3 +687,5 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - Con una tarjeta pendiente puedes decir «perdón, eran 18k, no 15k», «ponle 9.500 mejor», «eso fue ayer, no hoy» o «no fue en efectivo, fue por Nequi» y cambia la misma tarjeta.
 - «No lo guardes», «olvídalo» o «mejor cancela eso» la cancelan.
 - Ya guardado: «borra ese último movimiento», «elimina esa deuda», «borra el almuerzo» o «se anotó dos veces, borra una» lo anulan (queda marcado como anulado, no se borra). Si dos encajan igual, te pregunta cuál.
+
+- Si en una misma frase corriges dos cosas («eran 54k y salieron de Nequi»), cambia las dos en la tarjeta. Lo que dices después de «no» se descarta.
