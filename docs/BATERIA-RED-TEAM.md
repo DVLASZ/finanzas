@@ -504,7 +504,7 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-371 | `el recibo de gas llegó por 75 mil pero hoy solo alcancé a pagar 40 y el resto lo pago d...` | Quedan pendientes: Gasto $40.000 o Pregunta antes de inventar | Solo se anota lo pagado hoy. |
 | RED-372 | `mi tía me mandó 100 mil por mi cumpleaños y compré un regalo de 60 mil para mi novia` | Quedan pendientes: Ingreso $100.000; Gasto $60.000 |  |
 | RED-373 | `pensaba comprar una chaqueta de 200 mil pero al final no compré nada solo pagué el bus ...` | Quedan pendientes: Gasto $3.200 |  |
-| RED-374 | `compré jabón por 7 mil y crema por 18 mil y mañana quiero mirar unos zapatos de 120 mil` | Quedan pendientes: Gasto $7.000; Gasto $18.000 o Quedan pendientes: Gasto $7.000 | La crema queda en la cola como segundo movimiento, pero sola pregunta para qué es; la vista de la cola no cuenta las preguntas. |
+| RED-374 | `compré jabón por 7 mil y crema por 18 mil y mañana quiero mirar unos zapatos de 120 mil` | Quedan pendientes: Gasto $7.000; pregunta por «crema» | El jabón sale primero y la crema queda en la cola con su pregunta («¿Para qué es la crema?»); los zapatos son una intención y no entran. |
 | RED-375 | `iba a pagar 80 mil de mercado con nequi pero solo tenía 60 así que puse 20 en efectivo` | 2 movimientos: $60.000, $20.000 (Nequi, Efectivo) o Quedan pendientes: Gasto $80.000 o Pregunta antes de inventar |  |
 | RED-376 | `ayer compré pan por 5 mil y hoy compré leche por 8 mil` | Quedan pendientes: Gasto $5.000 el 2026-11-25; Gasto $8.000 el 2026-11-26 |  |
 | RED-377 | `compré una camisa que valía 90 mil pero me hicieron 10 de descuento quedó en 80 y ademá...` | Quedan pendientes: Gasto $80.000; Gasto $12.000 |  |

@@ -10,7 +10,7 @@ const M = n => (Array.isArray(n) ? n.map(x => '$' + x.toLocaleString('es-CO')).j
 const TIPOS = { gasto: 'Gasto', ingreso: 'Ingreso', prestamo: 'Préstamo', deuda: 'Deuda', compartido: 'Gasto compartido', cambio: 'Cambio de moneda', transferencia: 'Transferencia' };
 
 function descItem(i) {
-  return [i.tipo ? TIPOS[i.tipo] ?? i.tipo : '', i.monto !== undefined ? M(i.monto) : '', i.cuenta ? `en ${i.cuenta}` : '', i.cat ? `categoría ${i.cat}` : '', i.catNo ? `no ${i.catNo}` : '', i.concepto ? `«${i.concepto}»` : '', i.fecha ? `el ${i.fecha}` : '', i.etiqueta === null ? 'sin etiqueta' : i.etiqueta ? `etiqueta ${i.etiqueta}` : '', i.personas ? i.personas.map(p => `${p.nombre} ${M(p.monto)}`).join(', ') : ''].filter(Boolean).join(' ') || 'un movimiento';
+  return [i.tipo ? TIPOS[i.tipo] ?? i.tipo : '', i.monto !== undefined ? M(i.monto) : '', i.cuenta ? `en ${i.cuenta}` : '', i.cat ? `categoría ${i.cat}` : '', i.catNo ? `no ${i.catNo}` : '', i.concepto ? `«${i.concepto}»` : '', i.fecha ? `el ${i.fecha}` : '', i.etiqueta === null ? 'sin etiqueta' : i.etiqueta ? `etiqueta ${i.etiqueta}` : '', i.personas ? i.personas.map(p => `${p.nombre} ${M(p.monto)}`).join(', ') : '', i.pregunta ? `pregunta por «${i.pregunta}»` : ''].filter(Boolean).join(' ') || 'un movimiento';
 }
 
 function describir(e) {
