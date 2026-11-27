@@ -1,6 +1,6 @@
 # Seguridad: OWASP Top 10:2025
 
-Revisión del 28 de noviembre de 2026 sobre el código de `main` (la app web, el Worker de Cloudflare, el núcleo compartido y los scripts). Cada control tiene una prueba en `apps/worker/test/seguridad-owasp-2025.test.ts` (29 pruebas). Esa suite corre dentro de `npm run seguridad` y de `npm run check`.
+Revisión del 26 de noviembre de 2026 sobre el código de `main` (la app web, el Worker de Cloudflare, el núcleo compartido y los scripts). Cada control tiene una prueba en `apps/worker/test/seguridad-owasp-2025.test.ts` (29 pruebas). Esa suite corre dentro de `npm run seguridad` y de `npm run check`.
 
 ## Cómo está armado (y qué cambia en una revisión de seguridad)
 

@@ -6,6 +6,7 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-27
 
+
 - Topes que se pausan y se reanudan (`pausar tope comida`, botón «Pausar tope»): el monto queda guardado y mientras está en pausa no avisa ni cuenta.
 - Categorías con movimientos: «Pasar movimientos» a otra categoría y «Archivar categoría» con el conteo de lo que tiene.
 - Se actualizaron las dependencias con `npm audit fix` (quedan dos avisos moderados de `uuid` dentro de `exceljs`) y se quitó un script suelto de desarrollo.
@@ -30,29 +31,26 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 - Varias órdenes sobre la cola (`Laura sí, Sofía sí`, `Comida y pan sí`) guardan de arriba hacia abajo hasta la primera tarjeta con una pregunta abierta.
 - La batería de seguridad y de conversación llega a 670 casos y todos pasan; no queda ninguno pendiente.
 
-## 2026-12-03
 
 - Corregir lo ya guardado con palabras: `cambia el almuerzo de ayer de 15k a 17k`, `el mercado del viernes pasado fue por Nequi`, `corrige la deuda con Karla, ya no son 20k sino 15k` (la deuda cambia, no se anota ningún abono).
 - `borra el de 20k` con dos iguales pregunta cuál; `borra los dos últimos`, `borra lo del aseo` y `todavía no me ha pagado` anulan solo lo que dices.
 - `la devolví y me devolvieron toda la plata` propone la devolución como ingreso del mismo monto.
 
-## 2026-12-02
 
 - Con una tarjeta pendiente puedes decir `no fue un regalo, fue un préstamo que me hizo`, `David fue el que pagó mi comida`, `era Laura`, `éramos cuatro, no tres`, `mi parte era 25` o `al revés` y cambia la misma tarjeta.
 - Con dos movimientos pendientes, `ese taxi fue por Nequi` o `corrige el almuerzo: fueron 22k` tocan solo ese.
 - `aunque mejor déjalo` restaura lo que acabas de borrar con palabras.
 - `David` ya no se confunde con la cuenta Daviplata, y `me pagó Jorge los 50k` es un ingreso.
 
-## 2026-12-01
+## 2026-11-26
+
 
 - Con varios movimientos pendientes puedes decir `el primero sí, el segundo no`, `sí al café, la comida no`, `Faber sí, Jorge no` o `bus en efectivo, comida en Nequi`.
 
-## 2026-11-30
 
 - Una corrección con varias cosas se aplica por trozos: `eran 54k y salieron de Nequi`, `déjalo en 10, que ella me descontó dos`, `ponlo como Salidas, fue comiendo con los parceros`.
 - `no lo guardes, me equivoqué antes de confirmar` y `ahora sí, borra ese gasto` cancelan la tarjeta pendiente.
 
-## 2026-11-29
 
 - Revisión de seguridad OWASP Top 10:2025 (docs/SEGURIDAD-OWASP-2025.md).
 - Los avisos al celular solo salen hacia los servicios de avisos de los navegadores; el buzón solo llama a https públicos; ningún `fetch` con clave sigue redirecciones.
@@ -60,19 +58,16 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 - El servidor revisa ids, fechas, montos, largos y cantidad de asientos, y rechaza cuerpos de más de 2 MB.
 - Las respuestas de la API llevan `Cache-Control: no-store`; el CSV neutraliza también las celdas que empiezan por tabulación.
 
-## 2026-11-28
 
 - Las correcciones dichas con más palabras cambian la tarjeta pendiente: `perdón, eran 18k, no 15k`, `ponle 9.500 mejor`, `eso fue ayer, no hoy`.
 - `no lo guardes`, `olvídalo, al final no compré nada` y `mejor cancela eso` cancelan la tarjeta pendiente.
 - `borra ese último movimiento`, `elimina esa deuda` o `borra el almuerzo` anulan lo ya guardado; si hay dos iguales, pregunta cuál.
 
-## 2026-11-27
 
 - Cuentas entre amigos dichas como se hablan: `lo pagó Faber y yo le debo la mitad`, `pagué el uber de 14k y Esteban me pasa la mitad`, `voy con 20`, `nos toca de a 12k`.
 - Perdonar, cuadrar o pagar de más una deuda no se anota como gasto: el bot explica y ofrece solo lo que sí se pasó.
 - `me faltan 3k, se los pido a Pipe` no anota nada.
 
-## 2026-11-26
 
 - El bot entiende dictado por voz con muletillas, números en letras y correcciones («ah no mentiras fue en efectivo»).
 - El préstamo guarda su vencimiento (`le presté 90k a Pipe hasta el viernes`).
@@ -83,6 +78,7 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 - Montos con decimales raros o enormes preguntan; 👍 confirma y ❌ cancela.
 
 ## 2026-11-24
+
 
 - Segunda ronda de pruebas difíciles del bot (123 casos nuevos, 272 en total, ver [BATERIA-RED-TEAM.md](BATERIA-RED-TEAM.md)). Con una tarjeta pendiente puedes aclarar como hablas («mentiras fue en nequi», «eran 21 mil», «era con Paula, no Laura», «no, fue un regalo») y la tarjeta se corrige en el sitio. En una lista de movimientos puedes decir «el segundo fue 8000», «quita el del taxi» o «confirma los otros». «Corrige, fueron 87000» edita lo último que guardaste.
 - Entiende más jerga colombiana («poner la liga», «me fían», «apúnteme», «le solté», «180 barras») y pregunta cuando una frase no dice quién pagó a quién. La categoría la decide el para qué y no el lugar: un regalo comprado en el supermercado va a Regalos y el uber a la universidad a Transporte.
@@ -123,6 +119,7 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-23
 
+
 - Obsidiana es ahora el tema de una instalación nueva (quien ya eligió otro lo conserva). Sus tarjetas llevan detrás una segunda tarjeta corrida en dorado champán, como la de Kinetix pero en oro, con un filete de 1 px, botones y cifras clave en dorado luminoso y un destello que pasa una vez cuando una tarjeta aparece. Los íconos de categoría siguen con su brillo de color.
 - El tamaño de letra tiene cuatro niveles en Ajustes: Compacta 85 %, Normal 100 %, Grande 115 % y Extra grande 130 %. Se revisaron los seis temas, claro y oscuro, a 393 y a 360 px.
 - Ya no se parten palabras en las tarjetas pequeñas (Ingresos, Gastos, Balance). Las barras de Dónde se concentra, Por categoría y el ranking pasaron a dos filas: el nombre y el monto arriba y la barra debajo, a todo el ancho, así que no se aplastan al subir la letra.
@@ -132,6 +129,7 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-22
 
+
 - Arreglo: en "Editar movimiento", los selectores de cuenta (Entró a, Sale de, Pagado con) abrían por debajo de la hoja de edición y no dejaban guardar. Ahora cualquier selector que se abre desde una hoja queda por encima de ella. Hay una prueba que cambia la cuenta de un gasto y guarda.
 - El ojo de privacidad ahora es un botón flotante, fijo encima de la barra de abajo, en Saldos, Movimientos y Resumen. Ya no ocupa una fila arriba. La app arranca siempre con los montos escondidos, y vuelven a esconderse solos cuando se minimiza, se cambia de pestaña o se apaga la pantalla. Al alternar sale una onda desde el botón y las tarjetas se enfocan una tras otra. La elección ya no se recuerda.
 - Cada tema tiene su trama de fondo, en la capa que antes solo usaba Kinetix: Obsidiana micropuntos champán casi invisibles, Midnight puntos finos de cian, Tierra un tejido de papel, Esmeralda curvas de nivel, Bordeaux líneas de cuaderno con margen y Kinetix su retícula, ahora con el color del tema. En Obsidiana los íconos de categoría vuelven a tener color, como joyas luminosas con un filete y un resplandor del mismo tono.
@@ -140,12 +138,14 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-21
 
+
 - Se quitó la barra de arriba ("Mis finanzas"). Todas las pantallas ganan alto, sobre todo el Chat con letra grande. El claro y oscuro queda solo en Ajustes, junto a los temas. El ojo de privacidad está en Saldos y en Resumen, y en Ajustes hay un interruptor con lo mismo. El estado de sincronización pasó a Ajustes; arriba solo sale una píldora cuando pasa algo real (sin internet, cambios sin enviar, sincronizando).
 - El aviso de "Movimiento guardado / Deshacer" ya no tapa la caja de escribir: sale arriba, como una píldora que baja con rebote, respeta la muesca del celular y se cierra con la equis o deslizándola hacia arriba.
 - Movimiento en toda la app, solo con `transform` y `opacity` y apagado con "reducir movimiento": la píldora de la barra de abajo ya viajaba con resorte y ahora el ícono activo da un salto; las pantallas entran deslizándose hacia el lado al que vas; el micrófono lanza dos ondas mientras escucha; los botones, chips, tarjetas y filas se comprimen al tocarlos y vuelven con rebote; los botones principales sueltan un destello al pulsar; las barras de progreso tienen un brillo al llenarse; el mapa de calor aparece en ola diagonal; el marcador de la gráfica de flujo sigue al dedo sin saltos; los dígitos del contador de billetes saltan; las hojas y diálogos suben con resorte y el fondo se difumina; el interruptor se estira al tocarlo; la tarjeta del tema elegido hace un pulso; y al cambiar de tema o de privacidad los colores y las cifras pasan con un fundido corto.
 - Quedó fuera el campo de texto de varias líneas del Chat: sigue siendo de una línea, para que Enter envíe como siempre.
 
 ## 2026-11-20
+
 
 - Los temas bajan de catorce a seis, porque muchos se veían casi iguales (cuatro azules, cuatro cafés, dos negros). Quedan Obsidiana, Midnight, Tierra, Esmeralda, Bordeaux y Kinetix, cada uno en claro y en oscuro.
 - Cada tema tiene ahora su propia forma, no solo su color. Obsidiana es negro puro sin adorno, con filetes de 1 px y radios de 14 px. Midnight es vidrio con más desenfoque y una aurora azul e índigo (18 px). Tierra es papel: superficies mate, sombras cálidas y esquinas de 22 px. Esmeralda lleva una tira de acento en el borde de cada tarjeta. Bordeaux es editorial, con titulares en serifa y superficies contrastadas. Kinetix es angular, con radios de 10 px, bordes de 2 px, sombras duras y una rejilla de fondo.
@@ -154,6 +154,7 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 - `npm run e2e:letra` revisa por defecto los seis temas, en claro y en oscuro, al 130 %. `npm run e2e` comprueba la migración de los temas que se fueron.
 
 ## 2026-11-19
+
 
 - El bot entiende mucho más cómo habla la gente. Una capa de lenguaje natural (`packages/core/src/lenguaje.ts`, sin internet) lee gastos compartidos («fui a comer con Ana y Luis, pagué 60k por los 3», «a medias», «hicimos vaca», «pagué 50k, 30k míos y 20k de Ana», «éramos 3»), dinero dicho de otras formas («sesenta mil», «quince quinientos», «30 lucas», «un palo») y verbos como «me giraron», «me fiaron», «quedé debiendo», «Luis me debe», «saqué del cajero» y «pasé de Nequi a efectivo». Lo que puede significar dos cosas ahora pregunta con botones en vez de adivinar. Detalle en BOT.md.
 - La Ayuda tiene «Pregúntale cómo decirlo»: escribes tu duda y te da el ejemplo exacto con tus cuentas y un botón que lo deja escrito en el chat.
@@ -171,10 +172,12 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-18
 
+
 - Tema nuevo, Obsidiana, pensado para pantallas AMOLED: fondo negro puro sin aurora ni brillos, tarjetas en negro carbón con un filete de 1 px, texto marfil y platino, y color solo en las cifras y los estados (esmeralda para lo que entra, coral sobrio para lo que sale, champán en las acciones principales). Los íconos de categoría pierden el color. Tiene su versión clara en marfil. El texto principal llega a contraste AAA en el oscuro, y pasa `npm run contraste` y la revisión de letra grande en las tres variantes.
 - Revisión completa de la documentación: arquitectura (módulos y operaciones nuevas), modelo de datos (claves de configuración, metas con fecha, stock mínimo), despliegue (cabeceras en `_headers`), celular, pendientes y límites conocidos, `SECURITY.md` y los índices.
 
 ## 2026-11-17
+
 
 Seguridad (detalle en `SECURITY.md`):
 - El Worker pone cabeceras de seguridad en todas las respuestas, con una política de contenido sin scripts en línea (el tema inicial pasó a `tema.js`). El servidor de pruebas usa las mismas cabeceras y `e2e` falla si la política bloquea algo.
@@ -196,6 +199,7 @@ Inteligencia y control:
 
 ## 2026-11-16 (segunda tanda)
 
+
 - Revisé el retiro de modelos de Workers AI del 20 de noviembre: la app usa Llama 3.3 70B para el texto y Llama 3.2 11B Vision para los comprobantes, y ninguno está en la lista. Los probé contra el Worker publicado y respondieron bien. El detalle y los reemplazos recomendados quedaron en `docs/IA.md`.
 - El Chat gana espacio: se fue la cabecera viva, la barra de arriba es más baja y el cuadro de escribir es una sola línea con el escáner, el micrófono y Enviar alineados.
 - Modo privacidad: la app arranca con los montos escondidos (`••••••`) y el ojo de la cabecera los muestra o los oculta. Se recuerda la elección. Los textos de alertas también esconden sus montos. Las tarjetas del chat sí los muestran, porque ahí hay que confirmar.
@@ -212,6 +216,7 @@ Inteligencia y control:
 
 ## 2026-11-16
 
+
 - Los botones rápidos del chat los armas tú. Se fueron los que salían solos con montos y medios de pago inventados («Pasaje», «Recarga»). Ahora la barra trae Ayuda, los pagos fijos que ya tocan y un + para crear los tuyos desde el chat o desde Ajustes. Cada uno es una plantilla (deja el texto escrito para ponerle el monto y la cuenta) o una frase completa (arma la tarjeta para confirmar). Se pueden editar, subir, bajar, quitar y ocultar toda la barra. Se guardan en el celular, no en el servidor.
 - Ayuda por temas: al tocar Ayuda el bot pregunta de qué quieres saber y muestra botones (anotar, préstamos y deudas, compartidos, pagos fijos y metas, escanear recibos, editar o anular, saldos y cuadres). Los ejemplos de un tema salen solo al tocarlo, y hay un botón para volver a los temas.
 - Cabecera viva en el Chat: lo disponible, las barras del gasto de los últimos 7 días y el ritmo del día (verde, ámbar o coral). Se pliega y se acuerda de cómo la dejaste. Las cuentas están en `packages/core/src/pulso.ts`.
@@ -223,6 +228,7 @@ Inteligencia y control:
 - Fondo con más vida: una malla de brillos de color y una trama de puntos. El brillo de arriba cambia de color con la sección, y los otros tres dependen de la variante (azul y esmeralda en la personal, violeta en la familiar, ámbar en la de empresa). `npm run contraste` ahora revisa también el texto sobre esos brillos.
 
 ## 2026-11-15
+
 
 - Botones rápidos en el chat, sobre el cuadro de texto: los pagos fijos que ya tocan, lo que más se repite, los atajos de la app (el pasaje con su monto) y lo último que anotaste. Un toque deja la tarjeta lista para confirmar.
 - Resumen: cada categoría contra el mismo tramo del mes pasado (+15 %, -20 %) y una proyección de cómo cierra el mes. Si a ese ritmo se gasta 15 % o más que el mes pasado, hay una alerta pasados diez días.
@@ -237,6 +243,7 @@ Inteligencia y control:
 
 ## 2026-11-14
 
+
 - Pagos fijos que ya no son solo mensuales: cada quincena, cada semana y cada año. «cada lunes mecato 12000», «cada año el 15 de marzo salud 300000». El seguro para gastar cuenta todas las veces que faltan del mes.
 - Anular un arqueo ya no deja rastro: sale de los listados, incluso con «anulados», y no cuenta entre los movimientos anulados de la revisión del mes.
 - Existencias en las ventas: `inventario galletas 200`, `llegaron 50 galletas` y `existencias`. Cada venta resta, anular devuelve y la tarjeta avisa si no alcanza.
@@ -247,16 +254,19 @@ Inteligencia y control:
 
 ## 2026-11-13
 
+
 - Aviso al celular, una vez por semana, cuando las fotos de recibos ocupan 3 GB o más de la base.
 - Atajos fijos del chat según la app: Ventas donde se vende y Jornales donde hay trabajadores.
 
 ## 2026-11-08
+
 
 - El repositorio se ordena en tres ramas, una por variante de la app: `main` (personal), `familiar` (familia) y `empresa`. Ver [RAMAS.md](RAMAS.md). Las plantillas se llaman ahora `personal`, `familia` y `empresa`.
 - Subcategorías de hasta tres niveles (categoría, subcategoría y sub-subcategoría).
 - Sincronización parcial: una app que ya tiene todo pide solo los movimientos que cambiaron (migración 0004).
 
 ## 2026-11-07
+
 
 - Plata de otros: lo que te mandan para comprar o pagar algo suyo (`plata de hugo para juego 31000 nequi`) ya no se ve como deuda tuya. Tiene su línea en Saldos, su sección en Deudas y su fila en el Excel, y sus tarjetas dicen «Plata de Hugo» y «Gasto con plata de Hugo».
 - Una frase para el gasto que paga otro en parte: `pollo 8000 para luis puso 6000 nequi`.
@@ -266,6 +276,7 @@ Inteligencia y control:
 - Arreglo: el menú Más se quedaba en blanco con movimientos importados del Excel.
 
 ## 2026-11-06
+
 
 - Plata que no alcanza: si un movimiento deja una cuenta de dinero en negativo, la tarjeta lo dice con los números, ofrece pasar lo que falta de otra cuenta y el botón pasa a Guardar igual. Nació de unas monedas que se metieron a la alcancía sin haber anotado el vuelto.
 - Anular algo de lo que otros dependen avisa antes. `deshacer` ya no puede anular el saldo inicial y `deshacer N` respeta los meses cerrados.
@@ -291,6 +302,7 @@ Inteligencia y control:
 - `npm run e2e:celular` corre las pruebas de pantalla en el Chrome de un celular conectado por USB.
 
 ## 2026-11-04
+
 
 - Gastos que se repiten cada mes con aviso: `cada mes el 5 internet 60000`.
 - Plata que te mandan para pagar algo de otra persona: `plata de mamá para cooperativa 150000 nequi` y `cooperativa 149984 con plata de mamá nequi`.
@@ -336,6 +348,7 @@ Inteligencia y control:
 
 ## 2026-11-03
 
+
 - Los cobros del banco (4x1000, cuota de manejo) se anotan en Costos del banco: `4x1000 376 bancolombia`.
 - Una persona puede tener categoría fija: lo que se le da a una persona va directo a la categoría que le pongas.
 - Nequi, Daviplata y otros medios de pago nunca se toman por una persona.
@@ -344,6 +357,7 @@ Inteligencia y control:
 - Se quitó la tabla `mensajes_procesados` (migración 0002).
 
 ## 2026-11-01
+
 
 - La hora se entiende sin "a las": `ayer 4 pm`.
 - El saldo inicial acepta la alcancía.
