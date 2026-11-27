@@ -658,6 +658,14 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - **Saldo inicial.** No se deshace (ni con el botón): se ajusta con un arqueo o se cambia con Editar.
 - **Metas.** Apartar o sacar trae el botón «Deshacer aporte», que revierte solo ese aporte. Si el último comando fue de una meta, «deshacer» lo avisa y deja elegir entre el aporte y el movimiento anterior. Si apartas más de lo que tienes libre (lo que hay en cuentas menos lo ya apartado, con saldo inicial puesto), pide confirmación.
 
+## Traslados, retiros, comisiones y tarjeta de crédito
+
+- Pasar plata entre tus cuentas no es gasto ni ingreso: «me mandé 80 lucas de Bancolombia pa Nequi», «recargué Nequi con 50k desde mi cuenta de ahorros», «consigné 90 mil en Bancolombia», «saqué 200k del cajero con mi tarjeta de ahorros». Si no dices cuáles cuentas, pregunta.
+- Lo que el banco cobra va aparte: «saqué 100 mil de Bancolombia y me cobraron 4 mil por usar el cajero» son el retiro y una comisión en Costos del banco. El 4x1000 no lo calculo yo: dime cuánto fue.
+- Si una transferencia está programada, pendiente o rechazada, no la anoto hasta que salga.
+- «¿Cuánta plata he movido entre mis cuentas este mes?» suma los traslados sin contarlos como gasto.
+- Tarjeta de crédito: crea la persona «Tarjeta» (`agregar persona Tarjeta`). Después «compré unos audífonos de 240k con la tarjeta» es una deuda con Tarjeta, «aboné 150k a la tarjeta desde Nequi» la paga, «me cobraron 18k de intereses de la tarjeta» la sube y «cuánto debo de la tarjeta» da el saldo. Las cuotas se dicen pero no se llevan: la deuda queda completa.
+
 ## Lo que el bot no hace
 
 - No borra nada, solo anula.

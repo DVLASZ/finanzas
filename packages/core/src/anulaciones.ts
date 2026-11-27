@@ -10,7 +10,7 @@ import type { Movimiento } from './tipos.ts';
 export type Anulacion = { ids: string[] } | { pregunta: string; candidatos: string[] };
 
 const VERBO = /\b(?:borra|borrar|borralo|borrame|elimina|eliminar|eliminalo|anula|anular|anulalo|deshaz|deshacer)\b/;
-const ARREPENTIDO = /\b(?:al final no (?:los|las|lo|la) (?:compre|gaste|pague|hice)|todavia no me ha pagado|no me ha pagado todavia|eso no paso|esa compra nunca se hizo)\b/;
+const ARREPENTIDO = /\b(?:al final no (?:los|las|lo|la) (?:compre|gaste|pague|hice)|todavia no me ha pagado|no me ha pagado todavia|eso no paso|esa compra nunca se hizo|(?:anularon|cancelaron|reversaron|revirtieron) (?:la|el|esa|ese|mi) (?:compra|cobro))\b/;
 const TIPOS: [string, string[]][] = [
   ['ingreso', ['ingreso']],
   ['deuda', ['deuda', 'prestamo']],
