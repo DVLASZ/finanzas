@@ -8,6 +8,7 @@
  * hasta confirmar. Tras confirmar quedan [Editar] [Deshacer]. El bot nunca borra: solo anula.
  */
 import { calcularSaldos, compromisosSaldados, deudasPorPersona, gastoHabitual, resumenSaldos } from './consultas.ts';
+import { hablarPresupuesto } from './topesHablados.ts';
 import { trasladar } from './traslados.ts';
 import { limpiarDictado } from './dictado.ts';
 import { construirMovimiento, errorDePago } from './asientos.ts';
@@ -298,6 +299,17 @@ class Motor {
     if (banco?.frases.length === 1) texto = banco.frases[0];
     if (!banco) texto = limpiarDictado(sinMuletillaDeRegistro(texto), this.ctx); // el dictado por voz, ya como se escribe (ver dictado.ts)
     // traslados entre cuentas propias, retiros con comisión y tarjeta de crédito, dichos como se hablan (ver traslados.ts)
+    // topes y metas dichos como se hablan: se contestan o se vuelven el comando de siempre (ver topesHablados.ts)
+    if (!banco) {
+      const h = hablarPresupuesto(texto, this.datos, this.ctx);
+      if (h?.texto) return [{ texto: h.texto }];
+      if (h?.frases) {
+        const salidas: Salida[] = [];
+        for (const f of h.frases) salidas.push(...await this.alEscribir(f));
+        if (h.extra && salidas.length) salidas[0] = { ...salidas[0], texto: salidas[0].texto + '\n' + h.extra };
+        return salidas;
+      }
+    }
     let deTraslado = false; // lo que reescribió traslados.ts ya viene partido en movimientos con «;»: no se vuelve a juntar
     if (!banco) {
       const tr = trasladar(texto, this.ctx);

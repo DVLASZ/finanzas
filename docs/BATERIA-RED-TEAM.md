@@ -1,6 +1,6 @@
-# Batería adversarial del bot (RED-001 a RED-730)
+# Batería adversarial del bot (RED-001 a RED-785)
 
-Estas son las 730 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
+Estas son las 785 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
 
 ```bash
 node --test packages/core/test/red-team.test.ts
@@ -931,3 +931,68 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-728 | `De los 300k que pagué, 25k eran intereses y el resto abonó a la deuda` (antes: debo 600000 a Tarjeta por compras) | 2 movimientos: $25.000, $275.000 o 2 movimientos: $275.000, $25.000 o Pregunta antes de inventar |  |
 | RED-729 | `Me cobraron 40 dólares en la tarjeta por una suscripción` | Quedan pendientes: Gasto categoría Suscripciones | Se queda en dólares, en la cuenta de dólares: nunca se convierte a pesos por su cuenta. |
 | RED-730 | `¿Cuánto debo realmente de la tarjeta si ya aboné 150k?` (antes: debo 500000 a Tarjeta por compras; le pagué 150000 a Tarjeta) | Responde con datos (menciona «350»), sin tarjeta | Saldo = lo que se debe menos lo ya abonado. |
+
+## Ronda 6: topes de presupuesto
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-731 | `Ponme un tope de 300k al mes en Comida` | Responde con datos (menciona «tope.*comida.*300\.000»), sin tarjeta | Fija el tope; no es un gasto ni un ingreso. |
+| RED-732 | `¿Cuánto me queda del presupuesto de Salidas?` (antes: tope salidas 200000; cine 30000) | Responde con datos (menciona «170\.000»), sin tarjeta | Tope de 200.000 menos 30.000 gastados. |
+| RED-733 | `Súbeme el presupuesto de Transporte a 150k` (antes: tope transporte 100000) | Responde con datos (menciona «transporte.*150\.000»), sin tarjeta | Fija el tope en 150.000; no lo suma al anterior. |
+| RED-734 | `Bájame el tope de domicilios a 100 mil al mes` | Responde con datos (menciona «domicilios.*100\.000»), sin tarjeta o Pregunta antes de inventar | Si no existe esa categoría, pregunta cuál es en vez de inventarla. |
+| RED-735 | `Si gasto 40k hoy en ropa, ¿me paso del presupuesto?` | Responde con datos (menciona «presupuesto|tope|ropa»), sin tarjeta | Una simulación: no guarda nada. |
+| RED-736 | `Avísame cuánto llevo del tope semanal de mecato` | Responde con datos (menciona «mecato»), sin tarjeta | Los topes son mensuales: responde lo que lleva en Mecato y lo aclara. |
+| RED-737 | `Ya me gasté 180k en comida y el tope era 150k` | Responde con datos (menciona «30\.000»), sin tarjeta | Muestra el exceso de 30.000 y no toca el tope. |
+| RED-738 | `Voy por el 75% del presupuesto de transporte, ¿cuánto he gastado si el tope es 200k?` | Responde con datos (menciona «150\.000»), sin tarjeta |  |
+| RED-739 | `Pon el presupuesto de mercado en 250k cada quincena` | Responde con datos (menciona «500\.000»), sin tarjeta | Los topes son mensuales: dos quincenas de 250.000 son 500.000 y lo dice, sin fijarlo solo. |
+| RED-740 | `Quiero gastar máximo 2 millones en viajes durante todo el año` | Responde con datos (menciona «mensual.*166\.667|166\.667»), sin tarjeta | No hay tope anual: explica el equivalente mensual. |
+| RED-741 | `Déjame 100k para transporte y 200k para comida este mes` | Responde con datos (menciona «transporte.*100\.000[\s\S]*comida.*200\.000»), sin tarjeta | Dos topes separados. |
+| RED-742 | `Desde diciembre el tope de salidas será de 180k, este mes déjalo igual` (antes: tope salidas 200000) | Responde con datos (menciona «diciembre»), sin tarjeta | Los topes no se programan por mes: no toca el de este mes y dice cómo cambiarlo en diciembre. |
+| RED-743 | `Gasté 35k en una categoría que todavía no tiene tope` | Quedan pendientes: Gasto $35.000 o Pregunta antes de inventar |  |
+| RED-744 | `Ponme un tope de 80k para cosas de la U` | Pregunta antes de inventar o Responde con datos (menciona «universidad»), sin tarjeta | No elige una categoría al azar. |
+| RED-745 | `En el presupuesto de mercado cuenta solo los 120k que me tocó poner a mí` | Responde con datos (menciona «parte|compart|tuyo|tu gasto»), sin tarjeta | El gasto compartido ya cuenta solo tu parte. |
+| RED-746 | `Pagué 60k de una comida, pero me devolvieron 20k; ¿cómo va mi presupuesto?` | Quedan pendientes: Gasto $40.000 o Quedan pendientes: Gasto $60.000 o Pregunta antes de inventar |  |
+| RED-747 | `Pasé 100k al bolsillo de transporte, ¿eso me consume el presupuesto?` | Responde con datos (menciona «no (?:cuenta|consume|es gasto)»), sin tarjeta | Pasar plata entre tus cuentas no es gasto. |
+| RED-748 | `Compré 90k de mercado con tarjeta, ¿me lo cuentas en el presupuesto de comida?` | Quedan pendientes: $90.000 o Responde con datos (menciona «comida»), sin tarjeta |  |
+| RED-749 | `El computador costó 1.200k a 12 cuotas, ¿el presupuesto de tecnología cuenta todo o sol...` | Responde con datos (menciona «completa|todo»), sin tarjeta | Cuenta la compra completa el día que se hace; las cuotas no se llevan por separado. |
+| RED-750 | `¿Cuánto me pasé en domicilios desde que empezó el mes?` | Responde con datos (menciona «domicilios|tope»), sin tarjeta |  |
+| RED-751 | `Este mes quiero dejar en cero el presupuesto de apuestas` | Pregunta antes de inventar o Responde con datos (menciona «tope|apuestas|juegos»), sin tarjeta |  |
+| RED-752 | `Ponme un tope de 125 mil quinientos para mercado` | Responde con datos (menciona «125\.500»), sin tarjeta |  |
+| RED-753 | `Avísame cuando llegue al 80% del presupuesto de comida` | Responde con datos (menciona «80 ?%»), sin tarjeta | Ya avisa al 80 % y al 100 % de cada tope: no se configura aparte. |
+| RED-754 | `Avísame al llegar a la mitad y otra vez cuando me quede solo el 10% del presupuesto de ...` | Responde con datos (menciona «80 ?%»), sin tarjeta | Los avisos son fijos (80 % y 100 %): lo dice en vez de inventar otros. |
+| RED-755 | `¿Cuánto llevo gastado en entretenimiento si apenas estoy empezando a usar la app?` | Responde con datos (menciona «entretenimiento|no hay|\$0»), sin tarjeta |  |
+| RED-756 | `Pasa el tope que tenía en ocio para Salidas, son 120k` | Pregunta antes de inventar o Responde con datos (menciona «salidas.*120\.000»), sin tarjeta |  |
+| RED-757 | `En la casa tenemos 600k para mercado entre todos, no solo para mí` | Responde con datos (menciona «tope|compart|casa»), sin tarjeta | No hay presupuestos compartidos: lo dice y da el tope de mercado como alternativa. |
+| RED-758 | `¿Gasté más en comida este mes que el pasado?` | Responde con datos (menciona «comida»), sin tarjeta |  |
+| RED-759 | `El fondo de la casa tiene 400k para servicios, yo solo respondo por 100k` | Responde con datos (menciona «tope|servicios|compart»), sin tarjeta |  |
+| RED-760 | `Quita el presupuesto de mecato, pero no borres lo que ya gasté` (antes: tope mecato 60000) | Responde con datos (menciona «quit|sin tope»), sin tarjeta | Quita solo el tope; los gastos quedan. |
+
+## Ronda 6: metas de ahorro y apartados
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-761 | `Crea una meta de 1.500.000 para cambiar de celular` | Responde con datos (menciona «meta.*1\.500\.000»), sin tarjeta | Una meta nueva; no es un gasto ni un ingreso. |
+| RED-762 | `Metí 100k al ahorro del viaje` (antes: meta viaje 2000000) | Responde con datos (menciona «viaje.*100\.000»), sin tarjeta | Aparta para la meta; no es un gasto de viaje. |
+| RED-763 | `¿Cuánto me falta para completar la meta de la bici?` (antes: meta bici 1000000; ahorré 300000 para bici) | Responde con datos (menciona «700\.000»), sin tarjeta |  |
+| RED-764 | `Saqué 50k del colchón de emergencias porque me tocó pagar una multa` (antes: meta emergencias 500000; ahorré 200000 para emergencias) | Quedan pendientes: Gasto $50.000 o Responde con datos (menciona «emergencias.*50\.000»), sin tarjeta | El retiro de la meta y la multa son dos cosas: queda la multa como gasto o el retiro anotado. |
+| RED-765 | `Pasa 80k de Nequi al bolsillo de ahorros` | Transferencia, $80.000, Nequi a Ahorros |  |
+| RED-766 | `Hoy le metí otros 35k a la meta del celular` (antes: meta celular 1500000; ahorré 100000 para celular) | Responde con datos (menciona «135\.000»), sin tarjeta |  |
+| RED-767 | `La meta era de 500k y ya tenía 480k, hoy guardé 30k` | Responde con datos (menciona «510|completa|excede|10\.000»), sin tarjeta |  |
+| RED-768 | `Le saqué 20k al ahorro del viaje, pero el resto sigue ahí` (antes: meta viaje 2000000; ahorré 100000 para viaje) | Responde con datos (menciona «80\.000»), sin tarjeta |  |
+| RED-769 | `Quiero juntar 900k para diciembre, para comprar los regalos` | Responde con datos (menciona «900\.000»), sin tarjeta |  |
+| RED-770 | `Aparta 50k cada quincena para el viaje` (antes: meta viaje 2000000) | Responde con datos (menciona «quincena|cada|pago fijo|recurrent»), sin tarjeta | No hay aportes automáticos a una meta: explica cómo anotarlos y no registra aportes futuros. |
+| RED-771 | `El viernes voy a meterle 100k al ahorro de la moto` (antes: meta moto 3000000) | Responde con datos (menciona «cuando|todav|aun no»), sin tarjeta | Es una intención futura: no mueve el ahorro hasta que pase. |
+| RED-772 | `Guardé 70k de Bancolombia para la meta del computador` (antes: meta computador 2000000) | Responde con datos (menciona «70\.000»), sin tarjeta |  |
+| RED-773 | `Mi mamá me dio 100k para que los ahorre para la matrícula` (antes: meta matricula 3000000) | Quedan pendientes: Ingreso $100.000 o Pregunta antes de inventar |  |
+| RED-774 | `Jorge puso 50k en nuestra meta compartida del paseo` | Responde con datos (menciona «compart|meta»), sin tarjeta |  |
+| RED-775 | `Armemos una meta entre Laura y yo de 800k para el viaje` | Responde con datos (menciona «meta viaje 800000|compart»), sin tarjeta |  |
+| RED-776 | `Yo puse 100k y Laura puso 60k en el ahorro de la casa` | Responde con datos (menciona «compart|meta|laura»), sin tarjeta |  |
+| RED-777 | `Ya no voy a ahorrar para la consola, cancela esa meta` (antes: meta consola 800000) | Responde con datos (menciona «quit|consola»), sin tarjeta |  |
+| RED-778 | `La meta del celular ya no es de millón y medio, ahora quiero ahorrar dos millones` (antes: meta celular 1500000; ahorré 100000 para celular) | Responde con datos (menciona «2\.000\.000»), sin tarjeta | Cambia el objetivo y conserva lo ahorrado. |
+| RED-779 | `Lo que tenía para la bici ahora lo quiero usar para la matrícula` (antes: meta bici 1000000; ahorré 300000 para bici) | Pregunta antes de inventar o Responde con datos (menciona «matricula»), sin tarjeta | No mueve lo apartado sin decir cómo. |
+| RED-780 | `Tengo 350k de 1.2 millones para el computador, ¿qué porcentaje llevo?` | Responde con datos (menciona «29»), sin tarjeta | Falta 850.000. |
+| RED-781 | `Réstale 40k a lo que llevo ahorrado para la moto` (antes: meta moto 3000000; ahorré 100000 para moto) | Responde con datos (menciona «40\.000»), sin tarjeta |  |
+| RED-782 | `Separé 120k para el arriendo, pero todavía no lo he pagado` | Responde con datos (menciona «arriendo»), sin tarjeta | Aparta en una meta; no anota el pago del arriendo. |
+| RED-783 | `Usé los 120k que había separado para pagar el arriendo` (antes: meta arriendo 500000; ahorré 120000 para arriendo) | Quedan pendientes: Gasto $120.000 o Responde con datos (menciona «arriendo»), sin tarjeta |  |
+| RED-784 | `El bolsillo de ahorros me generó 8k de rendimientos` | Ingreso, $8.000, en Ahorros |  |
+| RED-785 | `Me consignaron 2.500 de intereses en la cuenta donde guardo la plata de la casa` | Pregunta antes de inventar o Ingreso, $2.500 |  |

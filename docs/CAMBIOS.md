@@ -6,6 +6,10 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-27
 
+- Topes y metas con palabras de todos los días (`topesHablados.ts`): fijar, subir, bajar, quitar, consultar, simular y cambiar el objetivo de una meta. Lo que no existe (topes por quincena o año, metas compartidas) se explica.
+- `125 mil quinientos` y `8 mil 500` se leen como un solo monto.
+- Los rendimientos de una cuenta de ahorros entran como ingreso.
+
 - Traslados entre cuentas propias, retiros y consignaciones con sus comisiones y el 4x1000 (`traslados.ts`).
 - Tarjeta de crédito con la persona `Tarjeta`: compra, abono, intereses, avance y saldo.
 - `cuánta plata he movido entre mis cuentas` suma los traslados aparte de gastos e ingresos.
