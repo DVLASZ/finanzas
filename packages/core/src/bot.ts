@@ -144,6 +144,8 @@ function palabraSuelta(t: string): Suelta | null {
  * La última pregunta con botones que hizo el bot («¿De qué cuenta sacaste $200.000?»), por repositorio. Vive solo en
  * memoria mientras la app está abierta: así «de nequi para efectivo» responde la pregunta sin guardar nada en la nube.
  */
+/** Lo último que se anuló con palabras, por repositorio: «aunque mejor déjalo» lo restaura. Solo vive mientras la app está abierta. */
+const ultimosBorrados = new WeakMap<Repo, string[]>();
 const preguntasAbiertas = new WeakMap<Repo, { mensaje: string; opciones: Opcion[] }>();
 
 /** La pregunta con un botón por opción (y Cancelar); queda abierta para que también se pueda responder escribiendo. */
@@ -312,7 +314,9 @@ class Motor {
     }
 
     // 1) Estaba esperando una respuesta (categoría, lugar, persona)
-    if (p && !banco && p.propuesta.faltantes.length) {
+    // una frase que trae su propio monto («también compré 6k de agua») es un movimiento nuevo, no la respuesta a «¿a dónde fue?»
+    const traeMonto = !!p && p.propuesta.faltantes[0]?.campo !== 'cobro' && hallarMontos(limpiar(texto)).some(m => m.explicito && m.valor >= 100) && interpretar(texto, this.ctx).clase === 'movimiento';
+    if (p && !banco && p.propuesta.faltantes.length && !traeMonto) {
       const r = resolverFaltante(p.propuesta, texto, this.ctx);
       if ('error' in r) {
         const nuevo = interpretar(texto, this.ctx);
@@ -390,8 +394,18 @@ class Motor {
     if (!p) {
       if (leerOrdenDeCola(texto)?.que === 'cancelarTodo') return [{ texto: 'Listo, no hay nada pendiente.' }];
       // anular lo guardado con palabras: «borra ese último movimiento», «elimina esa deuda», «borra el de 20k» (ver anulaciones.ts)
+      const borrados = ultimosBorrados.get(this.repo);
+      if (borrados?.length && /^(?:(?:aunque|no|ah|ay|oye|espera|ya) )*(?:mejor )?(?:dejalo|dejala|dejalos|dejalo asi|no lo borres|no los borres|no lo anules|deshaz el borrado|restaura|restauralo|restauralos|devuelvelo|devuelvelos)$/.test(limpiar(texto))) {
+        for (const id of borrados) await this.repo.restaurarMovimiento(id, aLocal(this.ctx.ahora));
+        ultimosBorrados.delete(this.repo);
+        return [{ texto: 'Listo, lo dejé como estaba: ' + (borrados.length > 1 ? 'volvieron los ' + borrados.length + ' movimientos.' : 'el movimiento volvió.') }];
+      }
       const anul = leerAnulacion(texto, this.datos.movimientos, this.ctx.ahora);
-      if (anul && 'ids' in anul) return this.anularVarios(this.datos.movimientos.filter(m => anul.ids.includes(m.id)), false);
+      if (anul && 'ids' in anul) {
+        const salida = await this.anularVarios(this.datos.movimientos.filter(m => anul.ids.includes(m.id)), false);
+        if (/^↩️ Anulé/.test(salida[0]?.texto ?? '')) ultimosBorrados.set(this.repo, anul.ids);
+        return salida;
+      }
       if (anul) {
         const por = (id: string): string => this.datos.movimientos.find(m => m.id === id)?.descripcion ?? id;
         return [{ texto: anul.pregunta, botones: [...anul.candidatos.map(id => ({ id: `undo:${id}`, titulo: `Anular «${por(id)}»` })), { id: 'nada', titulo: 'Ninguno' }] }];
