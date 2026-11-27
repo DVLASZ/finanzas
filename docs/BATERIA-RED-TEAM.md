@@ -1,6 +1,6 @@
-# Batería adversarial del bot (RED-001 a RED-785)
+# Batería adversarial del bot (RED-001 a RED-840)
 
-Estas son las 785 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
+Estas son las 840 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
 
 ```bash
 node --test packages/core/test/red-team.test.ts
@@ -996,3 +996,68 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-783 | `Usé los 120k que había separado para pagar el arriendo` (antes: meta arriendo 500000; ahorré 120000 para arriendo) | Quedan pendientes: Gasto $120.000 o Responde con datos (menciona «arriendo»), sin tarjeta |  |
 | RED-784 | `El bolsillo de ahorros me generó 8k de rendimientos` | Ingreso, $8.000, en Ahorros |  |
 | RED-785 | `Me consignaron 2.500 de intereses en la cuenta donde guardo la plata de la casa` | Pregunta antes de inventar o Ingreso, $2.500 |  |
+
+## Ronda 6: el hogar (instalación de la familia)
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-786 | `En la casa pagamos 180k de internet todos los meses` | Pregunta antes de inventar | Un pago fijo necesita el día del mes: lo pregunta y no registra pagos futuros. |
+| RED-787 | `El arriendo vale 900k y lo dividimos entre mamá, Mateo y yo` | Quedan pendientes: $300.000 o Quedan pendientes: Gasto compartido $900.000 o Pregunta antes de inventar |  |
+| RED-788 | `Mamá pone 400k para la casa, yo pongo 250k y Mateo los otros 150k` | Quedan pendientes: $250.000 o Responde con datos (menciona «250\.000»), sin tarjeta o Pregunta antes de inventar | Solo se anota lo tuyo: 250.000. |
+| RED-789 | `Le mando 200k a mamá cada mes para los gastos de la casa` | Pregunta antes de inventar | Un giro que se repite necesita el día: lo pregunta y no registra giros futuros. |
+| RED-790 | `Hoy le giré 200k a mamá para los servicios` | Nunca transferencia: si no hay tarjeta, pregunta o explica | Mamá es una persona, no una cuenta propia. |
+| RED-791 | `Pagué 95k de energía y 48k de agua de la casa` | 2 movimientos: $95.000, $48.000 o Quedan pendientes: Gasto $95.000; Gasto $48.000 |  |
+| RED-792 | `El mercado de esta quincena salió en 320k y lo pagué yo` | Quedan pendientes: Gasto $320.000 o Gasto, $320.000 |  |
+| RED-793 | `Puse 100k en el fondo común de la casa` | Responde con datos (menciona «fondo»), sin tarjeta | No hay un fondo común: lo explica y no lo toma como gasto. |
+| RED-794 | `Del fondo de la casa sacamos 75k para pagar el gas` | Quedan pendientes: Gasto $75.000 o Gasto, $75.000 |  |
+| RED-795 | `Mamá pagó el recibo de 120k y yo le debo mi mitad` | Deuda, $60.000, con Mamá |  |
+| RED-796 | `Mateo pagó el internet de 180k de la casa, nos toca poner 60k a cada uno` | Deuda, $60.000, con Mateo |  |
+| RED-797 | `El recibo de luz llegó por 210k, eso lo pagamos entre los de la casa` | Pregunta antes de inventar | No sabe cuántos son: pregunta. |
+| RED-798 | `Le pasé a mamá 150k para que pagara el agua y la luz, todavía no sé cuánto salieron` | Préstamo, $150.000, con Mamá o Pregunta antes de inventar o Nunca gasto: si no hay tarjeta, pregunta o explica | Es un anticipo, no el gasto definitivo. |
+| RED-799 | `Mamá me devolvió 40k de lo que yo había puesto para el mercado` | Ingreso, $40.000 o  o Pregunta antes de inventar |  |
+| RED-800 | `¿Cuánto he puesto este mes para los gastos de la casa, sin contar lo que puso mamá?` | Responde con datos (menciona «casa|gast|llevas|puesto|no hay»), sin tarjeta |  |
+| RED-801 | `En el fondo de la casa había 300k y hoy metí otros 80k` | Responde con datos (menciona «fondo»), sin tarjeta | No hay un fondo común: lo explica. |
+| RED-802 | `Saqué 50k del fondo común para comprar las bombillas` | Quedan pendientes: Gasto $50.000 o Responde con datos (menciona «fondo»), sin tarjeta |  |
+| RED-803 | `Cada mes me toca poner 250k para la casa` | Pregunta antes de inventar | Un aporte que se repite necesita el día: lo pregunta y no registra cuotas futuras. |
+| RED-804 | `Tengo pendientes dos aportes de 250k para la casa` | Responde con datos (menciona «500\.000»), sin tarjeta | Suma los dos pendientes y no anota nada. |
+| RED-805 | `Mamá hizo el mercado de 280k y yo le voy a dar 100k de mi parte` | Deuda, $100.000, con Mamá o Responde con datos (menciona «cuando|todav»), sin tarjeta |  |
+| RED-806 | `El gas fue de 60k, mamá pone 20, Mateo 20 y yo los otros 20` | Quedan pendientes: $20.000 o Quedan pendientes: Gasto compartido $60.000 o Pregunta antes de inventar |  |
+| RED-807 | `Le mandé 300k a mamá: 200 son para el mercado y 100 para el recibo` | 2 movimientos: $200.000, $100.000 o Préstamo, $300.000, con Mamá o Pregunta antes de inventar |  |
+| RED-808 | `Le mandé 100k a mamá para el recibo, pero al final solo gastó 85k` | Responde con datos (menciona «15\.000»), sin tarjeta o Préstamo, $100.000, con Mamá o Pregunta antes de inventar |  |
+| RED-809 | `Yo pagué el agua de 70k y mamá me pasó su mitad después` | 2 movimientos: $70.000, $35.000 o Quedan pendientes: Gasto $35.000 o Quedan pendientes: Gasto $70.000 o Pregunta antes de inventar |  |
+| RED-810 | `Muéstrame cuánto puso cada uno para la casa este mes: mamá, Mateo y yo` | Responde con datos (menciona «casa|puso|aporte|no llevo|mama|mateo»), sin tarjeta |  |
+
+## Ronda 6: la asociación y su fondo
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-811 | `La cuota mensual de cada asociado es de 50k` | Responde con datos (menciona «cuota»), sin tarjeta | No hay cuotas por asociado: lo explica y no marca pagos. |
+| RED-812 | `Jorge pagó su aporte de 50k y 10k de multa` | 2 movimientos: $50.000, $10.000 o Quedan pendientes: $60.000 o Pregunta antes de inventar |  |
+| RED-813 | `¿Quién debe la cuota de este mes?` | Responde con datos (menciona «debe|nadie|deuda|cuenta»), sin tarjeta |  |
+| RED-814 | `A todos nos toca poner 30k extra para arreglar el salón` | Responde con datos (menciona «extra|cuota|asociad|cobr»), sin tarjeta |  |
+| RED-815 | `A Pipe le pusieron multa de 15k por no ir a la reunión` | Préstamo, $15.000, con Pipe | Una multa es plata por cobrar, sin marcarla pagada. |
+| RED-816 | `Laura debía 60k de cuota y solo abonó 40k` (antes: Laura me debe 60000) |  o Ingreso, $40.000, con Laura o Pregunta antes de inventar |  |
+| RED-817 | `Diana dejó pagadas tres cuotas de 50k de una vez` | Ingreso, $150.000, con Diana o Pregunta antes de inventar | Un ingreso de 150.000 de Diana; los periodos se llevan aparte. |
+| RED-818 | `El fondo le prestó 500k a Alejandro para que los devuelva en cinco meses` | Préstamo, $500.000, con Alejandro |  |
+| RED-819 | `Le prestamos 400k a David del fondo, con 5% de interés` | Pregunta antes de inventar | No dice si el 5 % es mensual, anual o total: pregunta. |
+| RED-820 | `Karla va a devolver los 300k del fondo en tres pagos de 100k` | Préstamo, $300.000, con Karla o Pregunta antes de inventar o Responde con datos (menciona «karla»), sin tarjeta | Los tres pagos todavía no pasaron. |
+| RED-821 | `Alejandro devolvió 80k de los 500k que le prestó el fondo` (antes: presté 500000 a Alejandro) |  o Ingreso, $80.000, con Alejandro |  |
+| RED-822 | `A David se le venció el plazo del préstamo y todavía debe 200k` (antes: presté 200000 a David) | Responde con datos (menciona «venc|plazo|debe|200\.000»), sin tarjeta | No crea una deuda nueva ni duplica el capital. |
+| RED-823 | `Karla pagó 100k de capital y 8k de intereses al fondo` (antes: presté 300000 a Karla) | 2 movimientos: $100.000, $8.000 o Pregunta antes de inventar |  |
+| RED-824 | `Pipe debe la cuota de 50k y además una multa de 20k` | 2 movimientos: $50.000, $20.000 o Pregunta antes de inventar |  |
+| RED-825 | `A Laura le quitaron la multa de 10k porque justificó la ausencia` (antes: Laura me debe 10000) | Responde con datos (menciona «perdon|anul|multa|quit»), sin tarjeta |  |
+| RED-826 | `Desde enero la cuota sube de 50k a 60k por asociado` | Responde con datos (menciona «enero|cuota»), sin tarjeta |  |
+| RED-827 | `Esteban entró a la asociación este mes, le toca pagar los 50k` | Préstamo, $50.000, con Esteban o Pregunta antes de inventar |  |
+| RED-828 | `Sofía se salió de la asociación, ya no le cobren desde diciembre` | Responde con datos (menciona «sofia|asociad|cobr|diciembre»), sin tarjeta |  |
+| RED-829 | `Mateo consignó 100k para la asociación` | Ingreso, $100.000, con Mateo o Pregunta antes de inventar |  |
+| RED-830 | `Diana pagó 50k de cuota, 20k de multa y 30k del aporte extra` | 3 movimientos: $50.000, $20.000, $30.000 o Quedan pendientes: $100.000 o Pregunta antes de inventar |  |
+| RED-831 | `¿Cuánto ha pagado Jorge en total este año entre cuotas y multas?` | Responde con datos (menciona «jorge»), sin tarjeta |  |
+| RED-832 | `¿Cuánta plata hay en el fondo y cuánto nos deben los asociados?` | Responde con datos (menciona «disponible|saldo|deben|nadie»), sin tarjeta |  |
+| RED-833 | `Jorge debe 100k de cuota, pero también tiene un préstamo del fondo de 300k` | 2 movimientos: $100.000, $300.000 o Pregunta antes de inventar |  |
+| RED-834 | `Jorge debía 80k de cuota y la asociación le debía 30k de un reembolso` | Responde con datos (menciona «50\.000»), sin tarjeta | Propone el saldo neto y no compensa sin que lo apruebes. |
+| RED-835 | `La asociación le devolvió 45k a Paula por una compra que hizo para el grupo` | Quedan pendientes: Gasto $45.000 o Quedan pendientes: $45.000 o Pregunta antes de inventar |  |
+| RED-836 | `Daniel compró materiales por 120k para la asociación y todavía no se los hemos pagado` | Deuda, $120.000, con Daniel |  |
+| RED-837 | `A Faber le descontamos 20k de lo que debía porque hizo una compra para la asociación` | Responde con datos (menciona «autoriz|cruce|compens|descont»), sin tarjeta |  |
+| RED-838 | `Pásame quiénes pagaron la cuota de noviembre y quiénes siguen debiendo` | Responde con datos (menciona «debe|nadie|deuda|cuota»), sin tarjeta |  |
+| RED-839 | `Laura ya había pagado los 50k de noviembre; esta consignación que aparece es la misma` | Responde con datos (menciona «duplic|una sola|no anot|ya»), sin tarjeta |  |
+| RED-840 | `Cierra las cuentas del fondo: Jorge pagó 60k, Diana 50k, y todavía faltan 40k de cuotas` | 2 movimientos: $60.000, $50.000 o Pregunta antes de inventar |  |
