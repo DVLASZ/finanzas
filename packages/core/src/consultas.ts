@@ -257,6 +257,14 @@ export function reconciliarCompromisos(
   return [...nuevo.values()];
 }
 
+/** Los topes en pausa (config `topes_pausados`, una lista JSON de ids de categoría): siguen guardados pero no avisan ni cuentan. */
+export function topesPausados(config: Record<string, string>): string[] {
+  try {
+    const l = JSON.parse(config.topes_pausados ?? '[]');
+    return Array.isArray(l) ? l.filter((x): x is string => typeof x === 'string') : [];
+  } catch { return []; }
+}
+
 /**
  * Cuánto llevas gastado de una categoría en [desde, hasta) y el tope de ese rango. Con `config` suma también lo de sus
  * subcategorías (lo de Restaurante cuenta en Comida), igual que la ventana de detalle. El tope se guarda por mes: en un
@@ -268,7 +276,7 @@ export function estadoPresupuesto(
   desde: string, hasta: string, arrastra = false, config: Record<string, string> = {},
 ): { gastado: number; tope: number; porcentaje: number } | null {
   const base = presupuestos[categoriaId];
-  if (!base) return null;
+  if (!base || topesPausados(config).includes(categoriaId)) return null;
   const ids = new Set(conSubcategorias(config, categoriaId));
   const gastadoEn = (d: string, h: string) => gastoPorCategoria(movs, cuentas, d, h).filter(x => ids.has(x.cuenta.id)).reduce((s, x) => s + x.total, 0);
   const y = Number(desde.slice(0, 4)), m = Number(desde.slice(5, 7));

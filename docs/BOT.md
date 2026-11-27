@@ -552,6 +552,7 @@ Si pegas la notificación directamente en el chat (Nequi, Daviplata o Bancolombi
 | `corte`, `corte de la semana` | Ventas e ingresos, gastos, utilidad neta, ingresos por fuente y lo que se está acabando (en Resumen, las apps que venden tienen botones para compartirlo o imprimirlo) |
 | `tope mecato 60000` | Fija un tope mensual. El bot avisa al 80 % y al 100 % |
 | `quitar tope mecato` | Quita el tope |
+| `pausar tope mecato`, `reanudar tope mecato` | Pausa el tope sin borrarlo (no avisa ni cuenta) y lo reactiva con el mismo monto |
 
 Las preguntas se entienden como se dicen, con o sin signos y con o sin tilde, también dictadas: `¿cuánto llevo en comida este mes?`, `¿cuánto hay en Nequi?`, `¿quién me debe plata?`.
 

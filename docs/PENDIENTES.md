@@ -25,6 +25,10 @@ Esto solo se comprueba con teléfonos y gente de verdad. Las pruebas automática
 
 ## Ya resuelto
 
+- Topes que se pausan y se reanudan sin borrarlos (`pausar tope comida`, «Pausar tope» en Categorías).
+- Categorías con movimientos: «Archivar categoría» (los movimientos no cambian) o «Pasar movimientos» a otra categoría antes de archivar.
+- El campo del chat es un cuadro de texto que crece hasta cuatro líneas: Enter envía y Mayús+Enter baja de renglón.
+- La guía de ayuda sigue siendo de reglas, sin IA (ver [IA.md](IA.md)).
 Lo que antes estaba aquí como pendiente y ya está hecho y publicado en las tres apps:
 
 - Notificaciones push, OCR de tirillas, compartir y atajos del ícono, probados en un celular real.
@@ -53,7 +57,7 @@ Lo que antes estaba aquí como pendiente y ya está hecho y publicado en las tre
 - El PIN y el bloqueo de la app son una barrera para quien agarre el teléfono desbloqueado: los datos locales no están cifrados. El respaldo con contraseña sí lo está.
 - Las alertas del banco se leen con reglas escritas para el texto de hoy de Nequi, Bancolombia y Banco de Bogotá. Si un banco cambia sus mensajes, hay que agregar la forma nueva a `packages/core/src/notificaciones.ts` con su prueba.
 - La proyección de liquidez solo cuenta los pagos fijos: no supone ingresos futuros ni gastos que no están anotados.
-- `npm audit` muestra dos avisos moderados en `uuid`, dentro de `exceljs` (el Excel). No se usa con entradas de otras personas.
+- `npm audit` muestra dos avisos moderados en `uuid`, dentro de `exceljs` (el Excel). Solo se arreglan bajando `exceljs` a una versión mayor anterior, que rompe el export; el Excel solo se arma con tus propios datos. Lo que sí tenía arreglo sin romper nada (`undici`, con un aviso alto) se actualizó con `npm audit fix`.
 - Las metas de ahorro son una etiqueta: la plata no cambia de cuenta, así que si la gastas la meta no se entera.
 - El aviso de «ya contaste hoy» usa la hora del servidor.
 - La sincronización parcial trae de nuevo todo si hace más de 30 días que la app no sincroniza o si en el servidor se purgó o se borró algo.

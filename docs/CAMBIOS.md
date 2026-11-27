@@ -6,6 +6,10 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-27
 
+- Topes que se pausan y se reanudan (`pausar tope comida`, botón «Pausar tope»): el monto queda guardado y mientras está en pausa no avisa ni cuenta.
+- Categorías con movimientos: «Pasar movimientos» a otra categoría y «Archivar categoría» con el conteo de lo que tiene.
+- Se actualizaron las dependencias con `npm audit fix` (quedan dos avisos moderados de `uuid` dentro de `exceljs`) y se quitó un script suelto de desarrollo.
+
 - Cierre de la auditoría 8.x: «me dieron 2000 de cambio», «llegaron 1000 galletas», «Marta me debe 10000» (sin sacar plata), «pero no en mecato», «con tarjeta», «del cajero», «2 cafés de 3000», «5.000,50», «12 000», «5ooo», «cuánto es 5000 + 3000», nombres en minúscula, «con Ana y Luis», «10/15», «tope comida 1» y los temas de ayuda de vender y guardar plata.
 - La IA ya no puede repetir frases ni partir un monto.
 

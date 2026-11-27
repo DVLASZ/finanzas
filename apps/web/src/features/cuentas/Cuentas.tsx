@@ -6,9 +6,9 @@
  */
 import { Users } from 'lucide-preact';
 import { useState } from 'preact/hooks';
-import { aMinor, cambiarArchivada, leerArchivadas, formatear, gruposDe, hallarMontos, leerSubcategorias, limpiar, MAX_NIVELES, profundidad, puedeIrDentro, rutaDe, type Cuenta } from '../../../../../packages/core/src/index.ts';
+import { aMinor, pasarMovimientosDeCategoria, topesPausados, cambiarArchivada, leerArchivadas, formatear, gruposDe, hallarMontos, leerSubcategorias, limpiar, MAX_NIVELES, profundidad, puedeIrDentro, rutaDe, type Cuenta } from '../../../../../packages/core/src/index.ts';
 import { abrirFichaPersona, archivarPersona } from '../deudas/fichaPersona.tsx';
-import { Selector } from '../../components/ui/Selector.tsx';
+import { abrirOpciones, Selector } from '../../components/ui/Selector.tsx';
 import { Insignia, Vacio, visualDeNombre } from '../../components/ui/iconos.tsx';
 import { Cargando, Nota } from '../../components/ui/piezas.tsx';
 import { avisar, confirmar, pedir } from '../../components/ui/Dialogo.tsx';
@@ -98,6 +98,21 @@ export function Cuentas() {
     await guardarCambio(() => app.repo.guardarCuenta({ id, nombre, clave: limpiar(nombre), tipo: 'persona', moneda: 'COP', grupo: grupoNueva || grupos[0]?.id }));
     setPersonaNueva('');
   };
+  const pausados = topesPausados(datos.config);
+  const alternarPausa = (c: Cuenta) => guardarCambio(() => app.repo.setConfig('topes_pausados', JSON.stringify(pausados.includes(c.id) ? pausados.filter(x => x !== c.id) : [...pausados, c.id])));
+  const movimientosDe = (id: string) => datos.movimientos.filter(m => m.estado === 'ok' && m.asientos.some(a => a.cuentaId === id)).length;
+  /** Vacía una categoría pasando sus movimientos a otra, para poder archivarla sin dejar nada colgando. */
+  const pasarMovimientos = (c: Cuenta, ancla: HTMLElement) => {
+    const n = movimientosDe(c.id);
+    if (!n) { void avisar({ titulo: 'No tiene movimientos', texto: 'Ya se puede archivar.' }); return; }
+    abrirOpciones(`Pasar los ${n} movimientos de ${c.nombre} a…`, categorias.filter(x => x.id !== c.id).map(x => ({ valor: x.id, etiqueta: rutaDe(padres, x.id, datos.cuentas) })), async destino => {
+      const x = datos.cuentas.find(y => y.id === destino);
+      if (!x || !(await confirmar({ titulo: `¿Pasar ${n} movimientos a «${x.nombre}»?`, texto: 'Cambia la categoría de cada uno. Los de un mes cerrado no se tocan.', aceptar: 'Sí, pasarlos', cancelar: 'Cancelar' }))) return;
+      let r = { hechos: 0, fallaron: 0 };
+      await guardarCambio(async () => { r = await pasarMovimientosDeCategoria(app.repo, new Date(), c.id, destino); });
+      await avisar({ titulo: `Pasé ${r.hechos} movimientos`, texto: r.fallaron ? `${r.fallaron} no se pudieron cambiar (mes cerrado o no editables) y siguen en ${c.nombre}.` : `Ya se puede archivar ${c.nombre}.` });
+    }, ancla);
+  };
   const archivarCategoria = async (c: Cuenta) => {
     if (Object.entries(padres).some(([id, padre]) => padre === c.id && !archivadas.includes(id))) {
       await avisar({ titulo: 'Tiene subcategorías', texto: 'Archiva primero las de adentro.', tono: 'peligro' }); return;
@@ -105,7 +120,7 @@ export function Cuentas() {
     const tope = datos.presupuestos[c.id];
     const quiere = await confirmar({
       titulo: `¿Archivar «${c.nombre}»?`,
-      texto: `Deja de salir en selectores y listas. Sus movimientos no cambian.${tope ? ' Su tope mensual se quita.' : ''}`,
+      texto: `Deja de salir en selectores y listas. ${movimientosDe(c.id) ? `Sus ${movimientosDe(c.id)} movimientos no cambian y siguen contando en los reportes; si prefieres, pásalos antes a otra categoría.` : 'No tiene movimientos.'}${tope ? ' Su tope mensual se quita.' : ''}`,
       aceptar: 'Sí, archivar', cancelar: 'Cancelar',
     });
     if (!quiere) return;
@@ -149,12 +164,14 @@ export function Cuentas() {
                   <div class="titulo">{c.nombre}</div>
                   <div class="sub">{padres[c.id] ? `Dentro de ${rutaDe(padres, padres[c.id], datos.cuentas)}` : 'Categoría principal'}</div>
                 </div>
-                <span class={`insig-tope ${tope ? 'con' : ''}`}>{tope ? formatear(tope) : 'Sin tope'}</span>
+                <span class={`insig-tope ${tope && !pausados.includes(c.id) ? 'con' : ''}`}>{tope ? (pausados.includes(c.id) ? `En pausa · ${formatear(tope)}` : formatear(tope)) : 'Sin tope'}</span>
               </div>
               <div class="ficha-acc">
                 <button class="chip" onClick={() => void renombrar(c)}>Renombrar</button>
                 <button class="chip" onClick={() => void ponerTope(c)}>Tope</button>
-                <button class="chip" data-archivar-categoria={c.id} onClick={() => void archivarCategoria(c)}>Archivar</button>
+                {tope ? <button class="chip" data-pausar-tope={c.id} onClick={() => void alternarPausa(c)}>{pausados.includes(c.id) ? 'Reanudar tope' : 'Pausar tope'}</button> : null}
+                {movimientosDe(c.id) ? <button class="chip" data-pasar-movimientos={c.id} onClick={e => pasarMovimientos(c, e.currentTarget)}>Pasar movimientos</button> : null}
+                <button class="chip" data-archivar-categoria={c.id} onClick={() => void archivarCategoria(c)}>Archivar categoría</button>
                 <Selector etiqueta={`Dentro de, para ${c.nombre}`} valor={padres[c.id] ?? ''} alCambiar={v => void cambiarPadre(c.id, v)}
                   opciones={[{ valor: '', etiqueta: 'Principal' }, ...posibles.map(x => ({ valor: x.id, etiqueta: `Dentro de ${rutaDe(padres, x.id, datos.cuentas)}` }))]} />
               </div>
