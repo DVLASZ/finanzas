@@ -690,6 +690,10 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - «Cuánto es 5000 + 3000» responde `$8.000` y no anota nada. Un millón en una comida lleva el aviso de revisar los ceros. Un tope de menos de $1.000 se rechaza.
 - «5.000,50», «12 000» y «5ooo» se leen como $5.000, $12.000 y $5.000.
 
+## Alertas del banco con renglones
+
+Pega la alerta tal cual, aunque venga en varias líneas («Valor:», «Comercio:», «Referencia»). Solo cuenta el monto de la operación, no los saldos ni las referencias. Si la alerta dice que la operación fue rechazada, declinada, fallida o que sigue pendiente, no la anoto y te lo digo; cuando llegue la confirmación (con la misma referencia) la anoto una sola vez. Un retiro con comisión son dos movimientos, y una transferencia a otra de tus cuentas es un traslado.
+
 ## Lo que el bot no hace
 
 - No borra nada, solo anula.

@@ -18,12 +18,17 @@ import type { Contexto } from './tipos.ts';
 
 const sinTildes = (s: string): string => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
-const BANCOS = /\b(?:nequi|daviplata|bancolombia)\b/;
+const BANCOS = /\b(?:nequi|daviplata|bancolombia|banco de bogota|bogota)\b/;
 const FUERTES = /compra aprobada|transaccion aprobada|pago exitoso|debito compra|transferencia recibida|te llego plata|recibiste una transferencia|usted envio/;
 const ENCABEZADOS = /enviaste|te envio|nequi:|daviplata:|bancolombia:|nequi notificacion|daviplata informa|bancolombia -/;
-const INGRESO = /te llego plata|te envio|recibiste|transferencia recibida|abono recibido|consignacion recibida|deposito recibido|te pagaron/;
-const GASTO = /enviaste|usted envio|compra|pago exitoso|debito|retiro|pagaste|transaccion aprobada/;
-const SALDO = /saldo|disponible|punto|acumulad|cupo|limite/;
+const INGRESO = /te llego plata|te envio|recibiste|has recibido|transferencia recibida|abono recibido|abono en cuenta|consignacion recibida|deposito recibido|te pagaron/;
+/** Alertas con renglones rotulados («Valor:», «Retiro:», «Comisión:»...) y las que dicen cómo terminó la operación. */
+const ETIQUETADA = /(?:^|\n)\s*(?:valor|retiro|abono|monto)\b|debito por|has recibido|recibiste|enviaste|transferencia realizada|pago pse|pago tarjeta|reversion|avance|retiro exitoso|abono en cuenta|transaccion exitosa|estamos procesando|fue exitoso|no se pudo|rechazad|no aprobad|declinad|fallid/;
+const RECHAZO = /rechazad|no aprobad|declinad|fallid|no se pudo|no fue posible|no pudimos/;
+const PENDIENTE = /estamos procesando|estado:?\s*pendiente|en proceso|en curso/;
+const REFERENCIA = /\b(?:ref(?:erencia)?(?: pse)?|movimiento|no\.? operacion|operacion|codigo|autorizacion|aprobacion)\.?:?\s*#?(\d{4,})/g;
+const GASTO = /enviaste|tu envio|envio de|usted envio|pago pse|transferencia realizada|transaccion exitosa|compra|pago exitoso|debito|retiro|pagaste|transaccion aprobada/;
+const SALDO = /saldo|disponible|punto|acumulad|cupo|limite|total/;
 // frases que parecen una orden dentro de la notificación: se corta la línea desde ahí
 const ORDEN = /\bnota\s*:|\bignora\b|\bolvida\b|\binstrucci|\bregistra\b|\belimina\b|\bborra\b|\bejecuta\b|\bsystem\b|\bsistema\s*:/i;
 const MONTO = /(?:\$|\bCOP)\s*(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)/gi;
@@ -61,7 +66,7 @@ function horaDe(texto: string): string {
   return ` a las ${dos(h)}:${m[2]}`;
 }
 
-const PARADA = new Set(['ref', 'referencia', 'fecha', 'saldo', 'ver', 'el', 'tu', 'nro', 'hora', 'valor']);
+const PARADA = new Set(['ref', 'referencia', 'fecha', 'saldo', 'ver', 'el', 'tu', 'nro', 'hora', 'valor', 'por', 'en', 'con', 'desde', 'hoy', 'fue', 'exitoso', 'exitosa', 'aprobado', 'aprobada', 'realizado', 'realizada']);
 
 /** Un nombre de persona o de comercio en minúsculas: palabras seguidas hasta una de parada o un símbolo. */
 function nombreDesde(resto: string): string {
@@ -81,62 +86,131 @@ const conMayusculas = (s: string): string => s.replace(/(^|\s)(\p{L})/gu, (_, e:
 
 interface Op { linea: string; monto: number; fin: number }
 
+/** El nombre que va en la frase para la cuenta de ese banco en esta instalación, o '' si no la tiene. */
+function cuentaDelBanco(n: string, ctx: Contexto): string {
+  // el banco que escribe la alerta es el que se nombra primero (el otro puede ser el destino)
+  const clave = (['nequi', 'daviplata', 'bancolombia', 'bogota'] as const)
+    .map(k => ({ k, i: n.search(new RegExp(String.raw`\b${k}\b`)) })).filter(x => x.i >= 0).sort((a, b) => a.i - b.i)[0]?.k ?? '';
+  if (!clave || !ctx.cuentas.some(x => x.tipo === 'dinero' && sinTildes(x.nombre).includes(clave))) return '';
+  return clave;
+}
+
+export interface AlertaBancaria { frases: string[]; respuesta?: string }
+
+/** Las referencias que trae una alerta (sin repetir): sirven para no anotar dos veces la misma operación. */
+export function referenciasDeAlerta(texto: string): string[] {
+  return [...new Set([...sinTildes(texto).matchAll(REFERENCIA)].map(m => m[1]))];
+}
+
 /** Si el texto es la notificación de un banco, una frase por operación; si no, null y el mensaje sigue su camino. */
-export function leerNotificacionBancaria(texto: string, ctx: Contexto): { frases: string[] } | null {
+export function leerNotificacionBancaria(texto: string, ctx: Contexto): AlertaBancaria | null {
   const n = sinTildes(texto);
-  if (texto.length < 20 || !/(?:\$|\bCOP)\s*\d/i.test(texto)) return null;
-  if (!(FUERTES.test(n) || (BANCOS.test(n) && ENCABEZADOS.test(n)))) return null;
+  if (texto.length < 20) return null;
+  const esBanco = BANCOS.test(n);
+  const pegada = /\n/.test(texto) || ENCABEZADOS.test(n);
+  const reconocida = FUERTES.test(n) || (esBanco && ENCABEZADOS.test(n)) || (esBanco && pegada && ETIQUETADA.test(n));
+  if (!reconocida) return null;
+
+  // una compra en dólares no se convierte a pesos: se dice y se deja para cuando el banco la liquide
+  const usd = n.match(/\busd\s*(\d+(?:[.,]\d+)?)/);
+  if (usd && !/(?:\$|\bcop)\s*\d{1,3}(?:[.,]\d{3})/.test(n)) {
+    return { frases: [], respuesta: `Es una compra en dólares (USD ${usd[1]}). No la convierto a pesos por mi cuenta: cuando el banco la liquide, anótala con el valor en pesos o en dólares («gasté ${usd[1].replace(',', '.')} dólares en suscripción»).` };
+  }
+  // lo que no se hizo no se anota
+  if (RECHAZO.test(n)) return { frases: [], respuesta: 'Esa operación no se hizo (la rechazaron, la declinaron o falló), así que no anoté nada.' };
+  if (PENDIENTE.test(n) && !/exitos|aprobad|realizad/.test(n)) {
+    return { frases: [], respuesta: 'Esa operación sigue pendiente, así que todavía no la anoto. Cuando llegue la confirmación, pégala y la anoto una sola vez.' };
+  }
+  if (!/(?:\$|\bCOP)\s*\d/i.test(texto)) return null;
 
   // las líneas, sin lo que parece una orden
   const lineas = texto.split(/\r?\n/).map(l => { const i = l.search(ORDEN); return (i >= 0 ? l.slice(0, i) : l).trim(); }).filter(Boolean);
   const hoy = aLocal(ctx.ahora).slice(0, 10);
 
   const ops: Op[] = [];
+  const vistas = new Set<string>();
+  const refs: string[] = [];
   for (const linea of lineas) {
     let previo = 0;
+    const refLinea = [...sinTildes(linea).matchAll(REFERENCIA)][0]?.[1];
     for (const m of linea.matchAll(MONTO)) {
       const ini = m.index ?? 0;
       const ventana = sinTildes(linea.slice(Math.max(previo, ini - 35), ini));
       previo = ini + m[0].length;
       if (SALDO.test(ventana)) continue;
       const monto = aPesos(m[1]);
-      if (monto > 0) ops.push({ linea, monto, fin: previo });
+      if (monto <= 0) continue;
+      // la misma operación pegada dos veces (igual referencia y monto) cuenta una vez
+      const clave = refLinea ? `${refLinea}|${monto}` : '';
+      if (clave && vistas.has(clave)) continue;
+      if (clave) { vistas.add(clave); refs.push(refLinea as string); }
+      ops.push({ linea, monto, fin: previo });
     }
   }
   if (!ops.length) return null;
+  const refMensaje = [...n.matchAll(REFERENCIA)].map(m => m[1]);
+  if (!refs.length && refMensaje.length) refs.push(refMensaje[0]);
 
   const todo = lineas.join('\n');
+  const nt = sinTildes(todo);
   const unica = ops.length === 1;
-  const banco = BANCOS.exec(n)?.[0] ?? '';
-  const cuenta = banco && ctx.cuentas.some(c => c.tipo === 'dinero' && sinTildes(c.nombre) === banco) ? banco : '';
+  const cuenta = cuentaDelBanco(n, ctx);
+  const cta = cuenta ? ` ${cuenta}` : '';
+  const hayTarjeta = ctx.cuentas.some(x => x.tipo === 'persona' && x.clave === 'tarjeta');
   const fechaGeneral = fechaDe(todo, hoy);
   const frases: string[] = [];
 
+  // un avance de la tarjeta es deuda con la tarjeta: sin esa persona se pregunta, no se anota como plata libre
+  if (/\bavance\b/.test(nt) && !hayTarjeta) {
+    return { frases: [], respuesta: '¿Quieres llevar este avance de la tarjeta? Es plata que debes, no un ingreso: crea la persona «Tarjeta» (escribe «agregar persona Tarjeta») y pega la alerta otra vez.' };
+  }
+
   for (const op of ops) {
-    const donde = unica ? todo : op.linea;
-    const nd = sinTildes(donde);
-    const esIngreso = INGRESO.test(nd);
-    if (!esIngreso && !GASTO.test(nd)) continue;
+    const nl = sinTildes(op.linea);
+    const neutra = !/comision|cargo|retiro|avance|abono|recibid|enviaste|compra|pago|debito|transferencia/.test(nl.replace(/valor|monto/g, ''));
+    const nd = unica || neutra ? nt : nl;
     const fecha = fechaDe(op.linea, hoy) || fechaGeneral;
-    const cuando = `${fecha ? ` el ${fecha}` : ''}${horaDe(op.linea) || (unica ? horaDe(todo) : '')}`;
+    const cuando = `${fecha ? ` el ${fecha}` : ''}${horaDe(op.linea) || (unica || neutra ? horaDe(todo) : '')}`;
     const despues = op.linea.slice(op.fin);
 
+    if (/comision|cargo/.test(nl)) {
+      frases.push(/avance/.test(nt) && hayTarjeta ? `debo ${op.monto} a Tarjeta por comision avance` : `comision ${op.monto}${cta}${cuando}`);
+      continue;
+    }
+    if (/\bavance\b/.test(nd) && hayTarjeta) { frases.push(`me presto ${op.monto} Tarjeta en ${cuenta || 'efectivo'}${cuando}`); continue; }
+    if (/\bretiro\b/.test(nd)) { frases.push(cuenta ? `pase ${op.monto} de ${cuenta} a efectivo${cuando}` : `saque ${op.monto} del cajero${cuando}`); continue; }
+    if (/pago (?:de )?tarjeta/.test(nd)) { frases.push(hayTarjeta ? `le pague ${op.monto} a Tarjeta${cta}${cuando}` : `pago tarjeta ${op.monto}${cta}${cuando}`); continue; }
+    if (/cuenta propia/.test(nd) && cuenta) {
+      const destino = nd.match(/destino:\s*(nequi|daviplata|bancolombia|bogota)/)?.[1];
+      if (destino && destino !== cuenta) { frases.push(`pase ${op.monto} de ${cuenta} a ${destino}${cuando}`); continue; }
+    }
+    if (/reversion|reverso|devolucion/.test(nd)) { frases.push(`ingreso ${op.monto} devolucion${cta}${cuando}`); continue; }
+    const esIngreso = INGRESO.test(nd);
+    if (!esIngreso && !GASTO.test(nd)) continue;
+
     if (esIngreso) {
-      // «Juan P. te envió $80.000», «... por valor de $125.000 de MARÍA R.», «... - DE: ANDRÉS P. - 09:02»
+      // «Juan P. te envió $80.000», «... de MARÍA R.», «De: Alejandro», «Origen: TRANSFERENCIA DE ESTEBAN»
       const antes = op.linea.match(/^(.*?)\s+te envi[oó](?=\s|$)/i)?.[1];
-      const de = (despues.match(/\bde:?\s+(.+)$/i) ?? (unica ? todo.match(/\bde:?\s+([^\n]+)/i) : null))?.[1];
+      const de = (despues.match(/\bde:?\s+(.+)$/i)
+        ?? todo.match(/(?:^|\n)\s*de:\s*([^\n]+)/i) ?? todo.match(/origen:[^\n]*?\bde\s+([^\n]+)/i)
+        ?? (unica ? todo.match(/\bde\s+(?!la |el |los |las |tu |una? )([^\n]+)/i) : null))?.[1];
       const quien = conMayusculas(nombreDesde(antes ?? de ?? ''));
       frases.push(`${quien ? `${quien} me pagó` : 'me pagaron'} ${op.monto}${cuenta ? ` en ${cuenta}` : ''}${cuando}`);
       continue;
     }
-    // gasto: a una persona («Enviaste $X a LAURA G.», «A: CARLOS M.») o en un comercio
-    const comercio = (donde.match(/comercio:\s*(.+)$/im) ?? donde.match(/\bcompra(?: aprobada)? en\s+(.+)$/im) ?? despues.match(/^\s*-\s*(.+?)(?:\s+-\s+\d|$)/))?.[1];
-    const persona = comercio ? undefined : (despues.match(/^\s*a:?\s+(.+)$/i) ?? donde.match(/^a:\s*(.+)$/im))?.[1];
+    // gasto: a una persona («Enviaste $X a LAURA G.», «Destino: DAVIPLATA - Diana») o en un comercio
+    const comercio = (donde(nd, op, todo, unica || neutra).match(/comercio:\s*(.+)$/im) ?? donde(nd, op, todo, unica || neutra).match(/\bcompra(?: aprobada)? en\s+(.+)$/im) ?? despues.match(/^\s*-\s*(.+?)(?:\s+-\s+\d|$)/))?.[1];
+    const destino = todo.match(/destino:\s*([^\n]+)/i)?.[1];
+    const persona = comercio ? undefined : (destino ? destino.split(/\s+-\s+/).pop() : (despues.match(/^\s*a:?\s+(.+)$/i) ?? todo.match(/^a:\s*(.+)$/im))?.[1]);
     const nombreP = persona ? nombreDesde(persona) : '';
     const nombreC = comercio ? nombreDesde(comercio) : '';
-    if (nombreP) frases.push(`envío a ${nombreP} ${op.monto}${cuenta ? ` ${cuenta}` : ''}${cuando}`);
-    else if (nombreC) frases.push(`gasté ${op.monto} en ${nombreC}${cuenta ? ` ${cuenta}` : ''}${cuando}`);
+    if (nombreP) frases.push(`envío a ${nombreP} ${op.monto}${cta}${cuando}`);
+    else if (nombreC) frases.push(`gasté ${op.monto} en ${nombreC}${cta}${cuando}`);
     else frases.push(`gasté ${op.monto}${cuenta ? ` en ${cuenta}` : ''}${cuando}`);
   }
+  void refs;
   return frases.length ? { frases } : null;
 }
+
+/** El texto donde buscar el comercio: el mensaje entero si es una sola operación, o la línea de la operación. */
+const donde = (_nd: string, op: Op, todo: string, entero: boolean): string => (entero ? todo : op.linea);

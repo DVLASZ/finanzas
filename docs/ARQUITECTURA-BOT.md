@@ -782,6 +782,26 @@ Resueltos y con prueba:
 
 Queda como decisión y no como defecto: 31 («deshacer 2» anula los dos últimos sin preguntar; es un comando explícito y lo anulado se restaura desde Movimientos).
 
+### Ronda 7, parte 1: dictado por voz ruidoso y alertas del banco pegadas (RED-841 a RED-900)
+
+Sesenta casos nuevos, todos en verde, con la batería en 900 de 900. Desde RED-841 la instalación de prueba también tiene Banco de Bogotá (`prepararLote`).
+
+**Voz** (`auditoria.ts` y `dictado.ts`):
+1. «Cinco mil coma cincuenta» pregunta si es $5.000,50 (los centavos no se llevan) o $5.050; «doce cero cero cero» sigue pidiendo confirmar en la tarjeta.
+2. «Diez mil en la cena y cinco en el parqueadero» son dos movimientos: el segundo monto, dicho corto, hereda los miles. `dividirTodo` ya parte «gasté X en A y Y en B».
+3. Correcciones orales: «a Karla, perdón, a Diana» se queda con Diana; «Jorge me debe veinte mil, no débito» quita el «no débito» (que es el reconocedor, no una negación).
+4. «Dos cafés de tres mil» pregunta si son el total o cada uno; «ponle cien mil a transporte» pregunta si es un tope o un gasto; «aboné treinta lucas a lo que le debo a Jorge» es el pago de esa deuda.
+5. «Faber me devolvió veinte de los cincuenta que le presté» se lee en miles; «le pagué a Laura veinte mil, ella me pagó otros diez» son dos movimientos de sentido contrario; un audio cortado («pagué... [ruido] ... treinta mil... a Laura») pregunta si lo pagaste o lo recibiste.
+
+**Alertas pegadas** (`banco.ts`, `leerNotificacionBancaria`): ahora lee los renglones rotulados de Bancolombia, Nequi, Daviplata y Banco de Bogotá:
+1. Solo cuenta el monto de la operación: ni los saldos («Saldo anterior», «Saldo actual», «Total debitado»), ni la referencia, ni el código de aprobación, ni los últimos dígitos de la tarjeta.
+2. Lo rechazado, declinado o fallido, y lo pendiente («estamos procesando»), no se anota y el bot lo dice. La confirmación posterior («fue exitoso», misma referencia) se anota una vez.
+3. La misma referencia con el mismo monto cuenta una operación, dentro del mensaje y entre mensajes (`refsDeBanco`, por app y mientras la app esté abierta). Dos compras iguales con otra hora y otra referencia son dos.
+4. Cada tipo sale como lo que es: retiro como traslado a efectivo más su comisión aparte, transferencia propia entre cuentas, pago de la tarjeta, reversión como ingreso, PSE como gasto en el comercio, envío o abono con el nombre de la persona (`Destino: DAVIPLATA - Diana`, `De: Alejandro`, `Origen: TRANSFERENCIA DE ESTEBAN`). El banco que escribe la alerta es el que se nombra primero.
+5. Un avance de la tarjeta sin la persona «Tarjeta» se pregunta; una compra en dólares no se convierte a pesos. Una alerta con renglones que parecen una orden se sigue cortando.
+
+Quedan fuera: el estado pendiente solo se recuerda mientras la app está abierta, y las alertas de otros bancos o de otro formato se leerán cuando haya ejemplos reales.
+
 ## 9. Cómo probarlo
 
 El núcleo corre en Node sin red y sin navegador. `MemoriaRepo` guarda todo en memoria y `tests/ayudas.ts` trae un bot listo con el reloj fijo:
