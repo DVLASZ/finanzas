@@ -50,7 +50,7 @@ function titular(p: Propuesta, ctx: Contexto): string {
       const tasa = usd ? ` · ${formatear(Math.round(pesos / (usd / 100)))} por dólar` : '';
       return `Cambio de moneda · ${sale} (${cuenta}) → ${entra} (${nombreDe(ctx, p.cuentaDestinoId)})${tasa} · ${f}`;
     }
-    case 'prestamo': return `Préstamo · le prestas a ${p.persona} · ${m} · ${cuenta}${p.fechaLimite ? ` · te paga antes del ${describirDia(p.fechaLimite)}` : ''} · ${f}`;
+    case 'prestamo': if (p.sinSalida) return `Préstamo · te debe ${p.persona} (no salió plata de tus cuentas) · ${m} · ${f}`; return `Préstamo · le prestas a ${p.persona} · ${m} · ${cuenta}${p.fechaLimite ? ` · te paga antes del ${describirDia(p.fechaLimite)}` : ''} · ${f}`;
     case 'deuda': {
       if (p.custodia && p.recibeDinero) return `Plata de ${p.persona}${p.motivo ? ` para ${p.motivo}` : ''} · ${m} · ${cuenta} · ${f}`;
       const lim = p.fechaLimite ? ` · antes del ${describirDia(p.fechaLimite)}` : '';
@@ -75,7 +75,7 @@ function titular(p: Propuesta, ctx: Contexto): string {
 /** ¿Este movimiento saca plata de la billetera? Entonces la tarjeta explica cómo se pagó. */
 export function sacaEfectivo(p: Propuesta): boolean {
   const cuenta = p.cuentaId ?? 'efectivo';
-  if (cuenta !== 'efectivo' || p.moneda !== 'COP') return false;
+  if (cuenta !== 'efectivo' || p.moneda !== 'COP' || p.sinSalida) return false;
   return p.tipo === 'gasto' || p.tipo === 'prestamo' || (p.tipo === 'compartido' && !p.pagoOtro) || (p.tipo === 'pago' && p.direccion === 'yo_pago' && p.montoOtro === undefined);
 }
 

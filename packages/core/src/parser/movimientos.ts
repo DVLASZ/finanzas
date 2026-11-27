@@ -209,7 +209,7 @@ export function gasto(b: Base, ctx: Contexto): Resultado {
 /** Origen y destino de un transporte: "de terminal a casa", "terminal-casa", "terminal casa", "casa". */
 export function lugares(t: string, tramos: { inicio: number; fin: number }[], b: Base) {
   const ws = borrarTramos(t, tramos).split(' ').filter(w => w && !RELLENO.has(w));
-  const iv = ws.findIndex(w => VEHICULOS.includes(w));
+  const iv = ws.findIndex(w => VEHICULOS.includes(w) || w === 'transporte');
   const vehiculo = iv >= 0 ? conOriginales([ws[iv]], b) : 'Transporte';
   const resto = (iv >= 0 ? [...ws.slice(0, iv), ...ws.slice(iv + 1)] : ws).filter(w => w !== 'ida' && w !== 'vuelta');
   const txt = resto.join(' ');

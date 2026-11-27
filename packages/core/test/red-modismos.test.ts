@@ -39,7 +39,7 @@ test('me quedaron debiendo es un préstamo y pregunta quién si no lo dice', asy
   const t = await di('me quedaron debiendo cinco mil del mandado');
   assert.equal(tarjeta(t), '');
   assert.match(t, /¿Quién te debe/);
-  assert.match(tarjeta(await di('me quedaron debiendo Pedro 5000')), /^Préstamo · le prestas a Pedro/);
+  assert.match(tarjeta(await di('me quedaron debiendo Pedro 5000')), /^Préstamo · te debe Pedro/);
 });
 
 test('hicimos vaca sin nombres pregunta cuánto puso cada uno', async () => {

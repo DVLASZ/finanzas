@@ -200,7 +200,9 @@ export function construirMovimiento(
     }
     case 'prestamo': {
       const pid = persona(p.persona!);
-      salidaDeDinero(p.monto);
+      // «Marta me debe 10000»: no salió plata de ninguna cuenta; la deuda aparece contra la apertura
+      if (p.sinSalida) mov({ cuentaId: 'sys:apertura', monto: -p.monto, moneda: M });
+      else salidaDeDinero(p.monto);
       mov({ cuentaId: pid, monto: p.monto, moneda: M });
       nuevoCompromiso(pid, 'me_deben', p.monto, M, p.motivo, p.fechaLimite);
       break;

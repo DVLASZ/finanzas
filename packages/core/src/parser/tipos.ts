@@ -44,6 +44,8 @@ export interface Propuesta {
   venta?: { producto: string; presentacion: string; cantidad: number; precio: number };
   /** Venta a crédito: el cliente queda debiendo y no entra plata a la caja. */
   fiado?: boolean;
+  /** «Marta me debe 10000»: lo que te deben sin que haya salido plata de tus cuentas (una deuda que ya existía). */
+  sinSalida?: boolean;
   /** Grupo de la persona cuando es nueva (los de la casa, trabajadores...). */
   grupoPersona?: Grupo;
   /** La persona es nueva: si se aclara que es «(nuevo)», hay que preguntar su grupo. */

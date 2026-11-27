@@ -6,6 +6,7 @@
  * de confirmación como cualquier mensaje, así que lo que la IA se equivoque se ve antes de guardar.
  */
 import { ejemploDeCuenta, ejemploDeSaldos, vendeProductos } from './entidades.ts';
+import { limpiarDictado } from './dictado.ts';
 import { hallarMontos } from './dinero.ts';
 import { naturalizar } from './lenguaje.ts';
 import { interpretar } from './parser.ts';
@@ -144,6 +145,7 @@ export function validarFrasesIA(frases: string[], original: string, ctx: Context
   const palabras = limpiar(original);
   const ids = new Set(ctx.cuentas.map(c => c.id));
   const salida: string[] = [];
+  const montosSalida: number[] = [];
   for (const frase of frases) {
     let r;
     try { r = interpretar(frase, ctx); } catch { continue; }
@@ -164,8 +166,22 @@ export function validarFrasesIA(frases: string[], original: string, ctx: Context
     const f = limpiar(frase);
     if ((['prestamo', 'deuda', 'pago', 'transferencia'] as const).some(k => RESPALDO[k]!.test(f) && !RESPALDO[k]!.test(palabras))) continue;
     salida.push(frase);
+    montosSalida.push(p.monto / centavos);
   }
-  return salida;
+  // sin repetidas, no más movimientos que montos dijo la persona y sin pasarse de lo que dijo en total
+  const vistos = new Set<string>();
+  const dichos = hallarMontos(limpiar(limpiarDictado(original, ctx))).filter(m => m.explicito);
+  const totalDicho = dichos.reduce((s, m) => s + m.valor, 0);
+  const tope = Math.max(1, dichos.length);
+  const final: string[] = [];
+  let suma = 0;
+  salida.forEach((f, i) => {
+    const k = limpiar(f);
+    if (vistos.has(k) || final.length >= tope) return;
+    if (totalDicho > 0 && suma + montosSalida[i] > totalDicho) return;
+    vistos.add(k); suma += montosSalida[i]; final.push(f);
+  });
+  return final;
 }
 
 /** Cuántas veces al día se puede pedir ayuda a la IA (sin pasarse del plan gratuito). */
