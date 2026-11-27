@@ -42,6 +42,7 @@ import { leerNotificacionBancaria } from './banco.ts';
 import { incertidumbre } from './incertidumbre.ts';
 import { cruzado } from './cruzados.ts';
 import { hablada } from './habladas.ts';
+import { leerSelectivas, type ParteDeCola } from './colas.ts';
 import { leerAnulacion } from './anulaciones.ts';
 import { descendientes, leerSubcategorias, MAX_NIVELES, puedeIrDentro } from './subcategorias.ts';
 import { leerMetas, textoAvance, textoMetas, totalApartado, type Meta } from './metas.ts';
@@ -409,6 +410,12 @@ class Motor {
     }
     // escribir una de las opciones de la pregunta es responderla: eso lo hace resolverFaltante
     if (p.propuesta.faltantes[0]?.opciones?.some(o => limpiar(o) === limpiar(texto))) return null;
+    // varios movimientos a la vez: «el primero sí, el segundo no», «bus en efectivo, comida en Nequi» (ver colas.ts)
+    const selectivas = leerSelectivas(texto, [`${p.propuesta.concepto} ${p.propuesta.persona ?? ''} ${p.propuesta.mensajeOriginal}`, ...(p.siguientes ?? [])]);
+    if (selectivas && !p.propuesta.faltantes.some(f => f.opciones?.some(o => limpiar(o) === limpiar(texto)))) {
+      const r = await this.selectivas(selectivas, p);
+      if (r) return r;
+    }
     const orden = leerOrdenDeCola(texto);
     if (orden) {
       const r = await this.ordenDeCola(orden, p);
@@ -504,6 +511,62 @@ class Motor {
     if (!nueva) return [{ texto: `Eso del ${ORD[i] ?? `número ${i + 1}`} te lo cambio cuando te lo muestre: ahí dime «${orden.resto}».` }];
     cola[i - 1] = nueva;
     return this.conNota(`Listo, el ${ORD[i] ?? `número ${i + 1}`} queda así: «${nueva}».`, { ...p, siguientes: cola });
+  }
+
+  /**
+   * «el primero sí, el segundo no», «bus en efectivo, comida en Nequi», «sí, pero los 20 eran 25»: cada trozo cambia, confirma o
+   * quita uno de los movimientos de la cola (ver colas.ts). Lo que no se menciona sigue pendiente.
+   */
+  private async selectivas(partes: ParteDeCola[], p: Pendiente): Promise<Salida[] | null> {
+    const cola = [...(p.siguientes ?? [])];
+    const n = 1 + cola.length;
+    if (partes.some(x => x.i >= n)) return null;
+    let cabeza = p.propuesta;
+    const quitar = new Set<number>();
+    const confirmar = new Set<number>();
+    const notas: string[] = [];
+    for (const x of partes) {
+      if (x.decision === 'no') quitar.add(x.i);
+      if (x.decision === 'si') confirmar.add(x.i);
+      if (!x.cambio) continue;
+      if (x.i === 0) {
+        const a = aclarar(cabeza, x.cambio, this.ctx);
+        if (!a) return null;
+        if ('aviso' in a) return this.conNota(a.aviso, p);
+        cabeza = a.propuesta; notas.push(a.nota);
+      } else {
+        const frase = cola[x.i - 1];
+        const r = interpretar(frase, this.ctx);
+        const a = r.clase === 'movimiento' ? aclarar(r.propuesta, x.cambio, this.ctx) : null;
+        if (a && 'aviso' in a) return [{ texto: a.aviso }];
+        const nueva = r.clase === 'movimiento' && a ? editarFrase(frase, r.propuesta, a.propuesta, this.ctx) : null;
+        if (!nueva) return null;
+        cola[x.i - 1] = nueva; notas.push(`«${nueva}».`);
+      }
+    }
+    const quedan = Array.from({ length: n }, (_, i) => i).filter(i => !quitar.has(i));
+    const aviso = [notas.join(' '), quitar.size ? `Quité ${quitar.size === 1 ? '1' : quitar.size}.` : ''].filter(Boolean).join(' ');
+    if (!quedan.length) {
+      await this.repo.guardarPendiente(null);
+      this.pend = null;
+      return [{ texto: 'Listo, descarté todo. No se guardó nada.' }];
+    }
+    const frases = quedan.filter(i => i > 0).map(i => cola[i - 1]);
+    let salida: Salida[];
+    if (quitar.has(0)) {
+      salida = await this.siguienteDe(frases, quedan.length);
+    } else {
+      this.pend = { ...p, propuesta: cabeza, siguientes: frases, total: quedan.length };
+      salida = await this.mostrar(this.pend);
+    }
+    // si todo lo que queda se aprobó, se guarda
+    if (confirmar.size && quedan.every(i => confirmar.has(i))) {
+      const guardados = await this.confirmarTodos();
+      if (guardados[0] && aviso) guardados[0].texto = `${aviso}\n${guardados[0].texto}`;
+      return guardados;
+    }
+    if (salida[0] && aviso) salida[0].texto = `${aviso}\n${salida[0].texto}`;
+    return salida;
   }
 
   /** «corrige, fueron 87000» sin tarjeta pendiente: edita lo último que se guardó (el original queda anulado, no borrado). */

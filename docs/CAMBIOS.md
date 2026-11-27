@@ -4,6 +4,10 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
+## 2026-12-01
+
+- Con varios movimientos pendientes puedes decir `el primero sí, el segundo no`, `sí al café, la comida no`, `Faber sí, Jorge no` o `bus en efectivo, comida en Nequi`.
+
 ## 2026-11-30
 
 - Una corrección con varias cosas se aplica por trozos: `eran 54k y salieron de Nequi`, `déjalo en 10, que ella me descontó dos`, `ponlo como Salidas, fue comiendo con los parceros`.

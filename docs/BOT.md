@@ -689,3 +689,5 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - Ya guardado: «borra ese último movimiento», «elimina esa deuda», «borra el almuerzo» o «se anotó dos veces, borra una» lo anulan (queda marcado como anulado, no se borra). Si dos encajan igual, te pregunta cuál.
 
 - Si en una misma frase corriges dos cosas («eran 54k y salieron de Nequi»), cambia las dos en la tarjeta. Lo que dices después de «no» se descarta.
+
+- Con varios movimientos pendientes: «el primero sí, el segundo no», «sí al café, la comida no», «Faber sí, Jorge no», «los dos primeros sí, el bus no» o «bus en efectivo, comida en Nequi». Lo que no nombras sigue pendiente.
