@@ -1,6 +1,6 @@
-# Batería adversarial del bot (RED-001 a RED-500)
+# Batería adversarial del bot (RED-001 a RED-670)
 
-Estas son las 500 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
+Estas son las 670 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
 
 ```bash
 node --test packages/core/test/red-team.test.ts
@@ -661,3 +661,198 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-498 | `David me debía 20k, me compró el almuerzo de 13 y me dio 7 en Nequi; con eso quedó listo` (antes: le presté 20000 a David) | Nunca gasto: si no hay tarjeta, pregunta o explica |  |
 | RED-499 | `De los 30k que le debía a Paula, le aboné 10 ayer y hoy otros 5; me faltan 15` (antes: le debo 30000 a Paula) | 2 movimientos: $10.000, $5.000 o Pregunta antes de inventar |  |
 | RED-500 | `Ya cuadré con Alejandro: yo le debía 12k, él me debía 9k y le mandé solo 3 por Nequi; q...` (antes: le debo 12000 a Alejandro; le presté 9000 a Alejandro) | Pregunta antes de inventar o Quedan pendientes: $3.000 en Nequi |  |
+
+## Ronda 5: corregir lo que se acaba de decir
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-501 | `Gasté 15k en el almuerzo, en efectivo  //  Perdón, eran 18k, no 15k` | Quedan pendientes: Gasto $18.000 en Efectivo |  |
+| RED-502 | `Le presté 30k a Faber  //  No, fueron 25k` | Quedan pendientes: Préstamo $25.000 |  |
+| RED-503 | `Compré mercado por 120 mil  //  Me equivoqué, fueron 102 mil` | Quedan pendientes: Gasto $102.000 |  |
+| RED-504 | `Pagué 8k de transporte  //  Ponle 9.500 mejor` | Quedan pendientes: Gasto $9.500 |  |
+| RED-505 (PENDIENTE) | `David me debe 40k  //  Era 45k, me acordé de los cinco que faltaban` | Quedan pendientes: Préstamo $45.000 |  |
+| RED-506 | `Pagué 65k por la reparación de la bici  //  Uy, no, fueron 56k` | Quedan pendientes: Gasto $56.000 |  |
+| RED-507 (PENDIENTE) | `Le debo 12 mil a Karla  //  Déjalo en 10, que ella me descontó dos` | Quedan pendientes: Deuda $10.000 |  |
+| RED-508 | `Me entraron 200k de Laura  //  Perdón, eran 20k` | Quedan pendientes: Ingreso $20.000 |  |
+| RED-509 (PENDIENTE) | `Compré dos almuerzos por 28k  //  No, fueron 32k los dos` | Quedan pendientes: Gasto $32.000 |  |
+| RED-510 (PENDIENTE) | `Pagué la factura de 90 mil  //  Era de 90.800, se me olvidaron los ochocientos` | Quedan pendientes: Gasto $90.800 |  |
+| RED-511 | `Gasté 24k en comida con efectivo  //  No fue en efectivo, fue por Nequi` | Quedan pendientes: Gasto $24.000 en Nequi |  |
+| RED-512 | `Pagué 18k de transporte con Nequi  //  Era con Daviplata, no Nequi` | Quedan pendientes: Gasto $18.000 en Daviplata |  |
+| RED-513 (PENDIENTE) | `Me pagó Jorge los 50k por transferencia  //  Fue en efectivo, me los dio en la mano` | Quedan pendientes: Ingreso $50.000 en Efectivo |  |
+| RED-514 | `Compré el mercado por 75k con tarjeta  //  La tarjeta era la de crédito, no débito` | Quedan pendientes: Gasto $75.000 o Pregunta | La instalación no tiene tarjetas: pregunta o deja la tarjeta como está. |
+| RED-515 (PENDIENTE) | `Pasé 100k de Nequi a efectivo  //  Al revés, pasé la plata de efectivo a Nequi` | Quedan pendientes: Transferencia $100.000 |  |
+| RED-516 | `Gasté 35k en una carpeta para la universidad  //  Ponle categoría Universidad` | Quedan pendientes: Gasto $35.000 categoría Universidad |  |
+| RED-517 | `Pagué 22k de gasolina  //  Eso va en Transporte, no en Compras` | Quedan pendientes: Gasto $22.000 categoría Transporte |  |
+| RED-518 (PENDIENTE) | `Compré comida por 16k  //  Mejor ponlo como Salidas, fue comiendo con los parceros` | Quedan pendientes: Gasto $16.000 categoría Salidas |  |
+| RED-519 | `Gasté 40k en el regalo de Laura  //  Eso es para Regalos` | Quedan pendientes: Gasto $40.000 categoría Regalos | La plantilla no tiene «Celebraciones»: se usa Regalos. |
+| RED-520 | `Pagué 12k de fotocopias  //  Ponlo en Universidad, no Papelería` | Quedan pendientes: Gasto $12.000 categoría Universidad |  |
+| RED-521 | `Hoy gasté 20k en almuerzo  //  Eso fue ayer, no hoy` | Quedan pendientes: Gasto $20.000 el 2026-10-18 |  |
+| RED-522 | `Pagué 15k del taxi el lunes  //  No, fue el martes` | Quedan pendientes: Gasto $15.000 el 2026-10-13 |  |
+| RED-523 | `Le presté 40k a Daniel hoy  //  Fue el sábado pasado` | Quedan pendientes: Préstamo $40.000 el 2026-10-17 |  |
+| RED-524 | `Le presté 25k a Faber  //  No era a Faber, era a David` | Quedan pendientes: Préstamo $25.000 |  |
+| RED-525 (PENDIENTE) | `Karla me debe 18k del domicilio  //  Era Laura la que quedó debiéndome` | Quedan pendientes: Préstamo $18.000 |  |
+| RED-526 | `Gasté 30k en una salida  //  No fue salida, fue la cena de cumpleaños de Paula` | Quedan pendientes: Gasto $30.000 «cena» |  |
+| RED-527 | `Le debo 8k a Pipe por unas cosas  //  Pon que fue por las copias del proyecto` | Quedan pendientes: Deuda $8.000 |  |
+| RED-528 (PENDIENTE) | `Me entraron 50k de Mateo  //  No fue un regalo, fue un préstamo que me hizo` | Quedan pendientes: Deuda $50.000 |  |
+| RED-529 (PENDIENTE) | `Le pasé 30k a Sofía  //  Eso era un préstamo, no un regalo` | Quedan pendientes: Préstamo $30.000 |  |
+| RED-530 (PENDIENTE) | `Pagué 20k de la comida de David  //  Perdón, David fue el que pagó mi comida` | Quedan pendientes: Deuda $20.000 o Pregunta |  |
+| RED-531 (PENDIENTE) | `Pagué 60k de la pizza entre tres  //  Éramos cuatro, no tres` | Quedan pendientes: Gasto $15.000 | Solo se anota tu parte: con cuatro son 15.000. |
+| RED-532 (PENDIENTE) | `Alejandro pagó 90k de la comida y yo le debo 30  //  No, mi parte era 25, él invitó cinco` | Quedan pendientes: Deuda $25.000 |  |
+| RED-533 | `Le pagué 12k a Paula por Nequi  //  Fue por transferencia bancaria, no por Nequi` | Quedan pendientes: $12.000 o Pregunta |  |
+| RED-534 (PENDIENTE) | `Gasté 45k en mercado con efectivo  //  Eran 54k y salieron de Nequi` | Quedan pendientes: Gasto $54.000 en Nequi |  |
+| RED-535 (PENDIENTE) | `Le debo 20k a Jorge por el almuerzo  //  Era Daniel y fueron 18k` | Quedan pendientes: Deuda $18.000 |  |
+| RED-536 (PENDIENTE) | `Ayer gasté 9k en transporte  //  Fue el viernes y ponlo en Universidad` | Quedan pendientes: Gasto $9.000 categoría Universidad el 2026-10-16 |  |
+| RED-537 (PENDIENTE) | `Gasté 10k en desayuno  //  Eran 12k  //  Espera, revisé y sí eran 10k` | Quedan pendientes: Gasto $10.000 | La última corrección manda. |
+| RED-538 | `Pagué 25k ayer  //  Cámbiale la cuenta` | Quedan pendientes: Gasto $25.000. Pregunta | No dice a qué cuenta: pregunta y deja la tarjeta como está. |
+| RED-539 (PENDIENTE) | `Gasté 14k en taxi  //  También compré 6k de agua  //  Ese taxi fue por Nequi` | Quedan pendientes: Gasto $14.000 en Nequi; Gasto $6.000 |  |
+| RED-540 (PENDIENTE) | `Gasté 20k en almuerzo  //  Pagué 8k de bus  //  Corrige el almuerzo: fueron 22k` | Quedan pendientes: Gasto $22.000; Gasto $8.000 |  |
+
+## Ronda 5: anulaciones, borrados y arrepentimientos
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-541 | `Anota un gasto de 30k en ropa  //  No, espera, no lo guardes` | Sin tarjetas pendientes. Nada guardado |  |
+| RED-542 | `Voy a registrar 18k de comida  //  Olvídalo, al final no compré nada` | Sin tarjetas pendientes. Nada guardado |  |
+| RED-543 | `Borra ese último movimiento` (antes: Gasté 20k en mercado) | Sin tarjetas pendientes. Nada guardado |  |
+| RED-544 | `Deshaz lo que acabas de anotar` (antes: Le presté 50k a Faber) | Sin tarjetas pendientes. Nada guardado | Se revierte el préstamo completo, no solo una pata. |
+| RED-545 | `Elimina esa deuda, la anoté mal` (antes: Karla me debe 15k) | Sin tarjetas pendientes. Nada guardado |  |
+| RED-546 (PENDIENTE) | `Anota 40k de gasolina  //  No lo guardes, me equivoqué antes de confirmar` | Sin tarjetas pendientes. Nada guardado |  |
+| RED-547 | `Mentiras, al final no los compré` (antes: Compré unos zapatos por 120k) | Sin tarjetas pendientes. Nada guardado |  |
+| RED-548 | `Se anotó dos veces, borra una` (antes: Gasté 25k en almuerzo; Gasté 25k en almuerzo) | Sin tarjetas pendientes. Guardado: Gasto $25.000 |  |
+| RED-549 | `Borra el último` (antes: Gasté 12k en almuerzo; Compré 5k de agua) | Sin tarjetas pendientes. Guardado: Gasto $12.000 | Se usa almuerzo en vez de taxi, que pide el recorrido. |
+| RED-550 | `Borra el almuerzo, ese sí lo anoté mal` (antes: Gasté 12k en almuerzo; Compré 5k de agua) | Sin tarjetas pendientes. Guardado: Gasto $5.000 |  |
+| RED-551 | `Elimina el gasto de comida de ayer` (antes: Anota 30k de comida de ayer) | Sin tarjetas pendientes. Nada guardado |  |
+| RED-552 (PENDIENTE) | `Borra el de 20k` (antes: Gasté 20k en comida; Gasté 20k en gasolina) | Sin tarjetas pendientes. Guardado: Gasto $20.000; Gasto $20.000. Pregunta | Hay dos de 20.000: pregunta cuál y no borra ninguno. |
+| RED-553 | `Borra ese ingreso, fue una confusión` (antes: Me entraron 100k de Daniel) | Sin tarjetas pendientes. Nada guardado |  |
+| RED-554 | `Deshaz esa transferencia` (antes: Pasé 50k de Nequi a efectivo) | Sin tarjetas pendientes. Nada guardado |  |
+| RED-555 | `Eso no pasó, anula el pago` (antes: Le debo 20k a Karla; Le pagué 20k a Karla) | Sin tarjetas pendientes. Guardado: Deuda $20.000 |  |
+| RED-556 (PENDIENTE) | `No, me confundí, todavía no me ha pagado` (antes: Le presté 40k a David; David me abonó 10k) | Sin tarjetas pendientes. Guardado: Préstamo $40.000 |  |
+| RED-557 | `Borra eso, esa compra nunca se hizo` (antes: Faber pagó 30k de una compra y yo le debo 15) | Sin tarjetas pendientes. Nada guardado |  |
+| RED-558 | `Elimina el gasto de 80k de ayer  //  Sí, ese mismo` (antes: Gasté 80k en mercado ayer) | Sin tarjetas pendientes. Nada guardado |  |
+| RED-559 (PENDIENTE) | `Anota 15k de almuerzo  //  Espera, todavía no lo he pagado` | Sin tarjetas pendientes. Nada guardado. Pregunta | No es un gasto pagado: pregunta si es una cuenta por pagar. |
+| RED-560 (PENDIENTE) | `La devolví y me devolvieron toda la plata` (antes: Compré una camiseta por 60k) | Sin tarjetas pendientes. Nada guardado o Sin tarjetas pendientes. Guardado: Gasto $60.000; Ingreso $60.000 o Quedan pendientes: Ingreso $60.000. Guardado: Gasto $60.000 | El efecto neto es cero: se anula la compra o queda la devolución al lado. |
+| RED-561 (PENDIENTE) | `Borra el gasto de 20k de hace un rato  //  El de la comida, no el del taxi` (antes: Gasté 20k en comida; Gasté 20k en gasolina) | Sin tarjetas pendientes. Guardado: Gasto $20.000 «gasolina» |  |
+| RED-562 (PENDIENTE) | `Borra lo del aseo, eso lo pagó Karla` (antes: Compré mercado por 80k; Compré aseo por 20k) | Sin tarjetas pendientes. Guardado: Gasto $80.000 |  |
+| RED-563 | `Borra esa deuda, Jorge no puso nada` (antes: Le debo 25k a Jorge) | Sin tarjetas pendientes. Nada guardado |  |
+| RED-564 (PENDIENTE) | `Anota 10k de bus y 15k de almuerzo  //  Cancela el almuerzo, el bus sí déjalo` | Quedan pendientes: Gasto $10.000 |  |
+| RED-565 | `Borra eso, no era Karla ni era una deuda` (antes: Karla me debe 30k) | Sin tarjetas pendientes. Nada guardado |  |
+| RED-566 | `Anota treinta mil de mercado  //  No, cancela eso` | Sin tarjetas pendientes. Nada guardado |  |
+| RED-567 (PENDIENTE) | `Borra los dos últimos` (antes: Gasté 10k en bus; Gasté 12k en tinto; Gasté 20k en almuerzo) | Sin tarjetas pendientes. Guardado: Gasto $10.000 |  |
+| RED-568 (PENDIENTE) | `¿Cuánto me quedaría si gasto 50k en ropa?  //  Borra ese gasto hipotético` | Sin tarjetas pendientes. Nada guardado |  |
+| RED-569 (PENDIENTE) | `Borra el gasto de 30k de ayer  //  Aunque mejor déjalo` (antes: Gasté 30k en comida ayer) | Sin tarjetas pendientes. Guardado: Gasto $30.000 |  |
+| RED-570 (PENDIENTE) | `Gasté 15k en comida  //  Corrige, eran 18k  //  Ahora sí, borra ese gasto` | Sin tarjetas pendientes. Nada guardado |  |
+
+## Ronda 5: varios turnos con interrupciones
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-571 | `Gasté 20k en una cartulina para la exposición  //  También gasté 8k en bus  //  Univers...` | Quedan pendientes: Gasto $20.000 categoría Universidad; Gasto $8.000 |  |
+| RED-572 (PENDIENTE) | `Le presté 30k a alguien de la U  //  Anota también 12k de almuerzo  //  A Faber` | Quedan pendientes: Préstamo $30.000; Gasto $12.000 |  |
+| RED-573 (PENDIENTE) | `Gasté 25k en mercado  //  ¿Cuánto tengo en efectivo?  //  Nequi` | Quedan pendientes: Gasto $25.000 en Nequi |  |
+| RED-574 | `Le debo 15k a David  //  También pagué 9k de un taxi  //  Efectivo` | Quedan pendientes: Deuda $15.000; Gasto $9.000 en Efectivo |  |
+| RED-575 | `Gasté 40k en materiales  //  Y le presté 20k a Jorge  //  Universidad  //  Efectivo` | Quedan pendientes: Gasto $40.000 categoría Universidad; Préstamo $20.000 en Efectivo |  |
+| RED-576 | `Compré un libro por 55k  //  ¿Cuánto gasté esta semana?  //  Ponlo en Universidad` | Quedan pendientes: Gasto $55.000 categoría Universidad |  |
+| RED-577 | `Gasté 10k en bus y 15k en comida  //  Transporte` | Quedan pendientes: Gasto $10.000 categoría Transporte; Gasto $15.000 o Pregunta |  |
+| RED-578 | `Gasté 20k en comida  //  Uy, también pagué 7k de bus  //  Y lo de comida fueron 22k  //...` | Quedan pendientes: Gasto $22.000 en Nequi; Gasto $7.000 |  |
+| RED-579 | `Le presté 50k a Laura  //  ¿Cuánto me debe Laura en total?  //  Por Nequi` | Quedan pendientes: Préstamo $50.000 en Nequi |  |
+| RED-580 | `Gasté 30k en una salida  //  Fue por Nequi  //  Salidas` | Quedan pendientes: Gasto $30.000 en Nequi categoría Salidas |  |
+| RED-581 (PENDIENTE) | `Gasté 12k en taxi y 8k en desayuno  //  El desayuno fue en efectivo  //  El taxi por Nequi` | Quedan pendientes: Gasto $12.000 en Nequi; Gasto $8.000 en Efectivo |  |
+| RED-582 | `Le presté 20k a Jorge  //  También gasté 10k en almuerzo  //  El de ingeniería` | Quedan pendientes: Préstamo $20.000; Gasto $10.000 |  |
+| RED-583 | `Compré un cuaderno por 12k  //  ¿Cuánto debo en total?  //  Universidad` | Quedan pendientes: Gasto $12.000 categoría Universidad | La plantilla no tiene «Papelería»: se usa Universidad. |
+| RED-584 (PENDIENTE) | `Anota 40k de mercado  //  Espera, primero dime cuánto gasté ayer  //  Mejor cancela el ...` | Sin tarjetas pendientes. Nada guardado |  |
+| RED-585 (PENDIENTE) | `Gasté 15k en taxi  //  Compré 10k de comida  //  El primero por Nequi y el segundo en e...` | Quedan pendientes: Gasto $15.000 en Nequi; Gasto $10.000 en Efectivo |  |
+| RED-586 (PENDIENTE) | `Le debo 20k a Faber  //  ¿Cuánto tengo en Nequi?  //  Sí` | Sin tarjetas pendientes. Guardado: Deuda $20.000 |  |
+| RED-587 | `Gasté 18k en comida  //  No, fueron 28k  //  Comida` | Quedan pendientes: Gasto $28.000 categoría Comida |  |
+| RED-588 (PENDIENTE) | `Pagué 22k del mercado  //  La de siempre` | Quedan pendientes: Gasto $22.000. Pregunta | No hay una cuenta «de siempre» confirmada: pregunta. |
+| RED-589 | `Anota 16k de fotocopias  //  ¿Cuánto llevo gastado en la U este mes?  //  Universidad` | Quedan pendientes: Gasto $16.000 categoría Universidad |  |
+| RED-590 (PENDIENTE) | `Laura me debe 15k y Sofía me debe 20k  //  Sí, pero primero gasté 5k en agua  //  Sí, r...` | Sin tarjetas pendientes. Guardado: Gasto $5.000; Préstamo $15.000; Préstamo $20.000 |  |
+| RED-591 (PENDIENTE) | `Gasté 12k en bus y 18k en almuerzo  //  El bus por Nequi` | Quedan pendientes: Gasto $12.000 en Nequi; Gasto $18.000 |  |
+| RED-592 | `Le presté 30k a Pipe  //  ¿Cuánto me debe en total?  //  El sábado` | Quedan pendientes: Préstamo $30.000 el 2026-10-17 |  |
+| RED-593 (PENDIENTE) | `Gasté 8k  //  También pagué 20k de mercado  //  Los 8k eran del tinto` | Quedan pendientes: Gasto $8.000 «tinto»; Gasto $20.000 |  |
+| RED-594 | `Le debo 14k a Daniel  //  Pagué 9k de bus  //  Era por el almuerzo  //  Efectivo` | Quedan pendientes: Deuda $14.000; Gasto $9.000 en Efectivo |  |
+| RED-595 | `Gasté 25k en materiales  //  ¿Cuánto tengo en total?  //  Universidad` | Quedan pendientes: Gasto $25.000 categoría Universidad |  |
+| RED-596 | `Gasté 40k en ropa  //  Corrige, fueron 35k  //  Efectivo` | Quedan pendientes: Gasto $35.000 en Efectivo |  |
+| RED-597 | `Le presté 20k a Mateo  //  No, anota 7k de café` | Quedan pendientes: Préstamo $20.000; Gasto $7.000 |  |
+| RED-598 | `Gasté 10k en desayuno  //  Gasté 15k en almuerzo  //  El primero va en Comida` | Quedan pendientes: Gasto $10.000 categoría Comida; Gasto $15.000 |  |
+| RED-599 (PENDIENTE) | `Registra una deuda de 25k con Karla  //  ¿Cuánto gasté en transporte este mes?  //  Sí,...` | Sin tarjetas pendientes. Guardado: Deuda $25.000 |  |
+| RED-600 (PENDIENTE) | `Gasté 20k en un libro y 12k en bus  //  El libro es Universidad y lo pagué con Nequi; e...` | Quedan pendientes: Gasto $20.000 en Nequi categoría Universidad; Gasto $12.000 en Efectivo |  |
+| RED-601 | `Gasté 30k en una salida  //  Efectivo. Y dime cuánto debo a Faber` | Quedan pendientes: Gasto $30.000 en Efectivo |  |
+| RED-602 | `Compré un cargador por 45k  //  Ese va en Compras` | Quedan pendientes: Gasto $45.000 categoría Compras | La plantilla no tiene «Tecnología»: se usa Compras. |
+| RED-603 | `Gasté 22k en una camisa  //  También compré 11k de pan  //  Compras` | Quedan pendientes: Gasto $22.000 categoría Compras; Gasto $11.000 | La plantilla no tiene «Ropa»: se usa Compras. |
+| RED-604 (PENDIENTE) | `Gasté 18k en la tienda  //  La normal` | Quedan pendientes: Gasto $18.000. Pregunta |  |
+| RED-605 | `Le debo 12k a David  //  También le debo 8k a Daniel  //  Lo de David fue el taxi` | Quedan pendientes: Deuda $12.000; Deuda $8.000 |  |
+| RED-606 (PENDIENTE) | `Laura me debe 20k  //  Gasté 5k en café  //  Perdón, la deuda era con Paula` | Quedan pendientes: Préstamo $20.000; Gasto $5.000 |  |
+| RED-607 (PENDIENTE) | `Gasté 15k en taxi  //  ¿Cuánto gasté ayer?  //  Fue el lunes` | Quedan pendientes: Gasto $15.000 el 2026-10-12 |  |
+| RED-608 | `Gasté 40k en ropa  //  Nequi  //  No, cancela ese gasto` | Sin tarjetas pendientes. Nada guardado |  |
+| RED-609 | `Le presté 50k a Jorge y gasté 10k en comida  //  Ambos en efectivo` | Quedan pendientes: Préstamo $50.000 en Efectivo; Gasto $10.000 en Efectivo |  |
+| RED-610 (PENDIENTE) | `Gasté 20k en mercado  //  ¿Cuánto me debe Laura?  //  Ah, el mercado fueron 23k  //  Nequi` | Quedan pendientes: Gasto $23.000 en Nequi |  |
+| RED-611 (PENDIENTE) | `Gasté 12k en copias  //  Universidad, y fue ayer` | Quedan pendientes: Gasto $12.000 categoría Universidad el 2026-10-18 |  |
+| RED-612 | `Gasté 30k en comida  //  No, fue en efectivo` | Quedan pendientes: Gasto $30.000 en Efectivo |  |
+| RED-613 (PENDIENTE) | `Le presté 20k a Faber  //  Sí, pero era a Esteban` | Quedan pendientes: Préstamo $20.000 o Sin tarjetas pendientes. Guardado: Préstamo $20.000 |  |
+| RED-614 | `Gasté 8k en café  //  Pagué 16k de almuerzo  //  El primero fue por Nequi` | Quedan pendientes: Gasto $8.000 en Nequi; Gasto $16.000 |  |
+| RED-615 (PENDIENTE) | `Gasté 10k en bus y 20k en comida  //  Bus en efectivo  //  Nequi` | Quedan pendientes: Gasto $10.000 en Efectivo; Gasto $20.000 en Nequi |  |
+
+## Ronda 5: editar movimientos ya guardados
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-616 (PENDIENTE) | `Cambia el almuerzo de ayer de 15k a 17k` (antes: almuerzo 15000 ayer) | Sin tarjetas pendientes. Guardado: Gasto $17.000 el 2026-10-18 |  |
+| RED-617 (PENDIENTE) | `La gasolina del viernes pasado fue por Nequi` (antes: gasolina 15000 el viernes) | Sin tarjetas pendientes. Guardado: Gasto $15.000 en Nequi | Se usa gasolina en vez de taxi, que pide el recorrido. |
+| RED-618 (PENDIENTE) | `Corrige la deuda con Karla, ya no son 20k sino 15k` (antes: Le debo 20k a Karla) | Sin tarjetas pendientes. Guardado: Deuda $15.000 |  |
+| RED-619 (PENDIENTE) | `El préstamo de 40k que anoté el lunes no fue para Faber, fue para Jorge` (antes: Le presté 40k a Faber el lunes) | Sin tarjetas pendientes. Guardado: Préstamo $40.000 |  |
+| RED-620 (PENDIENTE) | `El gasto de 32k del cine del sábado ponlo en Salidas` (antes: cine 32000 el sábado) | Sin tarjetas pendientes. Guardado: Gasto $32.000 categoría Salidas |  |
+| RED-621 (PENDIENTE) | `El mercado de 85k que anoté el martes fue el miércoles` (antes: mercado 85000 el martes) | Sin tarjetas pendientes. Guardado: Gasto $85.000 el 2026-10-14 |  |
+| RED-622 (PENDIENTE) | `Al gasto de 12k que tengo como varios ponle que fue por fotocopias` (antes: varios 12000) | Sin tarjetas pendientes. Guardado: Gasto $12.000 «fotocopias» |  |
+| RED-623 (PENDIENTE) | `El desayuno del lunes no fue de 8k, fue de 10k y lo hice el martes` (antes: desayuno 8000 el lunes) | Sin tarjetas pendientes. Guardado: Gasto $10.000 el 2026-10-13 |  |
+| RED-624 (PENDIENTE) | `El gasto de 45k de la farmacia del domingo fue en efectivo y va en Salud` (antes: farmacia 45000 nequi el domingo) | Sin tarjetas pendientes. Guardado: Gasto $45.000 en Efectivo categoría Salud |  |
+| RED-625 (PENDIENTE) | `El pago de 10k que le hice a David ayer quedó anotado como efectivo, pero fue por Nequi` (antes: Le debo 30k a David; Le pagué 10k a David ayer) | Sin tarjetas pendientes. Guardado: Deuda $30.000; $10.000 en Nequi |  |
+| RED-626 (PENDIENTE) | `La devolución de 25k de la compra de ropa fue de 20k, corrígela` (antes: compré ropa 40k; me devolvieron 25k de la ropa) | Sin tarjetas pendientes. Guardado: Gasto $40.000; Ingreso $20.000 |  |
+| RED-627 (PENDIENTE) | `Cambia el gasto de 18k de ayer, el que fue de comida, a 16k` (antes: almuerzo 18000 ayer) | Sin tarjetas pendientes. Guardado: Gasto $16.000 |  |
+| RED-628 (PENDIENTE) | `Cambia la gasolina de 15k del viernes a Nequi` (antes: gasolina 15000 el viernes) | Sin tarjetas pendientes. Guardado: Gasto $15.000 en Nequi |  |
+| RED-629 (PENDIENTE) | `Laura ya no me debe 30k, eran 25k desde el principio` (antes: Laura me debe 30k) | Sin tarjetas pendientes. Guardado: Préstamo $25.000 |  |
+| RED-630 (PENDIENTE) | `La deuda de 18k con Pipe era de 16k, anoté mal` (antes: Le debo 18k a Pipe) | Sin tarjetas pendientes. Guardado: Deuda $16.000 |  |
+| RED-631 (PENDIENTE) | `El gasto de las fotocopias del parcial, el que fue de 9k, cámbialo a 11k` (antes: fotocopias del parcial 9000) | Sin tarjetas pendientes. Guardado: Gasto $11.000 |  |
+| RED-632 (PENDIENTE) | `El domicilio de 42k que pagué ayer era de 39k` (antes: domicilio 42000 ayer) | Sin tarjetas pendientes. Guardado: Gasto $39.000 |  |
+| RED-633 (PENDIENTE) | `La plata que le presté a David el miércoles era para Daniel` (antes: Le presté 30k a David el miércoles) | Sin tarjetas pendientes. Guardado: Préstamo $30.000 |  |
+| RED-634 (PENDIENTE) | `El gasto de 14k de la cartulina para la exposición cámbialo de Compras a Universidad` (antes: cartulina para la exposición 14000 compras) | Sin tarjetas pendientes. Guardado: Gasto $14.000 categoría Universidad |  |
+| RED-635 (PENDIENTE) | `El pago de 20k a Karla que aparece como hoy realmente fue anteayer` (antes: Le debo 40k a Karla; Le pagué 20k a Karla) | Sin tarjetas pendientes. Guardado: Deuda $40.000; $20.000 el 2026-10-17 |  |
+| RED-636 (PENDIENTE) | `La transferencia de 50k que hice de Nequi a efectivo fue al revés` (antes: Pasé 50k de Nequi a efectivo) | Sin tarjetas pendientes. Guardado: Transferencia $50.000 | El sentido invertido no se ve en lo guardado: se comprueba que quede una sola transferencia. |
+| RED-637 | `La compra de 60k que dividimos con Paula no era mitad y mitad, yo puse 20 y ella 40` (antes: pizza 60000 con paula mitad y mitad) | Sin tarjetas pendientes. Guardado: Gasto compartido $60.000 o Pregunta |  |
+| RED-638 (PENDIENTE) | `El préstamo que le hice a Mateo por 100k era de 90k, me confundí` (antes: Le presté 100k a Mateo) | Sin tarjetas pendientes. Guardado: Préstamo $90.000 |  |
+| RED-639 (PENDIENTE) | `El abono que recibí de Sofía el lunes fue de 12k, no de 21k` (antes: Le presté 40k a Sofía; Sofía me abonó 21k el lunes) | Sin tarjetas pendientes. Guardado: Préstamo $40.000; $12.000 |  |
+| RED-640 (PENDIENTE) | `Cambia el gasto de 10k de ayer a 13k, el de café` (antes: café 10000 ayer; almuerzo 10000 ayer) | Sin tarjetas pendientes. Guardado: Gasto $13.000 «cafe»; Gasto $10.000 |  |
+| RED-641 (PENDIENTE) | `La deuda de 8k que anoté por copias para Jorge era para Esteban` (antes: Le debo 8k a Jorge por copias) | Sin tarjetas pendientes. Guardado: Deuda $8.000 |  |
+| RED-642 (PENDIENTE) | `Busca el gasto de 35k del arreglo de la bici del mes pasado y ponle Transporte` (antes: arreglo de la bici 35000 hace un mes) | Sin tarjetas pendientes. Guardado: Gasto $35.000 categoría Transporte |  |
+| RED-643 (PENDIENTE) | `La deuda de Daniel que sale en 50k debe quedar en 45k; estaba mal desde que la anoté` (antes: Daniel me debe 50k) | Sin tarjetas pendientes. Guardado: Préstamo $45.000 |  |
+| RED-644 | `Cambia el almuerzo de 20k de ayer a 18k` (antes: almuerzo 20000 ayer; almuerzo 20000 ayer) | Sin tarjetas pendientes. Guardado: Gasto $20.000; Gasto $20.000. Pregunta | Hay dos iguales: pregunta cuál antes de editar. |
+| RED-645 (PENDIENTE) | `El taxi del jueves fue de 18k, lo pagué por Nequi y era de transporte, no de varios` (antes: varios 18000 el jueves) | Sin tarjetas pendientes. Guardado: Gasto $18.000 en Nequi categoría Transporte |  |
+
+## Ronda 5: confirmaciones parciales y cola de pendientes
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-646 (PENDIENTE) | `Anota 10k de bus y 20k de almuerzo  //  El primero sí, el segundo no` | Sin tarjetas pendientes. Guardado: Gasto $10.000 |  |
+| RED-647 (PENDIENTE) | `Gasté 8k en café y 15k en comida  //  Sí al café, la comida no` | Sin tarjetas pendientes. Guardado: Gasto $8.000 |  |
+| RED-648 (PENDIENTE) | `Registra 12k de bus y 18k de mercado  //  Sí  //  No` | Sin tarjetas pendientes. Guardado: Gasto $12.000 |  |
+| RED-649 (PENDIENTE) | `Gasté 20k en cartulina y 10k en café  //  Universidad para la cartulina  //  Comida` | Quedan pendientes: Gasto $20.000 categoría Universidad; Gasto $10.000 categoría Comida |  |
+| RED-650 (PENDIENTE) | `Pagué 15k de taxi y 25k de mercado  //  Taxi por Nequi  //  Efectivo` | Quedan pendientes: Gasto $15.000 en Nequi; Gasto $25.000 en Efectivo |  |
+| RED-651 (PENDIENTE) | `Le presté 20k a Faber y 30k a Laura  //  El de Faber sí  //  Ese no` | Sin tarjetas pendientes. Guardado: Préstamo $20.000 |  |
+| RED-652 (PENDIENTE) | `Corrige el bus a 12k y el almuerzo a 20k  //  El bus sí, el almuerzo déjalo como está` (antes: almuerzo 18000; bus 10000) | Sin tarjetas pendientes. Guardado: Gasto $18.000; Gasto $12.000 |  |
+| RED-653 (PENDIENTE) | `Gasté 10k en café y 20k en almuerzo  //  El café en efectivo, el almuerzo por Nequi` | Quedan pendientes: Gasto $10.000 en Efectivo; Gasto $20.000 en Nequi |  |
+| RED-654 (PENDIENTE) | `Registra 8k de bus y 12k de tinto  //  Ambos en efectivo` | Quedan pendientes: Gasto $8.000 en Efectivo; Gasto $12.000 en Efectivo |  |
+| RED-655 (PENDIENTE) | `Faber me debe 15k y Jorge 20k  //  La primera sí, la otra no` | Sin tarjetas pendientes. Guardado: Préstamo $15.000 |  |
+| RED-656 (PENDIENTE) | `Gasté 25k en materiales y presté 30k  //  Universidad  //  A Daniel` | Quedan pendientes: Gasto $25.000 categoría Universidad; Préstamo $30.000 |  |
+| RED-657 (PENDIENTE) | `Pagué 10k a Karla y 15k a David  //  Karla sí, David todavía no` | Guardado: $10.000 |  |
+| RED-658 (PENDIENTE) | `El taxi de 18k fue por Nequi y el mercado de 50k fue en efectivo  //  La primera sí  //...` | Sin tarjetas pendientes. Guardado: Gasto $18.000 en Nequi; Gasto $50.000 en Efectivo |  |
+| RED-659 (PENDIENTE) | `Corrige el almuerzo a 20k y borra el café de 5k  //  Corrige el almuerzo sí, el café no...` (antes: almuerzo 15000; café 5000) | Sin tarjetas pendientes. Guardado: Gasto $20.000; Gasto $5.000 |  |
+| RED-660 (PENDIENTE) | `Gasté en almuerzo y en taxi  //  El almuerzo 18k  //  12k` | Quedan pendientes: Gasto $18.000; Gasto $12.000 |  |
+| RED-661 (PENDIENTE) | `Laura me debe 10k y Paula 15k  //  Laura sí, Paula todavía no` | Sin tarjetas pendientes. Guardado: Préstamo $10.000 |  |
+| RED-662 | `El mercado fueron 60k y el bus 8k  //  Mercado con tarjeta  //  La de crédito; el bus e...` | Quedan pendientes: Gasto $60.000; Gasto $8.000 en Efectivo |  |
+| RED-663 (PENDIENTE) | `Anota 5k de agua, 12k de almuerzo y 8k de bus  //  Los dos primeros sí, el bus no` | Sin tarjetas pendientes. Guardado: Gasto $5.000; Gasto $12.000 |  |
+| RED-664 | `Gasté 20k en comida y 10k en transporte  //  Comida  //  También comida, perdón, el tra...` | Quedan pendientes: Gasto $20.000 categoría Comida; Gasto $10.000 categoría Transporte |  |
+| RED-665 (PENDIENTE) | `El de Laura sí, el de Paula no me ha llegado` (antes: Le presté 30k a Laura; Le presté 30k a Paula) | Guardado: Préstamo $30.000; Préstamo $30.000; $10.000 | Se parte de los dos préstamos; luego solo llega el abono de Laura. |
+| RED-666 (PENDIENTE) | `Corrige el almuerzo de 15k a 18k y el bus de 10k a 12k` (antes: almuerzo 15000; bus 10000) | Sin tarjetas pendientes. Guardado: Gasto $18.000; Gasto $12.000 |  |
+| RED-667 (PENDIENTE) | `Registra 20k de mercado y 10k de bus  //  Sí  //  No` | Sin tarjetas pendientes. Guardado: Gasto $20.000; Gasto $10.000 |  |
+| RED-668 (PENDIENTE) | `Tengo dos gastos: 12k de taxi y 18k de mercado  //  El segundo por Nequi` | Quedan pendientes: Gasto $12.000; Gasto $18.000 en Nequi |  |
+| RED-669 (PENDIENTE) | `Debo 10k a Faber y 15k a Jorge; además gasté 8k en bus  //  Faber sí, Jorge no. El bus ...` | Sin tarjetas pendientes. Guardado: Deuda $10.000; Gasto $8.000 en Efectivo |  |
+| RED-670 (PENDIENTE) | `Gasté 12k en comida y 8k en transporte; además Laura me debe 20k  //  Comida y transpor...` | Sin tarjetas pendientes. Guardado: Gasto $12.000; Gasto $8.000; Préstamo $25.000 |  |

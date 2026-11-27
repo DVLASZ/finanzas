@@ -42,6 +42,7 @@ import { leerNotificacionBancaria } from './banco.ts';
 import { incertidumbre } from './incertidumbre.ts';
 import { cruzado } from './cruzados.ts';
 import { hablada } from './habladas.ts';
+import { leerAnulacion } from './anulaciones.ts';
 import { descendientes, leerSubcategorias, MAX_NIVELES, puedeIrDentro } from './subcategorias.ts';
 import { leerMetas, textoAvance, textoMetas, totalApartado, type Meta } from './metas.ts';
 import { describirFrecuencia, leerPausa, leerRecurrentes, type Frecuencia, type Recurrente } from './recurrentes.ts';
@@ -131,6 +132,9 @@ function palabraSuelta(t: string): Suelta | null {
   if (/^(?:ok|okey|okay|oki|dale|listo|si|sii|confirmar|confirmo|confirma|si confirma|si confirmo|de una|vale|perfecto|correcto|esta bien|asi esta bien)$/.test(s)) return 'confirma';
   if (/^(?:borra|borralo|borrala|borrar)$/.test(s)) return 'borra';
   if (/^(?:no|nop|nel|cancela|cancelar|cancelalo|cancelala|olvidalo|mejor no|no gracias|descarta|descartar|descartalo|descartala)$/.test(s)) return 'cancela';
+  // «no lo guardes», «espera, no lo guardes», «olvídalo, al final no compré nada», «mejor cancela eso»: se dicen con más palabras pero cancelan lo mismo
+  if (/^(?:no,? |espera,? |mejor |oye,? |ah,? )*(?:no (?:lo|la) (?:guardes|guarde|anotes|registres|apuntes)|olvid(?:a|alo|ala|e)(?: eso| esto)?(?: al final no .+)?|(?:cancela|cancelalo|descarta)(?: ese| esa| eso| esto| el| la)?(?: gasto| movimiento| registro| pendiente| hipotetico)?|al final no (?:lo )?(?:compre|gaste|pague|hice).*|me equivoque antes de confirmar|todavia no (?:lo|la) he pagado|no (?:lo|la) (?:he )?pagado todavia)$/.test(s)) return 'cancela';
+  if (/^(?:no |espera |mejor )*borra(?: ese| esa| eso| esto| el| la)?(?: gasto| movimiento| registro| pendiente| hipotetico)$/.test(s)) return 'borra'; // solo actúa con una tarjeta pendiente
   if (/^(?:gracias|muchas gracias|mil gracias|grax|gracias parce|chevere|genial|super)$/.test(s)) return 'gracias';
   return null;
 }
@@ -384,6 +388,13 @@ class Motor {
   private async conversar(texto: string, p: Pendiente | null, abierta?: { mensaje: string; opciones: Opcion[] }): Promise<Salida[] | null> {
     if (!p) {
       if (leerOrdenDeCola(texto)?.que === 'cancelarTodo') return [{ texto: 'Listo, no hay nada pendiente.' }];
+      // anular lo guardado con palabras: «borra ese último movimiento», «elimina esa deuda», «borra el de 20k» (ver anulaciones.ts)
+      const anul = leerAnulacion(texto, this.datos.movimientos, this.ctx.ahora);
+      if (anul && 'ids' in anul) return this.anularVarios(this.datos.movimientos.filter(m => anul.ids.includes(m.id)), false);
+      if (anul) {
+        const por = (id: string): string => this.datos.movimientos.find(m => m.id === id)?.descripcion ?? id;
+        return [{ texto: anul.pregunta, botones: [...anul.candidatos.map(id => ({ id: `undo:${id}`, titulo: `Anular «${por(id)}»` })), { id: 'nada', titulo: 'Ninguno' }] }];
+      }
       const resto = correccionDeGuardado(texto);
       if (resto) return this.corregirGuardado(resto);
       if (!abierta) return null;
