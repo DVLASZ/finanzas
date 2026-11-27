@@ -3,7 +3,7 @@
   "categorias": [
     { "id": "cat:regalos",       "palabras": ["regalo"] },
     { "id": "cat:recargas",      "palabras": ["recarga"] },
-    { "id": "cat:banco",         "palabras": ["gravamen", "gmf", "manejo", "comision", "comisiones", "sobregiro"] },
+    { "id": "cat:banco",         "palabras": ["gravamen", "gmf", "manejo", "comision", "comisiones", "sobregiro", "intereses"] },
     { "id": "cat:suscripciones", "palabras": ["netflix", "spotify", "youtube premium"] },
     { "id": "cat:juegos",        "palabras": ["steam", "juego"] },
     { "id": "cat:transporte",    "palabras": ["moto", "taxi", "carro", "bus", "pasaje", "cicla", "bicicleta"] },

@@ -34,7 +34,7 @@ export interface DatosDeInstalacion {
 }
 
 /** Lo que el banco cobra por su cuenta: el 4x1000 (se reescribe a «gravamen» en el parser), cuotas y comisiones. */
-const BANCO = ['gravamen', 'gmf', 'manejo', 'comision', 'comisiones', 'sobregiro'];
+const BANCO = ['gravamen', 'gmf', 'manejo', 'comision', 'comisiones', 'sobregiro', 'intereses'];
 
 const SISTEMA: Cuenta[] = [
   sistema('sys:apertura', 'Apertura', 'apertura', 'COP'),

@@ -7,6 +7,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { nuevoBot, textoDe } from '../../../tests/ayudas.ts';
+import { dinero } from '../src/semilla.ts';
 import { CASOS, type Caso, type Esp } from './red-team-casos.ts';
 import { PENDIENTES } from './red-team-pendientes.ts';
 import { ahoraDe, conversar, evaluarEstado, evaluarSinRegla, FLUJOS_PROGRAMACION } from './red-team-estado.ts';
@@ -253,12 +254,24 @@ const FLUJOS: Record<string, (caso: Caso) => Promise<string | null>> = {
   },
 };
 
+/**
+ * Desde RED-671 las pruebas corren con una instalación que tiene más cuentas (Bancolombia, Davivienda, Ahorros y Nómina)
+ * y una persona «Tarjeta» que hace de tarjeta de crédito (lo que se le debe a ella es la deuda de la tarjeta).
+ */
+function prepararLote(bot: Bot, caso: Caso): void {
+  if (Number(caso.id.slice(4)) < 671) return;
+  const d = bot.repo.datos;
+  for (const nombre of ['Bancolombia', 'Davivienda', 'Ahorros', 'Nómina']) d.cuentas.push(dinero(nombre.toLowerCase().replace('ó', 'o'), nombre, 'COP', true));
+  d.config.alias_cuentas = JSON.stringify({ bancolombia: ['bancolombia', 'bancol'], davivienda: ['davivienda'], ahorros: ['ahorros'], nomina: ['nomina'] });
+  d.cuentas.push({ id: 'p:tarjeta', nombre: 'Tarjeta', clave: 'tarjeta', tipo: 'persona', moneda: 'COP', grupo: 'empresa' });
+}
+
 export async function evaluar(caso: Caso): Promise<string | null> {
   if (caso.esp.t === 'flujo') {
     const f = FLUJOS[caso.esp.id] ?? FLUJOS_PROGRAMACION[caso.esp.id];
     return f ? f(caso) : `flujo sin definir: ${caso.esp.id}`;
   }
-  const conEstado = async (): Promise<Bot> => { const b = nuevoBot(ahoraDe(caso)); for (const f of caso.antes ?? []) await confirmar(b, f); return b; };
+  const conEstado = async (): Promise<Bot> => { const b = nuevoBot(ahoraDe(caso)); prepararLote(b, caso); for (const f of caso.antes ?? []) await confirmar(b, f); return b; };
   const alternativas: Esp[] = caso.esp.t === 'o' ? caso.esp.alt : [caso.esp];
   const razones: string[] = [];
   for (const alt of alternativas) {

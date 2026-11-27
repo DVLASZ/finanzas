@@ -4,7 +4,12 @@
 
 Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publicación.
 
-## 2026-12-04
+## 2026-11-27
+
+- Traslados entre cuentas propias, retiros y consignaciones con sus comisiones y el 4x1000 (`traslados.ts`).
+- Tarjeta de crédito con la persona `Tarjeta`: compra, abono, intereses, avance y saldo.
+- `cuánta plata he movido entre mis cuentas` suma los traslados aparte de gastos e ingresos.
+- La batería llega a 730 casos y todos pasan.
 
 - `Laura me debe 15k y Sofía me debe 20k` y `debo 10k a Faber y 15k a Jorge` se parten en un movimiento por persona.
 - `A Daniel` completa el préstamo de la cola que no tenía nombre.

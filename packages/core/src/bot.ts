@@ -8,6 +8,7 @@
  * hasta confirmar. Tras confirmar quedan [Editar] [Deshacer]. El bot nunca borra: solo anula.
  */
 import { calcularSaldos, compromisosSaldados, deudasPorPersona, gastoHabitual, resumenSaldos } from './consultas.ts';
+import { trasladar } from './traslados.ts';
 import { limpiarDictado } from './dictado.ts';
 import { construirMovimiento, errorDePago } from './asientos.ts';
 import { apodosDePersonas, ejemploDeCuenta, grupoPorDefecto, gruposDe, idPersona } from './entidades.ts';
@@ -296,6 +297,13 @@ class Motor {
     const banco = leerNotificacionBancaria(texto, this.ctx);
     if (banco?.frases.length === 1) texto = banco.frases[0];
     if (!banco) texto = limpiarDictado(sinMuletillaDeRegistro(texto), this.ctx); // el dictado por voz, ya como se escribe (ver dictado.ts)
+    // traslados entre cuentas propias, retiros con comisión y tarjeta de crédito, dichos como se hablan (ver traslados.ts)
+    let deTraslado = false; // lo que reescribió traslados.ts ya viene partido en movimientos con «;»: no se vuelve a juntar
+    if (!banco) {
+      const tr = trasladar(texto, this.ctx);
+      if (tr?.error) return [{ texto: tr.error }];
+      if (tr?.texto) { texto = tr.texto; deTraslado = true; }
+    }
 
     // 0) Palabras sueltas («ok», «no», «borra», «gracias»): con una tarjeta pendiente actúan solo sobre ella;
     //    sin tarjeta se contesta corto. Nunca son un gasto sin monto ni una corrección del concepto.
@@ -349,7 +357,7 @@ class Motor {
     // un párrafo que cuenta varias cosas se rearma en frases de un movimiento cada una (ver narrativa.ts)
     const narradas = banco ? null : narrar(texto, this.nombresDeCuentas());
     if (narradas?.length === 1) texto = narradas[0];
-    const todas = banco ? banco.frases : narradas ? narradas : hablada(texto) || (!/[\n;]/.test(texto) && (incertidumbre(texto) || cruzado(texto))) ? [texto] : dividirTodo(texto, this.nombresDeCuentas());
+    const todas = banco ? banco.frases : narradas ? narradas : (deTraslado ? false : hablada(texto)) || (!/[\n;]/.test(texto) && (incertidumbre(texto) || cruzado(texto))) ? [texto] : dividirTodo(texto, this.nombresDeCuentas());
     const partes = todas.slice(0, MAX_MOVIMIENTOS_POR_MENSAJE);
 
     // Un movimiento nuevo con una tarjeta sin confirmar: no se reemplaza en silencio. La nueva queda en la cola
