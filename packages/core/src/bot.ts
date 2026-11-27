@@ -9,6 +9,8 @@
  */
 import { calcularSaldos, compromisosSaldados, deudasPorPersona, gastoHabitual, resumenSaldos, topesPausados } from './consultas.ts';
 import { auditar } from './auditoria.ts';
+import { leerComprobante } from './comprobantes.ts';
+import { sanitizarEntrada } from './sanitizar.ts';
 import { hablarCasa } from './hogarAsociacion.ts';
 import { hablarPresupuesto } from './topesHablados.ts';
 import { trasladar } from './traslados.ts';
@@ -273,6 +275,10 @@ class Motor {
   // ---------------------------------------------------------------- texto
 
   async alEscribir(texto: string): Promise<Salida[]> {
+    // lo escrito es texto no confiable: se quitan invisibles, HTML, SQL, JSON y órdenes al bot antes de leerlo (ver sanitizar.ts)
+    const san = sanitizarEntrada(texto);
+    if (san.respuesta) return [{ texto: san.respuesta }];
+    if (san.cambio) texto = san.texto;
     const t = limpiar(texto);
 
     // una pausa esperando respuesta: «ok»/«no» la resuelven; cualquier otra cosa la deja sin efecto
@@ -303,7 +309,7 @@ class Motor {
 
     // Una notificación del banco pegada se vuelve una frase por operación (ver banco.ts); con una sola, esa frase es el mensaje.
     // Es un movimiento nuevo: no se toma como respuesta ni corrección de la tarjeta pendiente.
-    const banco = leerNotificacionBancaria(texto, this.ctx);
+    const banco = leerNotificacionBancaria(texto, this.ctx) ?? leerComprobante(texto, this.ctx);
     // lo rechazado, lo pendiente y lo que no es un movimiento se explica y no se anota
     if (banco?.respuesta) return [{ texto: banco.respuesta }];
     // la misma referencia pegada otra vez (en este mensaje o en uno anterior) no se anota dos veces
