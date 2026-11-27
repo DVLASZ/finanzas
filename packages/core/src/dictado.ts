@@ -76,6 +76,14 @@ export function limpiarDictado(texto: string, ctx?: Contexto): string {
     const SUELTOS: Record<string, number> = { un: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, veinte: 20, treinta: 30, cuarenta: 40, cincuenta: 50, sesenta: 60, setenta: 70, ochenta: 80, noventa: 90 };
     t = t.replace(/(\by\s+)(un|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|veinte|treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa)(\s+(?:de|en|para)\s)/i, (_m, y: string, w: string, r: string) => y + String(SUELTOS[w.toLowerCase()] * 1000) + r);
   }
+  // «Daniel me mandó 50 por Nequi», «le aboné 80», «pagó 30 hoy»: en un mensaje que ya habla de miles, la cifra corta de plata también lo es
+  if (/\b\d{1,3}000\b|\b\d{1,3}\s?(?:mil|k)\b/i.test(t)) {
+    t = t.replace(/\b((?:me|le|se|nos)\s+(?:mand[oóe]|pas[oóe]|dio|di|devolvi[oóe]|pag[oóe]|abon[oóe]|transfiri[oóe]|puso|pus[eé]|dej[oóe])|pag[oó]|puso|abon[eé]|aboné)\s+(\d{1,3})\b(?!\s?(?:k\b|mil\b|pesos\b|monedas?\b|billetes?\b|veces\b|personas?\b|cuotas?\b|dias?\b|horas?\b|%))/gi, (_m, v: string, n: string) => v + ' ' + String(Number(n) * 1000));
+  }
+  // «saqué 100 del cajero» en un mensaje que ya habla de miles: son cien mil
+  if (/\b\d{1,3}000\b|\b\d{1,3}\s?(?:mil|k)\b/i.test(t)) {
+    t = t.replace(/\b(saqu[eé]|retir[eé])\s+(\d{1,3})\b(?!\s?(?:k\b|mil\b|pesos\b|monedas?\b|billetes?\b|veces\b|%))/gi, (_m, v: string, n: string) => v + ' ' + String(Number(n) * 1000));
+  }
   // el mismo monto en cifra y en letras: «25.000 veinticinco mil» es uno solo
   t = t.replace(/(?<![\d.,])(\d[\d.,]{3,})\s+(\d[\d.,]{3,})(?![\d.,])/g, (m, a: string, b: string) => (a.replace(/\D/g, '') === b.replace(/\D/g, '') ? a : m));
   // «compré 3000 de pan y 2000 de queso»: dos movimientos; el verbo del primero vale para el segundo

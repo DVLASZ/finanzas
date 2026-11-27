@@ -114,6 +114,7 @@ export async function evaluarEstado(bot: Bot, e: Extract<Esp, { t: 'estado' }>, 
     const r = cumpleLista('guardado', e.guard, await vistasGuardadas(bot));
     if (r) return r;
   }
+  if (e.ultima && !new RegExp(e.ultima, 'i').test(sin(ultimo))) return `la última respuesta no menciona «${e.ultima}»: «${corto(ultimo, 140)}»`;
   if (e.preg && !(/[¿?]/.test(ultimo) || /Me falta|Veo varios|dime|escribe|manda/i.test(ultimo))) return `no preguntó nada: «${corto(ultimo)}»`;
   return null;
 }

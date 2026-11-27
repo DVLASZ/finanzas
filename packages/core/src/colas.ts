@@ -31,6 +31,10 @@ const palabraDe = (t: string): string => t.replace(/^(?:(?:el|la|lo|los|las|del|
  */
 export function leerSelectivas(texto: string, textos: string[]): ParteDeCola[] | null {
   if (texto.length > 160 || textos.length > 8) return null; // una orden de cola es corta
+  // lo que sobra de una corrección dicha con muchas palabras: «, no de 8», «, corrige», «, ese lo pagó Laura»
+  if (/\b(?:era|eran|fue|fueron)\b/i.test(texto)) texto = texto.replace(/,\s*no\s+(?:de\s+|en\s+|por\s+)?[\p{L}\d.]+(?:\s+[\p{L}\d.]+)?\s*$/iu, '');
+  texto = texto.replace(/,\s*corrige\.?\s*$/i, '');
+  if (/^\s*(?:borra|quita|elimina|cancela)\b/i.test(texto)) texto = texto.replace(/,\s*(?:ese|esa|eso)\s+.*$/i, '');
   const n = textos.length;
   const trozos = texto.split(/[,;]|\.\s+|\s+y\s+(?=(?:el|la)\s+(?:primero|primera|segundo|segunda|tercero|ultimo|ultima)\b|\S+\s+(?:si|sí|no|en|por|con)\b)/i).map(limpiar).filter(Boolean);
   if (!trozos.length || trozos.length > 6) return null;
@@ -42,8 +46,21 @@ export function leerSelectivas(texto: string, textos: string[]): ParteDeCola[] |
     const a = indice0(palabraDe(doble[1])), b = indice0(palabraDe(doble[2]));
     if (a !== null && b !== null && a !== b) return [{ i: a, decision: doble[3] as 'si' | 'no' }, { i: b, decision: doble[3] as 'si' | 'no' }];
   }
+  // «los 22», «los 15 de gasolina»: el movimiento se nombra por su monto (22 es 22 o 22.000) y, si hace falta, por su concepto
+  const porMonto = (palabra: string): number | null => {
+    const m = /^(?:\d+\s+de\s+)?(\d[\d.,]*)\s?(k|mil)?(?:\s+de\s+(.+))?$/.exec(palabra.trim());
+    if (!m) return null;
+    const v = Number(m[1].replace(/[.,]/g, ''));
+    const valores = m[2] ? [v * 1000] : v >= 1000 ? [v] : [v, v * 1000];
+    const hay = textos.map((tx, i) => ({ tx: tx.replace(/(\d)[.,](\d{3})/g, '$1$2'), i })).filter(({ tx }) => valores.some(x => new RegExp(`(?<![\\d.])${x}(?![\\d])`).test(tx)) && (!m[3] || buscarEnLista(m[3], [tx]).length > 0));
+    return hay.length === 1 ? hay[0].i : null;
+  };
   const indice = (palabra: string): number | null => {
-    const hay = buscarEnLista(palabra, textos);
+    const numerica = /^\d/.test(palabra.trim()) ? porMonto(palabra) : null;
+    if (numerica !== null) return numerica;
+    // «15 de gasolina»: si el monto solo no basta, vale el concepto
+    const conConcepto = /^\d[\d.,]*(?:\s?(?:k|mil))?\s+de\s+(.+)$/.exec(palabra.trim());
+    const hay = buscarEnLista(conConcepto ? conConcepto[1] : palabra, textos);
     return hay.length === 1 ? hay[0] : null;
   };
   const ord = (o: string): number => { const v = ORDINAL[o]; return v === -1 ? n - 1 : v; };
@@ -122,10 +139,12 @@ export function leerSelectivas(texto: string, textos: string[]): ParteDeCola[] |
       continue;
     }
     // «bus en efectivo», «taxi por nequi», «el libro es Universidad y lo pagué con Nequi»
-    if ((m = /^(.+?)\s+((?:en|por|con|fue|fueron|es|va en)\s+.+)$/.exec(t))) {
+    if ((m = /^(.+?)\s+((?:en|por|con|fue|fueron|eran|era|es|va en)\s+.+)$/.exec(t))) {
       const i = indice(palabraDe(m[1]));
       if (i === null) return null;
-      partes.push({ i, cambio: m[2] });
+      // «era de 3 mil» es «fue 3 mil»
+      const monto = /^(?:era|eran|fue|fueron)\s+(?:de\s+)?(\d[\d.,]*(?:\s?(?:k|mil))?)$/.exec(m[2]);
+      partes.push({ i, cambio: monto ? 'fue ' + monto[1] : m[2] });
       ultimo = i;
       continue;
     }
