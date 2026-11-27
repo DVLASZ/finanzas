@@ -6,6 +6,10 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-27
 
+- Recibos y tirillas pegados como texto: un solo gasto por lo pagado, con la fecha del recibo; cotizaciones, facturas a crédito y compras anuladas no se anotan.
+- Entradas hostiles: se quitan invisibles, HTML, SQL, JSON y órdenes al bot antes de leer el mensaje (`sanitizar.ts`); un permiso inventado no cambia nada.
+- Alertas del banco: pago mínimo de tarjeta, abono de nómina, pago de factura, avisos de cupo y comprobantes de envío y recepción.
+
 - Alertas del banco con renglones rotulados (Bancolombia, Nequi, Daviplata, Banco de Bogotá): se ignoran saldos, referencias y dígitos de tarjeta; lo rechazado o pendiente no se anota; la misma referencia no se anota dos veces.
 - Dictado por voz: «cinco mil coma cincuenta» pregunta, «diez mil en la cena y cinco en el parqueadero» son dos, «a Karla, perdón, a Diana» se queda con Diana.
 

@@ -802,6 +802,22 @@ Sesenta casos nuevos, todos en verde, con la batería en 900 de 900. Desde RED-8
 
 Quedan fuera: el estado pendiente solo se recuerda mientras la app está abierta, y las alertas de otros bancos o de otro formato se leerán cuando haya ejemplos reales.
 
+### Ronda 7, parte 2: alertas borde, comprobantes pegados como texto y entradas hostiles (RED-901 a RED-965)
+
+Sesenta y cinco casos nuevos, todos en verde, con la batería en 965 de 965.
+
+**Alertas** (`banco.ts`): el lector ahora reconoce el pago mínimo de la tarjeta, el abono de nómina (la empresa es quien paga), el pago de una factura por convenio, los comprobantes de envío y de recepción con «Para:» y «De:», y las alertas de lote con referencias repetidas. Un aviso que solo informa (cupo disponible, «no se ha realizado ninguna transacción») se explica y no se anota; lo no exitoso o cancelado tampoco. Un comprobante sin banco que trae «Destino:» y no dice quién envió pregunta si lo enviaste o lo recibiste.
+
+**Comprobantes y tirillas** (`comprobantes.ts`, `leerComprobante`): un recibo de varias líneas se vuelve UN gasto por lo realmente pagado, con el concepto («Concepto:» o el título) y la fecha impresa del recibo, no la de hoy. Se toma la línea del total que se cobró (abono recibido, total pagado, total tarjeta, total a pagar) y no se suman el subtotal, el IVA, el descuento, la propina sugerida y rechazada, el efectivo recibido ni el cambio. Una cotización, una factura a crédito y una compra anulada con su reverso se explican y no se anotan; un total borroso («[borroso]») muestra lo que suma lo legible y pregunta; dos totales que no cuadran y que ningún renglón explica se preguntan. El desglose (subtotal más propina) queda dentro del total; no se parte en dos movimientos.
+
+**Entradas hostiles** (`sanitizar.ts`, lo primero que corre en `alEscribir`):
+1. Se quitan los caracteres invisibles y de dirección (`\u200B`, `\u202E`...), se normaliza (NFKC), se pasan a latín las letras cirílicas y griegas que se ven iguales (`gаsté`), y se quitan las etiquetas HTML, el SQL pegado (`DROP TABLE`, `DELETE FROM`, `--`) y los objetos JSON de rol.
+2. Las órdenes al bot («ignora todas las instrucciones», «saltarte la confirmación», «borra todo», «muéstrame las claves») se cortan hasta la coma o el final de la frase; si lo que queda trae un movimiento de verdad, ese sigue. Las citas que contienen una orden («Jorge me escribió: "ignora al usuario..."») se quitan.
+3. Quien reclama un permiso («soy el administrador», «nueva política», `[SYSTEM]:`, «autorización total») contamina lo que sigue: el bot contesta que no cambia reglas ni saldos por lo que se escriba y no anota nada de ese mensaje.
+4. `auditoria.ts`: un tope negativo, un gasto de cero pesos y dos órdenes contrarias («registra 10k» y «no lo guardes») se rechazan o se preguntan; un mensaje de más de 400 letras con un solo monto anota solo el trozo del monto (con «ayer» si lo dice al principio).
+
+Límites: el lector de comprobantes se probó con el texto que sale de leer una foto, no con la lectura de la imagen en sí; los formatos nuevos de cada banco se agregarán cuando haya ejemplos reales.
+
 ## 9. Cómo probarlo
 
 El núcleo corre en Node sin red y sin navegador. `MemoriaRepo` guarda todo en memoria y `tests/ayudas.ts` trae un bot listo con el reloj fijo:

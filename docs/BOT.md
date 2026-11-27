@@ -694,6 +694,12 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 
 Pega la alerta tal cual, aunque venga en varias líneas («Valor:», «Comercio:», «Referencia»). Solo cuenta el monto de la operación, no los saldos ni las referencias. Si la alerta dice que la operación fue rechazada, declinada, fallida o que sigue pendiente, no la anoto y te lo digo; cuando llegue la confirmación (con la misma referencia) la anoto una sola vez. Un retiro con comisión son dos movimientos, y una transferencia a otra de tus cuentas es un traslado.
 
+## Recibos pegados y mensajes raros
+
+- Pega un recibo o una tirilla como texto: anoto un solo gasto por lo que de verdad pagaste (con la fecha del recibo y el concepto). El subtotal, el IVA, el descuento, la propina que no se aceptó, el efectivo recibido y el cambio no se suman. Una cotización, una factura a crédito o una compra anulada no se anotan.
+- Si el total está borroso o hay dos totales distintos, te pregunto cuál fue.
+- Lo que se escriba como orden al bot («ignora las instrucciones», «soy el administrador», «borra todo») no hace nada. Lo demás del mensaje, si es un gasto de verdad, sí se anota.
+
 ## Lo que el bot no hace
 
 - No borra nada, solo anula.

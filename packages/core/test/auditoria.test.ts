@@ -119,9 +119,10 @@ test('defecto 33: un tope menor a $1.000 se rechaza', async () => {
   assert.equal((await b.repo.cargar()).presupuestos['cat:comida'], undefined);
 });
 
-test('defecto 35: un mensaje larguísimo con un solo monto se pregunta en corto', async () => {
+test('defecto 35: un mensaje larguísimo con un solo monto anota solo lo del monto', async () => {
   const t = await di('almuerzo 12000 ' + 'y también le cuento que hoy fue un día largo '.repeat(12));
-  assert.match(t, /Tu mensaje es larguísimo/);
+  assert.match(t, /\$12\.000/);
+  assert.doesNotMatch(t, /día largo/);
 });
 
 test('defecto 26: un «porque ayer...» no mueve la fecha', async () => {

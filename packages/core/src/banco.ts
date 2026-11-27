@@ -21,13 +21,17 @@ const sinTildes = (s: string): string => s.normalize('NFD').replace(/\p{M}/gu, '
 const BANCOS = /\b(?:nequi|daviplata|bancolombia|banco de bogota|bogota)\b/;
 const FUERTES = /compra aprobada|transaccion aprobada|pago exitoso|debito compra|transferencia recibida|te llego plata|recibiste una transferencia|usted envio/;
 const ENCABEZADOS = /enviaste|te envio|nequi:|daviplata:|bancolombia:|nequi notificacion|daviplata informa|bancolombia -/;
-const INGRESO = /te llego plata|te envio|recibiste|has recibido|transferencia recibida|abono recibido|abono en cuenta|consignacion recibida|deposito recibido|te pagaron/;
+const INGRESO = /abono nomina|valor recibido|comprobante de recepcion|te llego plata|te envio|recibiste|has recibido|transferencia recibida|abono recibido|abono en cuenta|consignacion recibida|deposito recibido|te pagaron/;
 /** Alertas con renglones rotulados («Valor:», «Retiro:», «Comisión:»...) y las que dicen cómo terminó la operación. */
-const ETIQUETADA = /(?:^|\n)\s*(?:valor|retiro|abono|monto)\b|debito por|has recibido|recibiste|enviaste|transferencia realizada|pago pse|pago tarjeta|reversion|avance|retiro exitoso|abono en cuenta|transaccion exitosa|estamos procesando|fue exitoso|no se pudo|rechazad|no aprobad|declinad|fallid/;
-const RECHAZO = /rechazad|no aprobad|declinad|fallid|no se pudo|no fue posible|no pudimos/;
+const ETIQUETADA = /pago minimo|pago de factura|comprobante|(?:^|\n)\s*(?:valor|retiro|abono|monto)\b|debito por|has recibido|recibiste|enviaste|transferencia realizada|pago pse|pago tarjeta|reversion|avance|retiro exitoso|abono en cuenta|transaccion exitosa|estamos procesando|fue exitoso|no se pudo|rechazad|no aprobad|declinad|fallid/;
+const RECHAZO = /rechazad|no aprobad|declinad|fallid|cancelad|no exitos|no entrego|no se pudo|no fue posible|no pudimos/;
+/** Avisos que solo informan (cupo, recordatorios): no son un movimiento. */
+const INFORMATIVA = /cupo disponible|no se ha realizado ninguna transaccion|recuerda:|tu cupo|sin movimientos/;
+/** Comprobantes de transferencia sin banco en el encabezado. */
+const COMPROBANTE = /comprobante|transferencia exitosa|transaccion exitosa|estado:\s*(?:exitos|rechazad|pendiente)/;
 const PENDIENTE = /estamos procesando|estado:?\s*pendiente|en proceso|en curso/;
 const REFERENCIA = /\b(?:ref(?:erencia)?(?: pse)?|movimiento|no\.? operacion|operacion|codigo|autorizacion|aprobacion)\.?:?\s*#?(\d{4,})/g;
-const GASTO = /enviaste|tu envio|envio de|usted envio|pago pse|transferencia realizada|transaccion exitosa|compra|pago exitoso|debito|retiro|pagaste|transaccion aprobada/;
+const GASTO = /pago minimo|pago de factura|valor enviado|comprobante de envio|envio exitoso|enviaste|tu envio|envio de|usted envio|pago pse|transferencia realizada|transaccion exitosa|compra|pago exitoso|debito|retiro|pagaste|transaccion aprobada/;
 const SALDO = /saldo|disponible|punto|acumulad|cupo|limite|total/;
 // frases que parecen una orden dentro de la notificación: se corta la línea desde ahí
 const ORDEN = /\bnota\s*:|\bignora\b|\bolvida\b|\binstrucci|\bregistra\b|\belimina\b|\bborra\b|\bejecuta\b|\bsystem\b|\bsistema\s*:/i;
@@ -106,10 +110,17 @@ export function referenciasDeAlerta(texto: string): string[] {
 export function leerNotificacionBancaria(texto: string, ctx: Contexto): AlertaBancaria | null {
   const n = sinTildes(texto);
   if (texto.length < 20) return null;
+  if (/cotizacion|proforma/.test(n)) return null; // eso lo explica comprobantes.ts
   const esBanco = BANCOS.test(n);
   const pegada = /\n/.test(texto) || ENCABEZADOS.test(n);
-  const reconocida = FUERTES.test(n) || (esBanco && ENCABEZADOS.test(n)) || (esBanco && pegada && ETIQUETADA.test(n));
+  const reconocida = FUERTES.test(n) || (esBanco && ENCABEZADOS.test(n)) || (esBanco && pegada && ETIQUETADA.test(n)) || (esBanco && pegada && INFORMATIVA.test(n)) || (pegada && COMPROBANTE.test(n) && /\$\s*\d/.test(texto));
   if (!reconocida) return null;
+  if (INFORMATIVA.test(n) && !/aprobad|exitos|(?<!no se ha )realizad/.test(n)) return { frases: [], respuesta: 'Ese aviso solo informa (el cupo o un recordatorio): no hay ninguna operación que anotar.' };
+  // un comprobante que no dice de quién es el dinero («Destino: ASOCIACIÓN» sin «Origen»): se pregunta
+  if (!esBanco && /destino:/.test(n) && !/origen:|desde:|de:/.test(n) && /exitos/.test(n)) {
+    const v = texto.match(MONTO)?.[0] ?? '';
+    return { frases: [], respuesta: `¿Tú enviaste ${v.replace(/^COP\s*/i, '')} o los recibiste? El comprobante no dice quién es quién: dime «envié …» o «recibí …» y lo anoto.` };
+  }
 
   // una compra en dólares no se convierte a pesos: se dice y se deja para cuando el banco la liquide
   const usd = n.match(/\busd\s*(\d+(?:[.,]\d+)?)/);
@@ -179,7 +190,7 @@ export function leerNotificacionBancaria(texto: string, ctx: Contexto): AlertaBa
     }
     if (/\bavance\b/.test(nd) && hayTarjeta) { frases.push(`me presto ${op.monto} Tarjeta en ${cuenta || 'efectivo'}${cuando}`); continue; }
     if (/\bretiro\b/.test(nd)) { frases.push(cuenta ? `pase ${op.monto} de ${cuenta} a efectivo${cuando}` : `saque ${op.monto} del cajero${cuando}`); continue; }
-    if (/pago (?:de )?tarjeta/.test(nd)) { frases.push(hayTarjeta ? `le pague ${op.monto} a Tarjeta${cta}${cuando}` : `pago tarjeta ${op.monto}${cta}${cuando}`); continue; }
+    if (/pago (?:de )?tarjeta|pago minimo/.test(nd)) { frases.push(hayTarjeta ? `le pague ${op.monto} a Tarjeta${cta}${cuando}` : `pago tarjeta ${op.monto}${cta}${cuando}`); continue; }
     if (/cuenta propia/.test(nd) && cuenta) {
       const destino = nd.match(/destino:\s*(nequi|daviplata|bancolombia|bogota)/)?.[1];
       if (destino && destino !== cuenta) { frases.push(`pase ${op.monto} de ${cuenta} a ${destino}${cuando}`); continue; }
@@ -193,15 +204,16 @@ export function leerNotificacionBancaria(texto: string, ctx: Contexto): AlertaBa
       const antes = op.linea.match(/^(.*?)\s+te envi[oó](?=\s|$)/i)?.[1];
       const de = (despues.match(/\bde:?\s+(.+)$/i)
         ?? todo.match(/(?:^|\n)\s*de:\s*([^\n]+)/i) ?? todo.match(/origen:[^\n]*?\bde\s+([^\n]+)/i)
-        ?? (unica ? todo.match(/\bde\s+(?!la |el |los |las |tu |una? )([^\n]+)/i) : null))?.[1];
+        ?? todo.match(/(?:^|\n)\s*empresa:\s*([^\n]+)/i)
+        ?? (unica ? todo.match(/(?<!banco )\bde\s+(?!la |el |los |las |tu |una? )([^\n]+)/i) : null))?.[1];
       const quien = conMayusculas(nombreDesde(antes ?? de ?? ''));
       frases.push(`${quien ? `${quien} me pagó` : 'me pagaron'} ${op.monto}${cuenta ? ` en ${cuenta}` : ''}${cuando}`);
       continue;
     }
     // gasto: a una persona («Enviaste $X a LAURA G.», «Destino: DAVIPLATA - Diana») o en un comercio
-    const comercio = (donde(nd, op, todo, unica || neutra).match(/comercio:\s*(.+)$/im) ?? donde(nd, op, todo, unica || neutra).match(/\bcompra(?: aprobada)? en\s+(.+)$/im) ?? despues.match(/^\s*-\s*(.+?)(?:\s+-\s+\d|$)/))?.[1];
+    const comercio = (donde(nd, op, todo, unica || neutra).match(/(?:comercio|convenio):\s*(.+)$/im) ?? donde(nd, op, todo, unica || neutra).match(/\bcompra(?: aprobada)? en\s+(.+)$/im) ?? despues.match(/^\s*-\s*(.+?)(?:\s+-\s+\d|$)/))?.[1];
     const destino = todo.match(/destino:\s*([^\n]+)/i)?.[1];
-    const persona = comercio ? undefined : (destino ? destino.split(/\s+-\s+/).pop() : (despues.match(/^\s*a:?\s+(.+)$/i) ?? todo.match(/^a:\s*(.+)$/im))?.[1]);
+    const persona = comercio ? undefined : (destino ? destino.split(/\s+-\s+/).pop() : (despues.match(/^\s*a:?\s+(.+)$/i) ?? todo.match(/^(?:a|para):\s*(.+)$/im))?.[1]);
     const nombreP = persona ? nombreDesde(persona) : '';
     const nombreC = comercio ? nombreDesde(comercio) : '';
     if (nombreP) frases.push(`envío a ${nombreP} ${op.monto}${cta}${cuando}`);
