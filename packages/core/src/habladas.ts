@@ -122,6 +122,13 @@ function cobro(texto: string, t: string, ps: Palabra[], cants: Cantidad[]): Habl
   if (!total) return null;
   const concepto = motivoDe(t, nombres) || 'gasto';
   if (!nombres.length) {
+    // «pagué 60k de la pizza entre tres» sin nadie que te deba: el camino de siempre anota solo tu parte
+    if (!ES_COBRO.test(t)) {
+      const con = texto.match(/entre (dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)/i);
+      // «entre los tres roomies» sin más: se pregunta quiénes son; cualquier otra cosa sigue su camino de siempre
+      if (!con && !/\bentre (?:los|las) /i.test(texto)) return null;
+      if (con) return { texto: concepto + ' ' + total + ' entre ' + NUM[con[1].toLowerCase()] };
+    }
     const n = t.match(new RegExp(`\\b(?:otros|otras|mis|los|las|entre los)? ?${RE_NUM}\\b(?: roomies| companeros| amigos| personas)?`))?.[1];
     return { pregunta: {
       mensaje: `¿Quiénes son los otros${n ? ` (${n})` : ''}? Sin sus nombres no puedo apuntar lo que te debe cada uno. Escríbelo así: «${concepto} ${total} entre ana, luis y yo».`,
@@ -229,10 +236,23 @@ export function hablada(texto: string): Hablada | null {
   const plan = t.match(/,? (?:porque|pa|para que) .*\b(?:manana|luego|despues)\b.*$/);
   const ps = palabrasDe(texto);
   const cants = cantidadesDe(t);
+  // «me pagó Jorge los 50k por transferencia»: Jorge te pagó a ti (un ingreso), no pagó algo tuyo
+  const mePago = /^me pago ([a-z]{3,}) (?:los |las |unos )?(\d[\d.,]*(?:\s?(?:k|mil|lucas?|barras?))?)(?: (.*))?$/.exec(t);
+  if (mePago && !/\b(?:cena|almuerzo|comida|cuenta|taxi|recibo|factura|mercado|pasaje|domicilio|entrada)\b/.test(t)) {
+    const quien = ps.find(p => p.n === mePago[1])?.orig ?? mePago[1];
+    // «por transferencia» se lee como una persona llamada Transferencia: la cuenta se aclara después
+    const resto = (mePago[3] ?? '').replace(/^por transferencia(?: bancaria)?$/, '').trim();
+    return { texto: quien + ' me pagó ' + mePago[2] + (resto ? ' ' + resto : '') };
+  }
   const intento = intencion(t, ps, texto);
   if (intento) return intento;
   const cuadre = sinPlata(texto, t, ps, cants); if (cuadre) return cuadre;
   const exceso = abonos(texto, t, ps, cants); if (exceso) return exceso;
+  // «pagué 60k de la pizza entre tres», sin nadie que te deba: se anota tu parte, como «pizza 60000 entre 3»
+  const entreN = /\bentre (dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\b/.exec(t);
+  if (entreN && EMPIEZA_YO.test(t) && !ES_COBRO.test(t) && !nombresDe(ps, texto).length && cants.length === 1) {
+    return { texto: (motivoDe(t, []) || 'gasto') + ' ' + miles(cants[0]) + ' entre ' + NUM[entreN[1]] };
+  }
   if (EMPIEZA_YO.test(t) && (ES_COBRO.test(t) || /\bentre (?:los |las )?(?:dos|tres|cuatro|cinco|seis)\b|\bentre \S+ y yo\b|\bmitad y mitad\b|\bpartes iguales\b/.test(t))) {
     const r = cobro(texto, t.replace(/\b(?:manana|mas tarde|luego|despues|al rato)\b/g, '').replace(/\s+/g, ' '), ps, cants);
     if (r) return r;

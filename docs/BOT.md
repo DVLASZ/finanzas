@@ -691,3 +691,7 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - Si en una misma frase corriges dos cosas («eran 54k y salieron de Nequi»), cambia las dos en la tarjeta. Lo que dices después de «no» se descarta.
 
 - Con varios movimientos pendientes: «el primero sí, el segundo no», «sí al café, la comida no», «Faber sí, Jorge no», «los dos primeros sí, el bus no» o «bus en efectivo, comida en Nequi». Lo que no nombras sigue pendiente.
+
+- Con una tarjeta pendiente: «no fue un regalo, fue un préstamo que me hizo», «eso era un préstamo, no un regalo», «David fue el que pagó mi comida», «era Laura», «éramos cuatro, no tres», «mi parte era 25» y «al revés» (en una transferencia) cambian la misma tarjeta.
+- Con dos movimientos pendientes, «ese taxi fue por Nequi» o «corrige el almuerzo: fueron 22k» tocan solo el que nombras.
+- Después de borrar con palabras, «aunque mejor déjalo» lo restaura mientras la app siga abierta.

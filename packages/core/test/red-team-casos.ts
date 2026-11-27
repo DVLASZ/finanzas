@@ -760,7 +760,7 @@ export const CASOS: Caso[] = [
   TT(645, 'edicion', ['El taxi del jueves fue de 18k, lo pagué por Nequi y era de transporte, no de varios'], GU(G1(18000, { cuenta: 'Nequi', cat: 'Transporte' })), { antes: ['varios 18000 el jueves'] }),
   // ---- confirmaciones parciales y cola de pendientes
   TT(646, 'cola', ['Anota 10k de bus y 20k de almuerzo', 'El primero sí, el segundo no'], GU(G1(10000))),
-  TT(647, 'cola', ['Gasté 8k en café y 15k en comida', 'Sí al café, la comida no'], GU(G1(8000))),
+  TT(647, 'cola', ['Gasté 8k en café y 15k en comida', 'Sí al café, la comida no'], PEND(G1(8000)), { nota: 'El café pide categoría antes de guardarse: queda la tarjeta del café con su pregunta y la comida fuera.' }),
   TT(648, 'cola', ['Registra 12k de bus y 18k de mercado', 'Sí', 'No'], GU(G1(12000))),
   TT(649, 'cola', ['Gasté 20k en cartulina y 10k en café', 'Universidad para la cartulina', 'Comida'], PEND(G1(20000, { cat: 'Universidad' }), G1(10000, { cat: 'Comida' }))),
   TT(650, 'cola', ['Pagué 15k de taxi y 25k de mercado', 'Taxi por Nequi', 'Efectivo'], PEND(G1(15000, { cuenta: 'Nequi' }), G1(25000, { cuenta: 'Efectivo' }))),
