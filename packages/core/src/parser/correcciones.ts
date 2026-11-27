@@ -29,7 +29,7 @@ export function resolverFaltante(
 
   if (f.campo === 'categoria') {
     const cat = categoriaPorNombre(t, ctx) ?? ctx.cuentas.find(c => c.tipo === 'categoria' && c.clave === t);
-    if (!cat) return { error: `No reconozco esa categoría. Responde con una: ${listaCategorias(ctx).join(', ')}.` };
+    if (!cat) return { error: `No reconozco esa categoría. ¿Cuál es? Responde con una: ${listaCategorias(ctx).join(', ')}.` };
     sig.categoriaId = cat.id;
     // para transporte hay que seguir preguntando el recorrido
     if (cat.id === 'cat:transporte' && !sig.hasta) {

@@ -695,6 +695,7 @@ La tarjeta por confirmar trae siempre una fila de etiquetas: las puestas (con un
 - Con una tarjeta pendiente: «no fue un regalo, fue un préstamo que me hizo», «eso era un préstamo, no un regalo», «David fue el que pagó mi comida», «era Laura», «éramos cuatro, no tres», «mi parte era 25» y «al revés» (en una transferencia) cambian la misma tarjeta.
 - Con dos movimientos pendientes, «ese taxi fue por Nequi» o «corrige el almuerzo: fueron 22k» tocan solo el que nombras.
 - Después de borrar con palabras, «aunque mejor déjalo» lo restaura mientras la app siga abierta.
+- «Laura me debe 15k y Sofía me debe 20k» se anota como dos movimientos. Si uno de la cola es un préstamo sin nombre, «A Daniel» se lo pone. Si la tarjeta de arriba pregunta la categoría, esa pregunta se contesta primero.
 
 ## Corregir o borrar lo que ya guardaste
 

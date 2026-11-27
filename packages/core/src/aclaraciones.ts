@@ -66,6 +66,8 @@ const DIGITO: Record<string, string> = { dos: '2', tres: '3', cuatro: '4', cinco
 function afinar(r: string, negado = false): string {
   let s = r.replace(/\s+(?:mejor|por favor|nomas|no mas)$/, '');
   s = s.replace(/^mi parte (?:era|fue|es|son)\s+/, 'fue ');
+  s = s.replace(/^(?:la|el)\s+(?:deuda|prestamo|plata|cuenta)\s+(?=(?:era|fue|es)\b)/, '');
+  s = s.replace(/^(?:los|las|el|la)\s+\d[\d.,]*\s?(?:k|mil|lucas?)?\s+(?=(?:era|eran|fue|fueron)\b)/, '');
   s = s.replace(/^(?:ponle|ponlo|pon|ponla|dejalo en|dejala en|dejalo|cambialo a|cambiala a|cambiale|cambialo|cambiala)\s+/, 'fue ');
   // «fue en efectivo fue por nequi»: manda lo último que se dijo
   const cl = s.split(/\s+(?=(?:fue|fueron|era|eran|es)\s)/);
@@ -248,7 +250,7 @@ function aclararUna(p: Propuesta, texto: string, ctx: Contexto): Aclarado | null
 
   // ---- la categoría: «ponlo como Salidas», «eso va en Transporte», «ponle categoría Universidad»
   const cat = /^(?:ponle|ponlo|pon|ponla|eso va|va|es|fue)?\s*(?:en|como|de)?\s*(?:la )?(?:categoria )?(?:de )?([a-z ]{3,30}?)(?: (?:fue|era|porque|que)\b.*)?$/.exec(r);
-  if (cat && (marcado || conVerbo || /^(?:ponle|ponlo|pon|ponla|eso va|va)\b/.test(r)) && (p.tipo === 'gasto' || p.tipo === 'compartido')) {
+  if (cat && (marcado || conVerbo || /^(?:ponle|ponlo|pon|ponla|eso va|va)\b/.test(r) || p.faltantes.some(f => f.campo === 'categoria')) && (p.tipo === 'gasto' || p.tipo === 'compartido')) {
     const buscada = cat[1].trim();
     const cuentaCat = ctx.cuentas.find(x => x.tipo === 'categoria' && (x.clave === buscada || limpiar(x.nombre) === buscada));
     if (cuentaCat) return listo({ ...p, categoriaId: cuentaCat.id, faltantes: p.faltantes.filter(x => x.campo !== 'categoria') }, 'Listo, cambié la categoría a ' + cuentaCat.nombre + '.');
@@ -256,7 +258,7 @@ function aclararUna(p: Propuesta, texto: string, ctx: Contexto): Aclarado | null
 
   // ---- la persona: «era con Paula, no Laura»
   const per = /^(?:con|a|para) ([a-z]+(?: [a-z]+)?)(?: no (?:con |a |para )?(?:era )?(?:con |a )?([a-z]+(?: [a-z]+)?))?$/.exec(sinVerbo);
-  if (per && conVerbo && !hallarCuentas(per[1], ctx).length && !/^(?:la|el|los|las|un|una)\b/.test(per[1])) {
+  if (per && (conVerbo || /^(?:a|con|para)\s+[A-ZÁÉÍÓÚÑ]/i.test(texto.trim())) && !hallarCuentas(per[1], ctx).length && !/^(?:la|el|los|las|un|una)\b/.test(per[1])) {
     const actuales = personasDe(p);
     const viejo = per[2] ? actuales.find(n => limpiar(n) === per[2]) : actuales.length === 1 ? actuales[0] : undefined;
     if (!viejo) return actuales.length ? { aviso: `¿A quién cambio por ${titulo(per[1])}: ${actuales.join(' o ')}?`, referente } : null;
@@ -295,7 +297,7 @@ function aclararUna(p: Propuesta, texto: string, ctx: Contexto): Aclarado | null
 
   // ---- qué se compró: «no era comida, era una recarga», «era la cuota del celular»
   const doble = /^(?:era|es|fue) (?:un |una |el |la |de )?(.+?) (?:era|es|fue|sino) (?:un |una |el |la |de )?(.+)$/.exec(r);
-  const simple = /^(?:era|es|fue) (?:un |una |el |la |los |las )(.+)$/.exec(r);
+  const simple = /^(?:era|eran|es|fue|fueron) (?:un |una |el |la |los |las |del |de la |de )(.+)$/.exec(r);
   const solo = /^([a-z]{3,})$/.exec(sinVerbo);
   if (solo && conVerbo && personasDe(p).length === 1 && !ctx.cuentas.some(c => c.tipo === 'dinero' && c.clave === solo[1]) && !/^(?:ayer|hoy|antier|anteayer|anoche|manana|regalo|prestamo|deuda|gasto|ingreso|efectivo|justo)$/.test(solo[1])) {
     const viejo = personasDe(p)[0];
@@ -429,7 +431,10 @@ export function correccionDeGuardado(texto: string): string | null {
 
 /** «mejor registra cine 30000»: la muletilla del comienzo no es parte del concepto. */
 export function sinMuletillaDeRegistro(texto: string): string {
-  return texto.replace(/^\s*(?:mejor|entonces|ahora)\s+(?:registra|registrame|anota|anotame|apunta|apuntame|pon|ponme)\s+(?=.*\d)/i, '');
+  return texto
+    .replace(/^\s*(?:mejor|entonces|ahora)\s+(?:registra|registrame|anota|anotame|apunta|apuntame|pon|ponme)\s+(?=.*\d)/i, '')
+    // «registra 12k de bus y 18k de mercado», «tengo dos gastos: 12k de taxi y 18k de mercado»: lo que sigue es la lista
+    .replace(/^\s*(?:registra|registrame|anota|anotame|apunta|apuntame|tengo (?:dos|tres|cuatro|\d) (?:gastos|movimientos|pagos)\s*[:,]?)\s*(?=.*\d.*\sy\s.*\d)/i, '');
 }
 
 export interface Opcion { titulo: string; frase: string }

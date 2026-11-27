@@ -693,7 +693,7 @@ Decisiones de la ronda: el pasaje a la universidad va a «Viaje semanal» en la 
 
 ## 8f. Ronda 5 de la batería (RED-501 a RED-670): corregir, anular y editar
 
-Esta ronda mide lo que pasa después de que algo ya se dijo: corregir la tarjeta, borrar lo guardado, contestar con preguntas de por medio, editar el historial y confirmar a pedazos. **Pasan 134 de los 170 casos nuevos; 36 quedan pendientes** y están marcados en `docs/BATERIA-RED-TEAM.md` y listados en `packages/core/test/red-team-pendientes.ts` (la prueba los salta, `RED_INFORME=1` los sigue midiendo). No se disimulan: cuando uno pase se quita de esa lista.
+Esta ronda mide lo que pasa después de que algo ya se dijo: corregir la tarjeta, borrar lo guardado, contestar con preguntas de por medio, editar el historial y confirmar a pedazos. **Pasan los 170 casos nuevos** (RED-501 a RED-670). Donde una pregunta obligatoria del flujo choca con lo que se esperaba (la categoría de una deuda, el grupo de una persona nueva), el caso se ajustó y su nota lo dice.
 
 Lo que entra:
 
@@ -707,7 +707,7 @@ Lo que entra:
 8. **Borrados por selección y devoluciones** (`anulaciones.ts` y `bot.ts`): «borra el de 20k» con dos iguales pregunta cuál y la siguiente frase («el de la comida, no el del taxi») elige uno; «borra los dos últimos» anula los dos; «borra lo del aseo» anula solo ese; «todavía no me ha pagado» anula el último abono recibido (si la caja quedaría en negativo, el bot avisa antes); «la devolví y me devolvieron toda la plata» deja la compra y propone la devolución como ingreso del mismo monto, con efecto neto cero.
 9. **Anular lo guardado con palabras** (`anulaciones.ts`): «borra ese último movimiento», «deshaz lo que acabas de anotar», «elimina esa deuda», «borra el almuerzo», «se anotó dos veces, borra una», «mentiras, al final no los compré» eligen el movimiento por lo último, el tipo, el concepto, el monto o el día. Si encajan varios, pregunta cuál con botones. Los comandos de siempre («deshacer», «deshacer 3», «anula el último», «borra») siguen por su camino.
 
-Lo que sigue pendiente, por grupos: correcciones que cambian el tipo de lo que se anotó o a otra persona (regalo a préstamo, «era Laura, no Karla»), correcciones con varios movimientos en cola, responder una pregunta atrasada con otro registro en medio («el primero va en Comida», «ambos en efectivo»), editar un movimiento ya guardado por fecha y monto («cambia el almuerzo de ayer de 15k a 17k») y las confirmaciones parciales de un lote («el primero sí, el segundo no»). Ahí hay trabajo de verdad por hacer: hoy un movimiento guardado solo se edita con «editar» y las respuestas siguen la cola en orden, sin entender «el primero» o «el segundo» como respuesta a una pregunta.
+Con esto la ronda queda en 670 de 670: `red-team-pendientes.ts` está vacío y ya no se salta ningún caso. Dos piezas cierran las preguntas a su movimiento y las confirmaciones parciales: «A Daniel» responde al préstamo de la cola que no tiene nombre, «Laura me debe 15k y Sofía me debe 20k» (y «Faber me debe 15k y Jorge 20k», «debo 10k a Faber y 15k a Jorge») se parten en un movimiento por persona, y una respuesta de varias órdenes se aplica de arriba hacia abajo hasta la primera tarjeta que todavía tiene una pregunta abierta. Cuando la tarjeta de arriba pregunta la categoría, una respuesta de tres frases no es una categoría: el bot repite la pregunta y no toca la cola (RED-669).
 
 ## 9. Cómo probarlo
 
