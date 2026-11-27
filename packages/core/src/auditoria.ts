@@ -46,18 +46,33 @@ function evaluar(expr: string): number | null {
 }
 
 export function auditar(texto: string, ctx: Contexto, confirmado = false): Auditada | null {
-  // Defecto 35: un mensaje larguísimo con un solo monto se pregunta en corto en vez de dejar todo el relleno como concepto
+  // Defecto 35: un mensaje larguísimo con un solo monto: se anota solo la parte donde está el monto (con el día si lo dice al principio)
   if (texto.length > 400) {
     const unico = hallarMontos(limpiar(texto)).filter(m => m.explicito);
     if (unico.length === 1) {
-      const palabras = texto.trim().split(/\s+/);
-      const i = palabras.findIndex(w => /\d/.test(w));
-      const corto = palabras.slice(Math.max(0, i - 2), i + 3).join(' ');
-      return { pregunta: { mensaje: `Tu mensaje es larguísimo y solo veo un monto. ¿Anoto «${corto}»?`, opciones: [{ titulo: 'Sí, anótalo así', frase: corto }, { titulo: 'No', frase: 'no' }] } };
+      const partes = texto.split(/(?<=[,.;])\s+/);
+      const donde = partes.findIndex(p => /\d/.test(p));
+      let trozo = partes[donde].replace(/[.;]+$/, '').replace(/^(?:y|pero|luego|finalmente|al final)\s+/i, '');
+      // un trozo todavía muy largo (sin comas): solo las palabras de alrededor del monto
+      if (trozo.length > 120) {
+        const ws = trozo.split(/\s+/);
+        const k = ws.findIndex(w => /\d/.test(w));
+        trozo = ws.slice(Math.max(0, k - 2), k + 4).join(' ');
+      }
+      const dia = texto.trim().match(/^(ayer|anoche|anteayer|antier|hoy)\b/i)?.[1];
+      return { reescribir: `${dia && !/^(?:ayer|anoche|anteayer|antier|hoy)\b/i.test(trozo) ? dia + ' ' : ''}${trozo}` };
     }
   }
   if (texto.length > 160) return null;
   let original = texto.trim();
+  // lo que se pide en contra de sí mismo: «registra 10k... no guardes ese movimiento», «no registres nada, pero... guarda»
+  const tn = limpiar(original);
+  if (/\bno (?:lo |ese |el )?(?:guardes?|registres?)\b/.test(tn) && /\b(?:registra|guarda|anota|guarde|registre)\b/.test(tn.replace(/\bno (?:lo |ese |el )?(?:guardes?|registres?)\b/g, ''))) {
+    return { texto: '¿Quieres que lo anote o no? Me dices dos cosas contrarias en el mismo mensaje. Escríbelo en una sola frase («registra 10k de almuerzo» o «no lo registres») y no doy nada por guardado hasta entonces.' };
+  }
+  // un tope negativo, o un gasto de cero pesos, no existen
+  if (/\b(?:tope|presupuesto)\b/.test(tn) && /(?:^|\s)-\s*\d/.test(tn)) return { texto: '¿Quisiste decir un tope positivo? Un tope negativo no existe. Escríbelo, por ejemplo, «tope comida 50000».' };
+  if (/^(?:gaste|pague|compre)\s+0+\s*(?:pesos)?\b/.test(tn) || (/\b0+\s*pesos\b/.test(tn) && !/[1-9]/.test(tn.replace(/[^0-9]/g, '')))) return { texto: 'El monto tiene que ser mayor que cero: un gasto de $0 no hay nada que anotar. Si quisiste decir otra cifra, escríbela con el monto.' };
   const t = limpiar(original);
   const dinero = ctx.cuentas.filter(c => c.tipo === 'dinero' && c.moneda === 'COP');
 
