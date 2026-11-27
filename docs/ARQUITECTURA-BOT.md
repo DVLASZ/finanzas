@@ -818,6 +818,19 @@ Sesenta y cinco casos nuevos, todos en verde, con la batería en 965 de 965.
 
 Límites: el lector de comprobantes se probó con el texto que sale de leer una foto, no con la lectura de la imagen en sí; los formatos nuevos de cada banco se agregarán cuando haya ejemplos reales.
 
+### Ronda 7, parte 3: varias operaciones en un mensaje y secuencias de cuatro turnos (RED-966 a RED-1000)
+
+Treinta y cinco casos nuevos, todos en verde, y con ellos la batería completa queda en **1.000 de 1.000** (RED-001 a RED-1000). Los casos de varios turnos miran el estado al final (`ES`) y, con `ultima`, lo que contestó el bot en el último turno.
+
+1. **Lo que se anota no depende de lo que se calcula**: lo que está sin confirmar todavía no cuenta en ningún total. Una pregunta de totales («¿cuánto gasté?», «¿cuánto queda pendiente?») con tarjetas sin confirmar responde con lo que hay y avisa «⏳ Tienes N movimientos sin confirmar: todavía no cuentan» (`bot.ts`). El saldo de un traslado, el efectivo que sobra de un retiro o lo que queda por cobrar solo salen de lo confirmado.
+2. **Correcciones en la cola por monto o por concepto** (`colas.ts`): «los 15 de gasolina eran 12, corrige», «el tinto era de 3 mil, no de 8», «los 22 eran de comida, no de tienda» y «borra el bus, ese lo pagó Laura». «Los 22» ya no se toma por «todos los 22 movimientos» (`aclaraciones.ts`): un número de dos cifras sin «mil» es un monto.
+3. **Varias operaciones enredadas** (`enredado` en `auditoria.ts`, después de traslados y casa): cuando una frase trae varias cifras y lo que las reglas parten no alcanza, o alguna parte no se entiende sola, el bot propone las partes por separado con un botón «Sí, por separado» (que manda las partes con «;»). No se mete con el efectivo (billete, vuelto, monedas) ni con las cuentas entre amigos (`habladas.ts`).
+4. **Una cuenta seguida de una pregunta** («...hoy le mandé esos 50. ¿Cuánto me debe?»): pregunta si anota primero lo que pasó. Se cierra después con «deudas» o «cuánto me debe Jorge».
+5. **Cifras cortas en miles** (`dictado.ts`): en un mensaje que ya habla de miles, «me mandó 50», «le aboné 80», «pagó 30», «saqué 100» valen miles. «Pagué con 100 mil en efectivo, me dieron 22 mil» es la caja y se quita (la compra es lo que vale).
+6. **Tarjeta y asociación**: la compra con tarjeta, el abono desde un banco y el interés de la misma frase son tres movimientos (`traslados.ts`); «Alejandro debía 40 mil de cuota y 10 de multa; pagó 30 hoy y quedó en pasar 20 mañana» son dos deudas y el abono de hoy, y lo prometido no se anota; una cena entre tres con lo que ya mandó uno es un gasto compartido y su pago (`hogarAsociacion.ts`).
+
+Dos expectativas se ajustaron y su nota lo dice: RED-983 espera la nómina y el retiro (el apartado es un comando de meta, sin tarjeta), y RED-985 espera que el último turno diga que lo sin confirmar todavía no cuenta. Varios casos de este bloque aceptan como alternativa que el bot pregunte; eso mide que no anota a ciegas, no que calcule el saldo exacto.
+
 ## 9. Cómo probarlo
 
 El núcleo corre en Node sin red y sin navegador. `MemoriaRepo` guarda todo en memoria y `tests/ayudas.ts` trae un bot listo con el reloj fijo:

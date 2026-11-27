@@ -118,7 +118,7 @@ export function trasladar(texto: string, ctx: Contexto): Traslado | null {
   // dólares y monedas sueltas tienen su propio camino (cambio de moneda, alcancía)
   if (/\b(?:dolar(?:es)?|usd|us)\b|\bmonedas?\b|\balcancia\b/.test(t)) return null;
   // plata que entra («me consignaron 80000 en daviplata y pasé 50 a nequi») no es un traslado propio
-  if (/\b(?:me|nos) (?:consignaron|giraron|pagaron|enviaron|mandaron|transfirieron|depositaron|cayeron|llegaron)\b/.test(t)) return null;
+  if (/\b(?:me|nos) (?:consignaron|giraron|pagaron|enviaron|mandaron|transfirieron|depositaron|cayeron|llegaron|entraron)\b/.test(t)) return null;
   if (!/\d/.test(t) && !/\bcuanto\b/.test(t)) return null;
   const tarjeta = ctx.cuentas.some(c => c.tipo === 'persona' && c.clave === 'tarjeta') ? tarjetaDeCredito(t, ctx) : null;
   if (tarjeta) return tarjeta;
@@ -290,6 +290,11 @@ function tarjetaDeCredito(t: string, ctx: Contexto): Traslado | null {
     if (!v) return null;
     const fr = [`debo ${v} a Tarjeta por ${concepto.split(' ')[0]}`];
     if (partes[1]) { const v2 = montosDe(partes[1])[0]; if (v2) fr.push(`le pague ${v2} a Tarjeta`); }
+    // «pagué 300 mil de la tarjeta desde Bancolombia y me cobraron 18 mil de interés»: el abono y el interés, aparte de la compra
+    const abono = new RegExp(String.raw`pague\s+${MONTO}\s+de la tarjeta(?:\s+(?:desde|con)\s+([a-z]+))?`).exec(t);
+    if (abono) { const va = valorDe(abono[1]); if (va) fr.push(`le pague ${va} a Tarjeta${abono[2] ? ' con ' + abono[2] : ''}`); }
+    const interes = new RegExp(String.raw`(?:cobraron|cobro)\s+${MONTO}\s+de\s+interes(?:es)?`).exec(t);
+    if (interes) { const vi = valorDe(interes[1]); if (vi) fr.push(`debo ${vi} a Tarjeta por intereses`); }
     void cu;
     return { texto: fr.join('; ') };
   }
