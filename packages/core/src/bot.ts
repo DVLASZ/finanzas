@@ -44,6 +44,7 @@ import { cruzado } from './cruzados.ts';
 import { hablada } from './habladas.ts';
 import { leerSelectivas, type ParteDeCola } from './colas.ts';
 import { leerAnulacion } from './anulaciones.ts';
+import { aplicarEdicion, leerEdicion, type Edicion } from './ediciones.ts';
 import { descendientes, leerSubcategorias, MAX_NIVELES, puedeIrDentro } from './subcategorias.ts';
 import { leerMetas, textoAvance, textoMetas, totalApartado, type Meta } from './metas.ts';
 import { describirFrecuencia, leerPausa, leerRecurrentes, type Frecuencia, type Recurrente } from './recurrentes.ts';
@@ -146,6 +147,8 @@ function palabraSuelta(t: string): Suelta | null {
  */
 /** Lo último que se anuló con palabras, por repositorio: «aunque mejor déjalo» lo restaura. Solo vive mientras la app está abierta. */
 const ultimosBorrados = new WeakMap<Repo, string[]>();
+/** Los movimientos entre los que se preguntó «¿Cuál borro?»: la siguiente frase (el de la comida) elige uno. */
+const borradoPendiente = new WeakMap<Repo, string[]>();
 const preguntasAbiertas = new WeakMap<Repo, { mensaje: string; opciones: Opcion[] }>();
 
 /** La pregunta con un botón por opción (y Cancelar); queda abierta para que también se pueda responder escribiendo. */
@@ -400,13 +403,46 @@ class Motor {
         ultimosBorrados.delete(this.repo);
         return [{ texto: 'Listo, lo dejé como estaba: ' + (borrados.length > 1 ? 'volvieron los ' + borrados.length + ' movimientos.' : 'el movimiento volvió.') }];
       }
+      // la respuesta a «¿Cuál borro?»: «el de la comida, no el del taxi»
+      const dudosos = borradoPendiente.get(this.repo);
+      borradoPendiente.delete(this.repo);
+      if (dudosos?.length) {
+        const dicho = limpiar(texto).replace(/\bno\b.*$/, '');
+        const palabras = dicho.split(' ').filter(w => w.length > 3 && !/^(?:comida|gasto|ese|esa)$/.test(w) || /^comida$/.test(w));
+        const elegidos = dudosos.map(id => this.datos.movimientos.find(m => m.id === id)).filter((m): m is NonNullable<typeof m> => Boolean(m))
+          .filter(m => palabras.some(w => limpiar(m.descripcion).includes(w.slice(0, Math.max(4, w.length - 2)))));
+        if (elegidos.length === 1) {
+          const salida = await this.anularVarios(elegidos, false);
+          if (/^↩️ Anulé/.test(salida[0]?.texto ?? '')) ultimosBorrados.set(this.repo, [elegidos[0].id]);
+          return salida;
+        }
+      }
+      // «la devolví y me devolvieron toda la plata»: la compra se queda y la devolución entra como ingreso, con efecto neto cero
+      if (/\b(?:la|lo|las|los) devolvi\b.*\bdevolvieron\b/.test(limpiar(texto))) {
+        const ultimo = this.ultimoPropio();
+        const antes = ultimo?.propuesta as Propuesta | undefined;
+        if (ultimo && antes && antes.tipo === 'gasto') {
+          const r = interpretar('me devolvieron ' + antes.monto + ' de lo de ' + (antes.concepto || 'la compra').toLowerCase(), this.ctx);
+          if (r.clase === 'movimiento') return this.conNota('Anoto la devolución como un ingreso: con la compra, el efecto neto queda en cero.', { propuesta: r.propuesta, editando: false });
+        }
+      }
       const anul = leerAnulacion(texto, this.datos.movimientos, this.ctx.ahora);
       if (anul && 'ids' in anul) {
         const salida = await this.anularVarios(this.datos.movimientos.filter(m => anul.ids.includes(m.id)), false);
         if (/^↩️ Anulé/.test(salida[0]?.texto ?? '')) ultimosBorrados.set(this.repo, anul.ids);
         return salida;
       }
+      // corregir lo ya guardado sin decir «editar»: «cambia el almuerzo de ayer de 15k a 17k» (ver ediciones.ts)
+      if (!anul) {
+        const ed = leerEdicion(texto, this.datos.movimientos, this.ctx);
+        if (ed && 'id' in ed) { const r = await this.editarGuardado(ed); if (r) return r; }
+        else if (ed) {
+          const lista = ed.candidatos.map(id => this.datos.movimientos.find(m => m.id === id)).filter(Boolean).map(m => `«${m!.descripcion}» ${formatear(m!.asientos.filter(a => a.monto > 0 && a.moneda === 'COP').reduce((s, a) => s + a.monto, 0))} (${m!.ocurridoEn.slice(0, 10)})`);
+          return [{ texto: `${ed.pregunta} Encajan ${lista.length}: ${lista.join('; ')}. Dime algo más para distinguirlos (la hora, la cuenta o el concepto) y lo cambio.` }];
+        }
+      }
       if (anul) {
+        borradoPendiente.set(this.repo, anul.candidatos);
         const por = (id: string): string => this.datos.movimientos.find(m => m.id === id)?.descripcion ?? id;
         return [{ texto: anul.pregunta, botones: [...anul.candidatos.map(id => ({ id: `undo:${id}`, titulo: `Anular «${por(id)}»` })), { id: 'nada', titulo: 'Ninguno' }] }];
       }
@@ -525,6 +561,26 @@ class Motor {
     if (!nueva) return [{ texto: `Eso del ${ORD[i] ?? `número ${i + 1}`} te lo cambio cuando te lo muestre: ahí dime «${orden.resto}».` }];
     cola[i - 1] = nueva;
     return this.conNota(`Listo, el ${ORD[i] ?? `número ${i + 1}`} queda así: «${nueva}».`, { ...p, siguientes: cola });
+  }
+
+  /** Corrige un movimiento guardado con lo que se dijo de él (ver ediciones.ts). El original queda anulado, no borrado. */
+  private async editarGuardado(ed: Extract<Edicion, { id: string }>): Promise<Salida[] | null> {
+    const m = this.datos.movimientos.find(x => x.id === ed.id);
+    const antes = m?.propuesta as Propuesta | undefined;
+    if (!m || !antes) return null;
+    const cambio = aplicarEdicion(antes, ed.cambios, this.ctx);
+    if (!cambio) return null;
+    const tarjeta = await this.mostrar({ propuesta: cambio, editando: true, reemplazaId: m.id });
+    const limpia = tarjeta[0]?.botones?.some(b => b.id === 'ok') && !/⚠️|❓/.test(tarjeta[0].texto);
+    if (!limpia) {
+      if (tarjeta[0]) tarjeta[0].texto = `Corrijo «${m.descripcion}» (${ed.resumen.join(', ')}). Revisa la tarjeta antes de guardarla.
+${tarjeta[0].texto}`;
+      return tarjeta;
+    }
+    const r = await this.confirmar();
+    if (r[0]) r[0].texto = `Corregí «${m.descripcion}» (${ed.resumen.join(', ')}). El original quedó anulado.
+${r[0].texto}`;
+    return r;
   }
 
   /**
