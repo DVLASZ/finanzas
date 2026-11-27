@@ -368,7 +368,9 @@ export function editarFrase(frase: string, antes: Propuesta, despues: Propuesta,
 
 /** ¿Qué movimiento de la lista nombra la palabra? (por su concepto o por lo que se escribió). Devuelve las posiciones. */
 export function buscarEnLista(palabra: string, textos: string[]): number[] {
-  const w = limpiar(palabra);
+  // la palabra viene de lo que escribió la persona: nunca es una expresión regular
+  const w = limpiar(palabra).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (!w) return [];
   return textos.map((x, i) => (new RegExp(`\\b${w}`).test(limpiar(x)) ? i : -1)).filter(i => i >= 0);
 }
 
