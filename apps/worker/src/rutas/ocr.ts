@@ -38,7 +38,8 @@ export const rutaOCR: Ruta = async ({ req, url, env, repo }) => {
   const cuerpo = (await req.json().catch(() => null)) as { imagen?: unknown } | null;
   const imagen = typeof cuerpo?.imagen === 'string' ? cuerpo.imagen : '';
   const base64 = imagen.replace(/^data:image\/[a-z]+;base64,/, '');
-  if (!base64 || base64.length > MAX_BASE64) return json({ error: 'La imagen no sirve o pesa demasiado.' }, 400);
+  // solo base64 de verdad: una dirección web o cualquier otro texto nunca llega al modelo (que no vaya a buscar nada por su cuenta)
+  if (!base64 || base64.length > MAX_BASE64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64) || base64.length % 4 !== 0) return json({ error: 'La imagen no sirve o pesa demasiado.' }, 400);
   const datos = await repo.cargar();
   if (datos.config.ia === '0') return json({ error: 'La IA está apagada en Ajustes.' }, 403);
   // cuenta contra el mismo tope diario que la ayuda de frases

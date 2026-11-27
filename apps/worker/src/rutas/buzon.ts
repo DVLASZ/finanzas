@@ -9,12 +9,21 @@ import { agregarAviso, destinosDe, enviarAlBuzon, leerAviso } from '../buzon.ts'
 import { mandarAviso } from '../avisos.ts';
 import { D1Repo } from '../d1repo.ts';
 import { json, tokenValido, type Env, type Ruta } from '../comun.ts';
+import { conexionDe, intentosFallidos } from '../seguridad.ts';
 
 /** El buzón de otras apps tiene su propia clave: solo sirve para dejar un aviso. Va ANTES de la autorización normal. */
 export async function buzonPublico(req: Request, url: URL, env: Env): Promise<Response | null> {
   if (url.pathname !== '/api/buzon' || req.method !== 'POST') return null;
   if (!env.BUZON_CLAVE) return json({ error: 'No encontrado' }, 404);
-  if (!tokenValido(req, env.BUZON_CLAVE)) return json({ error: 'No autorizado' }, 401);
+  // la clave del buzón se protege igual que el token: tras varios intentos fallidos esa conexión espera
+  const conexion = conexionDe(req);
+  if (conexion && intentosFallidos.lleno(conexion)) return json({ error: 'Demasiadas peticiones. Espera un momento.', esperaS: intentosFallidos.esperaS(conexion) }, 429);
+  if (!tokenValido(req, env.BUZON_CLAVE)) {
+    if (conexion) intentosFallidos.anotar(conexion);
+    console.warn('seguridad: clave de buzón equivocada'); // sin la clave ni la conexión en el registro
+    return json({ error: 'No autorizado' }, 401);
+  }
+  if (Number(req.headers.get('content-length') ?? 0) > 4096) return json({ error: 'Aviso demasiado grande' }, 413);
   const aviso = leerAviso(await req.json().catch(() => null));
   if (typeof aviso === 'string') return json({ error: aviso }, 400);
   const repo = new D1Repo(env.DB);
