@@ -1,6 +1,6 @@
-# Batería adversarial del bot (RED-001 a RED-395)
+# Batería adversarial del bot (RED-001 a RED-500)
 
-Estas son las 395 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
+Estas son las 500 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
 
 ```bash
 node --test packages/core/test/red-team.test.ts
@@ -531,3 +531,133 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-393 | `almuerzo 18000 efectivo` | Sin tarjetas pendientes. Guardado: Gasto $18.000 en Efectivo | El pulgar arriba confirma la única tarjeta pendiente. |
 | RED-394 | `almuerzo 12000` | Sin tarjetas pendientes. Nada guardado | La equis cancela la tarjeta pendiente. |
 | RED-395 | `mercado 35000` | Quedan pendientes: Gasto $35.000. Nada guardado. Pregunta | Ni el reintento ni los signos confirman ni duplican: la tarjeta sigue igual y el bot pregunta qué hacer. |
+
+## Ronda 4: compras compartidas que pagó otro (yo debo mi parte)
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-396 | `Le debo 5k a Faber por el queso de natación` | Quedan pendientes: Deuda $5.000 |  |
+| RED-397 | `El queso costó 10k, lo pagó Faber y yo le debo la mitad` | Quedan pendientes: Deuda $5.000 |  |
+| RED-398 | `Quedé debiéndole a Jorge 8k de las copias de ingeniería` | Quedan pendientes: Deuda $8.000 |  |
+| RED-399 | `Alejandro pidió la pizza de 42k entre tres, le debo mi parte` | Quedan pendientes: Deuda $14.000 |  |
+| RED-400 | `Mi roomie pagó el recibo del gas de 36k y nos toca de a 12k` | Quedan pendientes: Deuda $12.000 o Pregunta antes de inventar | Con «roomie» no hay nombre: la deuda queda a su favor o el bot pregunta quién es. |
+| RED-401 | `Le quedé debiendo 15 barras a Daniel de la entrada` | Quedan pendientes: Deuda $15.000 |  |
+| RED-402 | `Me toca pasarle 18k a Karla porque ella pagó el domicilio` | Quedan pendientes: Deuda $18.000 |  |
+| RED-403 | `Pipe puso 27 lucas por las hamburguesas de los tres, yo le debo lo mío` | Quedan pendientes: Deuda $9.000 |  |
+| RED-404 | `Laura pagó los 48 mil del internet y quedamos de ponerle 16 cada uno` | Quedan pendientes: Deuda $16.000 |  |
+| RED-405 | `Sofía compró las empanadas, fueron 30 mil entre ella y yo, luego le consigno mis 15` | Quedan pendientes: Deuda $15.000 | La consignación es futura: queda la deuda pendiente. |
+| RED-406 | `Mateo se encargó de pagar el parqueadero de 20k y vamos mitad y mitad` | Quedan pendientes: Deuda $10.000 |  |
+| RED-407 | `De los 54 del asado, Diana puso todo y a mí me toca poner 18` | Quedan pendientes: Deuda $18.000 |  |
+| RED-408 | `Andree pagó el taxi de vuelta, éramos cuatro y salieron 32k` | Quedan pendientes: Deuda $8.000 |  |
+| RED-409 | `A Paula le debo 7 mil de las fotocopias que sacó para todos` | Quedan pendientes: Deuda $7.000 |  |
+| RED-410 | `David puso 60k para el Airbnb, yo voy con 20` | Quedan pendientes: Deuda $20.000 |  |
+| RED-411 | `Le debo a Valeria la mitad de los 26k del detergente que compró` | Quedan pendientes: Deuda $13.000 |  |
+| RED-412 | `Faber pagó la inscripción de los dos, fueron 70 mil; yo le quedé debiendo 35` | Quedan pendientes: Deuda $35.000 |  |
+| RED-413 | `El almuerzo salió por 45 lucas, Jorge invitó primero y yo le paso 15` | Quedan pendientes: Deuda $15.000 | «Invitó primero» pero «yo le paso 15»: no es un regalo, es una deuda. |
+| RED-414 | `Karla pagó el jabón, el papel y las bolsas: todo fueron 24k y somos tres en la casa` | Quedan pendientes: Deuda $8.000 |  |
+| RED-415 | `Ale puso 50 para comprar las cosas de la reunión y yo quedé con 12` | Quedan pendientes: Deuda $12.000 o Pregunta antes de inventar | Ale puede ser Alejandro: se pregunta o se anota a Ale. |
+| RED-416 | `Me falta darle a Daniel 9k de la recarga que hizo para los dos` | Quedan pendientes: Deuda $9.000 |  |
+| RED-417 | `Pipe pagó 36 del mercado y quedamos en partes iguales entre los dos` | Quedan pendientes: Deuda $18.000 |  |
+| RED-418 | `La torta costó 80k, Laura la compró para los cuatro y yo le debo 20` | Quedan pendientes: Deuda $20.000 |  |
+| RED-419 | `Sofía adelantó lo de la cancha, eran 6 personas y salía a 10k por cabeza; yo no le he dado` | Quedan pendientes: Deuda $10.000 |  |
+| RED-420 | `Me toca darle 14 mil a Mateo por mi parte de la gasolina del paseo` | Quedan pendientes: Deuda $14.000 |  |
+
+## Ronda 4: yo pagué y los demás me deben su parte
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-421 | `Pagué el uber de 14k y Esteban me pasa la mitad mañana` | Quedan pendientes: Gasto compartido $14.000 Esteban $7.000 | «Mañana» es cuándo paga Esteban, no la fecha del gasto. |
+| RED-422 | `Compré las boletas de los cuatro por 80k, cada uno me tiene que dar 20k` | Pregunta antes de inventar o Quedan pendientes: Gasto compartido $80.000 | No dice quiénes son los otros tres: pregunta sus nombres. |
+| RED-423 | `Hice el mercado de la casa por 90k entre los tres roomies` | Pregunta antes de inventar o Quedan pendientes: Gasto compartido $90.000 |  |
+| RED-424 | `Pagué 30k del almuerzo mío y de Andree, ella me transfiere los 15k más tarde` | Quedan pendientes: Gasto compartido $30.000 Andree $15.000 |  |
+| RED-425 | `Compré el regalo de 60k entre cuatro, los otros tres me deben su parte` | Pregunta antes de inventar o Quedan pendientes: Gasto compartido $60.000 |  |
+| RED-426 | `Yo puse los 24 mil de la pizza y éramos tres; David y Pipe me pasan lo de ellos` | Quedan pendientes: Gasto compartido $24.000 David $8.000, Pipe $8.000 |  |
+| RED-427 | `Pagué el recibo del agua de 45k, en la casa somos tres y los otros dos me dan su parte` | Pregunta antes de inventar o Quedan pendientes: Gasto compartido $45.000 |  |
+| RED-428 | `Le compré a Laura y a mí dos combos por 38k, ella me debe 19` | Quedan pendientes: Gasto compartido $38.000 Laura $19.000 |  |
+| RED-429 | `Puse 12 lucas para los pasajes de los dos, Mateo me devuelve 6` | Quedan pendientes: Gasto compartido $12.000 Mateo $6.000 |  |
+| RED-430 | `Yo pagué el domicilio de 42k, entre Karla y yo quedamos mitad y mitad` | Quedan pendientes: Gasto compartido $42.000 Karla $21.000 |  |
+| RED-431 | `Compré los materiales del trabajo por 100 mil y mis cuatro compañeros me dan 20 cada uno` | Pregunta antes de inventar o Quedan pendientes: Gasto compartido $100.000 |  |
+| RED-432 | `Pagué 18k de las cervezas sin alcohol y Diana me debe 9` | Quedan pendientes: Gasto compartido $18.000 Diana $9.000 |  |
+| RED-433 | `Saqué las copias de Paula y las mías, fueron 16 mil; ella me da 8` | Quedan pendientes: Gasto compartido $16.000 Paula $8.000 |  |
+| RED-434 | `Yo pagué el parqueadero de 20k de los dos carros y Alejandro me reconoce 10` | Quedan pendientes: Gasto compartido $20.000 Alejandro $10.000 |  |
+| RED-435 | `Pagué 75 mil de la comida del paseo; Laura, Sofía y yo íbamos a poner lo mismo` | Quedan pendientes: Gasto compartido $75.000 Laura $25.000, Sofia $25.000 |  |
+| RED-436 | `Le compré el shampoo a Karla y a mí, 28k en total, ella me queda debiendo 14` | Quedan pendientes: Gasto compartido $28.000 Karla $14.000 |  |
+| RED-437 | `Puse 32k para el taxi de los cuatro, que cada uno me dé sus ocho` | Pregunta antes de inventar o Quedan pendientes: Gasto compartido $32.000 |  |
+| RED-438 | `Yo compré el concentrado de la casa por 54k, Mateo y Pipe ponen 18 cada uno` | Quedan pendientes: Gasto compartido $54.000 Mateo $18.000, Pipe $18.000 |  |
+| RED-439 | `Pagué 40 mil de la reserva y Andree me tiene que devolver la mitad` | Quedan pendientes: Gasto compartido $40.000 Andree $20.000 |  |
+| RED-440 | `Yo adelanté los 96k de la cancha, éramos seis y los otros cinco me pasan 16` | Pregunta antes de inventar o Quedan pendientes: Gasto compartido $96.000 |  |
+
+## Ronda 4: universidad, roomies y salidas
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-441 | `Le debo 4k a Jorge por la impresión del proyecto` | Quedan pendientes: Deuda $4.000 |  |
+| RED-442 | `Puse 6k para las fotocopias del parcial` | Quedan pendientes: Gasto $6.000 o Pregunta antes de inventar |  |
+| RED-443 | `Le quedé debiendo 12k a David de la salchipapa de anoche` | Quedan pendientes: Deuda $12.000 |  |
+| RED-444 | `Entre cuatro compramos una gaseosa y mecato por 24k, pagó Alejandro` | Quedan pendientes: Deuda $6.000 |  |
+| RED-445 | `Le debo 10k a Andree del jabón y el papel de la casa` | Quedan pendientes: Deuda $10.000 |  |
+| RED-446 | `Pagué 7k del pasaje de ida y vuelta a la uni` | Quedan pendientes: Gasto $7.000 | En esta plantilla el pasaje va a «Viaje semanal». |
+| RED-447 | `Le debo 25k a Faber de la inscripción del torneo` | Quedan pendientes: Deuda $25.000 |  |
+| RED-448 | `Pipe me prestó 20 lucas pa' completar el almuerzo y todavía no se las paso` | Quedan pendientes: Deuda $20.000 |  |
+| RED-449 | `Me gasté 9k en un tinto mientras estudiábamos en la biblioteca` | Quedan pendientes: Gasto $9.000 «tinto» |  |
+| RED-450 | `Le debo 13 mil a Paula por el cuaderno y los lapiceros` | Quedan pendientes: Deuda $13.000 |  |
+| RED-451 | `Pagué 22k de la vaca para el cumpleaños de Laura` | Quedan pendientes: Gasto $22.000 o Pregunta antes de inventar | La vaca es una colecta: gasto de 22.000, no un préstamo a Laura. |
+| RED-452 | `Jorge puso lo de las tintas de la impresora y yo le debo 11k` | Quedan pendientes: Deuda $11.000 |  |
+| RED-453 | `Me fui con los parceros y pagué 36k de la picada, éramos tres conmigo` | Pregunta antes de inventar o Quedan pendientes: $36.000 | No dice quiénes son los otros dos: pregunta sus nombres. |
+| RED-454 | `Le quedé debiendo a Karla 8 lucas de la lavada de la cocina` | Quedan pendientes: Deuda $8.000 |  |
+| RED-455 | `Me gasté 5k en una pola y unas papitas saliendo de clase` | Quedan pendientes: Gasto $5.000 |  |
+| RED-456 | `Faber me cubrió los 18k de la entrada a la fiesta, luego le pago` | Quedan pendientes: Deuda $18.000 |  |
+| RED-457 | `Pagué 15k de una carrera en taxi porque íbamos tarde a clase` | Quedan pendientes: Gasto $15.000 categoría Transporte |  |
+| RED-458 | `Le debo 6k a Diana de las cosas que compramos pa' la exposición` | Quedan pendientes: Deuda $6.000 |  |
+| RED-459 | `Entre Mateo y yo pagamos 40k del domicilio, yo puse 25 y él 15` | Nunca deuda ni préstamo: si no hay tarjeta, pregunta o explica | Los dos ya pusieron su parte: no queda ninguna deuda entre ellos. |
+| RED-460 | `Me faltan 3k pa' completar lo de la fotocopiadora, se los pido a Pipe` | Nunca deuda ni préstamo ni ingreso ni gasto: si no hay tarjeta, pregunta o explica | Es una intención: todavía no se los ha prestado nadie. |
+| RED-461 | `Le pasé 12k a Alejandro pa' la vaquita del salón` | Quedan pendientes: $12.000 o Pregunta antes de inventar | La vaquita es una colecta: no se le presta a Alejandro. |
+| RED-462 | `David pagó la cancha y yo le debo 10 de mi entrada` | Quedan pendientes: Deuda $10.000 |  |
+| RED-463 | `Compré 4 tintos pa' la trasnochada, me cobraron 12k` | Quedan pendientes: Gasto $12.000 |  |
+| RED-464 | `Karla puso 30k pa' los implementos del equipo y yo le quedé debiendo 10` | Quedan pendientes: Deuda $10.000 |  |
+| RED-465 | `Ayer salimos por helado, yo pagué lo mío y lo de Sofía fueron 8k más` | Quedan pendientes: $8.000 o Pregunta antes de inventar | Solo se conoce la parte de Sofía: 8.000 que te debe. |
+
+## Ronda 4: conceptos compuestos (manda lo que se compró)
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-466 | `Compré un queso de 10k para el evento de natación` | Quedan pendientes: Gasto $10.000 «natacion» |  |
+| RED-467 | `Le debo a Faber 5k del queso que llevamos a natación` | Quedan pendientes: Deuda $5.000 |  |
+| RED-468 | `Pagué 18k de cartulina para la exposición de la U` | Quedan pendientes: Gasto $18.000 «cartulina» |  |
+| RED-469 | `Me tomé un tinto de 2k mientras estudiaba para el parcial` | Quedan pendientes: Gasto $2.000 «tinto» |  |
+| RED-470 | `Compramos agua por 6k para la rodada en bici` | Quedan pendientes: Gasto $6.000 «agua» |  |
+| RED-471 | `Puse 8k para el hielo del asado del grupo` | Quedan pendientes: Gasto $8.000 «hielo» |  |
+| RED-472 | `El almuerzo del evento de la facultad me salió en 16 mil` | Quedan pendientes: Gasto $16.000 «almuerzo» |  |
+| RED-473 | `Compré cinta y marcadores pa' decorar el salón de la fiesta, fueron 14k` | Quedan pendientes: Gasto $14.000 «cinta» |  |
+| RED-474 | `Gasté 9k en gasolina para ir a recoger los materiales del proyecto` | Quedan pendientes: Gasto $9.000 categoría Transporte |  |
+| RED-475 | `Compré unas galletas de 4k para la reunión del grupo de estudio` | Quedan pendientes: Gasto $4.000 «galletas» |  |
+| RED-476 | `Pagué 20k de las fotocopias para la salida de campo de biología` | Quedan pendientes: Gasto $20.000 «fotocopias» |  |
+| RED-477 | `Compré una bolsa de hielo de 5k para enfriar las gaseosas del paseo` | Quedan pendientes: Gasto $5.000 «hielo» |  |
+| RED-478 | `Pagué 11k de una recarga para poder pedir el domicilio del grupo` | Quedan pendientes: Gasto $11.000 «recarga» | El domicilio no se anota: no dice cuánto costó ni quién lo pagó. |
+| RED-479 | `Compré agua y bananos por 7k para el entrenamiento de la mañana` | Quedan pendientes: Gasto $7.000 «bananos» |  |
+| RED-480 | `Me gasté 13k en una carpeta y unas hojas para entregar la hoja de vida` | Quedan pendientes: Gasto $13.000 «carpeta» |  |
+| RED-481 | `Pagué 25k de la comida de los voluntarios en la jornada de la facultad` | Quedan pendientes: Gasto $25.000 «comida» |  |
+| RED-482 | `Compré una cadena para la bici por 35k porque mañana salimos a rodar` | Quedan pendientes: Gasto $35.000 «cadena» |  |
+| RED-483 | `Fueron 12k de vasos y servilletas para el cumpleaños de Mateo` | Quedan pendientes: Gasto $12.000 «vasos» |  |
+| RED-484 | `Me tomé una aromática de 3k en la sala de estudio` | Quedan pendientes: Gasto $3.000 «aromatica» |  |
+| RED-485 | `Pagué 17k del almuerzo de la reunión del semillero` | Quedan pendientes: Gasto $17.000 «almuerzo» |  |
+
+## Ronda 4: liquidaciones habladas, cuadres y perdones
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-486 | `Ya le pasé por Nequi los 5k del queso a Faber` (antes: le debo 5000 a Faber por el queso) | Quedan pendientes: $5.000 en Nequi |  |
+| RED-487 | `Le di 10k en efectivo a Alejandro de lo de ayer, pero solo le debía 8k; me quedó debien...` (antes: le debo 8000 a Alejandro) | Pregunta antes de inventar o Quedan pendientes: $8.000 o Quedan pendientes: $10.000 o 2 movimientos: $8.000, $2.000 |  |
+| RED-488 | `Cuadramos con Jorge: yo le debía 15k y hoy pagué su almuerzo de 12k, ya solo le debo 3k` (antes: le debo 15000 a Jorge) | Nunca gasto ni ingreso: si no hay tarjeta, pregunta o explica | Se compensa: no sale ni entra efectivo. |
+| RED-489 | `Perdóname los 2k del pasaje que me debías` | Nunca gasto ni ingreso: si no hay tarjeta, pregunta o explica | Perdonar una deuda no mueve plata: se explica o se pregunta. |
+| RED-490 | `Le transferí 20k a Karla por lo del aseo de la casa` | Quedan pendientes: $20.000 o Pregunta antes de inventar |  |
+| RED-491 | `Pipe ya me devolvió los 12 mil que le había prestado pa' la gasolina` (antes: le presté 12000 a Pipe) | Quedan pendientes: $12.000 |  |
+| RED-492 | `Laura me debía 18k, me dio 10 en efectivo y quedamos en que después me pasa los otros 8` (antes: le presté 18000 a Laura) | Quedan pendientes: $10.000 o Pregunta antes de inventar |  |
+| RED-493 | `Ayer le debía 9k a David, hoy le compré un almuerzo de 9 y quedamos a paz` (antes: le debo 9000 a David) | Nunca gasto ni ingreso: si no hay tarjeta, pregunta o explica |  |
+| RED-494 | `Sofía me debía 7k y me dio 10; esos 3 de más se los dejo abonados pa' la próxima` (antes: le presté 7000 a Sofía) | Pregunta antes de inventar o Quedan pendientes: $10.000 o Quedan pendientes: $7.000 |  |
+| RED-495 | `Le pasé 15k a Mateo, pero eran 12 de lo que le debía; los otros 3 son pa' la próxima sa...` (antes: le debo 12000 a Mateo) | Pregunta antes de inventar o Quedan pendientes: $15.000 o Quedan pendientes: $12.000 |  |
+| RED-496 | `Karla me dijo que dejáramos así los 5k que le debía del jabón` (antes: le debo 5000 a Karla por el jabón) | Nunca gasto ni ingreso: si no hay tarjeta, pregunta o explica |  |
+| RED-497 | `Le mandé 8k a Faber por lo de las copias, ya quedamos al día` (antes: le debo 8000 a Faber por las copias) | Quedan pendientes: $8.000 |  |
+| RED-498 | `David me debía 20k, me compró el almuerzo de 13 y me dio 7 en Nequi; con eso quedó listo` (antes: le presté 20000 a David) | Nunca gasto: si no hay tarjeta, pregunta o explica |  |
+| RED-499 | `De los 30k que le debía a Paula, le aboné 10 ayer y hoy otros 5; me faltan 15` (antes: le debo 30000 a Paula) | 2 movimientos: $10.000, $5.000 o Pregunta antes de inventar |  |
+| RED-500 | `Ya cuadré con Alejandro: yo le debía 12k, él me debía 9k y le mandé solo 3 por Nequi; q...` (antes: le debo 12000 a Alejandro; le presté 9000 a Alejandro) | Pregunta antes de inventar o Quedan pendientes: $3.000 en Nequi |  |

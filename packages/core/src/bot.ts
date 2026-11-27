@@ -41,6 +41,7 @@ import { narrar } from './narrativa.ts';
 import { leerNotificacionBancaria } from './banco.ts';
 import { incertidumbre } from './incertidumbre.ts';
 import { cruzado } from './cruzados.ts';
+import { hablada } from './habladas.ts';
 import { descendientes, leerSubcategorias, MAX_NIVELES, puedeIrDentro } from './subcategorias.ts';
 import { leerMetas, textoAvance, textoMetas, totalApartado, type Meta } from './metas.ts';
 import { describirFrecuencia, leerPausa, leerRecurrentes, type Frecuencia, type Recurrente } from './recurrentes.ts';
@@ -333,7 +334,7 @@ class Motor {
     // un párrafo que cuenta varias cosas se rearma en frases de un movimiento cada una (ver narrativa.ts)
     const narradas = banco ? null : narrar(texto, this.nombresDeCuentas());
     if (narradas?.length === 1) texto = narradas[0];
-    const todas = banco ? banco.frases : narradas ? narradas : !/[\n;]/.test(texto) && (incertidumbre(texto) || cruzado(texto)) ? [texto] : dividirTodo(texto, this.nombresDeCuentas());
+    const todas = banco ? banco.frases : narradas ? narradas : hablada(texto) || (!/[\n;]/.test(texto) && (incertidumbre(texto) || cruzado(texto))) ? [texto] : dividirTodo(texto, this.nombresDeCuentas());
     const partes = todas.slice(0, MAX_MOVIMIENTOS_POR_MENSAJE);
 
     // Un movimiento nuevo con una tarjeta sin confirmar: no se reemplaza en silencio. La nueva queda en la cola
