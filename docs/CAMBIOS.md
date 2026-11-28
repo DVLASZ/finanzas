@@ -6,6 +6,9 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-27
 
+- La prueba de pantalla cubre pausar y reanudar un tope, pasar movimientos de categoría y archivarla (también en el celular).
+- La ayuda guiada explica traslados y retiros con comisión, la tarjeta de crédito y el pegado de alertas y recibos; la guía de usuario lo recoge con ejemplos.
+- `instalar actualizar` acepta `--ver` (muestra el SQL sin tocar la base) y `--sin-config` (no pone la config del `.json`).
 - La batería llega a 1.000 casos y todos pasan (ronda 7, parte 3).
 - Varias operaciones enredadas en una frase se proponen por separado con un botón; una cuenta seguida de una pregunta pregunta si anota primero lo que pasó.
 - Cola: corregir por monto o concepto («los 15 de gasolina eran 12»); las preguntas de totales avisan lo que está sin confirmar.

@@ -308,7 +308,35 @@ Esto no es gasto ni ingreso, solo plata que cambia de lugar.
 cambio 50k efectivo a nequi
 saqué 20k de nequi
 pasé 30000 de nequi a efectivo
+consigné 90 mil en bancolombia
 ```
+
+Sacar del cajero y consignar son lo mismo: plata que cambia de lugar. No suben tus gastos ni tus ingresos. Si el banco te cobró por usar el cajero, dilo en la misma frase y la comisión queda aparte, en Costos del banco:
+
+```
+saqué 100 mil de bancolombia y me cobraron 4 mil por usar el cajero
+```
+
+El 4x1000 no lo calcula la app: dime cuánto fue. Si no dices de cuál a cuál cuenta, la app te pregunta. Y si la transferencia está pendiente o rechazada, no la anota hasta que salga.
+
+### Tarjeta de crédito
+
+La tarjeta se lleva como una persona llamada Tarjeta. Créala una sola vez:
+
+```
+agregar persona Tarjeta
+```
+
+Después, lo que compras con ella es una deuda con la tarjeta, y cuando la pagas la deuda baja:
+
+```
+compré unos audífonos de 240k con la tarjeta
+aboné 150k a la tarjeta desde nequi
+me cobraron 18k de intereses de la tarjeta
+cuánto debo de la tarjeta
+```
+
+Las cuotas las entiende, pero no las lleva: la deuda queda completa. Si todavía no creaste la persona Tarjeta, la app te pregunta con cuál cuenta pagaste y te recuerda agregarla.
 
 ### Varios movimientos en una sola frase
 
@@ -412,6 +440,18 @@ Escáner del chat, para anotar a partir de un comprobante:
 3. La app lee el monto y deja una tarjeta lista para que la confirmes. Si lee mal, corrígela como cualquier tarjeta.
 
 Dónde queda la foto, con honestidad: la app la reduce de tamaño y guarda una copia en tu celular y otra en tu propia base de Cloudflare. No se publica en ningún lado. Como la app guarda su propia copia, puedes borrar la foto de tu galería si quieres liberar espacio.
+
+### Pegar alertas del banco y recibos
+
+En vez de escribir, copia la notificación del banco y pégala en el chat (o toca "Pegar alerta"). Sirve con Nequi, Bancolombia, Daviplata y Banco de Bogotá, aunque venga en varias líneas.
+
+1. Copia el mensaje del banco tal cual.
+2. Pégalo en el chat y envíalo.
+3. La app saca el monto de la operación (no los saldos), si pagaste o te llegó plata, la cuenta, la fecha y la hora. Revisa la tarjeta y toca Confirmar.
+
+Si la alerta dice que la operación fue rechazada o sigue pendiente, no se anota y la app te avisa. Cuando llegue la confirmación se anota una sola vez.
+
+Con un recibo o una tirilla pegada como texto pasa algo parecido: se anota un solo gasto por lo que de verdad pagaste. El subtotal, el IVA, el descuento y el cambio no se suman. Si hay dos totales distintos, la app te pregunta cuál fue.
 
 ### Hablarle por voz
 
@@ -576,7 +616,11 @@ tope mecato 60000
 quitar tope mecato
 ```
 
-También se ven y se cambian en Más, "Categorías y personas": cada categoría muestra su tope o dice "Sin tope".
+También se ven y se cambian en Más, "Categorías y personas": cada categoría muestra su tope o dice "Sin tope". Ahí mismo tienes tres botones más:
+
+- Pausar tope: el tope deja de avisar y de contar, pero no se borra. Con "Reanudar tope" vuelve con el mismo monto.
+- Pasar movimientos: eliges otra categoría y todos los movimientos de esta se pasan allá. Los de un mes cerrado no se tocan.
+- Archivar categoría: deja de salir en listas y selectores. Sus movimientos no cambian y siguen contando en los reportes. Si tiene subcategorías, archiva primero esas.
 
 ### Subcategorías
 
