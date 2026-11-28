@@ -6,6 +6,8 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-27
 
+- Ronda 8, parte 2: la batería llega a 1.100 casos. Nueva capa `typosMovil.ts` para el teclado del celular: palabras pegadas («gaste15mil»), autocorrector («neki», «targeta», «resivo»), dudas que se preguntan («mkl», «mecsto», «quitas», «una playa de 50k») y plata en custodia como deuda. «Playa» nunca se cambia por «plata».
+
 - Ronda 8, parte 1: la batería llega a 1.050 casos. Las dudas de uso («cómo lo anoto», «dónde veo», «puedo pegar...») se explican sin anotar nada, aunque traigan montos; hay temas nuevos de ayuda para custodia, cuotas, reversos, deudas, transferencias, casa y asociación, exportar y facturas sin pagar.
 
 - `instalar actualizar --con-tarjeta` agrega la persona «Tarjeta» sin duplicar ni pisar nada.

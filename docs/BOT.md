@@ -711,6 +711,10 @@ Pega la alerta tal cual, aunque venga en varias líneas («Valor:», «Comercio:
 
 Una frase que pregunta cómo se hace algo («cómo anoto...», «dónde veo...», «puedo pegar el mensaje del banco», «si me llegó una factura la registro») se contesta con una explicación y ejemplos para tocar. Nunca saca tarjeta de confirmación ni guarda nada, aunque traiga montos («anoté 80 mil pero eran 18 mil, cómo lo arreglo»). Lo dicho «como siempre» o «como quedamos» no es una duda. Los temas cubren plata de otra persona (custodia), compras a cuotas y pago de la tarjeta, corregir o borrar, ver deudas, compartidos, traslados y retiros, alertas y recibos, topes, sacar datos y la casa frente a la asociación. Detalle en [ARQUITECTURA-BOT.md](ARQUITECTURA-BOT.md), Ronda 8.
 
+## Errores del teclado del celular
+
+El bot arregla lo que hace el teclado antes de leer el mensaje (`typosMovil.ts`). Palabras pegadas: «gaste15mil en almuerzo», «nequi50mil a Jorge», «compre2cafesde3mil», «Jorgemedebe60mil», «almuerzo18k taxi9k». Palabras que no existen y se corrigen solas: «neki», «dabiplata», «targeta», «efecivo», «tranferencia», «resivo de la lus», «trasporte», «enerjia», «farmasia», «parquedero». Lo dudoso se pregunta con un botón y no se adivina: «25 mkl», «mecsto», «6 quitas de 150 mil» (seis cuotas, por el total) y «me giraron una playa de 50k». «Playa» nunca se cambia por «plata»: «gasté 80 mil en la playa» queda como gasto en la playa. Plata que te mandan «pa que se los guarde» no es un ingreso: queda como deuda con quien la dejó. «Le mandé 30 lukas por Nequi a Jorge» sin decir para qué pregunta si fue un pago, un préstamo o lo que él te pagó.
+
 ## Lo que el bot no hace
 
 - No borra nada, solo anula.
