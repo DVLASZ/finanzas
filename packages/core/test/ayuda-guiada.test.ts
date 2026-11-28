@@ -67,8 +67,8 @@ test('ayuda guiada: {cuenta} se cambia por una cuenta de la app', () => {
   assert.ok(!r.ejemplos.some(e => e.includes('{')));
 });
 
-// «Sofia» solo se entiende en el bot (muestra la tarjeta de la persona), no en el intérprete.
-const EJEMPLOS_PENDIENTES = new Set(['Sofia']);
+// «Sofia» y «pausar tope» solo se entienden en el bot (la tarjeta de la persona, el tope en pausa), no en el intérprete.
+const EJEMPLOS_PENDIENTES = new Set(['Sofia', 'pausar tope mercado']);
 
 test('ayuda guiada: cada ejemplo que da es una frase que el bot entiende', () => {
   for (const t of TEMAS_AYUDA) {

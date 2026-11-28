@@ -1,6 +1,6 @@
-# Batería adversarial del bot (RED-001 a RED-1000)
+# Batería adversarial del bot (RED-001 a RED-1050)
 
-Estas son las 1000 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
+Estas son las 1050 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
 
 ```bash
 node --test packages/core/test/red-team.test.ts
@@ -1246,3 +1246,58 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-998 | `El lunes pagué 55 mil de gasolina y 30 de comida.  //  La comida fue el martes.  //  La...` | Quedan pendientes: $50.000; $30.000 o Pregunta |  |
 | RED-999 | `Mandé 120 mil a Faber y me cobraron 2 mil de comisión.  //  Eso era para abonarle al pr...` | Quedan pendientes: $100.000 o Pregunta |  |
 | RED-1000 | `Saqué 300 mil del cajero y me cobraron 5 mil de comisión. Pagué 90 mil de mercado entre...` | Pregunta o  | Sin saber qué salió del retiro ni cómo se entregó el préstamo, no calcula el efectivo: pregunta o recuerda confirmar. |
+
+## Ronda 8: autoayuda, dudas de uso que no deben anotar nada
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-1001 | `Si me giraron una playa que no es mía como registro` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «custodia» y «entreg» o «terceros» | «playa» es «plata» mal escrito. |
+| RED-1002 | `Cómo anoto una plata que me dieron pa guardársela a mi hermana` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «custodia» y «guard» o «devolv» |  |
+| RED-1003 | `Si me consignan plata para que yo se la pase a alguien cómo hago` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «custodia» y «entreg» |  |
+| RED-1004 | `Cómo hago pa que el saldo que me mandaron no me aparezca como plata mía` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «custodia» o «terceros» y «ingreso» o «propi» o «mia» |  |
+| RED-1005 | `Y cuando le devuelva esa plata cómo la saco de ahí` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «devol» y «custodia» |  |
+| RED-1006 | `Si me gasté una parte de la plata que era para guardar cómo lo anoto` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «custodia» y «pendiente» o «quedan» |  |
+| RED-1007 | `Cómo anoto una consignación que me hicieron pa darle esa plata a Mamá` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «custodia» y «entreg» |  |
+| RED-1008 | `La asociación me mandó plata pa tenerla mientras pagan unas cosas cómo la meto` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «asociacion» y «custodia» o «administr» |  |
+| RED-1009 | `Me dejaron una plata encargada pero no sé cuándo la devuelvo qué hago` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «custodia» y «pendiente» |  |
+| RED-1010 | `Me mandaron plata pa pagar un recibo de otra persona cómo lo pongo` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «custodia» y «recibo» |  |
+| RED-1011 | `Cómo registro un celular que compré a 12 cuotas con tarjeta` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «cuotas» y «12» o «total» |  |
+| RED-1012 | `Si compré algo a seis cuotas sin intereses cómo lo anoto` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «cuotas» y «sin interes» |  |
+| RED-1013 | `Cómo pongo una compra a cuotas que sí tiene intereses` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «interes» y «cuotas» |  |
+| RED-1014 | `Cómo registro cuando pago la tarjeta de crédito` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «abono» o «abon» y «tarjeta» |  |
+| RED-1015 | `Si solo pagué el mínimo de la tarjeta cómo lo anoto` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «minimo» y «pendiente» o «saldo» o «queda» |  |
+| RED-1016 | `Pagué la tarjeta con plata de Nequi cómo hago pa que no me cuente doble` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «abon» y «nequi» y «doble» o «duplic» o «gasto» |  |
+| RED-1017 | `Di una cuota inicial y lo demás lo dejé a cuotas con la tarjeta cómo lo registro` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «inicial» y «financi» o «cuotas» |  |
+| RED-1018 | `Cómo corrijo una compra que devolví y el banco me reversó` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «revers» o «devoluc» y «compra» |  |
+| RED-1019 | `Anoté 80 mil pero eran 18 mil cómo lo arreglo` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «edit» o «corrig» y «monto» |  |
+| RED-1020 | `Puse gasolina como mercado y quiero cambiarlo` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «edit» o «cambi» y «categoria» |  |
+| RED-1021 | `Cómo borro algo que anoté por error` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «anul» o «elimin» o «borr» y «movimiento» |  |
+| RED-1022 | `Le puse la fecha de hoy a un gasto que fue ayer cómo la cambio` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «fecha» y «edit» o «cambi» |  |
+| RED-1023 | `Anoté que pagué en efectivo pero fue con Nequi cómo lo cambio` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «nequi» y «edit» o «cambi» |  |
+| RED-1024 | `Cómo miro cuánto me debe Jorge` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «me deben» o «me debe» o «deudas» y «jorge» o «nombre» o «persona» |  |
+| RED-1025 | `Dónde veo cuánto le debo a Laura` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «le debo» o «deudas» y «laura» o «nombre» o «persona» |  |
+| RED-1026 | `Cómo veo todos los préstamos que le he hecho a Faber` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «prestamo» o «deudas» y «faber» o «nombre» o «persona» |  |
+| RED-1027 | `Si alguien me va pagando de a poquitos cómo lo anoto` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «abon» y «deuda» o «prestamo» |  |
+| RED-1028 | `Cómo anoto la plata que me prestó Alejandro` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «debo» o «deuda» y «prest» |  |
+| RED-1029 | `Y si yo le presto plata a Daniel dónde lo pongo` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «prest» y «por cobrar» o «me debe» o «deuda» |  |
+| RED-1030 | `Cómo anoto una cuenta que pagué yo pero era entre tres` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «entre» y «parte» |  |
+| RED-1031 | `Si Laura me devolvió solo una parte de lo que puse cómo lo anoto` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «abon» o «parcial» y «debe» o «deuda» |  |
+| RED-1032 | `Cómo anoto si cada uno puso su parte antes de comprar` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «aport» o «parte» y «compartido» o «compra» |  |
+| RED-1033 | `Si Mamá pagó el mercado pero era para la casa cómo lo pongo` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «mama» y «casa» o «hogar» |  |
+| RED-1034 | `Cómo paso plata de Bancolombia a Nequi sin que me salga como gasto` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «no es gasto» o «no es un gasto» o «no cuenta» y «nequi» |  |
+| RED-1035 | `Cuando saco plata del cajero cómo lo pongo para que no sea un gasto` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «cajero» y «no es gasto» o «no es un gasto» o «cambia donde» |  |
+| RED-1036 | `Y si el cajero me cobra una comisión cómo la anoto` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «comision» y «aparte» o «gasto» |  |
+| RED-1037 | `Cómo registro que le mandé plata a Jorge por Nequi` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «nequi» y «jorge» o «persona» o «prest» o «pago» |  |
+| RED-1038 | `Cómo pongo que Laura me mandó plata por Bancolombia` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «recib» o «ingreso» o «me pago» o «me mando» y «laura» o «persona» o «motivo» |  |
+| RED-1039 | `Puedo copiar el mensaje que me llega del banco y pegarlo aquí` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «pegar» o «pega» y «alerta» o «notificacion» o «mensaje» |  |
+| RED-1040 | `Si pego dos veces la misma notificación me cuenta doble` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «una sola vez» o «duplic» o «repet» o «doble» y «referencia» o «alerta» o «notificacion» |  |
+| RED-1041 | `Puedo mandar el texto de una factura para que me saque el gasto` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «recibo» o «factura» o «tirilla» y «pegar» o «pega» |  |
+| RED-1042 | `Cómo pongo una cuenta que tiene propina aparte` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «propina» |  |
+| RED-1043 | `Si me llegó una factura pero todavía no la he pagado la registro` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «pendiente» o «por pagar» y «pago fijo» o «no es gasto» o «todavia no» |  |
+| RED-1044 | `Cómo pauso un tope de gastos sin borrarlo` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «paus» y «tope» |  |
+| RED-1045 | `Cómo le subo el límite a mercado de 400 a 500 mil` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «tope» y «mercado» o «500» |  |
+| RED-1046 | `Cómo miro cuánto me queda del presupuesto de comida` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «tope» o «presupuesto» y «queda» o «llevo» |  |
+| RED-1047 | `Cómo saco mis gastos a Excel pa guardarlos` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «export» y «excel» o «csv» |  |
+| RED-1048 | `Cómo saco un informe de los movimientos de la Asociación` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «export» o «informe» y «asociacion» |  |
+| RED-1049 | `Cómo miro cuánta plata en efectivo me queda después de los retiros y compras` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «efectivo» y «saldo» |  |
+| RED-1050 | `Cómo cambio de mis gastos de la casa a los de la Asociación sin revolverlos` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «asociacion» y «casa» o «hogar» o «separad» |  |

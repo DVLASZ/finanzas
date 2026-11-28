@@ -716,6 +716,21 @@ para qué sirve esto
 
 Te responde ahí mismo, en la conversación, con una explicación corta y botones con ejemplos. Toca un ejemplo y queda escrito en el cuadro: cámbiale lo que haga falta y envíalo. También puedes escribir `ayuda` para ver los temas, o ir a Más y luego "Ayuda", donde está el cuadro "Pregúntale cómo decirlo".
 
+Las dudas sobre qué hacer en casos de todos los días también se contestan, sin anotar nada aunque menciones montos:
+
+```
+si me giraron plata que no es mía cómo la registro
+cómo registro un celular que compré a 12 cuotas con tarjeta
+cómo pago la tarjeta sin que me cuente doble
+anoté 80 mil pero eran 18 mil, cómo lo arreglo
+dónde veo cuánto le debo a Laura
+puedo pegar el mensaje del banco
+cómo pauso un tope sin borrarlo
+cómo saco mis gastos a Excel
+```
+
+Un ejemplo de lo que explica: la plata que te dan para guardar o entregar a otra persona no es tuya. Se anota como plata que le debes a quien te la dejó, para que no suba tus ingresos, y cuando la entregas o la devuelves lo anotas como pago de esa deuda.
+
 ### Si algo falla
 
 Pasa a veces, y lo que más ayuda es poder repetirlo. Cuando encuentres un error, o algo que el bot no entendió, abre un Issue en GitHub: entra a la página del repositorio, toca "Issues" y luego "New issue". Escribe esto:

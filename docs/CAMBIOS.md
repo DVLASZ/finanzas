@@ -6,6 +6,8 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-27
 
+- Ronda 8, parte 1: la batería llega a 1.050 casos. Las dudas de uso («cómo lo anoto», «dónde veo», «puedo pegar...») se explican sin anotar nada, aunque traigan montos; hay temas nuevos de ayuda para custodia, cuotas, reversos, deudas, transferencias, casa y asociación, exportar y facturas sin pagar.
+
 - `instalar actualizar --con-tarjeta` agrega la persona «Tarjeta» sin duplicar ni pisar nada.
 
 - La prueba de pantalla cubre pausar y reanudar un tope, pasar movimientos de categoría y archivarla (también en el celular).

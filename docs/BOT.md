@@ -707,6 +707,10 @@ Pega la alerta tal cual, aunque venga en varias líneas («Valor:», «Comercio:
 - Con movimientos sin confirmar, las preguntas de totales te lo dicen: lo que no confirmas no cuenta.
 - Con varios movimientos en la cola puedes corregir uno por su monto o su concepto: «los 15 de gasolina eran 12», «el tinto era de 3 mil, no de 8», «borra el bus».
 
+## Dudas de uso: el bot explica y no anota
+
+Una frase que pregunta cómo se hace algo («cómo anoto...», «dónde veo...», «puedo pegar el mensaje del banco», «si me llegó una factura la registro») se contesta con una explicación y ejemplos para tocar. Nunca saca tarjeta de confirmación ni guarda nada, aunque traiga montos («anoté 80 mil pero eran 18 mil, cómo lo arreglo»). Lo dicho «como siempre» o «como quedamos» no es una duda. Los temas cubren plata de otra persona (custodia), compras a cuotas y pago de la tarjeta, corregir o borrar, ver deudas, compartidos, traslados y retiros, alertas y recibos, topes, sacar datos y la casa frente a la asociación. Detalle en [ARQUITECTURA-BOT.md](ARQUITECTURA-BOT.md), Ronda 8.
+
 ## Lo que el bot no hace
 
 - No borra nada, solo anula.
