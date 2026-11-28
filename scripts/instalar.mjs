@@ -8,6 +8,7 @@
 //   npm run instalar -- publicar <nombre>   Vuelve a compilar y publicar (después de cambiar el código).
 //   npm run instalar -- actualizar <nombre> Pone en la base ya publicada lo nuevo de la plantilla (categorías, palabras)
 //                                           y lo de instalaciones/<nombre>.json. No borra ni pisa lo que ya hay.
+//                                           Con --ver solo escribe y muestra el SQL; con --sin-config no pone la config del .json.
 //
 // Lo propio de cada persona vive en instalaciones/<nombre>.json (no se sube a git). Ejemplo:
 // scripts/instalacion-ejemplo.json.
@@ -151,9 +152,12 @@ async function actualizar() {
   preparar();
   const lineas = sqlDePlantilla(cfg.plantilla, cfg).split('\n').filter(Boolean).map(l => l.replace(/^INSERT INTO /, 'INSERT OR IGNORE INTO '));
   const q = v => `'${String(v).replaceAll("'", "''")}'`;
-  for (const [clave, valor] of Object.entries(cfg.config ?? {})) lineas.push(`INSERT OR REPLACE INTO config (clave, valor) VALUES (${q(clave)}, ${q(valor)});`);
+  // --sin-config: solo lo nuevo de la plantilla; la config del .json no se toca (es lo que pisaría ajustes hechos en la app)
+  if (!process.argv.includes('--sin-config')) for (const [clave, valor] of Object.entries(cfg.config ?? {})) lineas.push(`INSERT OR REPLACE INTO config (clave, valor) VALUES (${q(clave)}, ${q(valor)});`);
   const sql = join(carpeta, 'actualizar.sql');
   writeFileSync(sql, lineas.join('\n') + '\n', 'utf8');
+  // --ver: deja el SQL escrito y lo muestra, sin tocar la base
+  if (process.argv.includes('--ver')) { console.log(lineas.join('\n')); console.log(`\n${lineas.length} sentencias en ${sql}. No toqué la base.`); return; }
   await confirmar(`Agrego lo nuevo de la plantilla a la base «${cfg.base}» (${lineas.length} sentencias, sin borrar nada). ¿Sigo?`);
   const r = wrangler(['d1', 'execute', cfg.base, '--remote', '--file', sql, '--config', toml], { stdio: 'inherit' });
   if (r.status !== 0) throw new Error('Falló la actualización.');

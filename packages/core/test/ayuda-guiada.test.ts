@@ -28,6 +28,10 @@ const DUDAS: [string, string][] = [
   ['anotar una persona', 'Personas'],
   ['pausar el arriendo', 'Pausar o cancelar un pago fijo'],
   ['hago un abono', 'Abono parcial'],
+  ['cómo anoto una compra con la tarjeta de crédito', 'Tarjeta de crédito'],
+  ['cómo pago la tarjeta', 'Tarjeta de crédito'],
+  ['cómo pego una alerta del banco', 'Alertas del banco y recibos'],
+  ['puedo pegar una tirilla', 'Alertas del banco y recibos'],
 ];
 
 for (const [duda, tema] of DUDAS) {

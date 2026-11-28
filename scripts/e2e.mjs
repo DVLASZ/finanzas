@@ -1015,6 +1015,30 @@ try {
     } else { throw new Error('ningún almuerzo de la lista es compartido'); }
     await pag.evaluate(() => document.querySelector('#cerrar')?.click()); await espera(300);
   });
+  await prueba('categorías: pausar y reanudar un tope, pasar movimientos a otra categoría y archivarla', async () => {
+    await irA('Chat'); await escribir('tope mecato 60000');
+    if ((await pag.evaluate(() => [...document.querySelectorAll('button')].some(b => b.innerText.trim() === 'Confirmar')))) await pulsar('Confirmar');
+    await abrirDeMas('Categorías y personas');
+    // la ficha de Mecato, por su título exacto
+    const ficha = (sel) => pag.evaluate(s => { const li = [...document.querySelectorAll('li.ficha')].find(x => x.querySelector('.titulo')?.innerText.trim() === 'Mecato'); const b = li?.querySelector(s); b?.click(); return Boolean(b); }, sel);
+    const textoFicha = () => pag.evaluate(() => [...document.querySelectorAll('li.ficha')].find(x => x.querySelector('.titulo')?.innerText.trim() === 'Mecato')?.innerText.replace(/\s+/g, ' ') ?? '');
+    contiene(await textoFicha(), 'Pausar tope', 'el botón de pausa sale si hay tope');
+    igual(await ficha('[data-pausar-tope]'), true, 'pausar'); await espera(600);
+    contiene(await textoFicha(), 'En pausa', 'el tope queda en pausa'); contiene(await textoFicha(), 'Reanudar tope', 'ahora ofrece reanudar');
+    igual(await ficha('[data-pausar-tope]'), true, 'reanudar'); await espera(600);
+    contiene(await textoFicha(), 'Pausar tope', 'el tope volvió a estar activo');
+    // pasar los movimientos: elegir destino en la hoja y confirmar
+    igual(await ficha('[data-pasar-movimientos]'), true, 'pasar movimientos'); await espera(500);
+    igual(await pag.evaluate(() => { const o = [...document.querySelectorAll('[role=option]')].find(x => x.innerText.trim() === 'Transporte'); o?.click(); return Boolean(o); }), true, 'destino Transporte'); await espera(600);
+    await pulsar('Sí, pasarlos');
+    contiene(await pag.evaluate(() => document.body.innerText), 'Pasé', 'avisa cuántos pasó'); await pulsar('Entendido').catch(() => pulsar('Aceptar')).catch(() => {});
+    await espera(500);
+    igual(await ficha('[data-pasar-movimientos]'), false, 'ya no quedan movimientos que pasar');
+    // archivar: sale de la lista de categorías activas
+    igual(await ficha('[data-archivar-categoria]'), true, 'archivar'); await espera(500);
+    await pulsar('Sí, archivar');
+    igual((await textoFicha()), '', 'la categoría archivada ya no sale entre las activas');
+  });
   await prueba('la política de contenido no bloqueó nada en toda la visita', async () => igual(bloqueos.join(' | '), '', 'bloqueos de la política de contenido'));
   await prueba('ningún cuadro del navegador salió en toda la visita', async () => igual(nativos, 0, 'cuadros nativos'));
   await prueba('sin errores de JavaScript en toda la visita', async () => igual(errores.join(' | '), '', 'errores'));
