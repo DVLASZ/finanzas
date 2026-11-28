@@ -840,6 +840,21 @@ Cincuenta dudas de uso dichas como las dice la gente («si me giraron una playa 
 3. **Lo que la app no tiene se dice sin inventarlo**: no hay un tipo «custodia» (se usa la deuda), no se llevan las cuotas, la casa y la asociación son apps separadas y no se mueven movimientos entre ellas, y la alerta repetida se detecta solo mientras la app está abierta.
 4. **El orden de los temas desempata**: los nuevos van primero. Dos choques salieron en las pruebas: «guardo» (comprobantes) contra «guardar» (custodia), y «recibo» (comprobantes) contra el recibo pegado (alertas); se resolvieron quitando la raíz compartida de uno de los dos.
 
+### Ronda 8, parte 2: typos de teclado táctil y autocorrector móvil (RED-1051 a RED-1100)
+
+Cincuenta frases como las deja el teclado del celular («gaste15mil», «nequi50mil a Jorge», «neki», «targeta», «resivo de la lus», «mkl», «una playa de 50k»). La batería llega a **1.100 de 1.100**. Línea base: 29 de 50.
+
+1. **`typosMovil.ts` corre primero**, justo después de `sanitizar.ts` y antes de la pausa pendiente, los topes y todo lo demás (`alEscribir`). Solo mira frases sueltas: más de 200 caracteres o varias líneas pasan intactas, así que una alerta del banco con su referencia no se toca. Devuelve el texto limpio o una pregunta con botones.
+2. **Palabras pegadas**: solo se parte una palabra que trae cifra y unidad (`k`, `mil`, `lucas`, `palos`, `millón`) pegadas a letras. Las letras se parten con el vocabulario de la instalación (`conoceLaPalabra` en `fuzzy.ts`: categorías, cuentas, personas, lo aprendido) más palabras de función, y se permite una sola palabra desconocida de tres letras o más («cafesde» es «cafes» y «de»). Si no se puede cubrir entera, la palabra queda como estaba. `ref12345abc` o `iphone15` no se tocan.
+3. **Correcciones seguras**: solo palabras que no existen en español (`neki`, `dabiplata`, `targeta`, `efecivo`, `trsnferencia`, `resivo`, `lus`, `enerjia`, `farmasia`, `parquedero`, `natual`, `asosiasion`, `comuda`, `serca`, `yego`). `marcado` pasa a `mercado` solo después de «en», «de», «del» o «el»; `consigno` pasa a `consignó` solo después de «me».
+4. **Lo dudoso se pregunta**: `mkl`, `mok`, `mli` junto a un número (¿«mil»?), `mecsto`, «6 quitas de 150 mil» (seis cuotas, total $900.000, se anota por el total) y «me giraron una playa de 50k». «Playa de comida» también pregunta si fue un gasto de comida o en una playa.
+5. **«Playa» no se cambia nunca por «plata»**: «gasté 80 mil en la playa» y «un almuerzo en la playa» pasan literales y salen como gasto con ese concepto. Solo se pregunta cuando suena a plata que llegó.
+6. **Plata en custodia**: «Mamá me mandó 200 mil pa que se los guarde» (o «para guardar», «entregar», «pagar unos recibos») se reescribe a «me prestó Mamá 200 mil»: una deuda con quien la dejó, no un ingreso. En una frase con varios eventos solo se cambia ese trozo y el resto sigue («..., después gasté 20 mil en la playa y le devolví 30 mil a Mamá» da tres tarjetas).
+7. **Plata con una persona sin decir para qué**: «le mandé 30 lukas por Nequi a Jorge», «transferencia de 100k a Laura», «nequi 50 mil a Jorge», «me llegó una transferencia de 120 mil de Diana» preguntan qué fue (pago, préstamo, «me pagó», ingreso) en vez de anotar un gasto. «Le pasé 30k a Sofía» no entra aquí: sigue siendo el regalo de siempre (RED-529). Con un motivo («para el mercado») tampoco.
+8. **Dos cosas más**: «2 millones 300» y «2 millones 300 mil» son 2.300.000, y «saqué 100 mil cajero» sin «del» es el retiro de siempre.
+
+Expectativas ajustadas, con su nota en el caso: RED-1053 acepta la deuda con Tarjeta (con la persona creada, «con tarjeta» es la de crédito); RED-1055, 1063 y 1099 aceptan que pregunte (no hay categoría Mercado en la plantilla del arnés, y sin saber quién prestó no se inventa); RED-1077 parte de una compra con la tarjeta, porque sin deuda no hay qué pagar.
+
 ## 9. Cómo probarlo
 
 El núcleo corre en Node sin red y sin navegador. `MemoriaRepo` guarda todo en memoria y `tests/ayudas.ts` trae un bot listo con el reloj fijo:

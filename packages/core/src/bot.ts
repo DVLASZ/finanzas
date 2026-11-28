@@ -71,6 +71,7 @@ const EJEMPLOS_RECURRENTES: Record<Frecuencia, string> = {
   anual: 'Ejemplo: «cada año el 15 de marzo seguro 300000».',
 };
 import { limpiar, titulo } from './texto.ts';
+import { normalizarMovil } from './typosMovil.ts';
 import type { Contexto, Cuenta, Movimiento } from './tipos.ts';
 
 export interface Entrada {
@@ -279,6 +280,10 @@ class Motor {
     const san = sanitizarEntrada(texto);
     if (san.respuesta) return [{ texto: san.respuesta }];
     if (san.cambio) texto = san.texto;
+    // lo que hace el teclado del celular: palabras pegadas, autocorrector, plata dudosa (ver typosMovil.ts)
+    const movil = normalizarMovil(texto, this.ctx);
+    if (movil.pregunta) return [salidaDePregunta(this.repo, movil.pregunta.mensaje, movil.pregunta.opciones)];
+    texto = movil.texto;
     const t = limpiar(texto);
 
     // una pausa esperando respuesta: «ok»/«no» la resuelven; cualquier otra cosa la deja sin efecto

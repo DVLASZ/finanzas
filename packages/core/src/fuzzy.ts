@@ -132,6 +132,12 @@ function vocabulario(ctx: Contexto): Vocabulario {
 
 const esConocida = (w: string, v: Vocabulario): boolean => singulares(w).some(s => v.conocidas.has(s));
 
+/** ¿Es una palabra que esta instalación conoce (vocabulario, cuentas, personas, lo aprendido)? Sirve para partir palabras pegadas. */
+export function conoceLaPalabra(ctx: Contexto): (w: string) => boolean {
+  const v = vocabulario(ctx);
+  return w => esConocida(normalizar(w), v);
+}
+
 /** La palabra del vocabulario más cercana, o null si no hay una sola a la distancia permitida. */
 function candidata(w: string, v: Vocabulario): string | null {
   const tope = w.length >= 6 ? 2 : 1;
