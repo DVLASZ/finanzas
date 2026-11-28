@@ -8,8 +8,8 @@ import { test } from 'node:test';
 import { construirMovimiento, contextoDe, CUENTAS_INICIALES, interpretar, procesar, type Op } from '../../../packages/core/src/index.ts';
 import { D1Repo } from '../src/d1repo.ts';
 import worker, { avisarAlCelular, type Env } from '../src/index.ts';
-import { avisarFotos } from '../src/avisos.ts';
-import { aBase64Url, cabeceraVapid, cifrarAviso, crearLlavesVapid, deBase64Url, suscripcionValida, type Suscripcion } from '../src/push.ts';
+import { avisarFotos, avisarRecordatorio, mandarAviso } from '../src/avisos.ts';
+import { aBase64Url, AVISO_GENERICO, cabeceraVapid, cifrarAviso, crearLlavesVapid, deBase64Url, sinDatos, suscripcionValida, type Suscripcion } from '../src/push.ts';
 import { AHORA } from '../../../tests/ayudas.ts';
 import { crearD1 } from '../../../tests/d1-shim.ts';
 
@@ -215,7 +215,8 @@ test('push de la tarde: pregunta por la billetera si hubo movimientos hoy, y cal
     assert.deepEqual(await avisarAlCelular(env, seisPm, 'tarde'), { enviados: 1, quitados: 0 });
     const a = JSON.parse(textos[0]) as { titulo: string; cuerpo: string };
     assert.equal(a.titulo, 'Cuenta la billetera');
-    assert.match(a.cuerpo, /tienes \$95\.000 en efectivo/);
+    assert.match(a.cuerpo, /cuadrar la billetera/);
+    assert.doesNotMatch(a.cuerpo, /\d/, 'la pantalla de bloqueo no lleva cifras');
   });
 });
 
@@ -265,8 +266,8 @@ test('push: un giro que llega por el buzón avisa al celular', async () => {
       body: JSON.stringify({ de: 'Mamá', monto: 150000, concepto: 'Para el arriendo' }),
     }), env);
     assert.equal(r.status, 200);
-    assert.match(textos[0], /Aviso de Mamá/);
-    assert.match(textos[0], /\$150\.000 · Para el arriendo/);
+    assert.match(textos[0], /aviso en el buzón/);
+    assert.doesNotMatch(textos[0], /Mamá|150|arriendo/, 'ni quién, ni cuánto, ni para qué');
   });
 });
 
@@ -291,7 +292,8 @@ test('push: si el respaldo del domingo falla, se avisa; si está apagado, se cal
     }) as typeof fetch;
     try { await worker.scheduled({}, roto); } finally { globalThis.fetch = original; }
     assert.match(textos.join('\n'), /La copia de seguridad falló/);
-    assert.match(textos.join('\n'), /GitHub respondió 401/);
+    assert.match(textos.join('\n'), /copia de seguridad falló/);
+    assert.doesNotMatch(textos.join('\n'), /GitHub|401/, 'el motivo se ve dentro de la app, no en la pantalla de bloqueo');
   } finally { globalThis.Date = real; }
 });
 
@@ -326,7 +328,8 @@ test('push al momento: una meta de ahorro que llega a su valor avisa una vez', a
     assert.equal(textos.length, 0);
     await poner(100000);
     assert.equal(textos.length, 1);
-    assert.match(textos[0], /Llegaste a la meta Moto: \$100\.000 de \$100\.000/);
+    assert.match(textos[0], /Llegaste a una de tus metas/);
+    assert.doesNotMatch(textos[0], /Moto|100/, 'ni el nombre de la meta ni sus cifras');
     await poner(120000);
     assert.equal(textos.length, 1, 'ya se avisó');
     await poner(50000); await poner(100000);
@@ -345,7 +348,8 @@ test('push: las fotos que se acercan al límite avisan, como mucho una vez por s
     assert.equal(await avisarFotos(repo, AHORA, 1_000_000), false, 'poco peso: no avisa');
     assert.equal(textos.length, 0);
     assert.equal(await avisarFotos(repo, AHORA, 1000), true);
-    assert.match(textos[0], /Las fotos de recibos ya ocupan/);
+    assert.match(textos[0], /Las fotos de recibos se acercan al límite/);
+    assert.doesNotMatch(textos[0], /\d/);
     assert.equal(await avisarFotos(repo, new Date(AHORA.getTime() + 3 * 86400000), 1000), false, 'a los 3 días no repite');
     assert.equal(await avisarFotos(repo, new Date(AHORA.getTime() + 8 * 86400000), 1000), true, 'a los 8 días sí');
     assert.equal(textos.length, 2);
@@ -373,5 +377,34 @@ test('recordatorio de la noche: avisa en la media hora elegida si hoy no se anot
     assert.equal(await conHora('2026-10-21T00:01:00Z', textos), 1, 'a otra hora no manda más');
     await procesar(repo, { texto: 'mecato 5000' }, new Date('2026-10-21T00:30:00Z')); await procesar(repo, { boton: 'ok' }, new Date('2026-10-21T00:30:00Z'));
     assert.equal(await conHora('2026-10-21T01:31:00Z', textos), 1, 'si ya anotó hoy, calla');
+  });
+});
+
+// ---------------------------------------------------------------- lo que ve la pantalla de bloqueo
+
+test('push: sinDatos cambia por un aviso genérico cualquier texto con montos', () => {
+  for (const cuerpo of ['Superaste el tope: $95.000 de $80.000', 'Te quedan 95.000', 'Gastaste 40k en comida', 'Pagaste 3 mil']) {
+    assert.deepEqual(sinDatos({ titulo: 'Un aviso', cuerpo }), AVISO_GENERICO, cuerpo);
+  }
+  const bueno = { titulo: 'Un aviso de tus finanzas', cuerpo: 'Recordatorio de revisión semanal.' };
+  assert.deepEqual(sinDatos(bueno), bueno);
+});
+
+test('push: ningún aviso del Worker deja cifras ni nombres en la pantalla de bloqueo', async () => {
+  const env = entorno();
+  const c = celular();
+  await llamar(env, '/api/push/suscribir', { suscripcion: c.suscripcion });
+  await conAlerta(env);
+  await conAvisos(c, async textos => {
+    await avisarAlCelular(env, SIETE_DIAS);
+    const repo = new D1Repo(env.DB);
+    await avisarRecordatorio(repo, new Date(AHORA.getTime() + 8 * 3600000)).catch(() => false);
+    await mandarAviso(repo, { titulo: 'Prueba con \u0024100', cuerpo: 'Jorge te debe 50.000 de mercado' });
+    assert.ok(textos.length >= 1);
+    for (const t of textos) {
+      const a = JSON.parse(t) as { titulo: string; cuerpo: string };
+      assert.doesNotMatch(a.titulo + ' ' + a.cuerpo, /[$]|\d{2,}|Jorge|mercado|mecato/i, t);
+    }
+    assert.deepEqual(JSON.parse(textos[textos.length - 1]), AVISO_GENERICO, 'lo que trae cifras se cambia por el aviso genérico');
   });
 });

@@ -20,14 +20,16 @@ La app puede avisarte en el celular, aunque esté cerrada, cuando hay algo que m
 
 **Al momento:**
 
-- una meta de ahorro que llega a su valor («Llegaste a la meta Moto»), una vez; si baja y vuelve a llegar, otra vez
-- un giro que llega por el buzón de otra app (`Aviso de Mamá: $150.000`)
+- una meta de ahorro que llega a su valor («Llegaste a una de tus metas de ahorro», sin el nombre ni las cifras), una vez; si baja y vuelve a llegar, otra vez
+- un giro que llega por el buzón de otra app («Tienes un aviso en el buzón»; quién, cuánto y para qué se ven al abrir Más, Buzón)
 
 **Una vez por semana, si hace falta:** las fotos de recibos ocupan 3 GB o más de los 5 GB que da la base gratis.
 
 **Los domingos:** si la copia de seguridad en la nube falla, con el motivo.
 
 Los topes de gasto no mandan avisos al celular: solo salen como tarjeta dentro de Saldos y Resumen y en el chat al guardar un gasto.
+
+**Qué dice la pantalla de bloqueo.** Cualquiera que agarre el celular la ve, así que un aviso solo dice qué pasó: nunca montos, saldos, nombres de personas ni categorías («Recordatorio de revisión semanal», «Una de tus cuentas quedó en negativo», «Es hora de cuadrar la billetera del día»). El detalle está dentro de la app. Los textos viven en `TEXTO_GENERICO` (`apps/worker/src/avisos.ts`), y `enviarAviso` (`push.ts`) cambia por «Tienes un aviso» cualquier texto que traiga un `$`, una cifra de tres dígitos o «40k». El Service Worker (`sw.js`) hace la misma comprobación antes de mostrarlo. Lo vigilan las pruebas de `apps/worker/test/push.test.ts`.
 
 Si no hay nada, no manda nada. El aviso de «falta decir cuánta plata tienes» no se manda por aquí, solo sale dentro de la app.
 

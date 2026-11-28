@@ -4,7 +4,6 @@
  *   GET  /api/buzon/destinos a qué apps se puede avisar (solo los nombres)
  *   POST /api/buzon/enviar   esta app le avisa a otra
  */
-import { formatear } from '../../../../packages/core/src/index.ts';
 import { agregarAviso, destinosDe, enviarAlBuzon, leerAviso } from '../buzon.ts';
 import { mandarAviso } from '../avisos.ts';
 import { D1Repo } from '../d1repo.ts';
@@ -29,7 +28,7 @@ export async function buzonPublico(req: Request, url: URL, env: Env): Promise<Re
   const repo = new D1Repo(env.DB);
   await repo.setConfig('buzon', agregarAviso((await repo.cargar()).config, aviso));
   try {
-    await mandarAviso(repo, { titulo: `Aviso de ${aviso.de}`, cuerpo: `${aviso.de}: ${formatear(aviso.monto)}${aviso.concepto ? ` · ${aviso.concepto}` : ''}${aviso.propuesta ? ' (trae una propuesta para anotar)' : ''}. Míralo en Más, Buzón.` });
+    await mandarAviso(repo, { titulo: 'Tienes un aviso en el buzón', cuerpo: 'Alguien te mandó un aviso. Míralo en Más, Buzón.' });
   } catch (e) { console.error('avisos:', (e as Error).message); }
   return json({ ok: true });
 }
