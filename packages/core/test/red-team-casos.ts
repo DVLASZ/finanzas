@@ -1,5 +1,5 @@
 /**
- * Batería adversarial RED-001 a RED-147. Cada caso dice qué debe hacer el bot con una frase difícil. La misma lista alimenta
+ * Batería adversarial RED-001 a RED-1050. Cada caso dice qué debe hacer el bot con una frase difícil. La misma lista alimenta
  * la prueba (red-team.test.ts) y el documento docs/BATERIA-RED-TEAM.md (scripts/bateria-red-team.mjs).
  *
  * Las expectativas hablan de lo que se ve en la tarjeta: tipo, monto, cuenta y categoría. «NADA» es que no salga ninguna
@@ -56,6 +56,8 @@ const SIN = (...tipos: string[]): Esp => ({ t: 'sin', tipos });
 const ALTO: Esp = { t: 'alto' };
 const NOGASTO: Esp = { t: 'nogasto' };
 const FLUJO = (id: string): Esp => ({ t: 'flujo', id });
+/** Una duda de uso: sin tarjeta, y la respuesta menciona cada grupo de palabras (alternativas con |, sin tildes). */
+const K = (...t: string[]): Esp => UTIL('^' + t.map(x => `(?=[\\s\\S]*(?:${x}))`).join(''));
 
 const c = (id: number, grupo: string, texto: string, esp: Esp, extra: { antes?: string[]; nota?: string; turnos?: string[]; ahora?: string } = {}): Caso =>
   ({ id: `RED-${String(id).padStart(3, '0')}`, grupo, texto, esp, ...extra });
@@ -1127,4 +1129,54 @@ export const CASOS: Caso[] = [
   TT(998, 'combinados', ['El lunes pagué 55 mil de gasolina y 30 de comida.', 'La comida fue el martes.', 'La gasolina fueron 50, no 55.', 'Muéstrame el total por día.'], o(ES({ pend: [{ monto: 50000 }, { monto: 30000 }] }), ES({ preg: true }))),
   TT(999, 'combinados', ['Mandé 120 mil a Faber y me cobraron 2 mil de comisión.', 'Eso era para abonarle al préstamo.', 'La transferencia fue reversada.', 'Después le di 100 en efectivo.'], o(ES({ pend: [{ monto: 100000 }] }), ES({ preg: true }))),
   TT(1000, 'combinados', ['Saqué 300 mil del cajero y me cobraron 5 mil de comisión. Pagué 90 mil de mercado entre Laura, David y yo; Laura me pasó 30 por Nequi y David me dio 20 en efectivo.', 'También le presté 80 mil a Jorge y pagué 25 mil de gasolina.', 'Corrige el mercado: fueron 96 mil, y lo de David eran 22, no 20. Además, los 25 de gasolina fueron 21.', 'Jorge me devolvió 30 por transferencia. ¿Cuánto gasté realmente, cuánto me deben y cuánto efectivo debería quedarme del retiro?'], o(ES({ preg: true }), ES({ ultima: 'sin confirmar|confirm|efectivo' })), { nota: 'Sin saber qué salió del retiro ni cómo se entregó el préstamo, no calcula el efectivo: pregunta o recuerda confirmar.' }),
+  c(1001, 'autoayuda', 'Si me giraron una playa que no es mía como registro', K('custodia', 'entreg|terceros'), { nota: '«playa» es «plata» mal escrito.' }),
+  c(1002, 'autoayuda', 'Cómo anoto una plata que me dieron pa guardársela a mi hermana', K('custodia', 'guard|devolv')),
+  c(1003, 'autoayuda', 'Si me consignan plata para que yo se la pase a alguien cómo hago', K('custodia', 'entreg')),
+  c(1004, 'autoayuda', 'Cómo hago pa que el saldo que me mandaron no me aparezca como plata mía', K('custodia|terceros', 'ingreso|propi|mia')),
+  c(1005, 'autoayuda', 'Y cuando le devuelva esa plata cómo la saco de ahí', K('devol', 'custodia')),
+  c(1006, 'autoayuda', 'Si me gasté una parte de la plata que era para guardar cómo lo anoto', K('custodia', 'pendiente|quedan')),
+  c(1007, 'autoayuda', 'Cómo anoto una consignación que me hicieron pa darle esa plata a Mamá', K('custodia', 'entreg')),
+  c(1008, 'autoayuda', 'La asociación me mandó plata pa tenerla mientras pagan unas cosas cómo la meto', K('asociacion', 'custodia|administr')),
+  c(1009, 'autoayuda', 'Me dejaron una plata encargada pero no sé cuándo la devuelvo qué hago', K('custodia', 'pendiente')),
+  c(1010, 'autoayuda', 'Me mandaron plata pa pagar un recibo de otra persona cómo lo pongo', K('custodia', 'recibo')),
+  c(1011, 'autoayuda', 'Cómo registro un celular que compré a 12 cuotas con tarjeta', K('cuotas', '12|total')),
+  c(1012, 'autoayuda', 'Si compré algo a seis cuotas sin intereses cómo lo anoto', K('cuotas', 'sin interes')),
+  c(1013, 'autoayuda', 'Cómo pongo una compra a cuotas que sí tiene intereses', K('interes', 'cuotas')),
+  c(1014, 'autoayuda', 'Cómo registro cuando pago la tarjeta de crédito', K('abono|abon', 'tarjeta')),
+  c(1015, 'autoayuda', 'Si solo pagué el mínimo de la tarjeta cómo lo anoto', K('minimo', 'pendiente|saldo|queda')),
+  c(1016, 'autoayuda', 'Pagué la tarjeta con plata de Nequi cómo hago pa que no me cuente doble', K('abon', 'nequi', 'doble|duplic|gasto')),
+  c(1017, 'autoayuda', 'Di una cuota inicial y lo demás lo dejé a cuotas con la tarjeta cómo lo registro', K('inicial', 'financi|cuotas')),
+  c(1018, 'autoayuda', 'Cómo corrijo una compra que devolví y el banco me reversó', K('revers|devoluc', 'compra')),
+  c(1019, 'autoayuda', 'Anoté 80 mil pero eran 18 mil cómo lo arreglo', K('edit|corrig', 'monto')),
+  c(1020, 'autoayuda', 'Puse gasolina como mercado y quiero cambiarlo', K('edit|cambi', 'categoria')),
+  c(1021, 'autoayuda', 'Cómo borro algo que anoté por error', K('anul|elimin|borr', 'movimiento')),
+  c(1022, 'autoayuda', 'Le puse la fecha de hoy a un gasto que fue ayer cómo la cambio', K('fecha', 'edit|cambi')),
+  c(1023, 'autoayuda', 'Anoté que pagué en efectivo pero fue con Nequi cómo lo cambio', K('nequi', 'edit|cambi')),
+  c(1024, 'autoayuda', 'Cómo miro cuánto me debe Jorge', K('me deben|me debe|deudas', 'jorge|nombre|persona')),
+  c(1025, 'autoayuda', 'Dónde veo cuánto le debo a Laura', K('le debo|deudas', 'laura|nombre|persona')),
+  c(1026, 'autoayuda', 'Cómo veo todos los préstamos que le he hecho a Faber', K('prestamo|deudas', 'faber|nombre|persona')),
+  c(1027, 'autoayuda', 'Si alguien me va pagando de a poquitos cómo lo anoto', K('abon', 'deuda|prestamo')),
+  c(1028, 'autoayuda', 'Cómo anoto la plata que me prestó Alejandro', K('debo|deuda', 'prest')),
+  c(1029, 'autoayuda', 'Y si yo le presto plata a Daniel dónde lo pongo', K('prest', 'por cobrar|me debe|deuda')),
+  c(1030, 'autoayuda', 'Cómo anoto una cuenta que pagué yo pero era entre tres', K('entre', 'parte')),
+  c(1031, 'autoayuda', 'Si Laura me devolvió solo una parte de lo que puse cómo lo anoto', K('abon|parcial', 'debe|deuda')),
+  c(1032, 'autoayuda', 'Cómo anoto si cada uno puso su parte antes de comprar', K('aport|parte', 'compartido|compra')),
+  c(1033, 'autoayuda', 'Si Mamá pagó el mercado pero era para la casa cómo lo pongo', K('mama', 'casa|hogar')),
+  c(1034, 'autoayuda', 'Cómo paso plata de Bancolombia a Nequi sin que me salga como gasto', K('no es gasto|no es un gasto|no cuenta', 'nequi')),
+  c(1035, 'autoayuda', 'Cuando saco plata del cajero cómo lo pongo para que no sea un gasto', K('cajero', 'no es gasto|no es un gasto|cambia donde')),
+  c(1036, 'autoayuda', 'Y si el cajero me cobra una comisión cómo la anoto', K('comision', 'aparte|gasto')),
+  c(1037, 'autoayuda', 'Cómo registro que le mandé plata a Jorge por Nequi', K('nequi', 'jorge|persona|prest|pago')),
+  c(1038, 'autoayuda', 'Cómo pongo que Laura me mandó plata por Bancolombia', K('recib|ingreso|me pago|me mando', 'laura|persona|motivo')),
+  c(1039, 'autoayuda', 'Puedo copiar el mensaje que me llega del banco y pegarlo aquí', K('pegar|pega', 'alerta|notificacion|mensaje')),
+  c(1040, 'autoayuda', 'Si pego dos veces la misma notificación me cuenta doble', K('una sola vez|duplic|repet|doble', 'referencia|alerta|notificacion')),
+  c(1041, 'autoayuda', 'Puedo mandar el texto de una factura para que me saque el gasto', K('recibo|factura|tirilla', 'pegar|pega')),
+  c(1042, 'autoayuda', 'Cómo pongo una cuenta que tiene propina aparte', K('propina')),
+  c(1043, 'autoayuda', 'Si me llegó una factura pero todavía no la he pagado la registro', K('pendiente|por pagar', 'pago fijo|no es gasto|todavia no')),
+  c(1044, 'autoayuda', 'Cómo pauso un tope de gastos sin borrarlo', K('paus', 'tope')),
+  c(1045, 'autoayuda', 'Cómo le subo el límite a mercado de 400 a 500 mil', K('tope', 'mercado|500')),
+  c(1046, 'autoayuda', 'Cómo miro cuánto me queda del presupuesto de comida', K('tope|presupuesto', 'queda|llevo')),
+  c(1047, 'autoayuda', 'Cómo saco mis gastos a Excel pa guardarlos', K('export', 'excel|csv')),
+  c(1048, 'autoayuda', 'Cómo saco un informe de los movimientos de la Asociación', K('export|informe', 'asociacion')),
+  c(1049, 'autoayuda', 'Cómo miro cuánta plata en efectivo me queda después de los retiros y compras', K('efectivo', 'saldo')),
+  c(1050, 'autoayuda', 'Cómo cambio de mis gastos de la casa a los de la Asociación sin revolverlos', K('asociacion', 'casa|hogar|separad')),
 ];

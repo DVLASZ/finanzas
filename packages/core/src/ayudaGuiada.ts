@@ -16,30 +16,62 @@ export interface TemaDeAyuda { id: string; tema: string; palabras: string[]; fra
 
 /** El orden desempata: si dos temas puntúan igual, sale primero el que está antes. */
 export const TEMAS_AYUDA: TemaDeAyuda[] = [
+  { id: 'custodia', tema: 'Plata de otra persona (custodia)', palabras: ['custo', 'encar', 'ajena', 'ajeno', 'tercer', 'giraro', 'girar'],
+    frases: ['en custodia', 'plata ajena', 'plata de otra', 'de otra persona', 'no es mia', 'pa guardar', 'para guardar', 'guardarsela', 'guardarle', 'para entregar', 'se la pase', 'pa darle', 'tenerla mientras', 'pa tenerla', 'mientras pagan', 'asociacion me mando', 'encargada', 'como plata mia', 'de terceros', 'devuelva esa plata', 'una parte de la plata', 'mandaron plata pa pagar', 'mandaron plata para pagar', 'me mandaron plata pa', 'consignacion que me hicieron'],
+    explicacion: 'La plata que te dan para guardar, entregar o pagar algo de otra persona no es tuya, así que no la anotes como ingreso. Se lleva como custodia: queda anotada como plata que le debes a quien te la dio (si te la mandó la Asociación, a nombre de la Asociación). Cuando la entregas, la devuelves o pagas con ella lo que te pidieron, lo anotas como pago de esa deuda y la custodia baja. Si usaste una parte, la deuda sigue completa y queda pendiente de devolver; lo que gastaste anótalo como un gasto tuyo. Puede ser también para pagar el recibo de otra persona: recibes la plata como custodia y, al pagarlo, lo anotas como pago de esa deuda. No hace falta fecha de entrega: queda pendiente hasta que se cierre.',
+    ejemplos: ['me prestó Jorge 50000', 'pagué 50000 a Jorge', 'deudas'] },
+  { id: 'cuotas', tema: 'Compras a cuotas', palabras: ['cuota', 'plazo', 'financ'],
+    frases: ['a cuotas', 'cuotas con tarjeta', 'sin intereses', 'con intereses', 'tiene intereses', 'cuota inicial', 'abono inicial', 'a plazos'],
+    explicacion: 'Una compra a cuotas se anota una sola vez, por el valor total, y no una vez por cada cuota, sea sin intereses o con intereses. Con tarjeta de crédito es una deuda con la persona «Tarjeta» (créala una vez: «agregar persona Tarjeta»). Las cuotas se entienden, pero la app no las lleva: la deuda queda completa y la vas pagando con abonos. Los intereses, si los hay, se anotan aparte cuando el banco los cobra, con el valor real del extracto. Si diste una cuota inicial, anótala como un gasto normal por esa parte y el resto con la tarjeta.',
+    ejemplos: ['compré un celular de 1200000 con la tarjeta', 'me cobraron 120000 de intereses de la tarjeta', 'aboné 150k a la tarjeta desde {cuenta}'] },
+  { id: 'reverso', tema: 'Compra devuelta o reversada', palabras: ['rever'],
+    frases: ['me reverso', 'me reversaron', 'compra que devolvi', 'devolvi una compra', 'devolvi la compra', 'reverso del banco'],
+    explicacion: 'Si devolviste una compra y el banco te reversó la plata, no borres la compra: anota lo que te devolvieron como plata que te entra, con el concepto de esa compra. Así el gasto queda compensado y se ve todo lo que pasó. Si la compra la anotaste mal, mejor edítala en Movimientos.',
+    ejemplos: ['me reversaron 80000 de la compra de ropa {cuenta}'] },
+  { id: 'verdeudas', tema: 'Ver quién te debe y a quién le debes', palabras: ['debe'],
+    frases: ['cuanto me debe', 'cuanto le debo', 'cuanto debo', 'donde veo cuanto', 'miro cuanto me debe', 'todos los prestamos', 'prestamos que le he hecho', 'le he hecho'],
+    explicacion: 'Escribe «deudas» y ves quién te debe y a quién le debes. Si escribes solo el nombre de la persona (por ejemplo «Jorge») ves cómo van las cuentas con ella: lo que te debe, lo que le debes y los préstamos que le has hecho, con lo que falta por devolver. También lo ves en Más, Deudas y préstamos.',
+    ejemplos: ['deudas', 'Sofia'] },
+  { id: 'transferencias', tema: 'Mandar o recibir plata por transferencia', palabras: ['mande', 'mando', 'envie', 'envio'],
+    frases: ['le mande plata', 'mande plata a', 'me mando plata', 'que me mando', 'me mandaron plata', 'por transferencia'],
+    explicacion: 'Dime para qué fue y lo anoto bien. Si le mandas plata a alguien que le debes, «pagué 50000 a Jorge por Nequi»; si se la prestas, «presté 50000 a Jorge»; si es una compra, un gasto normal. Si te mandan plata, es plata recibida: puede ser que te devuelvan algo («Laura me pagó 75000 bancolombia») o un ingreso («me pagaron 75000 de Laura bancolombia»). Sin el motivo (pago, préstamo, devolución o ingreso) no adivino y te pregunto. Si lo que mandas va a otra cuenta tuya, es un traslado y no un gasto.',
+    ejemplos: ['pagué 50000 a Jorge {cuenta}', 'presté 50000 a Jorge', 'Laura me pagó 75000 {cuenta}'] },
+  { id: 'casa', tema: 'Casa y asociación', palabras: ['casa', 'hogar', 'asoci'],
+    frases: ['la casa', 'de la casa', 'para la casa', 'sin revolverlos', 'revolver', 'mezclar', 'mama pago', 'pago mama'],
+    explicacion: 'La casa y la asociación son apps separadas, cada una con su propia base y su propio acceso: no se mezclan ni se pasan movimientos de una a otra. Lo de la casa se anota en la app de la casa y lo de la asociación en la de la asociación; para verlos por separado, abre la app que corresponde. Si en tu app llevas a la Asociación como una persona, lo que tienes con ella sale al escribir su nombre. Si alguien de la familia pagó algo de la casa, como el mercado, anótalo como deuda con esa persona («le debo 180000 a Mamá por el mercado») y, cuando se lo devuelvas, «le pagué 180000 a Mamá».',
+    ejemplos: ['le debo 180000 a Mamá por el mercado', 'le pagué 180000 a Mamá'] },
+  { id: 'exportar', tema: 'Sacar tus datos (Excel e informe)', palabras: ['excel', 'expor', 'infor', 'repor', 'csv', 'descar'],
+    frases: ['a excel', 'un informe', 'sacar un informe', 'informe de los movimientos', 'un informe de', 'saco mis gastos', 'pa guardarlos', 'para guardarlos'],
+    explicacion: 'Para exportar tus datos, ve a Más, Ajustes, «Pasar a Excel»: baja un archivo con tus movimientos, saldos, deudas y totales por mes, y funciona sin internet. Para un informe para imprimir, usa el botón del informe en Resumen. Cada app exporta solo lo suyo: los movimientos de la Asociación se sacan desde la app de la Asociación y no se mezclan con los de la casa. Esta pregunta no genera ningún archivo.',
+    ejemplos: ['mes'] },
+  { id: 'facturapendiente', tema: 'Una factura que todavía no pagas', palabras: ['pendi'],
+    frases: ['no la he pagado', 'todavia no la he pagado', 'todavia no la pague', 'sin pagar', 'por pagar', 'me llego una factura', 'llego una factura', 'aun no la pago'],
+    explicacion: 'Una factura que todavía no pagas no es un gasto: no la anotes aún, porque no ha salido plata. Si quieres que te avise cuando toque, créala como pago fijo y queda pendiente hasta su fecha; si no, anótala cuando la pagues, con la fecha en que la pagaste.',
+    ejemplos: ['cada mes el 10 energía 120000'] },
   { id: 'compartido', tema: 'Compartido', palabras: ['compa', 'divid', 'vaca', 'amigo', 'mitad', 'medias', 'parte', 'igual', 'entre'],
-    frases: ['entre varios', 'entre amigos', 'entre todos', 'cuenta de todos', 'partes iguales'],
-    explicacion: 'Pon el total que se pagó y con quién. Yo calculo tu parte y lo que te deben los demás.',
-    ejemplos: ['pizza 40000 entre ana, luis y yo'] },
-  { id: 'prestamo', tema: 'Préstamo', palabras: ['prest', 'deben'], frases: ['me deben', 'me debe', 'le fie', 'fiar a'],
-    explicacion: 'Anota a quién le prestaste. Cuando te pague, escribe «Ana me pagó 40000».',
+    frases: ['entre varios', 'entre amigos', 'entre todos', 'cuenta de todos', 'partes iguales', 'entre tres', 'entre dos', 'pero era entre', 'cada uno puso', 'puso su parte', 'antes de comprar'],
+    explicacion: 'Pon el total que se pagó y con quién, entre todos los que fueron (tú cuentas): yo calculo tu parte y lo que te deben los demás. Si pagaste tú y eran tres, escribe el total con los otros dos. Cuando alguien te devuelva su parte, o solo una parte, anótalo como abono. Si cada uno puso su parte antes de comprar, anota la compra completa entre todos y lo que cada uno te dio como abono de su parte, así no se cuenta doble.',
+    ejemplos: ['pizza 40000 entre ana, luis y yo', 'Ana me pagó 20000'] },
+  { id: 'prestamo', tema: 'Préstamo', palabras: ['prest', 'deben'], frases: ['me deben', 'me debe', 'le fie', 'fiar a', 'le presto', 'le preste'],
+    explicacion: 'Anota a quién le prestaste: queda como plata que te deben (una cuenta por cobrar), no como gasto. Cuando te pague, escribe «Ana me pagó 40000».',
     ejemplos: ['presté 40000 a Ana', 'Ana me pagó 40000'] },
-  { id: 'deuda', tema: 'Deuda', palabras: ['debo', 'deuda', 'fiado', 'fiaro', 'debie', 'debia'], frases: ['me fiaron', 'me prestaron', 'le debo', 'quede debiendo'],
-    explicacion: 'Anota a quién le debes y por qué. Para pagarle después: «pagué 54000 a Pedro».',
+  { id: 'deuda', tema: 'Deuda', palabras: ['debo', 'deuda', 'fiado', 'fiaro', 'debie', 'debia'], frases: ['me fiaron', 'me prestaron', 'le debo', 'quede debiendo', 'me presto', 'que me presto'],
+    explicacion: 'Anota a quién le debes y por qué. Un préstamo recibido es una deuda: la plata que te dieron no es un ingreso tuyo. Para pagarle después: «pagué 54000 a Pedro».',
     ejemplos: ['le debo 54000 a Pedro por la bici', 'pagué 54000 a Pedro', 'deudas'] },
-  { id: 'abono', tema: 'Abono parcial', palabras: ['abon', 'parci', 'cuota', 'pagu'], frases: ['le pague', 'me pago', 'pago parcial', 'una parte', 'de a poco', 'poco a poco'],
+  { id: 'abono', tema: 'Abono parcial', palabras: ['abon', 'parci', 'cuota', 'pagu'], frases: ['le pague', 'me pago', 'pago parcial', 'una parte', 'de a poco', 'poco a poco', 'poquitos', 'de a poquito', 'solo una parte'],
     explicacion: 'Pagar una parte de una deuda o cobrar solo una parte de un préstamo es un abono. La deuda baja y lo que falta queda anotado.',
     ejemplos: ['le pagué 20000 a Pedro', 'Ana me pagó 10000'] },
-  { id: 'cajero', tema: 'Cajero', palabras: ['cajer', 'retir', 'saque', 'sacar', 'saco'], frases: ['sacar plata', 'saque plata', 'sacar efectivo'],
+  { id: 'cajero', tema: 'Cajero', palabras: ['cajer', 'retir', 'saque', 'sacar', 'saco', 'comis'], frases: ['sacar plata', 'saque plata', 'sacar efectivo', 'saco plata', 'del cajero'],
     explicacion: 'Sacar del cajero es pasar plata de una cuenta a efectivo: no es gasto, solo cambia dónde está. Si el banco te cobró por usar el cajero, dilo en la misma frase y esa comisión se anota aparte, en Costos del banco. El 4x1000 no lo calculo: dime cuánto fue.',
     ejemplos: ['cambio 100000 {cuenta} a efectivo', 'saqué 100000 de {cuenta} y me cobraron 4000 por usar el cajero'] },
   { id: 'pasar', tema: 'Pasar plata', palabras: ['pasar', 'paso', 'trans', 'mover', 'consi', 'meter'], frases: ['pasar plata', 'paso plata', 'pase de', 'mover plata', 'cambio de cuenta', 'de una cuenta a otra', 'entre cuentas', 'entre mis cuentas', 'meter plata'],
-    explicacion: 'Pasar plata de una cuenta a otra, o consignar efectivo, no es gasto ni ingreso: solo cambia dónde está, y en los reportes no infla ninguno de los dos. Si no dices cuáles cuentas, te pregunto. Una transferencia pendiente o rechazada no la anoto hasta que salga.',
+    explicacion: 'Pasar plata de una cuenta a otra (de Bancolombia a Nequi, o consignar efectivo) no es gasto ni ingreso: solo cambia dónde está, y en los reportes no infla ninguno de los dos. Si no dices cuáles cuentas, te pregunto. Una transferencia pendiente o rechazada no la anoto hasta que salga.',
     ejemplos: ['cambio 50000 efectivo a {cuenta}', 'consigné 90000 en {cuenta}'] },
-  { id: 'tarjeta', tema: 'Tarjeta de crédito', palabras: ['tarje', 'credi', 'cuota', 'cupo'], frases: ['tarjeta de credito', 'con la tarjeta', 'pagar la tarjeta', 'pago de la tarjeta', 'abono a la tarjeta', 'debo de la tarjeta'],
-    explicacion: 'La tarjeta de crédito se lleva como una persona llamada Tarjeta: lo que compras con ella es una deuda con Tarjeta, y cuando la pagas la deuda baja. Primero créala una sola vez. Las cuotas las entiendo, pero no las llevo: la deuda queda completa. Los intereses que te cobren se anotan como un aumento de la deuda.',
+  { id: 'tarjeta', tema: 'Tarjeta de crédito', palabras: ['tarje', 'credi', 'cupo', 'minim'], frases: ['tarjeta de credito', 'con la tarjeta', 'pagar la tarjeta', 'pago de la tarjeta', 'abono a la tarjeta', 'debo de la tarjeta', 'pago la tarjeta', 'pague la tarjeta', 'el minimo', 'pago minimo'],
+    explicacion: 'La tarjeta de crédito se lleva como una persona llamada Tarjeta: lo que compras con ella es una deuda con Tarjeta, y cuando la pagas la deuda baja. Primero créala una sola vez. Para pagarla, anota un abono a Tarjeta desde la cuenta con la que pagas (Nequi, Bancolombia...): no es un gasto nuevo, porque la compra ya la anotaste, así que no se cuenta doble. Si solo pagas el mínimo, anota solo lo que pagaste: el resto sigue pendiente como deuda. Las cuotas las entiendo, pero no las llevo: la deuda queda completa. Los intereses que te cobren se anotan como un aumento de la deuda.',
     ejemplos: ['agregar persona Tarjeta', 'compré unos audífonos de 240k con la tarjeta', 'aboné 150k a la tarjeta desde {cuenta}', 'me cobraron 18k de intereses de la tarjeta'] },
-  { id: 'alertas', tema: 'Alertas del banco y recibos', palabras: ['alert', 'notif', 'tiril', 'pegar', 'pegue', 'bogot', 'bance', 'davip', 'banco'], frases: ['pegar alerta', 'alerta del banco', 'mensaje del banco', 'notificacion del banco', 'pegar un recibo', 'recibo pegado', 'copiar el mensaje', 'pegar una tirilla'],
-    explicacion: 'Copia la notificación de Nequi, Bancolombia, Daviplata o Banco de Bogotá y pégala en el chat, o toca Pegar alerta: saco el monto de la operación (no los saldos), si pagaste o te llegó plata, la cuenta, la fecha y la hora, y te dejo la tarjeta para confirmar. Con un recibo o una tirilla en texto anoto un solo gasto por lo que de verdad pagaste, sin sumar subtotal, IVA ni cambio. Lo rechazado o pendiente no lo anoto. Nada se guarda hasta que toques Confirmar.',
+  { id: 'alertas', tema: 'Alertas del banco y recibos', palabras: ['alert', 'notif', 'tiril', 'pegar', 'pegue', 'pegarl', 'bogot', 'bance', 'davip', 'banco', 'propin', 'copiar'], frases: ['pegar alerta', 'alerta del banco', 'mensaje del banco', 'notificacion del banco', 'pegar un recibo', 'recibo pegado', 'copiar el mensaje', 'pegar una tirilla', 'mensaje que me llega', 'dos veces', 'misma notificacion', 'propina aparte', 'con propina', 'texto de una factura'],
+    explicacion: 'Copia la notificación de Nequi, Bancolombia, Daviplata o Banco de Bogotá y pégala en el chat, o toca Pegar alerta: saco el monto de la operación (no los saldos), si pagaste o te llegó plata, la cuenta, la fecha y la hora, y te dejo la tarjeta para confirmar. Con un recibo o una tirilla en texto anoto un solo gasto por lo que de verdad pagaste, sin sumar subtotal, IVA ni cambio. Si pegas dos veces la misma alerta no se cuenta doble: comparo la referencia, el valor y el comercio y te aviso que ya está registrada (mientras la app esté abierta; si la cerraste, revisa en Movimientos). De un recibo con propina cuento solo la propina que de verdad pagaste, no la sugerida. Lo rechazado o pendiente no lo anoto. Nada se guarda hasta que toques Confirmar.',
     ejemplos: ['mecato 12000 {cuenta}', 'ingreso 50000 trabajo {cuenta}'] },
   { id: 'ingreso', tema: 'Ingreso', palabras: ['ingre', 'sueld', 'quinc', 'salar', 'llego', 'giraro', 'cayo', 'depos', 'entra', 'nomin', 'honor', 'chamb', 'traba', 'activ'],
     frases: ['me pagaron', 'me giraron', 'me consignaron', 'me llego', 'me cayo', 'me depositaron', 'recibi', 'me ingresa', 'me entra', 'me paguen', 'me pagan', 'me van a pagar', 'me hicieron un pago', 'me hicieron una transferencia', 'me transfirieron', 'me dieron plata', 'me regalaron', 'vendi algo', 'una venta', 'vender', 'pago de una actividad', 'pago por un trabajo', 'plata que entra', 'plata que me entra', 'plata que recibo', 'recibo plata', 'me llega plata', 'por un trabajo', 'por una actividad', 'por mi trabajo', 'que me hicieron', 'me pago', 'me entro', 'me ingreso', 'me entraron', 'me ingresaron', 'me llegaron', 'meto plata'],
@@ -65,18 +97,19 @@ export const TEMAS_AYUDA: TemaDeAyuda[] = [
     explicacion: 'Para guardar el comprobante de un movimiento, ábrelo en Movimientos y toca Tomar foto o Subir imagen: la foto se reduce y queda guardada en el servidor. Y el botón del escáner del chat lee un comprobante con IA y deja el gasto listo para anotar.',
     ejemplos: ['mecato 4500'] },
   { id: 'topes', tema: 'Topes', palabras: ['tope', 'limit', 'presu'],
-    explicacion: 'Un tope es lo máximo que quieres gastar en una categoría. Te aviso cuando te acercas. Para quitarlo, dilo igual.',
-    ejemplos: ['tope mecato 100000', 'quitar tope mecato'] },
-  { id: 'corregir', tema: 'Corregir o eliminar', palabras: ['deshac', 'equivo', 'corre', 'anula', 'borr', 'confu', 'edit', 'cambi', 'categ', 'elimi', 'anul', 'quita'],
-    frases: ['me equivoque', 'puse mal', 'quitar un gasto', 'quito un gasto', 'quitar un movimiento', 'cambiar el monto', 'cambiar la categoria', 'cambio la categoria', 'me confundi', 'editar un gasto', 'edito un gasto', 'editar un movimiento', 'edito un movimiento', 'cambiar un gasto', 'cambio un gasto', 'borrar un gasto', 'borro un gasto', 'borrar un movimiento', 'borro un movimiento', 'corregir un gasto', 'corrijo un gasto'],
-    explicacion: 'Nada se borra: lo que deshaces queda marcado como anulado. Para cambiar el monto o la categoría de lo último, edítalo.',
+    frases: ['un tope', 'el tope', 'pausar tope', 'del presupuesto', 'me queda del presupuesto', 'presupuesto de'],
+    explicacion: 'Un tope es lo máximo que quieres gastar al mes en una categoría; te aviso cuando te acercas. Para fijarlo o cambiarlo, escríbelo otra vez con el monto nuevo (reemplaza al anterior): «tope mercado 500000». Para pausarlo sin borrarlo (no avisa ni cuenta hasta que lo reanudes): «pausar tope mercado», y «reanudar tope mercado» lo activa con el mismo monto. Para quitarlo del todo: «quitar tope mercado». Para ver cuánto llevas y cuánto te queda de cada tope, escribe «mes».',
+    ejemplos: ['tope mercado 500000', 'pausar tope mercado', 'quitar tope mercado', 'mes'] },
+  { id: 'corregir', tema: 'Corregir o eliminar', palabras: ['arreg', 'puse', 'puso', 'deshac', 'equivo', 'corre', 'anula', 'borr', 'confu', 'edit', 'cambi', 'categ', 'elimi', 'anul', 'quita'],
+    frases: ['por error', 'lo arreglo', 'la fecha de hoy', 'cambio la fecha', 'cambiar la fecha', 'pague en efectivo pero', 'me equivoque', 'puse mal', 'quitar un gasto', 'quito un gasto', 'quitar un movimiento', 'cambiar el monto', 'cambiar la categoria', 'cambio la categoria', 'me confundi', 'editar un gasto', 'edito un gasto', 'editar un movimiento', 'edito un movimiento', 'cambiar un gasto', 'cambio un gasto', 'borrar un gasto', 'borro un gasto', 'borrar un movimiento', 'borro un movimiento', 'corregir un gasto', 'corrijo un gasto'],
+    explicacion: 'Nada se borra: lo que deshaces o anulas queda marcado como anulado. Para corregir algo ya guardado, ábrelo en Movimientos y toca Editar: puedes cambiar el monto, la categoría, la fecha y la cuenta o medio de pago (efectivo, Nequi...) sin crear otro movimiento. Para lo último que anotaste: «editar último». Para quitar uno anotado por error: Anular, y Restaurar si te arrepientes. Si todavía no confirmas la tarjeta, escribe solo lo que cambia: «monto 18000», «nequi», «ayer».',
     ejemplos: ['deshacer', 'editar último'] },
   { id: 'otrodia', tema: 'Otro día', palabras: ['ayer', 'antie', 'fecha', 'lunes', 'dias'], frases: ['anteayer', 'otro dia'],
     explicacion: 'Agrega cuándo fue al final de la frase.',
     ejemplos: ['almuerzo 12000 ayer'] },
-  { id: 'saldos', tema: 'Saldos', palabras: ['saldo', 'resum', 'total'], frases: ['cuanto tengo', 'cuanto llevo', 'como voy', 'cuanto gaste', 'cuanto he gastado', 'total del mes', 'total de gastos', 'gastos del mes', 'resumen del mes', 'cuanto me queda', 'cuanto debo en total'],
-    explicacion: 'Estas palabras sueltas se contestan al instante.',
-    ejemplos: ['saldo', 'semana'] },
+  { id: 'saldos', tema: 'Saldos', palabras: ['saldo', 'resum', 'total'], frases: ['cuanto tengo', 'cuanto llevo', 'como voy', 'cuanto gaste', 'cuanto he gastado', 'total del mes', 'total de gastos', 'gastos del mes', 'resumen del mes', 'en efectivo', 'plata en efectivo', 'cuanto me queda', 'cuanto debo en total'],
+    explicacion: 'Escribe «saldo» y ves lo que tienes en cada cuenta, el efectivo incluido: ya descuenta lo que sacaste y lo que pagaste, y los retiros del cajero no cuentan como gasto. Para una sola cuenta: «cuánto tengo en efectivo». Otras palabras sueltas que se contestan al instante: «semana», «mes».',
+    ejemplos: ['saldo', 'cuánto tengo en efectivo', 'semana'] },
   { id: 'gasto', tema: 'Gasto', palabras: ['gasto', 'gaste', 'compr', 'almue', 'comid', 'mecat', 'taxi', 'bus', 'pague'], frases: ['un gasto', 'mi gasto'],
     explicacion: 'Un gasto es lo que compraste y cuánto. Si dices con qué pagaste, lo uso; si no, es efectivo.',
     ejemplos: ['almuerzo 12000', 'almuerzo 12000 {cuenta}', 'café 4k'] },
@@ -164,6 +197,22 @@ export function esPreguntaDeAyuda(texto: string): boolean {
   // querer o necesitar hacer algo, sin monto: «quiero anotar a mi hermana», «necesito quitar un gasto»
   if (/^(?:yo )?(?:quiero|quisiera|necesito|me gustaria|tengo que|debo) (?:anotar|agregar|registrar|mirar|ver|saber|quitar|borrar|eliminar|crear|poner|pasar|cambiar|editar|corregir|sacar|guardar|mover|meter|deshacer|anular)\b/.test(d)) return true;
   return texto.includes('?') && palabras.length >= 3;
+}
+
+/**
+ * Una duda de uso dicha sin rodeos («cómo lo anoto», «dónde veo cuánto le debo», «puedo pegar el mensaje del banco»). Esta sí
+ * se reconoce aunque traiga montos («anoté 80 mil pero eran 18, cómo lo arreglo»): nunca es un movimiento, así que el bot
+ * explica y no saca tarjeta. Pide el verbo de uso después de «cómo» o «dónde» para no confundir «lo pagué como siempre».
+ */
+export function esDudaDeUso(texto: string): boolean {
+  const d = limpiar(texto);
+  if (d.length > 220) return false;
+  if (/\bcomo (?:(?:lo|la|los|las|le|les|me|se|te|le) )?(?:hago|anoto|registro|pongo|arreglo|cambio|corrijo|meto|saco|miro|veo|paso|pauso|subo|bajo|borro|elimino|edito|escribo|quito|anulo|devuelvo|cuento|apunto|guardo|agrego|marco|separo|muevo|reviso|consulto|calculo|reflejo|manejo|declaro)\b/.test(d)) return true;
+  if (/\b(?:donde|en donde|por donde) (?:veo|miro|reviso|consulto|lo pongo|la pongo|los pongo|se ve|queda|encuentro|lo anoto|se anota)\b/.test(d)) return true;
+  if (/^(?:y )?(?:puedo|se puede|puedes|podria) (?:copiar|pegar|mandar|enviar|subir|exportar|sacar|importar|bajar|descargar)\b/.test(d)) return true;
+  if (/^si\b.*\b(?:la|lo|los|las) (?:registro|anoto|pongo|meto)\b/.test(d)) return true;
+  if (/\bque hago\b|\b(?:quiero|necesito|quisiera) (?:cambiar|arreglar|corregir|borrar|quitar|editar|anular|deshacer)(?:lo|la|los|las)?\b|\bcuenta doble\b|\bsale doble\b/.test(d)) return true;
+  return false;
 }
 
 /**

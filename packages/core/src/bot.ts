@@ -41,7 +41,7 @@ import { contextoDe, type Datos, type Pendiente, type Repo } from './repo.ts';
 import { alAprender, alConfirmarAprender } from './aprender.ts';
 import { reaccionSuelta } from './limites.ts';
 import { responderHistorial } from './consultasHistorial.ts';
-import { ayudaDeTema, buscarAyuda, consultaDisfrazada, esPreguntaDeAyuda, temasParecidos, type RespuestaDeAyuda } from './ayudaGuiada.ts';
+import { ayudaDeTema, buscarAyuda, consultaDisfrazada, esDudaDeUso, esPreguntaDeAyuda, temasParecidos, type RespuestaDeAyuda } from './ayudaGuiada.ts';
 import { dividirTodo, MAX_MOVIMIENTOS_POR_MENSAJE } from './lineas.ts';
 import { narrar } from './narrativa.ts';
 import { leerNotificacionBancaria, referenciasDeAlerta } from './banco.ts';
@@ -312,6 +312,8 @@ class Motor {
     const banco = leerNotificacionBancaria(texto, this.ctx) ?? leerComprobante(texto, this.ctx);
     // lo rechazado, lo pendiente y lo que no es un movimiento se explica y no se anota
     if (banco?.respuesta) return [{ texto: banco.respuesta }];
+    // una duda de uso («cómo lo anoto», «dónde veo...») se explica; nunca saca tarjeta aunque traiga montos
+    if (!banco && esDudaDeUso(texto)) return [this.respuestaDeAyuda(texto)];
     // la misma referencia pegada otra vez (en este mensaje o en uno anterior) no se anota dos veces
     const refs = banco ? referenciasDeAlerta(texto) : [];
     if (refs.length) {

@@ -831,6 +831,15 @@ Treinta y cinco casos nuevos, todos en verde, y con ellos la batería completa q
 
 Dos expectativas se ajustaron y su nota lo dice: RED-983 espera la nómina y el retiro (el apartado es un comando de meta, sin tarjeta), y RED-985 espera que el último turno diga que lo sin confirmar todavía no cuenta. Varios casos de este bloque aceptan como alternativa que el bot pregunte; eso mide que no anota a ciegas, no que calcule el saldo exacto.
 
+### Ronda 8, parte 1: autoayuda conversacional (RED-1001 a RED-1050)
+
+Cincuenta dudas de uso dichas como las dice la gente («si me giraron una playa que no es mía cómo registro», «cómo hago pa que no me cuente doble», «dónde veo cuánto le debo a Laura»). La regla de esta ronda es que una duda de uso nunca registra nada ni saca tarjeta: explica en español sencillo y deja un ejemplo para tocar. La batería llega a **1.050 de 1.050**. Los casos usan `K(...)` en `red-team-casos.ts`: sin tarjeta, y la respuesta tiene que mencionar cada grupo de palabras (alternativas con `|`). Miden que el tema correcto responda, no que el ejemplo anote bien; eso lo vigila la prueba de `ayuda-guiada.test.ts`, que exige que cada ejemplo lo entienda el intérprete.
+
+1. **`esDudaDeUso` (`ayudaGuiada.ts`) corta antes de interpretar.** Reconoce «cómo + verbo de uso» (lo anoto, lo arreglo, la saco...), «dónde veo/miro...», «puedo copiar/pegar/mandar...», «si ... la registro», «qué hago», «quiero cambiarlo» y «me cuenta doble». A diferencia de `esPreguntaDeAyuda`, vale aunque la frase traiga montos («anoté 80 mil pero eran 18, cómo lo arreglo»), que antes terminaba en «Veo varios montos». Se llama en `alEscribir` justo después de leer la alerta del banco y antes de tope, presupuesto, casa y traslados. Una alerta pegada nunca cuenta como duda.
+2. **Temas nuevos**: custodia (plata de otra persona: se lleva como deuda con quien la dejó, no como ingreso), compras a cuotas, compra reversada, ver deudas, mandar o recibir por transferencia, casa y asociación, sacar datos y factura sin pagar. Los de tarjeta, cajero, pasar plata, corregir, topes, saldos, compartido y alertas se ampliaron.
+3. **Lo que la app no tiene se dice sin inventarlo**: no hay un tipo «custodia» (se usa la deuda), no se llevan las cuotas, la casa y la asociación son apps separadas y no se mueven movimientos entre ellas, y la alerta repetida se detecta solo mientras la app está abierta.
+4. **El orden de los temas desempata**: los nuevos van primero. Dos choques salieron en las pruebas: «guardo» (comprobantes) contra «guardar» (custodia), y «recibo» (comprobantes) contra el recibo pegado (alertas); se resolvieron quitando la raíz compartida de uno de los dos.
+
 ## 9. Cómo probarlo
 
 El núcleo corre en Node sin red y sin navegador. `MemoriaRepo` guarda todo en memoria y `tests/ayudas.ts` trae un bot listo con el reloj fijo:
