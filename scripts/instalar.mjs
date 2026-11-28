@@ -9,6 +9,7 @@
 //   npm run instalar -- actualizar <nombre> Pone en la base ya publicada lo nuevo de la plantilla (categorías, palabras)
 //                                           y lo de instalaciones/<nombre>.json. No borra ni pisa lo que ya hay.
 //                                           Con --ver solo escribe y muestra el SQL; con --sin-config no pone la config del .json.
+//                                           Con --con-tarjeta agrega la persona «Tarjeta» si no existe.
 //
 // Lo propio de cada persona vive en instalaciones/<nombre>.json (no se sube a git). Ejemplo:
 // scripts/instalacion-ejemplo.json.
@@ -149,8 +150,10 @@ async function publicar() {
 async function actualizar() {
   const toml = join(carpeta, 'wrangler.toml');
   if (!cfg.d1Id) throw new Error('Esta instalación todavía no se creó: usa «crear».');
+  // --con-tarjeta: agrega la persona «Tarjeta» (la que lleva la deuda de la tarjeta de crédito); si ya existe con ese id, no se toca
+  if (process.argv.includes('--con-tarjeta')) cfg.personas = [...(cfg.personas ?? []), { nombre: 'Tarjeta', grupo: 'otros' }];
   preparar();
-  const lineas = sqlDePlantilla(cfg.plantilla, cfg).split('\n').filter(Boolean).map(l => l.replace(/^INSERT INTO /, 'INSERT OR IGNORE INTO '));
+  const lineas =sqlDePlantilla(cfg.plantilla, cfg).split('\n').filter(Boolean).map(l => l.replace(/^INSERT INTO /, 'INSERT OR IGNORE INTO '));
   const q = v => `'${String(v).replaceAll("'", "''")}'`;
   // --sin-config: solo lo nuevo de la plantilla; la config del .json no se toca (es lo que pisaría ajustes hechos en la app)
   if (!process.argv.includes('--sin-config')) for (const [clave, valor] of Object.entries(cfg.config ?? {})) lineas.push(`INSERT OR REPLACE INTO config (clave, valor) VALUES (${q(clave)}, ${q(valor)});`);

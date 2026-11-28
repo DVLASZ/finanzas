@@ -6,6 +6,8 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-27
 
+- `instalar actualizar --con-tarjeta` agrega la persona «Tarjeta» sin duplicar ni pisar nada.
+
 - La prueba de pantalla cubre pausar y reanudar un tope, pasar movimientos de categoría y archivarla (también en el celular).
 - La ayuda guiada explica traslados y retiros con comisión, la tarjeta de crédito y el pegado de alertas y recibos; la guía de usuario lo recoge con ejemplos.
 - `instalar actualizar` acepta `--ver` (muestra el SQL sin tocar la base) y `--sin-config` (no pone la config del `.json`).

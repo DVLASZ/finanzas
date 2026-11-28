@@ -54,7 +54,7 @@ Si cambias una plantilla (categorías o palabras nuevas) o el `.json` de una ins
 npm run instalar -- actualizar familia
 ```
 
-Para no llevarte sorpresas: `--ver` escribe el SQL y lo muestra sin tocar la base, y `--sin-config` deja fuera la `config` del `.json` (es lo único que pisa). Una palabra nueva del diccionario, como «intereses» en Costos del banco, entra sola con `INSERT OR IGNORE`: si ya existe o la enseñaste distinto, no se toca. En `personal` el diccionario va en el código, así que le llega con la publicación y no necesita `actualizar`.
+Para no llevarte sorpresas: `--ver` escribe el SQL y lo muestra sin tocar la base, y `--sin-config` deja fuera la `config` del `.json` (es lo único que pisa) y `--con-tarjeta` agrega la persona «Tarjeta» con `INSERT OR IGNORE` (si ya existe con ese id, no se toca). Una palabra nueva del diccionario, como «intereses» en Costos del banco, entra sola con `INSERT OR IGNORE`: si ya existe o la enseñaste distinto, no se toca. En `personal` el diccionario va en el código, así que le llega con la publicación y no necesita `actualizar`.
 
 ```bash
 npm run instalar -- actualizar familia --ver --sin-config
