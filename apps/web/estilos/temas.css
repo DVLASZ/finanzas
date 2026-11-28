@@ -70,8 +70,8 @@ html[data-piel="tierra"][data-tema="oscuro"] {
 }
 html[data-piel="tierra"][data-tema="claro"] {
   --fondo: #f5ede0; --sup: #fcf7ee; --elev: #e6d9c2; --tx: #3a2514; --tx2: #684f3c; --bor: #d3c9bb;
-  --marca: #c2410c; --marca-2: #b45309; --sobre: #fefefd; --marca-tx: #9b340a; --marca-sup: #f3daca; --tx-marca-sup: #3a2514;
-  --pos: #046348; --neg: #a61e35; --adv: #814a00; --info: #0b5b89; --acc: #83300d;
+  --marca: #c2410c; --marca-2: #b45309; --sobre: #fefefd; --marca-tx: #792908; --marca-sup: #f3daca; --tx-marca-sup: #3a2514;
+  --pos: #034d38; --neg: #83182a; --adv: #633900; --info: #09476b; --acc: #762b0c;
   --vidrio: rgba(245, 237, 224, 0.8); --anillo: rgba(58, 37, 20, 0.12); --brillo: rgba(194, 65, 12, 0.18);
   --halo-1: rgba(194, 65, 12, 0.14); --halo-2: rgba(180, 83, 9, 0.1);
 }

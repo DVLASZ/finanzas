@@ -42,6 +42,22 @@ for (const [piel, tema, matiz] of combos) {
     if (r < 4.5) { console.log(`NO LLEGA ${piel}/${tema}${matiz ? '/' + matiz : ''}: --${a} ${v[a]} sobre --${b} ${v[b]} = ${r.toFixed(2)}`); mal++; }
   }
 }
+// La piel Tierra en claro, la que usan las personas que leen con más esfuerzo: el texto principal y los montos llegan a AAA (7 a 1)
+// sobre los tres fondos; los textos secundarios (--tx2) a 4,5. Se lee del mismo CSS, así que un cambio de color que lo rompa avisa.
+{
+  const v = {};
+  for (const b of bloques) { const x = b.sel; if (x.piel === 'tierra' && x.tema === 'claro' && !x.matiz) Object.assign(v, b.vars); }
+  for (const a of ['tx', 'pos', 'neg', 'adv', 'info', 'acc', 'marca-tx']) {
+    for (const f of ['fondo', 'sup', 'elev']) {
+      const r = razon(v[a], v[f]);
+      if (r < 7) { console.log(`NO LLEGA A AAA tierra/claro: --${a} ${v[a]} sobre --${f} ${v[f]} = ${r.toFixed(2)}`); mal++; }
+    }
+  }
+  for (const f of ['fondo', 'sup', 'elev']) {
+    const r = razon(v.tx2, v[f]);
+    if (r < 4.5) { console.log(`NO LLEGA tierra/claro: --tx2 sobre --${f} = ${r.toFixed(2)}`); mal++; }
+  }
+}
 // El fondo es una aurora: brillos de color (estilos/tailwind.css, --c-*) sobre el fondo del tema, a su intensidad máxima. Se toma el peor
 // caso: cada color con la intensidad más alta, sin contar el desenfoque. El texto que va directo sobre el fondo tiene que leerse sobre
 // esa mezcla. Lo que va dentro de tarjetas, burbujas y hojas es vidrio: la superficie con --cristal-a de opacidad sobre esa misma

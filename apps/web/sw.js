@@ -27,6 +27,8 @@ self.addEventListener('activate', evento => {
 self.addEventListener('push', evento => {
   let aviso = { titulo: 'Tus finanzas', cuerpo: '' };
   try { aviso = { ...aviso, ...evento.data.json() }; } catch { /* aviso sin datos */ }
+  // la pantalla de bloqueo la ve cualquiera: si un aviso trajera montos, solo se muestra que hay algo (el Worker ya manda textos genéricos)
+  if (/[$€]|\d[\d.,]{2,}|\d\s?(?:k|mil|lucas?)\b/i.test(`${aviso.titulo} ${aviso.cuerpo}`)) aviso = { titulo: 'Tienes un aviso', cuerpo: 'Ábrelo en la app para verlo.' };
   evento.waitUntil(self.registration.showNotification(aviso.titulo, { body: aviso.cuerpo, icon: './icon-192.png', badge: './icon-192.png' }));
 });
 

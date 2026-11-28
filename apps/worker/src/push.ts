@@ -87,7 +87,17 @@ export async function cifrarAviso(texto: string, s: Suscripcion, sal?: Uint8Arra
 /** Resultado de mandar un aviso: 'ok', 'caducada' (hay que borrar la suscripción) o 'fallo'. */
 export type EstadoEnvio = 'ok' | 'caducada' | 'fallo';
 
-export async function enviarAviso(s: Suscripcion, aviso: { titulo: string; cuerpo: string }, llaves: LlavesVapid): Promise<EstadoEnvio> {
+/**
+ * La pantalla de bloqueo la ve cualquiera: un aviso solo dice qué pasó, nunca cuánto, de quién ni de qué categoría. Quien arma
+ * el aviso ya escribe un texto genérico; esto es la red por si un cambio futuro mete una cifra o un símbolo de plata.
+ */
+export const AVISO_GENERICO = { titulo: 'Tienes un aviso', cuerpo: 'Ábrelo en la app para verlo.' };
+export function sinDatos(aviso: { titulo: string; cuerpo: string }): { titulo: string; cuerpo: string } {
+  return /[$€]|\d[\d.,]{2,}|\d\s?(?:k|mil|lucas?)\b/i.test(aviso.titulo + ' ' + aviso.cuerpo) ? AVISO_GENERICO : aviso;
+}
+
+export async function enviarAviso(s: Suscripcion, avisoCrudo: { titulo: string; cuerpo: string }, llaves: LlavesVapid): Promise<EstadoEnvio> {
+  const aviso = sinDatos(avisoCrudo);
   // una suscripción guardada antes de esta revisión puede apuntar a cualquier sitio: tampoco se le manda nada
   if (!esServicioDePush(s.endpoint)) return 'caducada';
   try {

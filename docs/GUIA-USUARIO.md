@@ -235,6 +235,8 @@ El PIN protege las acciones que borran datos y sirve para bloquear la app.
 3. Toca "Mandar una prueba". Tiene que llegarte una notificación.
 4. Para apagarlos, toca "Apagar".
 
+En la pantalla de bloqueo los avisos no muestran montos, saldos ni nombres: solo dicen qué pasó («Una de tus cuentas quedó en negativo»). Para ver los detalles, abre la app.
+
 Los avisos te recuerdan, por ejemplo, una deuda por vencer, un pago fijo que toca o que llevas días sin anotar nada. En "Recordatorio nocturno" puedes elegir una hora entre las 7:00 y las 10:30 de la noche para que la app te pregunte si anotaste los gastos de hoy.
 
 En iPhone los avisos solo funcionan si la app está instalada con el ícono en la pantalla de inicio y el teléfono tiene iOS 16.4 o más nuevo. Pruébalo con "Mandar una prueba". Si no llega, abre un Issue en GitHub (ver al final del capítulo 6).
@@ -693,7 +695,8 @@ El botón del ojo (flotante, abajo a la derecha en Saldos, Movimientos y Resumen
 
 1. Más, Ajustes, "Letra y colores".
 2. Elige un tema: Obsidiana, Midnight, Tierra, Esmeralda, Bordeaux o Kinetix. Cada uno tiene versión clara y oscura, y se puede dejar en automático.
-3. Elige el tamaño de la letra: Compacta (85 %), Normal (100 %), Grande (115 %) o Extra grande (130 %).
+3. En la piel Tierra con tema claro, el texto principal y los montos se leen con contraste AAA (7 a 1 o más) sobre los tres fondos, y el texto secundario con 4,5 a 1 o más. La calidez café y arena se mantiene.
+4. Elige el tamaño de la letra: Compacta (85 %), Normal (100 %), Grande (115 %) o Extra grande (130 %).
 
 ### Reglas aprendidas
 

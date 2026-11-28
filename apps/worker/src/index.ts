@@ -65,7 +65,7 @@ export default {
         console.error('respaldo:', (e as Error).message);
         motivo = 'Error inesperado al armar la copia.';
       }
-      if (motivo) await mandarAviso(repo, { titulo: 'La copia de seguridad falló', cuerpo: `${motivo} Revisa el token y la frase del respaldo.` });
+      if (motivo) await mandarAviso(repo, { titulo: 'La copia de seguridad falló', cuerpo: 'Revisa el token y la frase del respaldo en Ajustes.' });
     }
   },
 
