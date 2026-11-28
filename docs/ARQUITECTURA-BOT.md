@@ -855,6 +855,14 @@ Cincuenta frases como las deja el teclado del celular («gaste15mil», «nequi50
 
 Expectativas ajustadas, con su nota en el caso: RED-1053 acepta la deuda con Tarjeta (con la persona creada, «con tarjeta» es la de crédito); RED-1055, 1063 y 1099 aceptan que pregunte (no hay categoría Mercado en la plantilla del arnés, y sin saber quién prestó no se inventa); RED-1077 parte de una compra con la tarjeta, porque sin deuda no hay qué pagar.
 
+### Estado final al 2026-11-27
+
+- Batería: **1.100 casos (RED-001 a RED-1100), todos en verde**, en ocho rondas. `npm test` corre **2.423 pruebas** y `npm run check` sale sin hallazgos. `npm run e2e` y `npm run e2e:celular` (en un Galaxy real) pasan.
+- Capas de entrada, en el orden en que corren: `sanitizar.ts` (texto no confiable) → `typosMovil.ts` (teclado del celular) → `banco.ts` y `comprobantes.ts` (alertas y recibos pegados) → `esDudaDeUso` en `ayudaGuiada.ts` (una duda de uso explica y no anota) → `limpiarDictado` → `auditar` → topes, casa, traslados → `enredado` → cola y confirmaciones.
+- Seguridad: revisión OWASP Top 10:2025 con 29 pruebas (`docs/SEGURIDAD-OWASP-2025.md`); `npm audit` deja dos avisos moderados en `uuid` dentro de `exceljs`.
+- En producción: la persona «Tarjeta» existe en las tres bases y «intereses» está en Costos del banco de mama y asociacion (personal lo trae en el código).
+- Lo que la batería no mide: muchos casos de duda pasan porque el bot pregunta, no porque calcule el monto. Falta probar con personas reales.
+
 ## 9. Cómo probarlo
 
 El núcleo corre en Node sin red y sin navegador. `MemoriaRepo` guarda todo en memoria y `tests/ayudas.ts` trae un bot listo con el reloj fijo:

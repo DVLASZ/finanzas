@@ -750,6 +750,8 @@ Antes de abrir el Issue, mira dos cosas:
 
 ## 7. Paso 6: actualizar la app en el futuro
 
+Después de publicar, la app instalada toma la versión nueva la segunda vez que la abres: si ves algo viejo, ciérrala y ábrela de nuevo.
+
 El código se mejora con el tiempo. Para tener tu app al día sin perder nada, repite estos pasos en la carpeta `finanzas`. Tus datos no se tocan: viven en tu base de Cloudflare.
 
 1. Antes de empezar, haz un respaldo: en la app, Más, Ajustes, "Respaldo", "Actualizar respaldo". Guarda el archivo fuera del celular.

@@ -6,6 +6,7 @@ Lo publicado, de lo más nuevo a lo más viejo. Las fechas son las de la publica
 
 ## 2026-11-27
 
+- Cierre del día: `npm run e2e` y `npm run e2e:celular` pasan completos en el Galaxy conectado (incluye la prueba de topes y categorías); `salud` en bien en las tres apps; personal y mama revisadas en Chrome con la ayuda nueva y sin errores en consola. La base de la asociación sigue sin movimientos.
 - Ronda 8, parte 2: la batería llega a 1.100 casos. Nueva capa `typosMovil.ts` para el teclado del celular: palabras pegadas («gaste15mil»), autocorrector («neki», «targeta», «resivo»), dudas que se preguntan («mkl», «mecsto», «quitas», «una playa de 50k») y plata en custodia como deuda. «Playa» nunca se cambia por «plata».
 
 - Ronda 8, parte 1: la batería llega a 1.050 casos. Las dudas de uso («cómo lo anoto», «dónde veo», «puedo pegar...») se explican sin anotar nada, aunque traigan montos; hay temas nuevos de ayuda para custodia, cuotas, reversos, deudas, transferencias, casa y asociación, exportar y facturas sin pagar.

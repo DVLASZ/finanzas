@@ -25,6 +25,10 @@ Esto solo se comprueba con teléfonos y gente de verdad. Las pruebas automática
 
 ## Ya resuelto
 
+- `npm run e2e:celular` corrido completo en un Galaxy real el 2026-11-27, con las pruebas de topes y categorías incluidas.
+- La palabra «intereses» (Costos del banco) y la persona «Tarjeta» están en las bases de mama y asociacion (`npm run instalar -- actualizar <nombre> --sin-config --con-tarjeta`).
+- Dudas de uso que explican y no anotan, y typos del teclado del celular (rondas 8.1 y 8.2, batería en 1.100 casos).
+
 - Topes que se pausan y se reanudan sin borrarlos (`pausar tope comida`, «Pausar tope» en Categorías).
 - Categorías con movimientos: «Archivar categoría» (los movimientos no cambian) o «Pasar movimientos» a otra categoría antes de archivar.
 - El campo del chat es un cuadro de texto que crece hasta cuatro líneas: Enter envía y Mayús+Enter baja de renglón.
@@ -42,6 +46,9 @@ Lo que antes estaba aquí como pendiente y ya está hecho y publicado en las tre
 - Varios movimientos en una sola línea: se parten y se confirman de a uno.
 
 ## Límites que ya se conocen
+
+- Los Excel de la asociación no están importados: el 2026-11-27 la base `finanzas-asociacion` no tiene ningún movimiento (la de mama tiene 251 del Excel y 139 de la app). El importador está en el disco, fuera de git.
+- Una app ya instalada toma la versión nueva la segunda vez que se abre después de publicar (el service worker deja la anterior a la primera). Si una duda de ayuda responde con lo viejo, cerrar y abrir la app.
 
 - `npm run e2e` y `npm run e2e:celular` no entran en `npm run check`: abren un Chrome y tardan. Correrlos antes de publicar cambios de pantalla.
 - El dictado necesita internet (lo hace Chrome con los servidores de Google) y funciona en Chrome y Edge, no en Firefox ni en Safari.
