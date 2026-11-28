@@ -1,6 +1,6 @@
-# Batería adversarial del bot (RED-001 a RED-1050)
+# Batería adversarial del bot (RED-001 a RED-1100)
 
-Estas son las 1050 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
+Estas son las 1100 frases difíciles con las que se prueba el intérprete de lenguaje natural, y lo que el bot debe hacer con cada una. La misma lista (`packages/core/test/red-team-casos.ts`) corre como prueba automática contra el bot real.
 
 ```bash
 node --test packages/core/test/red-team.test.ts
@@ -1301,3 +1301,58 @@ Este archivo se genera con `npm run bateria`: no lo edites a mano.
 | RED-1048 | `Cómo saco un informe de los movimientos de la Asociación` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «export» o «informe» y «asociacion» |  |
 | RED-1049 | `Cómo miro cuánta plata en efectivo me queda después de los retiros y compras` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «efectivo» y «saldo» |  |
 | RED-1050 | `Cómo cambio de mis gastos de la casa a los de la Asociación sin revolverlos` | Explica la duda sin anotar nada (sin tarjeta); la respuesta menciona «asociacion» y «casa» o «hogar» o «separad» |  |
+
+## Ronda 8: typos de teclado táctil, autocorrector y palabras pegadas
+
+| Caso | Frase | Debe hacer | Decisión |
+|---|---|---|---|
+| RED-1051 | `me giraron una playa de 50k` | Pregunta antes de inventar |  |
+| RED-1052 | `pague el resivo de la lus por 85 mil` | Gasto, $85.000 |  |
+| RED-1053 | `compre mecato con targeta por 18k` | Deuda, $18.000, con Tarjeta o Gasto, $18.000, categoría Mecato o Pregunta antes de inventar | Con la persona Tarjeta creada, «con tarjeta» es la tarjeta de crédito: una deuda con Tarjeta. |
+| RED-1054 | `le mande 30 lukas por neki a Jorge` | Nunca gasto: si no hay tarjeta, pregunta o explica |  |
+| RED-1055 | `me prestaron 40 mil por dabiplata` | Deuda, $40.000 o Pregunta antes de inventar | Sin saber quién prestó, pregunta; no es un ingreso. |
+| RED-1056 | `gaste15mil en almuerzo` | Gasto, $15.000, categoría Comida |  |
+| RED-1057 | `20kcomida` | Gasto, $20.000, categoría Comida o Pregunta antes de inventar |  |
+| RED-1058 | `nequi50mil a Jorge` | Pregunta antes de inventar |  |
+| RED-1059 | `gaste 25 mkl en comida` | Pregunta antes de inventar |  |
+| RED-1060 | `almuerzo 18 mli` | Gasto, $18.000, categoría Comida o Pregunta antes de inventar |  |
+| RED-1061 | `pague 40 mok de arriendo` | Pregunta antes de inventar |  |
+| RED-1062 | `trsnferencia de 100k a Laura` | Pregunta antes de inventar |  |
+| RED-1063 | `gaste 65 mil en marcado` | Gasto, $65.000 o Pregunta antes de inventar | La plantilla del arnés no tiene la categoría Mercado: la tarjeta lleva «Mercado» de concepto y pregunta la categoría. |
+| RED-1064 | `le preste 70 mil a Faber y me quedo debiendo` | Préstamo, $70.000, con Faber |  |
+| RED-1065 | `Jorge me consigno 90 mil` | Ingreso, $90.000 o Pregunta antes de inventar |  |
+| RED-1066 | `pague 12 mil de trasporte` | Gasto, $12.000, categoría Transporte |  |
+| RED-1067 | `pague 110 mil de enerjia` | Gasto, $110.000 |  |
+| RED-1068 | `compre droga por 22 mil en la farmasia` | Gasto, $22.000, categoría Salud |  |
+| RED-1069 | `le abone 50 mil a Daniel de lo que le devia` (antes: le debo 120000 a Daniel) |  o Pregunta antes de inventar |  |
+| RED-1070 | `Laura me debovio 35 mil` (antes: le presté 100000 a Laura) |  o Ingreso, $35.000 o Pregunta antes de inventar |  |
+| RED-1071 | `compre2cafesde3mil` | Gasto, $6.000 o Pregunta antes de inventar |  |
+| RED-1072 | `mecato20mil efectivo` | Gasto, $20.000, en Efectivo, categoría Mecato |  |
+| RED-1073 | `saque100milcajero` | Transferencia, $100.000 o Pregunta antes de inventar |  |
+| RED-1074 | `Alejandro me presto80mil` | Deuda, $80.000, con Alejandro |  |
+| RED-1075 | `Jorgemedebe60mil` | Préstamo, $60.000, con Jorge |  |
+| RED-1076 | `pague 90 mil de una comuda entre Laura y yo` | Gasto compartido, $90.000 o $45.000 o Pregunta antes de inventar |  |
+| RED-1077 | `pague la cuota de la targeta por 200 mil` (antes: compré un celular de 500000 con la tarjeta) |  o Pregunta antes de inventar |  |
+| RED-1078 | `compre un televisor a 6 quitas de 150 mil` | Pregunta antes de inventar |  |
+| RED-1079 | `Mamá me mando 200 mil pa que se los guarde` | Deuda, $200.000 o Pregunta antes de inventar |  |
+| RED-1080 | `la asosiasion me dio 300 mil pa pagar unos resivos` | Nunca ingreso: si no hay tarjeta, pregunta o explica |  |
+| RED-1081 | `gasté 80 mil en la playa` | Quedan pendientes: $80.000 «playa» |  |
+| RED-1082 | `me gaste 50 mil en una playa de comida` | Pregunta antes de inventar |  |
+| RED-1083 | `pague 35 mil por un almuerzo en la playa` | Quedan pendientes: $35.000 «almuerzo» |  |
+| RED-1084 | `compre 45 mil de ropa en la tienda serca` | Gasto, $45.000 |  |
+| RED-1085 | `gaste 32 mil en mecsto` | Pregunta antes de inventar |  |
+| RED-1086 | `pague el resibo del agua por 48 mil` | Gasto, $48.000 |  |
+| RED-1087 | `me yego una tranferencia de 120 mil de Diana` | Ingreso, $120.000 o Pregunta antes de inventar |  |
+| RED-1088 | `mande 65 mil por nequi a paula` | Nunca gasto: si no hay tarjeta, pregunta o explica |  |
+| RED-1089 | `pague 17 mil en efecivo por el pan` | Gasto, $17.000, en Efectivo |  |
+| RED-1090 | `nequi30kdeLaura` | Pregunta antes de inventar |  |
+| RED-1091 | `pague 28 mil de parquedero` | Gasto, $28.000 |  |
+| RED-1092 | `me consignaron la nomina de 2 millones 300` | Ingreso, $2.300.000 |  |
+| RED-1093 | `le pase 100 mil a Mama para el mercado` | Nunca gasto: si no hay tarjeta, pregunta o explica |  |
+| RED-1094 | `pague 75 mil de gas natual` | Gasto, $75.000 |  |
+| RED-1095 | `me regresaron 15 mil de una compra de aseo` | Ingreso, $15.000 o Pregunta antes de inventar |  |
+| RED-1096 | `almuerzo18k taxi9k` | 2 movimientos: $18.000, $9.000 o Pregunta antes de inventar |  |
+| RED-1097 | `le preste 55 lukas a Daniel por daviplata` | Préstamo, $55.000, con Daniel |  |
+| RED-1098 | `pase 200k de bancolombia pa nequi` | Transferencia, $200.000, Bancolombia a Nequi |  |
+| RED-1099 | `gaste 42 mil en mercado y 8 en mecato` | Quedan pendientes: $42.000 o Pregunta antes de inventar | El primer movimiento pregunta la categoría (el arnés no tiene Mercado); el 8 queda en la cola. |
+| RED-1100 | `Mamá me giro 100 mil pa guardar, despues gaste 20 mil en la playa y le devolvi 30 mil a...` | Pregunta antes de inventar o 3 movimientos: $100.000, $20.000, $30.000 |  |

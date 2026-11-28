@@ -52,4 +52,5 @@ export * from './operacion.ts';
 export * from './notificaciones.ts';
 export * from './duplicar.ts';
 export * from './ayudaGuiada.ts';
+export * from './typosMovil.ts';
 export * from './graficas.ts';
